@@ -1,7 +1,7 @@
 ! Program : build_poly
 ! Purpose : build a composite polytrope
 !
-! Copyright 2015-2020 Rich Townsend & The GYRE Team
+! Copyright 2015-2024 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -21,11 +21,9 @@ program build_poly
 
    ! Uses
 
-   use kinds_m
-   use constants_m
-   use hgroup_m
-   use system_m
-   use memory_m
+   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
+
+   use gyre_m
 
    use lane_emden_m
 
@@ -55,7 +53,7 @@ program build_poly
    real(RD), allocatable     :: theta(:)
    real(RD), allocatable     :: dtheta(:)
    integer                   :: n_r_out
-   type(hgroup_t)            :: hg
+   type(hdf5io_t)            :: hi
 
    namelist /poly/ n_r, n_poly, Gamma_1, z_b, Delta_b
    namelist /num/ dz, toler
@@ -111,21 +109,21 @@ program build_poly
 
    ! Write the model
 
-   hg = hgroup_t(file, CREATE_FILE)
+   hi = hdf5io_t(file, CREATE_FILE)
 
-   call write_attr(hg, 'n', SIZE(z))
-   call write_attr(hg, 'n_r', n_r)
-   call write_attr(hg, 'n_poly', n_poly)
+   call hi%write_attr('n', SIZE(z))
+   call hi%write_attr('n_r', n_r)
+   call hi%write_attr('n_poly', n_poly)
    if (n_r > 1) then
-      call write_attr(hg, 'Delta_b', Delta_b)
+      call hi%write_attr('Delta_b', Delta_b)
    endif
-   call write_attr(hg, 'Gamma_1', Gamma_1)
+   call hi%write_attr('Gamma_1', Gamma_1)
 
-   call write_dset(hg, 'z', z)
-   call write_dset(hg, 'theta', theta)
-   call write_dset(hg, 'dtheta', dtheta)
+   call hi%write_dset('z', z)
+   call hi%write_dset('theta', theta)
+   call hi%write_dset('dtheta', dtheta)
 
-   call hg%final()
+   call hi%final()
 
    ! Finish
 

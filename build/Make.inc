@@ -173,13 +173,11 @@ endif
 
 ifeq ($(shell uname -s),Darwin)
    LIB_LDFLAGS = -shared -install_name $(LIB_DIR)/$@
-   BIN_LDFLAGS = -Wl,
+   BIN_LDFLAGS = 
 else			   
    LIB_LDFLAGS = -Wl,--no-warn-execstack -shared -Wl,-rpath -Wl,$(LIB_DIR)
    BIN_LDFLAGS = -Wl,--no-warn-execstack -Wl,-rpath -Wl,$(LIB_DIR)
 endif
-
-LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` -L$(LIB_DIR) -lforum
 
 ifeq ($(CRMATH),yes)
    export MESASDK_MATH_SLOT=crmath

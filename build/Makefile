@@ -36,7 +36,7 @@ BIN_TARGETS = gyre gyre_tides
 LIB_TARGETS = libgyre
 
 ifeq ($(TOOLS),yes)
-  BIN_TARGETS := $(BIN_TARGETS) eval_lambda eval_tidal_coeff
+  BIN_TARGETS := $(BIN_TARGETS) eval_lambda eval_tidal_coeff build_poly poly_to_fgong poly_to_txt
 endif
 
 # Source file lists & related variables
@@ -46,20 +46,32 @@ endif
 # xxx_LIBS = library files required to link xxx
 
 gyre_SRCS = gyre.fypp
-gyre_USES = gyre_m.fypp
+gyre_USES = $(libgyre_SRCS)
 gyre_LIBS = libgyre
 
 gyre_tides_SRCS = gyre_tides.fypp
-gyre_tides_USES = gyre_m.fypp
+gyre_tides_USES = $(libgyre_SRCS)
 gyre_tides_LIBS = libgyre
 
 eval_lambda_SRCS = eval_lambda.fypp
-eval_lambda_USES = gyre_m.fypp
+eval_lambda_USES = $(libgyre_SRCS)
 eval_lambda_LIBS = libgyre
 
 eval_tidal_coeff_SRCS = eval_tidal_coeff.fypp
-eval_tidal_coeff_USES = gyre_m.fypp
+eval_tidal_coeff_USES = $(libgyre_SRCS)
 eval_tidal_coeff_LIBS = libgyre
+
+build_poly_SRCS = build_poly.fypp lane_emden_m.fypp
+build_poly_USES = $(libgyre_SRCS)
+build_poly_LIBS = libgyre
+
+poly_to_fgong_SRCS = poly_to_fgong.fypp
+poly_to_fgong_USES = $(libgyre_SRCS)
+poly_to_fgong_LIBS = libgyre
+
+poly_to_txt_SRCS = poly_to_txt.fypp
+poly_to_txt_USES = $(libgyre_SRCS)
+poly_to_txt_LIBS = libgyre
 
 libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    ad_eqns_m.fypp ad_match_m.fypp ad_trans_m.fypp amdl_file_m.fypp	\
@@ -110,6 +122,10 @@ else
 endif
 
 MOD_PATH = ../include
+
+# Additional link flags
+
+LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(LIB_DIR) -lforum
 
 # Include standard rules
 

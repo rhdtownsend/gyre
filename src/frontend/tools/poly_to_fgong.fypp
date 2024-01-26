@@ -1,7 +1,7 @@
 ! Program : poly_to_fgong
 ! Purpose : convert a polytrope to FGONG format
 !
-! Copyright 2015-2022 Rich Townsend & The GYRE Team
+! Copyright 2015-2024 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -15,22 +15,16 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#:include 'core.inc'
+#:include 'gyre.inc'
 
 program poly_to_fgong
 
    ! Uses
 
-   use kinds_m
-   use system_m
+   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
 
-   use constants_m
-   use grid_m
-   use math_m
-   use model_m
-   use model_par_m
+   use gyre_m
    use poly_file_m
-   use poly_model_m
 
    use ISO_FORTRAN_ENV
 
@@ -115,11 +109,7 @@ program poly_to_fgong
 
    ! Physical structure variables
 
-   $if ($GFORTRAN_PR_49636)
    M_r = M_SUN*(gr%pt%x**3/c_1)
-   $else
-   M_r = M_SUN*(pt%x**3/c_1)
-   $endif
 
    P = (G_GRAVITY*M_SUN**2/(4._RD*PI*R_SUN**4))* &
       (U/(c_1**2*V_2))
