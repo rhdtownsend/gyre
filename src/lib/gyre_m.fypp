@@ -70,6 +70,7 @@ module gyre_m
    use ext_m
    use math_m
    use search_m
+   use special_m
    use tar_eigen_m
    use tidal_coeff_m
    use tidal_context_m

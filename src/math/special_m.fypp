@@ -1,7 +1,7 @@
-! Module  : func_m
-! Purpose : mathematical functions
+! Module  : special_m
+! Purpose : special mathematical functions
 !
-! Copyright 2019-2020 Rich Townsend & The GYRE Team
+! Copyright 2019-2024 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,7 +17,7 @@
 
 #:include 'gyre.inc'
 
-module func_m
+module special_m
 
    ! Uses
 
@@ -179,4 +179,4 @@ contains
 
    end function spherical_Y
 
-end module func_m
+end module special_m
