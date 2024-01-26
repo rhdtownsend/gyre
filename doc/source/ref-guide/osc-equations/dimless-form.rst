@@ -90,7 +90,7 @@ where the dimensionless oscillation frequency is introduced as
 .. math::
    :label: e:omega
 
-   \omega \equiv \sqrt{\frac{R^{3}}{GM}},
+   \omega \equiv \sqrt{\frac{R^{3}}{GM}}\sigma ,
 
 (with :math:`M` the stellar mass). These differential equations are
 derived from the separated equations, with the insertion of 'switch'
