@@ -4,8 +4,9 @@
 *.o
 *.mod
 
-bin/*
-src/build/*
+bin
+lib
+include
 
 doc/*.log
 doc/*.aux
