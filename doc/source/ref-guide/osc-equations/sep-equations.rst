@@ -50,7 +50,7 @@ Likewise, Poisson's equation becomes
 .. math::
    :label: e:osc-sep-poisson
 
-   \frac{1}{r^{2}} \deriv{}{r} \left( r^{2} \deriv{\tPhi'}{r} \right) - \frac{\ell(\ell+1)}{r^{2}} \txih = 4 \pi G \trho'
+   \frac{1}{r^{2}} \deriv{}{r} \left( r^{2} \deriv{\tPhi'}{r} \right) - \frac{\ell(\ell+1)}{r^{2}} \tPhi' = 4 \pi G \trho'
 
 and the heat equation becomes
 
