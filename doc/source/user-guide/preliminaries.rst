@@ -39,7 +39,6 @@ relevant 'instrument' papers:
   non-adiabatic modes;
 * :ads_citet:`sun:2023` introduces the :ref:`gyre_tides frontend
   <frontends-gyre_tides>` for evaluating tidal responses.
-* :ads_citet:`townsend:2023b` introduces the concept of parfait models.
 
 If you find yourself using GYRE on a regular basis, you might consider
 contributing to the project to ensure its long-term success. Options include

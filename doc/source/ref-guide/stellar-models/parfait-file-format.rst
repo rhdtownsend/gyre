@@ -5,8 +5,8 @@ PARFAIT File Format
 
 Files in PARFAIT format store HDF5 data describing a parfait stellar
 model. A parfait model represents the structure of a star via a set of
-concentric, spherical, uniform-density shells; see
-:ads_citet:`townsend:2023b` for further details.
+concentric, spherical, uniform-density shells; see Townsend & Kuenzi
+(in prep.) for further details.
 
 The PARFAIT format adheres to the following conventions:
 
