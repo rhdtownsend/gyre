@@ -110,8 +110,8 @@ else:
 
 targets = {
     'tarball': tarball,
-    'gyre-forums': 'http://www.astro.wisc.edu/~townsend/gyre-forums/',
-    'mesa-sdk': 'http://www.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
+    'gyre-forums': 'http://user.astro.wisc.edu/~townsend/gyre-forums/',
+    'mesa-sdk': 'http://user.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
     'mesa': 'http://mesa.sourceforge.net/',
 }
 
