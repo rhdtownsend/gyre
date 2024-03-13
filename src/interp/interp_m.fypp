@@ -1,0 +1,624 @@
+! Module  : interp_m
+! Purpose : piecewise cubic interpolators
+!
+! Copyright 2015-2018 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module interp_m
+
+   ! Uses
+
+   use forum_m, only: RD, hdf5io_t, locate
+
+   use deriv_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type interp_${S}$
+         private
+         real(RD), allocatable :: x_(:)     ! Abscissa
+         ${T}$, allocatable    :: f_(:)     ! Ordinate
+         ${T}$, allocatable    :: df_dx_(:) ! First derivatives
+         ${T}$, allocatable    :: int_f_(:) ! First integrals
+         integer               :: n         ! Number of points
+      contains
+         private
+         procedure, public :: x => x_${S}$_
+         procedure, public :: x_min => x_min_${S}$_
+         procedure, public :: x_max => x_max_${S}$_
+         #:for N in ('f', 'df_dx', 'int_f')
+            procedure       :: ${N}$_${S}$_1_
+            procedure       :: ${N}$_${S}$_v_
+            procedure       :: ${N}$_${S}$_n_
+            generic, public :: ${N}$ => ${N}$_${S}$_1_, ${N}$_${S}$_v_, ${N}$_${S}$_n_
+         #:endfor
+      end type interp_${S}$
+
+   ! Interfaces
+
+      interface interp_${S}$
+         module procedure interp_${S}$_
+         module procedure interp_${S}$_eval_derivs_
+      end interface interp_${S}$
+
+      interface read
+         module procedure read_${S}$_
+      end interface read
+
+      interface write
+         module procedure write_${S}$_
+      end interface write
+
+      ! Access specifiers
+
+      public :: interp_${S}$
+
+   #:endfor
+
+   public :: read
+   public :: write
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function interp_${S}$_(x, f, df_dx) result(in)
+
+         real(RD), intent(in) :: x(:)
+         ${T}$, intent(in)    :: f(:)
+         ${T}$, intent(in)    :: df_dx(:)
+         type(interp_${S}$)   :: in
+
+         integer  :: i
+         real(RD) :: h
+
+         @:CHECK_BOUNDS(SIZE(f), SIZE(x))
+         @:CHECK_BOUNDS(SIZE(df_dx), SIZE(x))
+
+         @:ASSERT(ALL(x(2:) > x(:SIZE(x)-1)), 'non-monotonic abscissa')
+
+         ! Construct the interp_t
+
+         ! Store values
+
+         in%x_ = x
+         in%f_ = f
+
+         in%df_dx_ = df_dx
+
+         in%n = SIZE(x)
+
+         ! Evaluate the integral
+
+         allocate(in%int_f_(in%n))
+
+         in%int_f_(1) = 0._RD
+
+         x_loop : do i = 1, in%n-1
+
+            h = x(i+1) - x(i)
+
+            in%int_f_(i+1) = in%int_f_(i) - f(i  )*(dphi_dt_(0._RD, -1) - dphi_dt_(1._RD, -1))*h + &
+               &                            f(i+1)*(dphi_dt_(1._RD, -1) - dphi_dt_(0._RD, -1))*h + &
+               &                        df_dx(i  )*(dpsi_dt_(0._RD, -1) - dpsi_dt_(1._RD, -1))*h**2 + &
+               &                        df_dx(i+1)*(dpsi_dt_(1._RD, -1) - dpsi_dt_(0._RD, -1))*h**2
+
+         end do x_loop
+
+         ! Finish
+
+         return
+
+      end function interp_${S}$_
+
+      !****
+
+      function interp_${S}$_eval_derivs_(x, f, deriv_type, df_dx_a, df_dx_b) result(in)
+
+         real(RD), intent(in)        :: x(:)
+         ${T}$, intent(in)           :: f(:)
+         character(*), intent(in)    :: deriv_type
+         ${T}$, optional, intent(in) :: df_dx_a
+         ${T}$, optional, intent(in) :: df_dx_b
+         type(interp_${S}$)          :: in
+
+         @:CHECK_BOUNDS(SIZE(f), SIZE(x))
+
+         ! Construct the interp_t, with derivatives calculated according to
+         ! deriv_type
+
+         in = interp_${S}$(x, f, deriv(x, f, deriv_type, df_dx_a, df_dx_b))
+
+         ! Finish
+
+         return
+
+      end function interp_${S}$_eval_derivs_
+
+      !****
+
+      subroutine read_${S}$_(hi, in)
+
+         type(hdf5io_t), intent(inout)   :: hi
+         type(interp_${S}$), intent(out) :: in
+
+         real(RD), allocatable :: x(:)
+         ${T}$, allocatable    :: f(:)
+         ${T}$, allocatable    :: df_dx(:)
+
+         ! Read the interp type
+
+         call hi%alloc_read_dset('x', x)
+         call hi%alloc_read_dset('f', f)
+         call hi%alloc_read_dset('df_dx', df_dx)
+
+         in = interp_${S}$(x, f, df_dx)
+
+         ! Finish
+
+         return
+
+      end subroutine read_${S}$_
+
+      !****
+
+      subroutine write_${S}$_(hi, in)
+
+         type(hdf5io_t), intent(inout)  :: hi
+         type(interp_${S}$), intent(in) :: in
+
+         ! Write the interp type
+
+         call hi%write_attr('n', in%n)
+
+         call hi%write_dset('x', in%x_)
+         call hi%write_dset('f', in%f_)
+         call hi%write_dset('df_dx', in%df_dx_)
+
+         ! Finish
+
+         return
+
+      end subroutine write_${S}$_
+
+      !****
+
+      function x_${S}$_(this) result(x)
+
+         class(interp_${S}$), intent(in) :: this
+         real(RD)                        :: x(this%n)
+
+         ! Return the abscissa points
+
+         x = this%x_
+
+         return
+
+      end function x_${S}$_
+
+      !****
+
+      function x_min_${S}$_(this) result(x_min)
+
+         class(interp_${S}$), intent(in) :: this
+         real(RD)                        :: x_min
+
+         ! Return the minimum abscissa point
+
+         x_min = this%x_(1)
+
+         ! FInish
+
+         return
+
+      end function x_min_${S}$_
+
+      !****
+
+      function x_max_${S}$_(this) result(x_max)
+
+         class(interp_${S}$), intent(in) :: this
+         real(RD)                        :: x_max
+
+         ! Return the maximum abscissa point
+
+         x_max = this%x_(this%n)
+
+         ! FInish
+
+         return
+
+      end function x_max_${S}$_
+
+      !****
+
+      function f_${S}$_1_(this, x) result(f)
+
+         class(interp_${S}$), intent(in) :: this
+         real(RD), intent(in)            :: x
+         ${T}$                           :: f
+
+         ! Interpolate f at a single point
+
+         f = this%df_dx(x, 0)
+
+         ! Finish
+
+         return
+
+      end function f_${S}$_1_
+
+      !****
+
+      function f_${S}$_v_(this, x) result(f)
+
+         class(interp_${S}$), intent(in) :: this
+         real(RD), intent(in)            :: x(:)
+         ${T}$                           :: f(SIZE(x))
+
+         ! Interpolate f at a vector of points
+
+         f = this%df_dx(x, 0)
+
+         ! Finish
+
+         return
+
+      end function f_${S}$_v_
+
+      !****
+
+      function f_${S}$_n_(this) result(f)
+
+         class(interp_${S}$), intent(in) :: this
+         ${T}$                           :: f(this%n)
+
+         ! Interpolate f at abscissa points
+
+         f = this%df_dx(0)
+
+         ! Finish
+
+      end function f_${S}$_n_
+
+      !****
+
+      function df_dx_${S}$_1_(this, x, n) result(df_dx)
+
+         class(interp_${S}$), intent(in) :: this
+         real(RD), intent(in)            :: x
+         integer, optional, intent(in)   :: n
+         ${T}$                           :: df_dx
+
+         integer       :: n_
+         integer, save :: i = 1
+         integer       :: j
+         real(RD)      :: h
+         real(RD)      :: w
+
+         !$OMP THREADPRIVATE (i)
+
+         if (PRESENT(n)) then
+            n_ = n
+         else
+            n_ = 1
+         endif
+
+         ! Interpolate the first derivative of f, or the n'th derivative if
+         ! n is present, at a single point
+
+         ! Set up the bracketing index
+
+         call locate(this%x_, x, i)
+         @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+         j = MIN(i, this%n-1)
+
+         ! Set up the interpolation weights
+
+         h = this%x_(j+1) - this%x_(j)
+         w = (x - this%x_(j))/h
+
+         ! Do the interpolation
+
+         df_dx = (-1._RD)**n_ *     this%f_(j  )*dphi_dt_(1._RD-w, n_)/h**n_ + &
+            &                       this%f_(j+1)*dphi_dt_(      w, n_)/h**n_ - &
+            &    (-1._RD)**n_ * this%df_dx_(j  )*dpsi_dt_(1._RD-w, n_)/h**(n_-1) + &
+            &                   this%df_dx_(j+1)*dpsi_dt_(      w, n_)/h**(n_-1)
+
+         ! Finish
+
+         return
+
+      end function df_dx_${S}$_1_
+
+      !****
+
+      function df_dx_${S}$_v_(this, x, n) result(df_dx)
+
+         class(interp_${S}$), intent(in) :: this
+         real(RD), intent(in)            :: x(:)
+         integer, optional, intent(in)   :: n
+         ${T}$                           :: df_dx(SIZE(x))
+
+         integer        :: n_
+         integer, save  :: i = 1
+         integer        :: j
+         integer        :: k
+         real(RD)       :: h
+         real(RD)       :: w
+
+         !$OMP THREADPRIVATE (i)
+
+         if (PRESENT(n)) then
+            n_ = n
+         else
+            n_ = 1
+         endif
+
+         ! Interpolate the first derivative of f, or the n'th derivative if
+         ! n is present, at a vector of points
+
+         x_loop : do k = 1,SIZE(x)
+
+            ! Update the bracketing index
+
+            call locate(this%x_, x(k), i)
+            @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+            j = MIN(i, this%n-1)
+
+            ! Set up the interpolation weights
+
+            h = this%x_(j+1) - this%x_(j)
+            w = (x(k) - this%x_(j))/h
+
+            ! Do the interpolation
+
+            df_dx(j) = (-1._RD)**n_ *     this%f_(j  )*dphi_dt_(1._RD-w, n_)/h**n_ + &
+               &                          this%f_(j+1)*dphi_dt_(w      , n_)/h**n_ - &
+               &       (-1._RD)**n_ * this%df_dx_(j  )*dpsi_dt_(1._RD-w, n_)/h**(n_-1) + &
+               &                      this%df_dx_(j+1)*dpsi_dt_(w      , n_)/h**(n_-1)
+
+         end do x_loop
+
+         ! Finish
+
+         return
+
+      end function df_dx_${S}$_v_
+
+      !****
+
+      function df_dx_${S}$_n_(this, n) result(df_dx)
+
+         class(interp_${S}$), intent(in) :: this
+         integer, optional, intent(in)   :: n
+         ${T}$                           :: df_dx(this%n)
+
+         integer :: n_
+
+         if (PRESENT(n)) then
+            n_ = n
+         else
+            n_ = 1
+         endif
+
+         ! Interpolate the first derivative of f, or the n'th derivative if
+         ! n is present, at abscissa points
+
+         select case (n_)
+         case (0)
+            df_dx = this%f_
+         case (1)
+            df_dx = this%df_dx_
+         case default
+            df_dx = this%df_dx(this%x_, n_)
+         end select
+
+         ! Finish
+
+         return
+
+      end function df_dx_${S}$_n_
+
+      !****
+
+      function int_f_${S}$_1_(this, x) result(int_f)
+
+         class(interp_${S}$), intent(in) :: this
+         real(RD), intent(in)            :: x
+         ${T}$                           :: int_f
+
+         integer, save :: i
+         integer       :: j
+         real(RD)      :: h
+         real(RD)      :: w
+
+         !$OMP THREADPRIVATE (i)
+
+         ! Interpolate the integral of f at a single point
+
+         ! Set up the bracketing index
+
+         call locate(this%x_, x, i)
+         @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+         j = MIN(i, this%n-1)
+
+         ! Set up the interpolation weights
+
+         h = this%x_(j+1) - this%x_(j)
+         w = (x - this%x_(j))/h
+
+         ! Do the interpolation
+
+         int_f = this%int_f_(i) - this%f_(j  )*(dphi_dt_(1._RD-w, -1) - dphi_dt_(1._RD, -1))*h + &
+            &                     this%f_(j+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._RD, -1))*h + &
+            &                 this%df_dx_(j  )*(dpsi_dt_(1._RD-w, -1) - dpsi_dt_(1._RD, -1))*h**2 + &
+            &                 this%df_dx_(j+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._RD, -1))*h**2
+
+         ! Finish
+
+         return
+
+      end function int_f_${S}$_1_
+
+      !****
+
+      function int_f_${S}$_v_(this, x) result(int_f)
+
+         class(interp_${S}$), intent(in) :: this
+         real(RD), intent(in)            :: x(:)
+         ${T}$                           :: int_f(SIZE(x))
+
+         integer, save  :: i = 1
+         integer        :: j
+         integer        :: k
+         real(RD)       :: h
+         real(RD)       :: w
+
+         !$OMP THREADPRIVATE (i)
+
+         ! Interpolate the integral of f at a vector of points
+
+         x_loop : do k = 1,SIZE(x)
+
+            ! Update the bracketing index
+
+            call locate(this%x_, x(k), i)
+            @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+            j = MIN(i, this%n-1)
+
+            ! Set up the interpolation weights
+
+            h = this%x_(j+1) - this%x_(j)
+            w = (x(k) - this%x_(j))/h
+
+            ! Do the interpolation
+
+            int_f(j) = this%int_f_(i) - this%f_(j  )*(dphi_dt_(1._RD-w, -1) - dphi_dt_(1._RD, -1))*h + &
+               &                        this%f_(j+1)*(dphi_dt_(      w, -1) - dphi_dt_(0._RD, -1))*h + &
+               &                    this%df_dx_(j  )*(dpsi_dt_(1._RD-w, -1) - dpsi_dt_(1._RD, -1))*h**2 + &
+               &                    this%df_dx_(j+1)*(dpsi_dt_(      w, -1) - dpsi_dt_(0._RD, -1))*h**2
+
+         end do x_loop
+
+         ! Finish
+
+         return
+
+      end function int_f_${S}$_v_
+
+      !****
+
+      function int_f_${S}$_n_(this) result(int_f)
+
+         class(interp_${S}$), intent(in) :: this
+         ${T}$                           :: int_f(this%n)
+
+         ! Interpolate the integral of f at abscissa points
+
+         int_f = this%int_f_
+
+         ! Finish
+
+         return
+
+      end function int_f_${S}$_n_
+
+   #:endfor
+
+   !****
+      
+   function dphi_dt_(t, n) result(dphi_dt)
+
+      real(RD), intent(in) :: t
+      integer, intent(in)  :: n
+      real(RD)             :: dphi_dt
+
+      ! Evaluate the n'th derivative of the phi basis function
+
+      select case (n)
+      case (-1)
+         dphi_dt = t**3 - t**4/2._RD
+      case (0)
+         dphi_dt = 3._RD*t**2 - 2._RD*t**3
+      case (1)
+         dphi_dt = 6._RD*t - 6._RD*t**2
+      case (2)
+         dphi_dt = 6._RD - 12._RD*t
+      case (3)
+         dphi_dt = -12._RD
+      case (4:)
+         dphi_dt = 0._RD
+      case default
+         @:ABORT('invalid n')
+      end select
+
+      ! Finish
+
+      return
+
+   end function dphi_dt_
+
+   !****
+
+   function dpsi_dt_(t, n) result(dpsi_dt)
+
+      real(RD), intent(in) :: t
+      integer, intent(in)  :: n
+      real(RD)             :: dpsi_dt
+
+      ! Evaluate the n'th derivative of the psi basis function
+
+      select case (n)
+      case (-1)
+         dpsi_dt = t**4/4._RD - t**3/3._RD
+      case (0)
+         dpsi_dt = t**3 - t**2
+      case (1)
+         dpsi_dt = 3._RD*t**2 - 2._RD*t
+      case (2)
+         dpsi_dt = 6._RD*t - 2._RD
+      case (3)
+         dpsi_dt = 6._RD
+      case (4:)
+         dpsi_dt = 0._RD
+      case default
+         @:ABORT('invalid n')
+      end select
+
+      ! Finish
+
+      return
+
+   end function dpsi_dt_
+
+end module interp_m

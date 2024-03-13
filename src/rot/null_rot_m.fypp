@@ -1,0 +1,123 @@
+! Module  : null_rot_m
+! Purpose : rotational effects (null coriolis)
+!
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module null_rot_m
+
+   ! Uses
+   
+   use forum_m, only: RD
+
+   use mode_par_m
+   use rot_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, extends (rot_${S}$) :: null_rot_${S}$
+         private
+         integer :: l
+      contains
+         private
+         procedure, public :: l_e => l_e_${S}$_
+         procedure, public :: lambda => lambda_${S}$_
+      end type null_rot_${S}$
+
+      ! Interfaces
+
+      interface null_rot_${S}$
+         module procedure null_rot_${S}$_
+      end interface null_rot_${S}$
+
+      ! Access specifiers
+
+      public :: null_rot_${S}$
+
+   #:endfor
+
+   ! Default access      
+
+   private
+      
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function null_rot_${S}$_(md_p) result(rt)
+
+         type(mode_par_t), intent(in) :: md_p
+         type(null_rot_${S}$)         :: rt
+
+         ! Construct the null_rot type
+
+         rt%l = md_p%l
+
+         ! Finish
+
+         return
+
+      end function null_rot_${S}$_
+
+      !****
+
+      function l_e_${S}$_(this, Omega_rot, omega) result(l_e)
+
+         class(null_rot_${S}$), intent(in) :: this
+         real(RD), intent(in)              :: Omega_rot
+         ${T}$, intent(in)                 :: omega
+         ${T}$                             :: l_e
+
+         ! Evaluate the effective harmonic degree
+
+         l_e = this%l
+
+         ! Finish
+
+         return
+
+      end function l_e_${S}$_
+
+      !****
+
+      function lambda_${S}$_(this, Omega_rot, omega) result(lambda)
+
+         class(null_rot_${S}$), intent(in) :: this
+         real(RD), intent(in)              :: Omega_rot
+         ${T}$, intent(in)                 :: omega
+         ${T}$                             :: lambda
+
+         ! Evaluate the angular eigenvalue
+
+         lambda = this%l*(this%l+1)
+
+         ! Finish
+
+         return
+
+      end function lambda_${S}$_
+
+   #:endfor
+
+end module null_rot_m

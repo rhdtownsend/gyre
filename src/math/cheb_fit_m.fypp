@@ -1,0 +1,498 @@
+! Module  : cheb_fit_m
+! Purpose : Chebyshev function fitting
+!
+! Copyright 2016-2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module cheb_fit_m
+
+   ! Uses
+
+   use forum_m, only: RD, hdf5io_t
+
+   use math_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Derived-type definitions
+
+   type :: cheb_fit_t
+      real(RD), allocatable :: u(:)
+      real(RD), allocatable :: f(:)
+      real(RD), allocatable :: c(:)
+      real(RD)              :: x_a
+      real(RD)              :: x_b
+      integer               :: n
+   contains 
+      private
+      #:for S in FLOAT_SUFFIXES
+         procedure    :: eval_${S}$_
+      #:endfor
+      generic, public :: eval => ${','.join([f'eval_{S}_' for S in FLOAT_SUFFIXES])}$
+   end type cheb_fit_t
+
+   ! Interfaces
+
+   interface cheb_fit_t
+      module procedure cheb_fit_t_func_
+      module procedure cheb_fit_t_coeffs_
+      module procedure cheb_fit_t_tol_
+   end interface cheb_fit_t
+
+   interface read
+      module procedure read_
+   end interface read
+
+   interface write
+      module procedure write_
+   end interface write
+
+   ! Access specifiers
+
+   public :: cheb_fit_t
+   public :: read
+   public :: write
+
+   ! Default access
+
+   private
+
+contains
+
+   function cheb_fit_t_func_(x_a, x_b, n, func) result(cb)
+
+      real(RD), intent(in) :: x_a
+      real(RD), intent(in) :: x_b
+      integer, intent(in)  :: n
+      interface
+         function func (x)
+            use forum_m, only: RD
+            real(RD), intent(in) :: x
+            real(RD)             :: func
+         end function func
+      end interface
+      type(cheb_fit_t)     :: cb
+
+      real(RD) :: u(n+1)
+      real(RD) :: f(n+1)
+      integer  :: j
+      real(RD) :: x
+
+      ! Construct the cheb_fit_t of degree n, by sampling the function at
+      ! the n+1 extremal points of T_n
+
+      u = u_ext_(n)
+
+      do j = 1, n+1
+
+         x = 0.5_RD*((1._RD+u(j))*x_a + (1._RD-u(j))*x_b)
+         f(j) = func(x)
+
+      end do
+
+      cb = cheb_fit_t_vals_(x_a, x_b, f, u)
+
+      ! Finish
+
+      return
+
+   end function cheb_fit_t_func_
+
+   !****
+
+   function cheb_fit_t_tol_(x_a, x_b, tol, func) result(cb)
+
+      real(RD), intent(in) :: x_a
+      real(RD), intent(in) :: x_b
+      real(RD), intent(in) :: tol
+      interface
+         function func (x)
+            use forum_m, only: RD
+            real(RD), intent(in) :: x
+            real(RD)             :: func
+         end function func
+      end interface
+      type(cheb_fit_t)     :: cb
+
+      integer, parameter  :: N_0 = 16
+      integer, parameter  :: M = 8
+      real(RD), parameter :: EPS = EPSILON(1._RD)
+
+      integer  :: n
+      integer  :: j
+      real(RD) :: toler
+
+      ! Construct a cheb_fit_t by choosing an n such that all high-order
+      ! (neglected) coefficients are below a (relative) tolerance toler
+
+      ! Starting n
+
+      n = N_0
+
+      ! Increase n until at least M trailing coefficients of the cheb_fit_t
+      ! are below toler
+
+      do
+
+         cb = cheb_fit_t_func_(x_a, x_b, n, func)
+
+         toler = (tol + 2._RD*sqrt(REAL(n, RD))*EPS)*MAXVAL(abs(cb%c))
+
+         do j = n+1, 1, -1
+            if (abs(cb%c(j)) > toler) then
+               exit
+            endif
+         end do
+
+         if (n+1-j >= M) exit
+
+         n = n*2
+
+      end do
+
+      ! Re-create the cheb_fit_t with the optimal n
+
+      cb = cheb_fit_t_func_(x_a, x_b, j, func)
+
+      ! Finish
+
+      return
+
+   end function cheb_fit_t_tol_
+
+   !****
+
+   function cheb_fit_t_vals_(x_a, x_b, f, u) result(cb)
+
+      real(RD), intent(in)           :: x_a
+      real(RD), intent(in)           :: x_b
+      real(RD), intent(in)           :: f(:)
+      real(RD), intent(in), optional :: u(:)
+      type(cheb_fit_t)               :: cb
+
+      if (PRESENT(u)) then
+         @:CHECK_BOUNDS(SIZE(u), SIZE(f))
+      endif
+
+      ! Construct the cheb_fit_t of degree n, using the supplied function
+      ! values at the extremal points of T_n
+
+      if (PRESENT(u)) then
+         cb%u = u
+      else
+         cb%u = u_ext_(SIZE(f)-1)
+      endif
+
+      cb%f = f
+      cb%c = c_from_f_(f)
+
+      cb%x_a = x_a
+      cb%x_b = x_b
+
+      cb%n = SIZE(f) - 1
+
+      ! Finish
+
+      return
+
+   end function cheb_fit_t_vals_
+
+   !****
+
+   function cheb_fit_t_coeffs_(x_a, x_b, c, u) result(cb)
+
+      real(RD), intent(in)           :: x_a
+      real(RD), intent(in)           :: x_b
+      real(RD), intent(in)           :: c(:)
+      real(RD), intent(in), optional :: u(:)
+      type(cheb_fit_t)               :: cb
+
+      if (PRESENT(u)) then
+         @:CHECK_BOUNDS(SIZE(u), SIZE(c))
+      endif
+
+      ! Construct the cheb_fit_t of degree n, using the supplied expansion
+      ! coefficients
+
+      if (PRESENT(u)) then
+         cb%u = u
+      else
+         cb%u = u_ext_(SIZE(c)-1)
+      endif
+
+      cb%c = c
+      cb%f = f_from_c_(c)
+
+      cb%x_a = x_a
+      cb%x_b = x_b
+
+      cb%n = SIZE(c) - 1
+
+      ! Finish
+
+      return
+
+   end function cheb_fit_t_coeffs_
+
+   !****
+
+   subroutine read_(hi, cb)
+
+      type(hdf5io_t), intent(inout) :: hi
+      type(cheb_fit_t), intent(out) :: cb
+
+      real(RD)              :: x_a
+      real(RD)              :: x_b
+      real(RD), allocatable :: f(:)
+
+      ! Read the cheb_fit_t
+
+      call hi%read_attr('x_a', x_a)
+      call hi%read_attr('x_b', x_b)
+
+      call hi%alloc_read_dset('f', f)
+
+      cb = cheb_fit_t_vals_(x_a, x_b, f)
+
+      ! Finish
+
+      return
+
+   end subroutine read_
+
+   !****
+
+   subroutine write_(hi, cb)
+
+      type(hdf5io_t), intent(inout) :: hi
+      type(cheb_fit_t), intent(in)  :: cb
+
+      ! Write the cheb_fit_t
+
+      call hi%write_attr('x_a', cb%x_a)
+      call hi%write_attr('x_b', cb%x_b)
+
+      call hi%write_dset('f', cb%f)
+
+      ! Finish
+
+      return
+
+   end subroutine write_
+
+   !****
+
+   #:for T, S in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
+   
+      function eval_${S}$_(this, x) result(f)
+
+         class(cheb_fit_t), intent(in) :: this
+         ${T}$, intent(in)             :: x
+         ${T}$                         :: f
+
+         ${T}$    :: u
+         ${T}$    :: s_n
+         ${T}$    :: s_d
+         integer  :: j
+         real(RD) :: u_j
+         real(RD) :: w
+
+         ! Evaluate the cheb_fit_t at x, using the second Barycentric
+         ! interpolation formula given in eqn. 5.11 of Trefethen
+         ! (Approximation Theory & Approximation Practice). This formula is
+         ! not stable for extrapolation, but does not suffer from the
+         ! overflow/accuracy problems of the first Barycentric
+         ! interpolation formula (see W. Mascarenhas, 2014, Num. Math.,
+         ! 128, 265-300).
+
+         if (x == this%x_a) then
+            u = 1._RD
+         elseif (x == this%x_b) then
+            u = -1._RD
+         else
+            u = (2._RD*x - (this%x_a + this%x_b))/(this%x_a - this%x_b)
+         endif
+
+         s_n = 0._RD
+         s_d = 0._RD
+
+         do j = 1, this%n+1
+
+            u_j = this%u(j)
+
+            if (u == u_j) then
+               f = this%f(j)
+               return
+            endif
+
+            ! Calculate weights w =lambda / [2**(n-1)/n]
+
+            if (j == 1 .OR. j == this%n+1) then
+               w = 0.5_RD*(-1._RD)**(j-1)
+            else
+               w = (-1._RD)**(j-1)
+            endif
+
+            ! Update the numerator and denominator sums
+
+            s_n = s_n + w*this%f(j)/(u - u_j)
+            s_d = s_d + w/(u - u_j)
+
+         end do
+
+         f = s_n/s_d
+
+         ! Finish
+
+         return
+
+      end function eval_${S}$_
+
+   #:endfor
+
+   !****
+
+   function c_from_f_(f) result(c)
+
+      real(RD), intent(in) :: f(:)
+      real(RD)             :: c(SIZE(f))
+
+      integer  :: n
+      integer  :: k
+      integer  :: j
+      real(RD) :: v
+      real(RD) :: w
+
+      ! Calculate the Chebyshev expansion coefficients c from the
+      ! function f sampled at the extremal points of T_n, by taking the
+      ! discrete cosine transform (DCT-I) of f (see eqn. 3.60 of
+      ! "Numerical Methods for Special Functions", by Gil, Segura &
+      ! Temme, 2007, SIAM)
+
+      n = SIZE(c) - 1
+
+      do k = 1, n+1
+
+         c(k) = 0._RD
+
+         do j = 1, n+1
+
+            if (j == 1) then
+               v = 1._RD
+               w = 0.5_RD
+            elseif (j == n+1) then
+               v = (-1._RD)**(k-1)
+               w = 0.5_RD
+            else
+               v = cos((j-1)*(k-1)*PI/n)
+               w = 1._RD
+            endif
+
+            c(k) = c(k) + w*v*f(j)
+
+         end do
+
+         if (k == 1 .OR. k == n+1) then
+            c(k) = c(k)/n
+         else
+            c(k) = 2._RD*c(k)/n
+         end if
+
+      end do
+
+      ! Finish
+
+      return
+
+   end function c_from_f_
+
+   !****
+
+   function f_from_c_(c) result(f)
+
+      real(RD), intent(in) :: c(:)
+      real(RD)             :: f(SIZE(c))
+
+      integer  :: n
+      integer  :: j
+      integer  :: k
+      real(RD) :: v
+
+      ! Calculate the function f sampled at the extremal points of T_n,
+      ! from the Chebyshev expansion coefficients c
+
+      n = SIZE(c)-1
+
+      do j = 1, n+1
+
+         f(j) = 0._RD
+
+         do k = 1, n+1
+
+            if (k == 1) then
+               v = 1._RD
+            elseif (k == n+1) then
+               v = (-1._RD)**(j-1)
+            else
+               v = cos((j-1)*(k-1)*PI/n)
+            endif
+
+            f(j) = f(j) + v*c(k)
+
+         end do
+
+      end do
+
+      ! Finish
+
+      return
+
+   end function f_from_c_
+
+   !****
+
+   function u_ext_(n) result(u)
+
+      integer, intent(in) :: n
+      real(RD)            :: u(n+1)
+
+      integer :: j
+
+      ! Evaluate the abcissa at the extremal points of T_n
+
+      do j = 1, n+1
+
+         if (j == 1) then
+            u(j) = 1._RD
+         elseif (j == n+1) then
+            u(j) = -1._RD
+         else
+            u(j) = cos((j-1)*PI/n)
+         endif
+
+      end do
+
+      ! Finish
+
+      return
+
+   end function u_ext_
+
+end module cheb_fit_m

@@ -1,0 +1,65 @@
+! Module  : bound_m
+! Purpose : boundary conditions
+!
+! Copyright 2013-2023 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module bound_m
+
+   ! No implicit typing
+
+   implicit none
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+   
+      ! Derived-type definitions
+
+      type, abstract :: bound_${S}$
+         integer :: n_i
+         integer :: n_o
+         integer :: n_e
+      contains
+         procedure(build_${S}$_), deferred :: build_i
+         procedure(build_${S}$_), deferred :: build_o
+      end type bound_${S}$
+
+      ! Interfaces
+
+      abstract interface
+
+         subroutine build_${S}$_(this, st, B, scl)
+            use forum_m, only: RD
+            use state_m
+            import bound_${S}$
+            class(bound_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in) :: st
+            ${T}$, intent(out)             :: B(:,:)
+            ${T}$, intent(out)             :: scl(:)
+         end subroutine build_${S}$_
+
+      end interface
+
+      ! Access specifiers
+
+      public :: bound_${S}$
+
+   #:endfor
+
+   ! Default access    
+
+   private
+      
+end module bound_m

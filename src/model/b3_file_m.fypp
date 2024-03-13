@@ -1,0 +1,245 @@
+! Module  : b3_file_m
+! Purpose : read B3 files
+!
+! Copyright 2013-2022 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module b3_file_m
+
+   ! Uses
+
+   use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO
+
+   use constants_m
+   use evol_model_m
+   use math_m
+   use model_m
+   use model_par_m
+   use model_util_m
+   use util_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Access specifiers
+
+   public :: read_b3_model
+
+   ! Default access
+
+   private
+
+contains
+
+   subroutine read_b3_model(ml_p, ml)
+
+      type(model_par_t), intent(in)        :: ml_p
+      class(model_t), pointer, intent(out) :: ml
+
+      type(hdf5io_t)              :: hi
+      integer                     :: n
+      real(RD)                    :: M_star
+      real(RD)                    :: R_star
+      real(RD)                    :: L_star
+      real(RD), allocatable       :: r(:)
+      real(RD), allocatable       :: w(:)
+      real(RD), allocatable       :: M_r(:)
+      real(RD), allocatable       :: L_r(:)
+      real(RD), allocatable       :: P(:)
+      real(RD), allocatable       :: rho(:)
+      real(RD), allocatable       :: T(:)
+      real(RD), allocatable       :: N2(:)
+      real(RD), allocatable       :: c_V(:)
+      real(RD), allocatable       :: c_P(:)
+      real(RD), allocatable       :: chi_rho(:)
+      real(RD), allocatable       :: chi_T(:)
+      real(RD), allocatable       :: nabla(:)
+      real(RD), allocatable       :: kap(:)
+      real(RD), allocatable       :: kap_rho(:)
+      real(RD), allocatable       :: kap_T(:)
+      real(RD), allocatable       :: eps(:)
+      real(RD), allocatable       :: eps_rho(:)
+      real(RD), allocatable       :: eps_T(:)
+      real(RD), allocatable       :: Gamma_1(:)
+      real(RD), allocatable       :: nabla_ad(:)
+      real(RD), allocatable       :: ups_T(:)
+      real(RD), allocatable       :: x(:)
+      real(RD), allocatable       :: V_2(:)
+      real(RD), allocatable       :: As(:)
+      real(RD), allocatable       :: U(:)
+      real(RD), allocatable       :: c_1(:)
+      real(RD), allocatable       :: beta_rad(:)
+      real(RD), allocatable       :: c_lum(:)
+      real(RD), allocatable       :: c_rad(:)
+      real(RD), allocatable       :: c_thn(:)
+      real(RD), allocatable       :: c_thk(:)
+      real(RD), allocatable       :: c_eps(:)
+      real(RD), allocatable       :: Omega_rot(:)
+      type(evol_model_t), pointer :: em
+
+      ! Open the B3-format file
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Reading from B3 file', TRIM(ml_p%file)
+100      format(A,1X,A)
+      endif
+
+      hi = hdf5io_t(ml_p%file, OPEN_FILE_RO)
+
+      ! Read the header
+
+      call hi%read_attr('n_shells', n)
+
+      call hi%read_attr('R_star', R_star)
+      call hi%read_attr('M_star', M_star)
+      call hi%read_attr('L_star', L_star)
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 110) 'Grid points  :', n
+110      format(3X,A,1X,I0)
+      endif
+
+      ! Read the data
+
+      call hi%alloc_read_dset('r', r)
+      call hi%alloc_read_dset('w', w)
+      call hi%alloc_read_dset('L_r', L_r)
+      call hi%alloc_read_dset('p', P)
+      call hi%alloc_read_dset('rho', rho)
+      call hi%alloc_read_dset('T', T)
+      call hi%alloc_read_dset('nabla', nabla)
+      call hi%alloc_read_dset('N2', N2)
+      call hi%alloc_read_dset('c_V', c_V)
+      call hi%alloc_read_dset('c_p', c_P)
+      call hi%alloc_read_dset('chi_rho', chi_rho)
+      call hi%alloc_read_dset('chi_T', chi_T)
+      call hi%alloc_read_dset('epsilon', eps)
+      call hi%alloc_read_dset('epsilon_rho', eps_rho)
+      call hi%alloc_read_dset('epsilon_T', eps_T)
+      call hi%alloc_read_dset('kappa', kap)
+      call hi%alloc_read_dset('kappa_rho', kap_rho)
+      call hi%alloc_read_dset('kappa_T', kap_T)
+
+      call hi%final()
+
+      R_star = R_star*1.E2_RD
+      M_star = M_star*1.E3_RD
+      L_star = L_star*1.E7_RD
+
+      r = r*1.E2_RD
+      M_r = w/(1._RD+w)*M_star
+      L_r = L_r*1.E7_RD
+
+      P = p*1.E1_RD
+      rho = rho*1.E-3_RD
+
+      c_V = c_V*1.E4_RD
+      c_P = c_P*1.E4_RD
+      kap = kap*1.E1_RD
+      eps = eps*1.E4_RD
+
+      Gamma_1 = chi_rho*c_p/c_V
+      ups_T = chi_T/chi_rho
+      nabla_ad = p*ups_T/(rho*T*c_p)
+
+      ! Snap grid points
+
+      x = r/R_star
+
+      call snap_points(MAX(ml_p%dx_snap, EPSILON(0._RD)), x, M_r)
+
+      ! Calculate dimensionless structure data
+
+      allocate(V_2(n))
+      allocate(As(n))
+      allocate(U(n))
+      allocate(c_1(n))
+      allocate(c_lum(n))
+
+      where (x /= 0._RD)
+         V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
+         As = r**3*N2/(G_GRAVITY*M_r)
+         U = 4._RD*PI*rho*r**3/M_r
+         c_1 = (r/R_star)**3/(M_r/M_star)
+         c_lum = (L_r/L_star)/x**3
+      elsewhere
+         V_2 = 4._RD*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._RD*P(1))
+         As = 0._RD
+         U = 3._RD
+         c_1 = 3._RD*(M_star/R_star**3)/(4._RD*PI*rho)
+         c_lum = 4._RD*PI*rho(1)*eps(1)*R_star**3/L_star
+      end where
+
+      beta_rad = A_RADIATION*T**4/(3._RD*P)
+
+      c_rad = 16._RD*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._RD*kap*rho*L_star)
+      c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
+      c_thk = 4._RD*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
+      c_eps = 4._RD*PI*rho*eps*R_star**3/L_star
+
+      allocate(Omega_rot(n))
+
+      Omega_rot = 0._RD
+
+      ! Initialize the evol_model_t
+
+      allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
+
+      call em%define(I_V_2, V_2)
+      call em%define(I_AS, As)
+      call em%define(I_U, U)
+      call em%define(I_C_1, c_1)
+
+      call em%define(I_GAMMA_1, Gamma_1)
+      call em%define(I_UPS_T, ups_T)
+      call em%define(I_NABLA_AD, nabla_ad)
+      call em%define(I_NABLA, nabla)
+      call em%define(I_BETA_RAD, beta_rad)
+
+      call em%define(I_C_LUM, c_lum)
+      call em%define(I_C_RAD, c_rad)
+      call em%define(I_C_THN, c_thn)
+      call em%define(I_C_THK, c_thk)
+      call em%define(I_C_EPS, c_eps)
+
+      call em%define(I_EPS_RHO, eps_rho)
+      call em%define(I_EPS_T, eps_T)
+
+      call em%define(I_KAP_RHO, kap_rho)
+      call em%define(I_KAP_T, kap_T)
+
+      call em%define(I_OMEGA_ROT, Omega_rot)
+
+      call em%commit()
+
+      ! Return a pointer
+
+      ml => em
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, *)
+      endif
+
+      ! Finish
+
+      return
+
+   end subroutine read_b3_model
+
+end module b3_file_m

@@ -1,0 +1,102 @@
+! Module  : diff_factory_m
+! Purpose : factory procedures for r_diff_t and c_diff_t types
+!
+! Copyright 2013-2017 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module diff_factory_m
+
+   ! Uses
+   
+   use forum_m, only: RD
+
+   use colloc_diff_m
+   use diff_m
+   use eqns_m
+   use magnus_diff_m
+   use mirk_diff_m
+   use num_par_m
+   use point_m
+   use trapz_diff_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   #:for S in DTYPE_SUFFIXES
+
+      ! Interfaces
+
+      interface diff_${S}$
+         module procedure diff_${S}$_
+      end interface diff_${S}$
+
+      ! Access specifiers
+
+      public :: diff_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+      
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function diff_${S}$_(eq, pt_a, pt_b, nm_p) result(df)
+
+         class(eqns_${S}$), intent(in)  :: eq
+         type(point_t), intent(in)      :: pt_a
+         type(point_t), intent(in)      :: pt_b
+         type(num_par_t), intent(in)    :: nm_p
+         class(diff_${S}$), allocatable :: df
+
+         ! Construct the diff type
+
+         select case (nm_p%diff_scheme)
+         case ('MAGNUS_GL2')
+            allocate(df, SOURCE=magnus_diff_${S}$(eq, pt_a, pt_b, 'GL2'))
+         case ('MAGNUS_GL4')
+            allocate(df, SOURCE=magnus_diff_${S}$(eq, pt_a, pt_b, 'GL4'))
+         case ('MAGNUS_GL6')
+            allocate(df, SOURCE=magnus_diff_${S}$(eq, pt_a, pt_b, 'GL6'))
+         case ('COLLOC_GL2')
+            allocate(df, SOURCE=colloc_diff_${S}$(eq, pt_a, pt_b, 'GL2'))
+         case ('COLLOC_GL4')
+            allocate(df, SOURCE=colloc_diff_${S}$(eq, pt_a, pt_b, 'GL4'))
+         case ('COLLOC_GL6')
+            allocate(df, SOURCE=colloc_diff_${S}$(eq, pt_a, pt_b, 'GL6'))
+         case ('TRAPZ')
+            allocate(df, SOURCE=trapz_diff_${S}$(eq, pt_a, pt_b, SPREAD(0.5_RD, DIM=1, NCOPIES=eq%n_e)))
+         case ('MIRK')
+            allocate(df, SOURCE=mirk_diff_${S}$(eq, pt_a, pt_b))
+         case default
+            @:ABORT('invalid diff_scheme')
+         end select
+
+         ! Finish
+
+         return
+
+      end function diff_${S}$_
+
+   #:endfor
+
+end module diff_factory_m

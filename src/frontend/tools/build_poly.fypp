@@ -1,0 +1,130 @@
+! Program : build_poly
+! Purpose : build a composite polytrope
+!
+! Copyright 2015-2024 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+program build_poly
+
+   ! Uses
+
+   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
+
+   use gyre_m
+
+   use lane_emden_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Parameters
+
+   integer, parameter :: D = 128
+
+   ! Variables
+
+   character(:), allocatable :: filename
+   integer                   :: unit
+   integer                   :: n_r
+   real(RD), allocatable     :: n_poly(:)
+   real(RD)                  :: Gamma_1
+   real(RD), allocatable     :: z_b(:)
+   real(RD), allocatable     :: Delta_b(:)
+   real(RD)                  :: dz
+   real(RD)                  :: toler
+   character(FILENAME_LEN)   :: file
+   real(RD), allocatable     :: z(:)
+   real(RD), allocatable     :: theta(:)
+   real(RD), allocatable     :: dtheta(:)
+   integer                   :: n_r_out
+   type(hdf5io_t)            :: hi
+
+   namelist /poly/ n_r, n_poly, Gamma_1, z_b, Delta_b
+   namelist /num/ dz, toler
+   namelist /out/ file
+
+   ! Read command-line arguments
+
+   @:ASSERT(n_arg() == 1, 'Syntax: build_poly <filename>')
+
+   call get_arg(1, filename)
+
+   ! Set defaults
+
+   allocate(n_poly(D))
+   allocate(z_b(D))
+   allocate(Delta_b(D))
+
+   n_r = 1
+   Gamma_1 = 5._RD/3._RD
+
+   n_poly(1) = 0._RD
+
+   dz = 0.01
+   toler = 1E-10
+
+   ! Read parameters
+
+   open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
+
+   rewind(unit)
+   read(unit, NML=poly)
+
+   call reallocate(n_poly, [n_r])
+   call reallocate(z_b, [n_r-1])
+   call reallocate(Delta_b, [n_r-1])
+
+   rewind(unit)
+   read(unit, NML=num)
+
+   rewind(unit)
+   read(unit, NML=out)
+
+   close(unit)
+
+   ! Solve the Lane-Emden equation
+
+   call solve_lane_emden(n_poly, z_b, Delta_b, dz, toler, z, theta, dtheta, n_r_out)
+
+   if (n_r_out < n_r) then
+      write(OUTPUT_UNIT, 100) 'Warning: only', n_r_out, 'of', n_r, 'regions used'
+100   format(A,1X,I0,1X,A,1X,I0,1X,A)
+   endif
+
+   ! Write the model
+
+   hi = hdf5io_t(file, CREATE_FILE)
+
+   call hi%write_attr('n', SIZE(z))
+   call hi%write_attr('n_r', n_r)
+   call hi%write_attr('n_poly', n_poly)
+   if (n_r > 1) then
+      call hi%write_attr('Delta_b', Delta_b)
+   endif
+   call hi%write_attr('Gamma_1', Gamma_1)
+
+   call hi%write_dset('z', z)
+   call hi%write_dset('theta', theta)
+   call hi%write_dset('dtheta', dtheta)
+
+   call hi%final()
+
+   ! Finish
+
+end program build_poly

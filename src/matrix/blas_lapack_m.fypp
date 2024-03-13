@@ -1,0 +1,336 @@
+! Module  : blas_lapack_m
+! Purpose : explict interfaces for BLAS & LAPACK routines
+!
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module blas_lapack_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Interfaces
+
+   ! LAPACK routines
+
+   interface XGTSV
+      subroutine DGTSV(N, NRHS, DL, D, DU, B, LDB, INFO)
+         use forum_m, only: RD
+         integer, intent(in)     :: NRHS, N, LDB
+         integer, intent(out)    :: INFO
+         real(RD), intent(inout) :: DL(*), D(*), DU(*), B(LDB,*)
+      end subroutine DGTSV
+      subroutine ZGTSV(N, NRHS, DL, D, DU, B, LDB, INFO)
+         use forum_m, only: RD
+         integer, intent(in)        :: NRHS, N, LDB
+         integer, intent(out)       :: INFO
+         complex(RD), intent(inout) :: DL(*), D(*), DU(*), B(LDB,*)
+      end subroutine ZGTSV
+   end interface XGTSV
+
+   interface XGETRF
+      subroutine DGETRF(M, N, A, LDA, IPIV, INFO)
+         use forum_m, only: RD
+         integer, intent(in)     :: LDA, M, N
+         integer, intent(out)    :: INFO
+         integer, intent(out)    :: IPIV(*)
+         real(RD), intent(inout) :: A(LDA,*)
+      end subroutine DGETRF
+      subroutine ZGETRF (M, N, A, LDA, IPIV, INFO)
+         use forum_m, only: RD
+         integer, intent(in)        :: LDA, M, N
+         integer, intent(out)       :: INFO
+         integer, intent(out)       :: IPIV(*)
+         complex(RD), intent(inout) :: A(LDA,*)
+      end subroutine ZGETRF
+   end interface XGETRF
+
+   interface XGETRS
+      subroutine DGETRS(TRANS, N, NRHS, A, LDA, IPIV, B, LDB, INFO)
+         use forum_m, only: RD
+         character(1), intent(in) :: TRANS
+         integer, intent(in)      :: LDA, LDB, N, NRHS
+         integer, intent(out)     :: INFO
+         integer, intent(in)      :: IPIV(*)
+         real(RD), intent(in)     :: A(LDA,*)
+         real(RD), intent(inout)  :: B(LDB,*)
+      end subroutine DGETRS
+      subroutine ZGETRS(TRANS, N, NRHS, A, LDA, IPIV, B, LDB, INFO)
+         use forum_m, only: RD
+         character(1), intent(in)   :: TRANS
+         integer, intent(in)        :: LDA, LDB, N, NRHS
+         integer, intent(out)       :: INFO
+         integer, intent(in)        :: IPIV(*)
+         complex(RD), intent(in)    :: A(LDA,*)
+         complex(RD), intent(inout) :: B(LDB,*)
+      end subroutine ZGETRS
+   end interface XGETRS
+
+   interface XGBTRF
+      subroutine DGBTRF(M, N, KL, KU, AB, LDAB, IPIV, INFO)
+         use forum_m, only: RD
+         integer, intent(in)  :: M, N, KL, KU, LDAB
+         integer, intent(out) :: INFO
+         integer, intent(out) :: IPIV(*)
+         real(RD), intent(in) :: AB(LDAB,*)
+      end subroutine DGBTRF
+      subroutine ZGBTRF(M, N, KL, KU, AB, LDAB, IPIV, INFO)
+         use forum_m, only: RD
+         integer, intent(in)     :: M, N, KL, KU, LDAB
+         integer, intent(out)    :: INFO
+         integer, intent(out)    :: IPIV(*)
+         complex(RD), intent(in) :: AB(LDAB,*)
+      end subroutine ZGBTRF
+   end interface XGBTRF
+   
+   interface XGBTRS
+      subroutine DGBTRS(TRANS, N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO)
+         use forum_m, only: RD
+         character(1), intent(in) :: TRANS
+         integer, intent(in)      :: N, KL, KU, NRHS, LDAB, LDB
+         integer, intent(out)     :: INFO
+         integer, intent(in)      :: IPIV(*)
+         real(RD), intent(in)     :: AB(LDAB,*)
+         real(RD), intent(inout)  :: B(LDB,*)
+      end subroutine DGBTRS
+      subroutine ZGBTRS(TRANS, N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO)
+         use forum_m, only: RD
+         character(1), intent(in)   :: TRANS
+         integer, intent(in)        :: N, KL, KU, NRHS, LDAB, LDB
+         integer, intent(out)       :: INFO
+         integer, intent(in)        :: IPIV(*)
+         complex(RD), intent(in)    :: AB(LDAB,*)
+         complex(RD), intent(inout) :: B(LDB,*)
+      end subroutine ZGBTRS
+   end interface XGBTRS
+
+   interface XGESVX
+      subroutine DGESVX(FACT, TRANS, N, NRHS, A, LDA, AF, LDAF, IPIV, &
+         EQUED, R, C, B, LDB, X, LDX, RCOND, FERR, BERR, &
+         WORK, IWORK, INFO)
+         use forum_m, only: RD
+         character(1), intent(in)    :: FACT, TRANS
+         character(1), intent(inout) :: EQUED
+         integer, intent(in)         :: LDA, LDAF, LDB, LDX, N, NRHS
+         integer, intent(out)        :: INFO, IWORK(*)
+         integer, intent(inout)      :: IPIV(*)
+         real(RD), intent(inout)     :: A(LDA,*), AF(LDAF,*), B(LDB,*)
+         real(RD), intent(out)       :: X(LDX,*),  RCOND, R(*), C(*), FERR(*), BERR(*), WORK(*)
+      end subroutine DGESVX
+      subroutine ZGESVX (FACT, TRANS, N, NRHS, A, LDA, AF, LDAF, IPIV, &
+         EQUED, R, C, B, LDB, X, LDX, RCOND, FERR, BERR, &
+         WORK, RWORK, INFO)
+         use forum_m, only: RD
+         character(1), intent(in)    :: FACT, TRANS
+         character(1), intent(inout) :: EQUED
+         integer, intent(in)         :: LDA, LDAF, LDB, LDX, N, NRHS
+         integer, intent(out)        :: INFO
+         integer, intent(inout)      :: IPIV(*)
+         complex(RD), intent(inout)  :: A(LDA,*), AF(LDAF,*), B(LDB,*)
+         complex(RD), intent(out)    :: X(LDX,*), WORK(*)
+         real(RD), intent(out)       :: RCOND, R(*), C(*), FERR(*), BERR(*), RWORK(*)
+      end subroutine ZGESVX
+   end interface XGESVX
+
+   interface XGEEV
+      subroutine DGEEV(JOBVL, JOBVR, N, A, LDA, WR, WI, VL, LDVL, VR, LDVR, WORK, LWORK, INFO)
+         use forum_m, only: RD
+         character(1), intent(in) :: JOBVL, JOBVR
+         integer, intent(in)      :: N, LDA, LDVL, LDVR, LWORK
+         integer, intent(out)     :: INFO
+         real(RD), intent(inout)  :: A(LDA,*)
+         real(RD), intent(out)    :: VL(LDVL,*), VR(LDVR,*), WR(*), WI(*), WORK(*)
+      end subroutine DGEEV
+      subroutine ZGEEV(JOBVL, JOBVR, N, A, LDA, W, VL, LDVL, VR, LDVR, WORK, LWORK, RWORK, INFO)
+         use forum_m, only: RD
+         character(1), intent(in)   :: JOBVL, JOBVR
+         integer, intent(in)        :: N, LDA, LDVL, LDVR, LWORK
+         integer, intent(out)       :: INFO
+         real(RD), intent(out)      :: RWORK(*)
+         complex(RD), intent(inout) :: A(LDA,*)
+         complex(RD), intent(out)   :: VL(LDVL,*), VR(LDVR,*), W(*), WORK(*)
+      end subroutine ZGEEV
+   end interface XGEEV
+
+   interface XGESVD
+      subroutine DGESVD(JOBU, JOBVT, M, N, A, LDA, S, U, LDU, VT, LDVT, WORK, LWORK, INFO)
+         use forum_m, only: RD
+         character(1), intent(in) :: JOBU, JOBVT
+         integer, intent(in)      :: M, N, LDA, LDU, LDVT, LWORK
+         integer, intent(out)     :: INFO
+         real(RD), intent(out)    :: S(*)
+         real(RD), intent(inout)  :: A(LDA,*)
+         real(RD), intent(out)    :: U(LDU,*), VT(LDVT,*), WORK(*)
+      end subroutine DGESVD
+      subroutine ZGESVD(JOBU, JOBVT, M, N, A, LDA, S, U, LDU, VT, LDVT, WORK, LWORK, RWORK, INFO)
+         use forum_m, only: RD
+         character(1), intent(in)   :: JOBU, JOBVT
+         integer, intent(in)        :: M, N, LDA, LDU, LDVT, LWORK
+         integer, intent(out)       :: INFO
+         real(RD), intent(out)      :: S(*), RWORK(*)
+         complex(RD), intent(inout) :: A(LDA,*)
+         complex(RD), intent(out)   :: U(LDU,*), VT(LDVT,*), WORK(*)
+      end subroutine ZGESVD
+   end interface XGESVD
+
+   interface XLASWP_inplace
+      subroutine DLASWP(N, A, LDA, K1, K2, IPIV, INCX)
+         use forum_m, only: RD
+         integer, intent(in)     :: N, LDA, K1, K2, INCX
+         integer, intent(in)     :: IPIV(*)
+         real(RD), intent(inout) :: A
+      end subroutine DLASWP
+      subroutine ZLASWP(N, A, LDA, K1, K2, IPIV, INCX)
+         use forum_m, only: RD
+         integer, intent(in)        :: N, LDA, K1, K2, INCX
+         integer, intent(in)        :: IPIV(*)
+         complex(RD), intent(inout) :: A
+      end subroutine ZLASWP
+   end interface XLASWP_inplace
+
+   ! BLAS routines
+      
+   interface XGEMM_inplace
+      subroutine DGEMM(TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, &
+         BETA, C, LDC)
+         use forum_m, only: RD
+         character(1), intent(in) :: TRANSA, TRANSB
+         integer, intent(in)      :: M, N, K, LDA, LDB, LDC
+         real(RD), intent(in)     :: ALPHA, BETA
+         real(RD), intent(in)     :: A, B
+         real(RD), intent(inout)  :: C
+      end subroutine DGEMM
+      subroutine ZGEMM(TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, &
+         BETA, C, LDC)
+         use forum_m, only: RD
+         character(1), intent(in)   :: TRANSA, TRANSB
+         integer, intent(in)        :: M, N, K, LDA, LDB, LDC
+         complex(RD), intent(in)    :: ALPHA, BETA
+         complex(RD), intent(in)    :: A, B
+         complex(RD), intent(inout) :: C
+      end subroutine ZGEMM
+   end interface XGEMM_inplace
+
+   interface XGEMV_inplace
+      subroutine DGEMV(TRANS, M, N, ALPHA, A, LDA, X, INCX, BETA, Y, INCY)
+         use forum_m, only: RD
+         character(1), intent(in) :: TRANS
+         integer, intent(in)      :: M, N, LDA, INCX, INCY
+         real(RD), intent(in)     :: ALPHA, BETA
+         real(RD), intent(in)     :: A, X
+         real(RD), intent(inout)  :: Y
+      end subroutine DGEMV
+      subroutine ZGEMV(TRANS, M, N, ALPHA, A, LDA, X, INCX, BETA, Y, INCY)
+         use forum_m, only: RD
+         character(1), intent(in)   :: TRANS
+         integer, intent(in)        :: M, N, LDA, INCX, INCY
+         complex(RD), intent(in)    :: ALPHA, BETA
+         complex(RD), intent(in)    :: A, X
+         complex(RD), intent(inout) :: Y
+      end subroutine ZGEMV
+   end interface XGEMV_inplace
+
+   interface XTRSM_inplace
+      subroutine DTRSM(SIDE, UPLO, TRANSA, DIAG, M, N, ALPHA, A, LDA, B, LDB)
+         use forum_m, only: RD
+         character(1), intent(in) :: DIAG, SIDE, TRANSA, UPLO
+         integer, intent(in)      :: LDA, LDB
+         real(RD), intent(in)     :: ALPHA
+         real(RD), intent(in)     :: A
+         real(RD), intent(inout)  :: B
+      end subroutine DTRSM
+      subroutine ZTRSM(SIDE, UPLO, TRANSA, DIAG, M, N, ALPHA, A, LDA, B, LDB)
+         use forum_m, only: RD
+         character(1), intent(in)   :: DIAG, SIDE, TRANSA, UPLO
+         integer, intent(in)        :: LDA, LDB
+         complex(RD), intent(in)    :: ALPHA
+         complex(RD), intent(in)    :: A
+         complex(RD), intent(inout) :: B
+      end subroutine ZTRSM
+   end interface XTRSM_inplace
+
+   interface XSCAL_inplace
+      subroutine DSCAL(N, DA, DX, INCX)
+         use forum_m, only: RD
+         integer, intent(in)     :: N, INCX
+         real(RD), intent(in)    :: DA
+         real(RD), intent(inout) :: DX
+      end subroutine DSCAL
+      subroutine ZSCAL(N, DA, DX, INCX)
+         use forum_m, only: RD
+         integer, intent(in)        :: N, INCX
+         complex(RD), intent(in)    :: DA
+         complex(RD), intent(inout) :: DX
+      end subroutine ZSCAL
+   end interface XSCAL_inplace
+
+   interface XCOPY_inplace
+      subroutine DCOPY(N, DX, INCX, DY, INCY)
+         use forum_m, only: RD
+         integer, intent(in)   :: N, INCX, INCY
+         real(RD), intent(in)  :: DX
+         real(RD), intent(out) :: DY
+      end subroutine DCOPY
+      subroutine ZCOPY(N, DX, INCX, DY, INCY)
+         use forum_m, only: RD
+         integer, intent(in)      :: N, INCX, INCY
+         complex(RD), intent(in)  :: DX
+         complex(RD), intent(out) :: DY
+      end subroutine ZCOPY
+   end interface XCOPY_inplace
+
+   ! Access specifiers
+
+   public :: XGTSV
+   public :: XGETRF
+   public :: XGETRS
+   public :: XGBTRF
+   public :: XGBTRS
+   public :: XGESVX
+   public :: XGEEV
+   public :: XGESVD
+   public :: XLAMCH
+   public :: XLASWP_inplace
+   public :: XGEMM_inplace
+   public :: XGEMV_inplace
+   public :: XTRSM_inplace
+   public :: XSCAL_inplace
+   public :: XCOPY_inplace
+
+   ! Default access
+
+   private
+
+contains
+
+   function xlamch(x, cmach)
+
+      real(RD), intent(in)     :: x
+      character(*), intent(in) :: cmach
+      real(RD)                 :: xlamch
+
+      real(RD), external :: DLAMCH
+
+      xlamch = DLAMCH(cmach)
+
+   end function xlamch
+
+end module blas_lapack_m

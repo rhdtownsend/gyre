@@ -1,0 +1,166 @@
+! Module  : model_m
+! Purpose : stellar model
+!
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module model_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use grid_m
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Parameter definitions
+
+   integer, parameter :: I_V_2 = 1
+   integer, parameter :: I_As = 2
+   integer, parameter :: I_U = 3
+   integer, parameter :: I_C_1 = 4
+   integer, parameter :: I_GAMMA_1 = 5
+   integer, parameter :: I_UPS_T = 6
+   integer, parameter :: I_NABLA_AD = 7
+   integer, parameter :: I_NABLA = 8
+   integer, parameter :: I_BETA_RAD = 9
+   integer, parameter :: I_C_LUM = 10
+   integer, parameter :: I_C_RAD = 11
+   integer, parameter :: I_C_THN = 13
+   integer, parameter :: I_C_THK = 14
+   integer, parameter :: I_C_EPS = 15
+   integer, parameter :: I_C_EGV = 16
+   integer, parameter :: I_EPS_RHO = 17
+   integer, parameter :: I_EPS_T = 18
+   integer, parameter :: I_KAP_RHO = 19
+   integer, parameter :: I_KAP_T = 20
+   integer, parameter :: I_OMEGA_ROT = 21
+
+   integer, parameter :: I_LAST = I_OMEGA_ROT
+
+   ! Derived-type definitions
+
+   type, abstract :: model_t
+   contains
+      procedure(coeff_), deferred      :: coeff
+      procedure(coeff_), deferred      :: dcoeff
+      procedure(is_defined_), deferred :: is_defined
+      procedure(is_vacuum_), deferred  :: is_vacuum
+      procedure(Delta_p_), deferred    :: Delta_p
+      procedure(Delta_g_), deferred    :: Delta_g
+      procedure(grid_), deferred       :: grid
+   end type model_t
+
+   ! Interfaces
+
+   abstract interface
+
+      function coeff_(this, i, pt) result(coeff)
+         use forum_m, only: RD
+         use point_m
+         import model_t
+         class(model_t), intent(in) :: this
+         integer, intent(in)        :: i
+         type(point_t), intent(in)  :: pt
+         real(RD)                   :: coeff
+      end function coeff_
+
+      function dcoeff_(this, i, pt) result(dcoeff)
+         use forum_m, only: RD
+         use point_m
+         import model_t
+         class(model_t), intent(in) :: this
+         integer, intent(in)        :: i
+         type(point_t), intent(in)  :: pt
+         real(RD)                   :: dcoeff
+      end function dcoeff_
+
+      function is_defined_(this, i) result(is_defined)
+         import model_t
+         class(model_t), intent(in) :: this
+         integer, intent(in)        :: i
+         logical                    :: is_defined
+      end function is_defined_
+
+      function is_vacuum_(this, pt) result(is_vacuum)
+         use point_m
+         import model_t
+         class(model_t), intent(in) :: this
+         type(point_t), intent(in)  :: pt
+         logical                    :: is_vacuum
+      end function is_vacuum_
+
+      function Delta_p_(this, x_i, x_o) result(Delta_p)
+         use forum_m, only: RD
+         import model_t
+         class(model_t), intent(in) :: this
+         real(RD), intent(in)       :: x_i
+         real(RD), intent(in)       :: x_o
+         real(RD)                   :: Delta_p
+      end function Delta_p_
+
+      function Delta_g_(this, x_i, x_o, lambda) result(Delta_g)
+         use forum_m, only: RD
+         import model_t
+         class(model_t), intent(in) :: this
+         real(RD), intent(in)       :: x_i
+         real(RD), intent(in)       :: x_o
+         real(RD), intent(in)       :: lambda
+         real(RD)                   :: Delta_g
+      end function Delta_g_
+
+      function grid_(this) result(grid)
+         use grid_m
+         import model_t
+         class(model_t), intent(in) :: this
+         type(grid_t)               :: grid
+      end function grid_
+
+   end interface
+
+   ! Access specifiers
+
+   public :: model_t
+   public :: I_V_2
+   public :: I_As
+   public :: I_U
+   public :: I_C_1
+   public :: I_GAMMA_1
+   public :: I_UPS_T
+   public :: I_NABLA_AD
+   public :: I_NABLA
+   public :: I_BETA_RAD
+   public :: I_C_LUM
+   public :: I_C_RAD
+   public :: I_C_THN
+   public :: I_C_THK
+   public :: I_C_EPS
+   public :: I_C_EGV
+   public :: I_EPS_RHO
+   public :: I_EPS_T
+   public :: I_KAP_RHO
+   public :: I_KAP_T
+   public :: I_OMEGA_ROT
+   public :: I_LAST
+
+   ! Default access
+
+   private
+
+end module model_m

@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.h5
 
-LABEL="parfait model for 5 Msun star star (adiabatic)"
+LABEL="parfait model for 5 Msun star (adiabatic)"
 
 # Do the tests
 

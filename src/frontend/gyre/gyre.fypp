@@ -1,0 +1,386 @@
+! Program : gyre
+! Purpose : oscillation code
+!
+! Copyright 2013-2024 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+program gyre
+
+   ! Uses
+
+   use forum_m, only: RD, n_arg, get_arg, reallocate
+
+   use gyre_m
+
+   use ISO_FORTRAN_ENV
+   #:if OMP
+      use omp_lib
+   #:endif
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Variables
+
+   character(:), allocatable     :: filename
+
+   integer                       :: unit
+   type(model_par_t)             :: ml_p
+   type(mode_par_t), allocatable :: md_p(:)
+   type(osc_par_t), allocatable  :: os_p(:)
+   type(rot_par_t), allocatable  :: rt_p(:)
+   type(num_par_t), allocatable  :: nm_p(:)
+   type(grid_par_t), allocatable :: gr_p(:)
+   type(scan_par_t), allocatable :: sc_p(:)
+   type(out_par_t)               :: ot_p_ad
+   type(out_par_t)               :: ot_p_nad
+   class(model_t), pointer       :: ml => null()
+   integer                       :: i
+   type(osc_par_t)               :: os_p_sel
+   type(rot_par_t)               :: rt_p_sel
+   type(num_par_t)               :: nm_p_sel
+   type(grid_par_t)              :: gr_p_sel
+   type(scan_par_t), allocatable :: sc_p_sel(:)
+   type(context_t), pointer      :: cx => null()
+   type(summary_t)               :: sm_ad
+   type(summary_t)               :: sm_nad
+   type(detail_t)                :: dt_ad
+   type(detail_t)                :: dt_nad
+   real(RD), allocatable         :: omega_re(:)
+   real(RD), allocatable         :: omega_im(:)
+   real(RD)                      :: omega_min
+   real(RD)                      :: omega_max
+   type(grid_t)                  :: gr
+   class(bvp_rt), allocatable    :: bp_ad
+   class(bvp_ct), allocatable    :: bp_nad
+   integer                       :: n_ad
+   integer                       :: d_ad
+   complex(RD), allocatable      :: omega_ad(:)
+   integer, allocatable          :: id_ad(:)
+
+   ! Read command-line arguments
+
+   @:ASSERT(n_arg() == 1, 'Syntax: gyre <filename>')
+
+   call get_arg(1, filename)
+
+   ! Initialize
+
+   call init_math()
+
+   call set_log_level('${LOG_LEVEL}$')
+
+   if (check_log_level('INFO')) then
+
+      write(OUTPUT_UNIT, 100) form_header('gyre ['//VERSION//']', '-')
+100   format(A)
+
+      if (check_log_level('DEBUG')) then
+         write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
+         write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
+110      format(A,1X,A)
+      endif
+
+#:if OMP
+      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :',  omp_get_max_threads()
+120   format(A,1X,I0)
+#:endif
+
+      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
+
+      write(OUTPUT_UNIT, *)
+
+   endif
+
+   ! Read the namelist file
+
+   open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
+
+   call read_constants(unit)
+
+   call read_model_par(unit, ml_p)
+   call read_mode_par(unit, md_p)
+   call read_osc_par(unit, os_p)
+   call read_rot_par(unit, rt_p)
+   call read_num_par(unit, nm_p)
+   call read_grid_par(unit, gr_p)
+   call read_scan_par(unit, sc_p)
+   call read_out_par(unit, 'ad', ot_p_ad)
+   call read_out_par(unit, 'nad', ot_p_nad)
+
+   ! Check that GYRE_DIR is set
+
+   @:ASSERT(GYRE_DIR /= '', 'The GYRE_DIR environment variable is not set')
+
+   ! Initialize the model
+
+   if (check_log_level('INFO')) then
+      write(OUTPUT_UNIT, 100) form_header('Model Init', '-')
+   endif
+
+   ml => model_t(ml_p)
+
+   ! Allocate the context (will be initialized later on)
+
+   allocate(cx)
+
+   ! Initialize the summary and detail outputters
+
+   sm_ad = summary_t(ot_p_ad)
+   sm_nad = summary_t(ot_p_nad)
+
+   dt_ad = detail_t(ot_p_ad)
+   dt_nad = detail_t(ot_p_nad)
+
+   ! Loop through md_p
+
+   md_p_loop : do i = 1, SIZE(md_p)
+
+      if (check_log_level('INFO')) then
+
+         write(OUTPUT_UNIT, 100) form_header('Mode Search', '-')
+
+         write(OUTPUT_UNIT, 100) 'Mode parameters'
+
+         write(OUTPUT_UNIT, 130) 'l :', md_p(i)%l
+         write(OUTPUT_UNIT, 130) 'm :', md_p(i)%m
+130      format(3X,A,1X,I0)
+
+         write(OUTPUT_UNIT, *)
+
+      endif
+
+      ! Select parameters according to tags
+
+      call select_par(os_p, md_p(i)%tag, os_p_sel)
+      call select_par(rt_p, md_p(i)%tag, rt_p_sel)
+      call select_par(nm_p, md_p(i)%tag, nm_p_sel)
+      call select_par(gr_p, md_p(i)%tag, gr_p_sel)
+      call select_par(sc_p, md_p(i)%tag, sc_p_sel)
+
+      ! Set up the context
+
+      cx = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
+
+      ! Set up the frequency arrays
+
+      call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', omega_re)
+      call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'IMAG', omega_im)
+
+      ! Create the grid
+
+      gr = grid_t(cx, omega_re, gr_p_sel, os_p_sel)
+
+      ! Set frequency bounds and perform checks
+
+      if (nm_p_sel%restrict_roots) then
+         omega_min = MINVAL(omega_re)
+         omega_max = MAXVAL(omega_re)
+      else
+         omega_min = -HUGE(0._RD)
+         omega_max = HUGE(0._RD)
+      endif
+
+      call check_scan(cx, gr, omega_re, md_p(i), os_p_sel)
+
+      ! Find adiabatic modes
+
+      if (os_p_sel%adiabatic) then
+
+         d_ad = 128
+         n_ad = 0
+
+         allocate(omega_ad(d_ad))
+         allocate(id_ad(d_ad))
+
+         if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
+            allocate(bp_ad, SOURCE=rad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+         else
+            allocate(bp_ad, SOURCE=ad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+         endif
+
+         if (check_log_level('INFO')) then
+            write(OUTPUT_UNIT, 100) 'Starting search (adiabatic)'
+            write(OUTPUT_UNIT, *)
+         endif
+
+         select case (nm_p_sel%ad_search)
+
+         case ('BRACKET')
+
+            if (SIZE(omega_re) > 2) then
+               call bracket_search(bp_ad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_ad)
+            else
+               if (check_log_level('INFO')) then
+                  write(OUTPUT_UNIT, 100) 'Too few scan points for bracket search, skipping...'
+               endif
+            endif
+
+         case default
+
+            @:ABORT('Invalid ad_search')
+
+         end select
+
+         deallocate(bp_ad)
+
+      endif
+
+      ! Find non-adiabatic modes
+
+      if (os_p_sel%nonadiabatic) then
+
+         if (os_p_sel%alpha_trb > 0._RD) then
+            allocate(bp_nad, SOURCE=tnad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+         else
+            allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+         endif
+
+         if (check_log_level('INFO')) then
+            write(OUTPUT_UNIT, 100) 'Starting search (non-adiabatic)'
+            write(OUTPUT_UNIT, *)
+         endif
+
+         select case (nm_p_sel%nad_search)
+
+         case ('AD')
+
+            @:ASSERT(os_p_sel%adiabatic, 'No adiabatic modes to start from')
+            call prox_search(bp_nad, omega_ad(:n_ad), id_ad(:n_ad), omega_min, omega_max, nm_p_sel, process_mode_nad)
+
+         case ('MINMOD')
+
+            if (SIZE(omega_re) > 2) then
+               call minmod_search(bp_nad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_nad)
+            else
+               if (check_log_level('INFO')) then
+                  write(OUTPUT_UNIT, 100) 'Too few scan points for minmod search, skipping...'
+               endif
+            endif
+
+         case ('CONTOUR')
+
+            if (SIZE(omega_re) > 2 .AND. SIZE(omega_im) > 2) then
+               call contour_search(bp_nad, omega_re, omega_im, omega_min, omega_max, i, nm_p_sel, process_mode_nad)
+            else
+               if (check_log_level('INFO')) then
+                  write(OUTPUT_UNIT, 100) 'Too few scan points for contour search, skipping...'
+               endif
+            endif
+
+         case default
+
+            @:ABORT('Invalid nad_start')
+
+         end select
+
+         deallocate(bp_nad)
+
+      endif
+
+      ! Deallocate adiabatic data
+
+      if (os_p_sel%adiabatic) then
+         deallocate(omega_ad)
+         deallocate(id_ad)
+      endif
+
+   end do md_p_loop
+
+   ! Write the summaries
+
+   call sm_ad%write()
+   call sm_nad%write()
+
+   ! Clean up
+
+   deallocate(cx)
+
+   deallocate(ml)
+
+   ! Finish
+
+contains
+
+   subroutine process_mode_ad (md, n_iter, chi)
+
+      type(mode_t), intent(in) :: md
+      integer, intent(in)      :: n_iter
+      type(ext_rt), intent(in) :: chi
+
+      ! Process the adiabatic mode
+
+      if (md%n_pg < md_p(i)%n_pg_min .OR. md%n_pg > md_p(i)%n_pg_max) return
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+            md%omega, real(chi), n_iter
+100      format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
+      endif
+
+      ! Store omega and j
+
+      n_ad = n_ad + 1
+
+      if (n_ad > d_ad) then
+         d_ad = 2*d_ad
+         call reallocate(omega_ad, [d_ad])
+         call reallocate(id_ad, [d_ad])
+      endif
+
+      omega_ad(n_ad) = md%omega
+      id_ad(n_ad) = md%id
+
+      ! Cache/write the mode
+
+      call sm_ad%cache(md)
+      call dt_ad%write(md)
+
+      ! Finish
+
+      return
+
+   end subroutine process_mode_ad
+
+   !****
+
+   subroutine process_mode_nad (md, n_iter, chi)
+
+      type(mode_t), intent(in) :: md
+      integer, intent(in)      :: n_iter
+      type(ext_rt), intent(in) :: chi
+
+      ! Process the non-adiabatic mode
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+            md%omega, real(chi), n_iter
+100      format(1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
+      endif
+
+      ! Cache/write the mode
+
+      call sm_nad%cache(md)
+      call dt_nad%write(md)
+
+      ! Finish
+
+      return
+
+   end subroutine process_mode_nad
+
+end program gyre

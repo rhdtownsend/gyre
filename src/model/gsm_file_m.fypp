@@ -1,0 +1,456 @@
+! Module  : gsm_file_m
+! Purpose : read GSM (GYRE Stellar Model) files
+!
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module gsm_file_m
+
+   ! Uses
+
+   use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO
+
+   use constants_m
+   use evol_model_m
+   use math_m
+   use model_m
+   use model_par_m
+   use model_util_m
+   use util_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Access specifiers
+
+   public :: read_gsm_model
+   public :: read_gsm_data
+
+   ! Default access
+
+   private
+
+contains
+
+   subroutine read_gsm_model(ml_p, ml)
+
+      type(model_par_t), intent(in)        :: ml_p
+      class(model_t), pointer, intent(out) :: ml
+
+      real(RD)                    :: M_star
+      real(RD)                    :: R_star
+      real(RD)                    :: L_star
+      real(RD), allocatable       :: r(:)
+      real(RD), allocatable       :: M_r(:)
+      real(RD), allocatable       :: L_r(:)
+      real(RD), allocatable       :: P(:)
+      real(RD), allocatable       :: rho(:)
+      real(RD), allocatable       :: T(:)
+      real(RD), allocatable       :: N2(:)
+      real(RD), allocatable       :: Gamma_1(:)
+      real(RD), allocatable       :: nabla_ad(:)
+      real(RD), allocatable       :: ups_T(:)
+      real(RD), allocatable       :: nabla(:)
+      real(RD), allocatable       :: kap(:)
+      real(RD), allocatable       :: kap_rho(:)
+      real(RD), allocatable       :: kap_T(:)
+      real(RD), allocatable       :: eps(:)
+      real(RD), allocatable       :: eps_eps_rho(:)
+      real(RD), allocatable       :: eps_eps_T(:)
+      real(RD), allocatable       :: eps_grav(:)
+      real(RD), allocatable       :: Omega_rot(:)
+      integer                     :: n
+      real(RD), allocatable       :: x(:)
+      real(RD), allocatable       :: V_2(:)
+      real(RD), allocatable       :: As(:)
+      real(RD), allocatable       :: U(:)
+      real(RD), allocatable       :: c_1(:)
+      real(RD), allocatable       :: beta_rad(:)
+      real(RD), allocatable       :: c_P(:)
+      real(RD), allocatable       :: c_lum(:)
+      real(RD), allocatable       :: c_rad(:)
+      real(RD), allocatable       :: c_thn(:)
+      real(RD), allocatable       :: c_thk(:)
+      real(RD), allocatable       :: c_eps(:)
+      real(RD), allocatable       :: c_egv(:)
+      real(RD), allocatable       :: eps_rho(:)
+      real(RD), allocatable       :: eps_T(:)
+      type(evol_model_t), pointer :: em
+
+      ! Read data from the GSM-format file
+
+      call read_gsm_data(ml_p%file, M_star, R_star, L_star, r, M_r, L_r, P, rho, T, &
+         N2, Gamma_1, nabla_ad, ups_T, nabla,  &
+         kap, kap_rho, kap_T, eps, eps_eps_rho, eps_eps_T, eps_grav, &
+         Omega_rot)
+
+      ! Snap grid points
+
+      x = r/R_star
+
+      call snap_points(MAX(ml_p%dx_snap, EPSILON(0._RD)), x, M_r)
+
+      ! Calculate dimensionless structure data
+
+      n = SIZE(x)
+
+      allocate(V_2(n))
+      allocate(As(n))
+      allocate(U(n))
+      allocate(c_1(n))
+      allocate(c_lum(n))
+
+      where (x /= 0._RD)
+         V_2 = G_GRAVITY*M_r*rho/(P*r*x**2)
+         As = r**3*N2/(G_GRAVITY*M_r)
+         U = 4._RD*PI*rho*r**3/M_r
+         c_1 = (r/R_star)**3/(M_r/M_star)
+         c_lum = (L_r/L_star)/x**3
+      elsewhere
+         V_2 = 4._RD*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._RD*P(1))
+         As = 0._RD
+         U = 3._RD
+         c_1 = 3._RD*(M_star/R_star**3)/(4._RD*PI*rho)
+         c_lum = 4._RD*PI*rho(1)*eps(1)*R_star**3/L_star
+      end where
+
+      beta_rad = A_RADIATION*T**4/(3._RD*P)
+
+      c_P = P*ups_T/(rho*T*nabla_ad)
+
+      c_rad = 16._RD*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._RD*kap*rho*L_star)
+      c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
+      c_thk = 4._RD*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
+      c_eps = 4._RD*PI*rho*eps*R_star**3/L_star
+      c_egv = 4._RD*PI*rho*eps_grav*R_star**3/L_star
+
+      allocate(eps_rho(n))
+      allocate(eps_T(n))
+
+      where (eps /= 0._RD)
+         eps_rho = eps_eps_rho/eps
+         eps_T = eps_eps_T/eps
+      elsewhere
+         eps_rho = 0._RD
+         eps_T = 0._RD
+      end where
+
+      Omega_rot = Omega_rot*sqrt(R_star**3/(G_GRAVITY*M_star))
+
+      ! Initialize the evol_model_t
+
+      allocate(em, SOURCE=evol_model_t(x, M_star, R_star, L_star, ml_p))
+
+      call em%define(I_V_2, V_2)
+      call em%define(I_AS, As)
+      call em%define(I_U, U)
+      call em%define(I_C_1, c_1)
+
+      call em%define(I_GAMMA_1, Gamma_1)
+      call em%define(I_UPS_T, ups_T)
+      call em%define(I_NABLA_AD, nabla_ad)
+      call em%define(I_NABLA, nabla)
+      call em%define(I_BETA_RAD, beta_rad)
+
+      call em%define(I_C_LUM, c_lum)
+      call em%define(I_C_RAD, c_rad)
+      call em%define(I_C_THN, c_thn)
+      call em%define(I_C_THK, c_thk)
+      call em%define(I_C_EPS, c_eps)
+      call em%define(I_C_EGV, c_egv)
+
+      call em%define(I_EPS_RHO, eps_rho)
+      call em%define(I_EPS_T, eps_T)
+
+      call em%define(I_KAP_RHO, kap_rho)
+      call em%define(I_KAP_T, kap_T)
+
+      call em%define(I_OMEGA_ROT, Omega_rot)
+
+      call em%commit()
+
+      ! Return a pointer
+
+      ml => em
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, *)
+      endif
+
+      ! Finish
+
+      return
+
+   end subroutine read_gsm_model
+
+   !****
+
+   subroutine read_gsm_data(file, M_star, R_star, L_star, r, M_r, L_r, P, rho, T, &
+      N2, Gamma_1, nabla_ad, ups_T, nabla, kap, kap_rho, kap_T, eps, eps_eps_rho, &
+      eps_eps_T, eps_grav, Omega_rot)
+
+      character(*), intent(in)           :: file
+      real(RD), intent(out)              :: M_star
+      real(RD), intent(out)              :: R_star
+      real(RD), intent(out)              :: L_star
+      real(RD), allocatable, intent(out) :: r(:)
+      real(RD), allocatable, intent(out) :: M_r(:)
+      real(RD), allocatable, intent(out) :: L_r(:)
+      real(RD), allocatable, intent(out) :: P(:)
+      real(RD), allocatable, intent(out) :: rho(:)
+      real(RD), allocatable, intent(out) :: T(:)
+      real(RD), allocatable, intent(out) :: N2(:)
+      real(RD), allocatable, intent(out) :: Gamma_1(:)
+      real(RD), allocatable, intent(out) :: nabla_ad(:)
+      real(RD), allocatable, intent(out) :: ups_T(:)
+      real(RD), allocatable, intent(out) :: nabla(:)
+      real(RD), allocatable, intent(out) :: kap(:)
+      real(RD), allocatable, intent(out) :: kap_rho(:)
+      real(RD), allocatable, intent(out) :: kap_T(:)
+      real(RD), allocatable, intent(out) :: eps(:)
+      real(RD), allocatable, intent(out) :: eps_eps_rho(:)
+      real(RD), allocatable, intent(out) :: eps_eps_T(:)
+      real(RD), allocatable, intent(out) :: eps_grav(:)
+      real(RD), allocatable, intent(out) :: Omega_rot(:)
+
+      type(hdf5io_t) :: hi
+      integer        :: n
+      integer        :: version
+
+      ! Read data from the GSM-format file
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Reading from GSM file'
+100      format(A)
+         write(OUTPUT_UNIT, 110) 'File name', TRIM(file)
+110      format(3X,A,1X,A)
+      endif
+
+      hi = hdf5io_t(file, OPEN_FILE_RO)
+
+      ! Read the header
+
+      if (hi%attr_exists('version')) then
+         call hi%read_attr('version', version)
+      else
+         version = 0
+      endif
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 120) 'File version', version/100._RD
+120      format(3X,A,1X,F4.2,1X,A)
+      endif
+
+      call hi%read_attr('n', n)
+
+      call hi%read_attr('M_star', M_star)
+      call hi%read_attr('R_star', R_star)
+      call hi%read_attr('L_star', L_star)
+
+      ! Read the data
+
+      select case (version)
+      case (0)
+         call read_gsm_data_v0_00_()
+      case (100)
+         call read_gsm_data_v1_00_()
+      case (110)
+         call read_gsm_data_v1_10_()
+      case (120)
+         call read_gsm_data_v1_20_()
+      case default
+         @:ABORT('Unrecognized GSM file version')
+      end select
+
+      call hi%final()
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 130) 'Read', n, 'points'
+130      format(3X,A,1X,I0,1X,A)
+      endif
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine read_gsm_data_v0_00_()
+
+         real(RD), allocatable :: w(:)
+
+         ! Read data from the version-0.00 file
+
+         call hi%alloc_read_dset('r', r)
+         call hi%alloc_read_dset('w', w)
+         call hi%alloc_read_dset('L_r', L_r)
+         call hi%alloc_read_dset('p', P)
+         call hi%alloc_read_dset('rho', rho)
+         call hi%alloc_read_dset('T', T)
+         call hi%alloc_read_dset('N2', N2)
+         call hi%alloc_read_dset('Gamma_1', Gamma_1)
+         call hi%alloc_read_dset('nabla_ad', nabla_ad)
+         call hi%alloc_read_dset('delta', ups_T)
+         call hi%alloc_read_dset('nabla', nabla)
+         call hi%alloc_read_dset('kappa', kap)
+         call hi%alloc_read_dset('kappa_rho', kap_rho)
+         call hi%alloc_read_dset('kappa_T', kap_T)
+         call hi%alloc_read_dset('epsilon', eps)
+         call hi%alloc_read_dset('epsilon_rho', eps_eps_rho)
+         call hi%alloc_read_dset('epsilon_T', eps_eps_T)
+         call hi%alloc_read_dset('Omega_rot', Omega_rot)
+
+         M_r = w/(1._RD+w)*M_star
+
+         call set_zero_(SIZE(r), eps_grav)
+
+         ! Finish
+
+         return
+
+      end subroutine read_gsm_data_v0_00_
+
+      subroutine read_gsm_data_v1_00_()
+
+         real(RD), allocatable :: kap_kap_rho(:)
+         real(RD), allocatable :: kap_kap_T(:)
+
+         ! Read data from the version-1.00 file
+
+         call hi%alloc_read_dset('r', r)
+         call hi%alloc_read_dset('M_r', M_r)
+         call hi%alloc_read_dset('L_r', L_r)
+         call hi%alloc_read_dset('P', P)
+         call hi%alloc_read_dset('rho', rho)
+         call hi%alloc_read_dset('T', T)
+         call hi%alloc_read_dset('N2', N2)
+         call hi%alloc_read_dset('Gamma_1', Gamma_1)
+         call hi%alloc_read_dset('nabla_ad', nabla_ad)
+         call hi%alloc_read_dset('delta', ups_T)
+         call hi%alloc_read_dset('nabla', nabla)
+         call hi%alloc_read_dset('kap', kap)
+         call hi%alloc_read_dset('kap_rho', kap_kap_rho)
+         call hi%alloc_read_dset('kap_T', kap_kap_T)
+         call hi%alloc_read_dset('eps', eps)
+         call hi%alloc_read_dset('eps_rho', eps_eps_rho)
+         call hi%alloc_read_dset('eps_T', eps_eps_T)
+         call hi%alloc_read_dset('Omega_rot', Omega_rot)
+
+         kap_rho = kap_kap_rho/kap
+         kap_T = kap_kap_T/kap
+
+         call set_zero_(SIZE(r), eps_grav)
+
+         ! Finish
+
+         return
+
+      end subroutine read_gsm_data_v1_00_
+
+      subroutine read_gsm_data_v1_10_()
+
+         real(RD), allocatable :: kap_kap_rho(:)
+         real(RD), allocatable :: kap_kap_T(:)
+
+         ! Read data from the version-1.10 file
+
+         call hi%alloc_read_dset('r', r)
+         call hi%alloc_read_dset('M_r', M_r)
+         call hi%alloc_read_dset('L_r', L_r)
+         call hi%alloc_read_dset('P', P)
+         call hi%alloc_read_dset('rho', rho)
+         call hi%alloc_read_dset('T', T)
+         call hi%alloc_read_dset('N2', N2)
+         call hi%alloc_read_dset('Gamma_1', Gamma_1)
+         call hi%alloc_read_dset('nabla_ad', nabla_ad)
+         call hi%alloc_read_dset('delta', ups_T)
+         call hi%alloc_read_dset('nabla', nabla)
+         call hi%alloc_read_dset('kap', kap)
+         call hi%alloc_read_dset('kap_kap_rho', kap_kap_rho)
+         call hi%alloc_read_dset('kap_kap_T', kap_kap_T)
+         call hi%alloc_read_dset('eps', eps)
+         call hi%alloc_read_dset('eps_eps_rho', eps_eps_rho)
+         call hi%alloc_read_dset('eps_eps_T', eps_eps_T)
+         call hi%alloc_read_dset('Omega_rot', Omega_rot)
+
+         kap_rho = kap_kap_rho/kap
+         kap_T = kap_kap_T/kap
+
+         call set_zero_(SIZE(r), eps_grav)
+
+         ! Finish
+
+         return
+
+      end subroutine read_gsm_data_v1_10_
+
+      subroutine read_gsm_data_v1_20_()
+
+         real(RD), allocatable :: kap_kap_rho(:)
+         real(RD), allocatable :: kap_kap_T(:)
+
+         ! Read data from the version-1.20 file
+
+         call hi%alloc_read_dset('r', r)
+         call hi%alloc_read_dset('M_r', M_r)
+         call hi%alloc_read_dset('L_r', L_r)
+         call hi%alloc_read_dset('P', P)
+         call hi%alloc_read_dset('rho', rho)
+         call hi%alloc_read_dset('T', T)
+         call hi%alloc_read_dset('N2', N2)
+         call hi%alloc_read_dset('Gamma_1', Gamma_1)
+         call hi%alloc_read_dset('nabla_ad', nabla_ad)
+         call hi%alloc_read_dset('delta', ups_T)
+         call hi%alloc_read_dset('nabla', nabla)
+         call hi%alloc_read_dset('kap', kap)
+         call hi%alloc_read_dset('kap_kap_rho', kap_kap_rho)
+         call hi%alloc_read_dset('kap_kap_T', kap_kap_T)
+         call hi%alloc_read_dset('eps', eps)
+         call hi%alloc_read_dset('eps_eps_rho', eps_eps_rho)
+         call hi%alloc_read_dset('eps_eps_T', eps_eps_T)
+         call hi%alloc_read_dset('eps_eps_T', eps_eps_T)
+         call hi%alloc_read_dset('eps_grav', eps_grav)
+         call hi%alloc_read_dset('Omega_rot', Omega_rot)
+
+         kap_rho = kap_kap_rho/kap
+         kap_T = kap_kap_T/kap
+
+         ! Finish
+
+         return
+
+      end subroutine read_gsm_data_v1_20_
+
+      subroutine set_zero_(n, x)
+
+         integer, intent(in)                :: n
+         real(RD), allocatable, intent(out) :: x(:)
+
+         allocate(x(n))
+         x = 0._RD
+
+         ! Finish
+
+         return
+
+      end subroutine set_zero_
+
+   end subroutine read_gsm_data
+
+end module gsm_file_m

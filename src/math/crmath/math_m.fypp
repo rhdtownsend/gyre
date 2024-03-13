@@ -1,0 +1,153 @@
+! Module  : math_crmath_m
+! Purpose : core math functions (crmath version)
+!
+! Copyright 2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module math_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use crmath
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Module variables
+
+   real(RD), save, protected :: PI
+   real(RD), save, protected :: TWOPI
+   real(RD), save, protected :: HALFPI
+   real(RD), save, protected :: GOLDEN_R
+   real(RD), save, protected :: DEG_TO_RAD
+   real(RD), save, protected :: RAD_TO_DEG
+
+   ! Interfaces
+
+   #:for S_X in FLOAT_SUFFIXES
+      #:for S_Y in FLOAT_SUFFIXES
+         interface pow
+            module procedure pow_${S_X}$_${S_Y}$_
+         end interface pow
+      #:endfor
+   #:endfor   
+
+   ! Access specifiers
+
+   public :: PI
+   public :: HALFPI
+   public :: TWOPI
+   public :: GOLDEN_R
+   public :: DEG_TO_RAD
+   public :: RAD_TO_DEG
+   public :: init_math
+   public :: log
+   public :: log10
+   public :: exp
+   public :: sqrt
+   public :: pow
+   public :: abs
+   public :: hypot
+   public :: cos
+   public :: sin
+   public :: tan
+   public :: cospi
+   public :: sinpi
+   public :: tanpi
+   public :: acos
+   public :: asin
+   public :: atan
+   public :: atan2
+   public :: acospi
+   public :: asinpi
+   public :: atanpi
+   public :: cosh
+   public :: sinh
+   public :: tanh
+   public :: acosh
+   public :: asinh
+   public :: atanh
+
+   ! Default access
+
+   private
+
+contains
+
+   subroutine init_math ()
+
+      call crmath_init()
+
+      PI = acos(-1._RD)
+      TWOPI = 2._RD*PI
+      HALFPI = 0.5_RD*PI
+
+      GOLDEN_R = 0.5_RD*(1._RD + sqrt(5._RD))
+
+      DEG_TO_RAD = PI/180._RD
+      RAD_TO_DEG = 1._RD/DEG_TO_RAD
+
+   end subroutine init_math
+
+   !****
+
+   #:for T_X, S_X in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
+
+      #:for T_Y, S_Y in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
+
+         #:if T_X == 'real(RD)'
+            #:if T_Y == 'real(RD)'
+               #:set T = 'real(RD)'
+            #:elif T_Y == 'complex(RD)'
+               #:set T = 'complex(RD)'
+            #:else
+               #:stop f'invalid type {T_Y}'
+            #:endif
+         #:elif T_X == 'complex(RD)'
+            #:if T_Y == 'real(RD)'
+               #:set T = 'complex(RD)'
+            #:elif T_Y == 'complex(RD)'
+               #:set T = 'complex(RD)'
+            #:else
+               #:stop f'invalid type {T_Y}'
+            #:endif
+         #:else
+            #:stop f'invalid type {T_X}'
+         #:endif
+
+         elemental function pow_${S_X}$_${S_Y}$_(x, y) result(pow_xy)
+
+            ${T_X}$, intent(in) :: x
+            ${T_Y}$, intent(in) :: y
+            ${T}$               :: pow_xy
+
+            ! Evaluate x**y
+
+            if (x == 0._RD) then
+               pow_xy = 0._RD
+            else
+               pow_xy = exp(log(x)*y)
+            end if
+
+         end function pow_${S_X}$_${S_Y}$_
+
+      #:endfor
+   #:endfor
+         
+end module math_m

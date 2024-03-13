@@ -1,0 +1,70 @@
+! Module  : rot_m
+! Purpose : rotational effects
+!
+! Copyright 2013-2015 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module rot_m
+
+   ! No implicit typing
+   
+   implicit none
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, abstract :: rot_${S}$
+      contains
+         procedure(l_e_${S}$_), deferred    :: l_e
+         procedure(lambda_${S}$_), deferred :: lambda
+      end type rot_${S}$
+
+      ! Interfaces
+
+      abstract interface
+
+         function l_e_${S}$_(this, Omega_rot, omega) result(l_e)
+            use forum_m, only: RD
+            import rot_${S}$
+            class(rot_${S}$), intent(in) :: this
+            real(RD), intent(in)         :: Omega_rot
+            ${T}$, intent(in)            :: omega
+            ${T}$                        :: l_e
+         end function l_e_${S}$_
+
+         function lambda_${S}$_(this, Omega_rot, omega) result(lambda)
+            use forum_m, only: RD
+            import rot_${S}$
+            class(rot_${S}$), intent(in) :: this
+            real(RD), intent(in)         :: Omega_rot
+            ${T}$, intent(in)            :: omega
+            ${T}$                        :: lambda
+         end function lambda_${S}$_
+
+      end interface
+
+      ! Access specifiers
+
+      public :: rot_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+      
+end module rot_m

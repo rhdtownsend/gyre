@@ -1,0 +1,573 @@
+! Module  : context_m
+! Purpose : context (model, data, functions) for solving pulsation equations
+!
+! Copyright 2017-2021 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module context_m
+
+   ! Uses
+
+   use forum_m, only: RD, sort_indices
+
+   use constants_m
+   use freq_m
+   use grid_m
+   use grid_par_m
+   use interp_m
+   use math_m
+   use model_m
+   use mode_par_m
+   use osc_par_m
+   use point_m
+   use rot_m
+   use rot_factory_m
+   use rot_par_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Parameter definitions
+
+   integer, parameter :: MODEL_DEPS_SOURCE = 1
+   integer, parameter :: FILE_DEPS_SOURCE = 2
+
+   integer, parameter :: MODEL_OMEGA_ROT_SOURCE = 1
+   integer, parameter :: UNIFORM_OMEGA_ROT_SOURCE = 2
+
+   ! Derived-type definitions
+
+   type :: context_t
+      private
+      class(model_t), pointer    :: ml => null()
+      class(rot_ct), allocatable :: rt
+      type(point_t)              :: pt_i
+      type(point_t)              :: pt_o
+      integer                    :: m
+      integer                    :: Omega_rot_source
+      real(RD)                   :: Omega_rot_
+      integer                    :: deps_source
+      logical                    :: complex_lambda
+      type(interp_ct)            :: in_eps_rho
+      type(interp_ct)            :: in_eps_T
+   contains
+      private
+      procedure, public  :: model
+      procedure, public  :: point_i
+      procedure, public  :: point_o
+      #:for N in ('omega_c', 'lambda', 'l_e', 'eps_rho', 'eps_T')
+         #:for S in FLOAT_SUFFIXES
+            procedure    :: ${N}$_${S}$_
+         #:endfor
+         generic, public :: ${N}$ => ${','.join([f'{N}_{S}_' for S in FLOAT_SUFFIXES])}$
+      #:endfor
+      procedure, public :: Omega_rot
+      procedure, public :: set_Omega_rot
+   end type context_t
+
+   ! Interfaces
+
+   interface context_t
+      module procedure context_t_
+   end interface context_t
+
+   ! Access specifiers
+
+   public :: context_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function context_t_(ml, gr_p, md_p, os_p, rt_p) result(cx)
+
+      class(model_t), pointer, intent(in) :: ml
+      type(grid_par_t), intent(in)        :: gr_p
+      type(mode_par_t), intent(in)        :: md_p
+      type(osc_par_t), intent(in)         :: os_p
+      type(rot_par_t), intent(in)         :: rt_p
+      type(context_t)                     :: cx
+
+      type(grid_t) :: gr
+
+      ! Construct the context_t
+
+      cx%ml => ml
+
+      allocate(cx%rt, SOURCE=rot_ct(md_p, rt_p))
+
+      gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
+      cx%pt_i = gr%pt_i()
+      cx%pt_o = gr%pt_o()
+
+      cx%m = md_p%m
+
+      cx%complex_lambda = rt_p%complex_lambda
+
+      select case (rt_p%Omega_rot_source)
+      case ('MODEL')
+         cx%Omega_rot_source = MODEL_OMEGA_ROT_SOURCE
+      case ('UNIFORM')
+         cx%Omega_rot_ = rt_p%Omega_rot/freq_scale(rt_p%Omega_rot_units, ml)
+         cx%Omega_rot_source = UNIFORM_OMEGA_ROT_SOURCE
+      case default
+         @:ABORT('invalid Omega_rot_source')
+      end select
+
+      select case (os_p%deps_source)
+      case ('MODEL')
+         cx%deps_source = MODEL_DEPS_SOURCE
+      case ('FILE')
+         call read_deps_(ml, os_p, cx%in_eps_rho, cx%in_eps_T)
+         cx%deps_source = FILE_DEPS_SOURCE
+      case default
+         @:ABORT('invalid deps_source')
+      end select
+
+      ! Finish
+
+      return
+
+   end function context_t_
+
+   !****
+
+   function model (this) result(ml)
+
+      class(context_t), intent(in) :: this
+      class(model_t), pointer      :: ml
+
+      ! Return the context's model
+
+      ml => this%ml
+
+      ! Finish
+
+      return
+
+   end function model
+
+   !****
+
+   function point_i (this) result(pt_i)
+
+      class(context_t), intent(in) :: this
+      type(point_t)                :: pt_i
+
+      ! Return the context's inner point
+
+      pt_i = this%pt_i
+
+      ! Finish
+
+      return
+
+   end function point_i
+
+   !****
+
+   function point_o (this) result(pt_o)
+
+      class(context_t), intent(in) :: this
+      type(point_t)                :: pt_o
+
+      ! Return the context's outer point
+
+      pt_o = this%pt_o
+
+      ! Finish
+
+      return
+
+   end function point_o
+
+   !****
+
+   function omega_c_r_(this, Omega_rot, st) result(omega_c)
+
+      class(context_t), intent(in) :: this
+      real(RD), intent(in)         :: Omega_rot
+      class(state_rt), intent(in)  :: st
+      real(RD)                     :: omega_c
+
+      ! Evaluate the co-rotating frequency (real)
+
+      omega_c = st%omega - this%m*Omega_rot
+
+      ! Finish
+
+      return
+
+   end function omega_c_r_
+
+   !****
+
+   function omega_c_c_(this, Omega_rot, st, use_omega_r) result(omega_c)
+
+      class(context_t), intent(in)  :: this
+      real(RD), intent(in)          :: Omega_rot
+      class(state_ct), intent(in)   :: st
+      logical, intent(in), optional :: use_omega_r
+      complex(RD)                   :: omega_c
+
+      logical :: use_omega_r_
+
+      if (PRESENT(use_omega_r)) then
+         use_omega_r_ = use_omega_r
+      else
+         use_omega_r_ = .FALSE.
+      endif
+
+      ! Evaluate the co-rotating frequency (complex)
+
+      if (use_omega_r_) then
+         omega_c = st%omega_r - this%m*Omega_rot
+      else
+         omega_c = st%omega - this%m*Omega_rot
+      endif
+
+      ! Finish
+
+      return
+
+   end function omega_c_c_
+
+   !****
+
+   function lambda_r_(this, Omega_rot, st) result(lambda)
+
+      class(context_t), intent(in) :: this
+      real(RD), intent(in)         :: Omega_rot
+      class(state_rt), intent(in)  :: st
+      real(RD)                     :: lambda
+
+      ! Evaluate the angular eigenvalue (real)
+
+      lambda = REAL(this%rt%lambda(Omega_rot, CMPLX(st%omega, KIND=RD)))
+
+      ! Finish
+
+      return
+
+   end function lambda_r_
+
+   !****
+
+   function lambda_c_(this, Omega_rot, st) result(lambda)
+
+      class(context_t), intent(in) :: this
+      real(RD), intent(in)         :: Omega_rot
+      class(state_ct), intent(in)  :: st
+      complex(RD)                  :: lambda
+
+      ! Evaluate the angular eigenvalue (complex)
+
+      if (this%complex_lambda) then
+
+         lambda = this%rt%lambda(Omega_rot, st%omega)
+
+      else
+
+         lambda = this%rt%lambda(Omega_rot, CMPLX(st%omega_r, KIND=RD))
+
+      endif
+
+      ! Finish
+
+      return
+
+   end function lambda_c_
+
+   !****
+
+   function l_e_r_(this, Omega_rot, st) result(l_e)
+
+      class(context_t), intent(in) :: this
+      real(RD), intent(in)         :: Omega_rot
+      class(state_rt), intent(in)  :: st
+      real(RD)                     :: l_e
+
+      ! Evaluate the effective harmonic degree (real)
+
+      l_e = REAL(this%rt%l_e(Omega_rot, CMPLX(st%omega, KIND=RD)))
+
+      ! Finish
+
+      return
+
+   end function l_e_r_
+
+   !****
+
+   function l_e_c_(this, Omega_rot, st) result(l_e)
+
+      class(context_t), intent(in) :: this
+      real(RD), intent(in)         :: Omega_rot
+      class(state_ct), intent(in)  :: st
+      complex(RD)                  :: l_e
+
+      ! Evaluate the effective harmonic degree (complex)
+
+      if (this%complex_lambda) then
+
+         l_e = this%rt%l_e(Omega_rot, st%omega)
+
+      else
+
+         l_e = this%rt%l_e(Omega_rot, CMPLX(st%omega_r, KIND=RD))
+
+      endif
+
+      ! Finish
+
+      return
+
+   end function l_e_c_
+
+   !****
+
+   function Omega_rot (this, pt)
+
+      class(context_t), intent(in) :: this
+      type(point_t), intent(in)    :: pt
+      real(RD)                     :: Omega_rot
+
+      ! Evaluate Omega_rot
+
+      select case (this%Omega_rot_source)
+
+      case (MODEL_OMEGA_ROT_SOURCE)
+
+         Omega_rot = this%ml%coeff(I_OMEGA_ROT, pt)
+
+      case (UNIFORM_OMEGA_ROT_SOURCE)
+
+         Omega_rot = this%Omega_rot_
+
+      case default
+
+         @:ABORT('invalid Omega_rot_source')
+
+      end select
+
+      ! Finish
+
+      return
+
+   end function Omega_rot
+
+   !****
+
+   subroutine set_Omega_rot (this, Omega_rot)
+
+      class(context_t), intent(inout) :: this
+      real(RD), intent(in)            :: Omega_rot
+
+      ! Set Omega_rot. NOTE: THIS ROUTINE IS A TEMPORARY WORKAROUND FOR
+      ! THE CURRENT NON-MUTABILITY OF CONTEXT_T; IT NEEDS TO BE
+      ! REPLACED AT SOME POINT!
+
+      this%Omega_rot_ = Omega_rot
+
+      ! Finish
+
+      return
+
+   end subroutine set_Omega_rot
+
+   !****
+
+   #:for N in ['eps_rho', 'eps_T']
+      #:for T, S in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
+
+         function ${N}$_${S}$_(this, st, pt) result(${N}$)
+
+            class(context_t), intent(in)    :: this
+            class(state_${S}$t), intent(in) :: st
+            type(point_t), intent(in)       :: pt
+            ${T}$                           :: ${N}$
+
+            real(RD) :: omega_min
+            real(RD) :: omega_max
+            real(RD) :: omega
+
+            ! Evaluate the ${N$} derivative
+
+            select case (this%deps_source)
+
+            case (MODEL_DEPS_SOURCE)
+
+               ${N}$ = this%ml%coeff(I_${N.upper()}$, pt)
+
+            case (FILE_DEPS_SOURCE)
+
+               omega_min = this%in_${N}$%x_min()
+               omega_max = this%in_${N}$%x_min()
+
+               #:if T == 'real(RD)'
+                  omega = MIN(MAX(st%omega, omega_min), omega_max)
+               #:elif T == 'complex(RD)'
+                  omega = MIN(MAX(st%omega_r, omega_min), omega_max)
+               #:else
+                  #:stop f'invalid type {T}'
+               #:endif
+
+               ${N}$ = this%in_${N}$%f(omega)
+
+            case default
+
+               @:ABORT('invalid deps_source')
+
+            end select
+
+            ! Finish
+
+            return
+
+         end function ${N}$_${S}$_
+
+      #:endfor
+   #:endfor
+
+   !****
+
+   subroutine read_deps_(ml, os_p, in_eps_rho, in_eps_T)
+
+      class(model_t), pointer, intent(in) :: ml
+      type(osc_par_t), intent(in)         :: os_p
+      type(interp_ct), intent(out)        :: in_eps_rho
+      type(interp_ct), intent(out)        :: in_eps_T
+
+      ! Read epsilon partials data from a file
+
+      select case (os_p%deps_file_format)
+      case ('WOLF')
+         call read_deps_wolf_(ml, os_p, in_eps_rho, in_eps_T)
+      case default
+         @:ABORT('invalid deps_file_format')
+      end select
+
+      ! Finish
+
+      return
+
+   end subroutine read_deps_
+
+   !****
+
+   subroutine read_deps_wolf_(ml, os_p, in_eps_rho, in_eps_T)
+
+      use evol_model_m
+
+      class(model_t), pointer, intent(in) :: ml
+      type(osc_par_t), intent(in)         :: os_p
+      type(interp_ct), intent(out)        :: in_eps_rho
+      type(interp_ct), intent(out)        :: in_eps_T
+
+      integer                  :: unit
+      integer                  :: n
+      real(RD), allocatable    :: period(:)
+      real(RD), allocatable    :: A_norm(:)
+      real(RD), allocatable    :: B_norm(:)
+      real(RD), allocatable    :: A_phase(:)
+      real(RD), allocatable    :: B_phase(:)
+      integer                  :: i
+      real(RD), allocatable    :: omega(:)
+      complex(RD), allocatable :: eps_rho(:)
+      complex(RD), allocatable :: eps_T(:)
+      integer, allocatable     :: j(:)
+
+      ! Read epsilon partials data from a file in the format used in the
+      ! preparation of Wolf, Townsend & Bildsten (2018)
+
+      ! Open the file and skip the header line
+
+      open(NEWUNIT=unit, FILE=os_p%deps_file, STATUS='OLD')
+
+      read(unit, *)
+
+      ! Count lines
+
+      n = 0
+
+      count_loop : do
+         read(unit, *, END=100)
+         n = n + 1
+      end do count_loop
+
+100   continue
+
+      rewind(unit)
+
+      read(unit, *)
+
+      ! Read data
+
+      allocate(period(n))
+
+      allocate(A_norm(n))
+      allocate(B_norm(n))
+
+      allocate(A_phase(n))
+      allocate(B_phase(n))
+
+      read_loop : do i = 1, n
+         read(unit, *) period(i), A_norm(i), B_norm(i), A_phase(i), B_phase(i)
+      end do read_loop
+
+      close(unit)
+
+      ! Convert periods to dimensionless frequencies
+
+      omega = 1._RD/(period*freq_scale('HZ', ml))
+
+      ! Reverse the phase sign because Wolf et al assume a time
+      ! depenence of exp(i omega t), rather than GYRE's exp(-i omega t)
+
+      A_phase = -A_phase
+      B_phase = -B_phase
+
+      ! Calculate complex eps_* terms
+
+      eps_rho = A_norm*exp((0._RD,1._RD)*A_phase)
+      eps_T = B_norm*exp((0._RD,1._RD)*A_phase)
+
+      ! Sort in order of increasing omega
+
+      j = sort_indices(omega)
+
+      omega = omega(j)
+      eps_rho = eps_rho(j)
+      eps_T = eps_T(j)
+
+      ! Set up interpolating splines
+
+      in_eps_rho = interp_ct(omega, eps_rho, 'SPLINE')
+      in_eps_T = interp_ct(omega, eps_T, 'SPLINE')
+
+      ! Finish
+
+      return
+
+   end subroutine read_deps_wolf_
+
+end module context_m

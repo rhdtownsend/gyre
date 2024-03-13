@@ -1,0 +1,79 @@
+! Module  : out_util_m
+! Purpose : output utility routines
+!
+! Copyright 2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module out_util_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use util_m
+   use wave_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Access specifiers
+
+   public :: filter_wave
+
+   ! Default access
+
+   private
+
+contains
+
+   function filter_wave(wv, filter_list)
+
+      class(wave_t), intent(in) :: wv
+      character(*), intent(in)  :: filter_list
+      logical                   :: filter_wave
+
+      character(LEN(filter_list)), allocatable :: filters(:)
+      integer                                  :: i
+
+      ! Decide whether to filter the wave
+
+      filters = split_list(filter_list, ',')
+
+      filter_wave = .FALSE.
+
+      filter_loop : do i = 1, SIZE(filters)
+
+         select case (filters(i))
+         case ('stable')
+            filter_wave = filter_wave .OR. AIMAG(wv%omega) <= 0._RD
+         case ('unstable')
+            filter_wave = filter_wave .OR. AIMAG(wv%omega) > 0._RD
+         case default
+            @:ABORT('unrecognized filter in filter list')
+         end select
+
+      end do filter_loop
+
+      ! Finish
+
+      return
+
+   end function filter_wave
+
+end module out_util_m

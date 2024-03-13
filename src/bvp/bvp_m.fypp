@@ -1,0 +1,330 @@
+! Module  : bvp_m
+! Purpose : parametric boundary value problems
+!
+! Copyright 2013-2016 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module bvp_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_m
+   use diff_m
+   use ext_m
+   use num_par_m
+   use state_m
+   use status_m
+   use sysmtx_m
+   use sysmtx_factory_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type :: bvp_${S}$
+         private
+         class(diff_${S}$), allocatable   :: df(:)
+         class(bound_${S}$), allocatable  :: bd
+         class(sysmtx_${S}$), allocatable :: sm
+         integer, public                  :: n
+         integer, public                  :: n_e
+         integer, public                  :: n_i
+         integer, public                  :: n_o
+         logical                          :: factored
+      contains 
+         private
+         procedure, public :: build => build_${S}$_
+         procedure, public :: factor => factor_${S}$_
+         procedure, public :: det => det_${S}$_
+         procedure, public :: soln_vec_hom => soln_vec_hom_${S}$_
+         procedure, public :: soln_vec_inhom => soln_vec_inhom_${S}$_
+         procedure, public :: resd_vec_hom => resd_vec_hom_${S}$_
+         procedure, public :: resd_vec_inhom => resd_vec_inhom_${S}$_
+      end type bvp_${S}$
+
+      ! Interfaces
+
+      interface bvp_${S}$
+         module procedure bvp_${S}$_
+      end interface bvp_${S}$
+
+      ! Access specifiers
+
+      public :: bvp_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+   
+      function bvp_${S}$_(bd, df, nm_p) result(bp)
+
+         class(diff_${S}$), intent(in)  :: df(:)
+         class(bound_${S}$), intent(in) :: bd
+         type(num_par_t), intent(in)    :: nm_p
+         type(bvp_${S}$)                :: bp
+
+         integer :: n
+         integer :: n_e
+         integer :: n_i
+         integer :: n_o
+
+         ! Perform basic validations
+
+         n = SIZE(df) + 1
+         n_e = bd%n_e
+
+         n_i = bd%n_i
+         n_o = bd%n_o
+
+         @:CHECK_BOUNDS(n_i+n_o, n_e)
+
+         @:ASSERT_DEBUG(ALL(df%n_e == n_e), 'dimension mismatch')
+
+         ! Construct the bvp type
+
+         allocate(bp%df(n-1), SOURCE=df)
+
+         allocate(bp%bd, SOURCE=bd)
+
+         allocate(bp%sm, SOURCE=sysmtx_${S}$(n-1, n_e, n_i, n_o, nm_p))
+
+         bp%n = n
+         bp%n_e = n_e
+         bp%n_i = n_i
+         bp%n_o = n_o
+
+         bp%factored = .FALSE.
+
+         ! Finish
+
+         return
+
+      end function bvp_${S}$_
+
+      !****
+
+      subroutine build_${S}$_(this, st)
+
+         class(bvp_${S}$), target, intent(inout) :: this
+         class(state_${S}$), intent(in)          :: st
+
+         ${T}$           :: B_i(this%n_i,this%n_e)
+         ${T}$           :: B_o(this%n_o,this%n_e)
+         ${T}$           :: E_l(this%n_e,this%n_e)
+         ${T}$           :: E_r(this%n_e,this%n_e)
+         ${T}$           :: scl_i(this%n_i)
+         ${T}$           :: scl_o(this%n_o)
+         type(ext_${S}$) :: scl
+         integer         :: j
+
+         ! Build the bvp for the specified state
+
+         ! Set up boundary conditions
+
+         call this%bd%build_i(st, B_i, scl_i)
+         call this%sm%set_B_i(B_i, scl_i)
+
+         call this%bd%build_o(st, B_o, scl_o)
+         call this%sm%set_B_o(B_o, scl_o)
+
+         ! Set up difference equations
+
+         !$OMP PARALLEL DO PRIVATE (E_l, E_r, scl) SCHEDULE (DYNAMIC)
+         sub_loop : do j = 1, this%n-1
+            call this%df(j)%build(st, E_l, E_r, scl)
+            call this%sm%set_E(j, E_l, E_r, scl)
+         end do sub_loop
+
+         ! Reset the factored flag
+
+         this%factored = .FALSE.
+
+         ! Finish
+
+         return
+
+      end subroutine build_${S}$_
+
+      !****
+
+      subroutine factor_${S}$_(this)
+
+         class(bvp_${S}$), intent(inout) :: this
+
+         ! Factorize the sysmtx
+
+         call this%sm%factor()
+
+         this%factored = .TRUE.
+
+         ! Finish
+
+         return
+
+      end subroutine factor_${S}$_
+
+      !****
+
+      function det_${S}$_(this) result(det)
+
+         class(bvp_${S}$), intent(inout) :: this
+         type(ext_${S}$)                 :: det
+
+         @:ASSERT(this%factored, 'matrix has not been factorized')
+
+         ! Evaluate the determinant of the sysmtx
+
+         det = this%sm%det()
+
+         ! Finish
+
+         return
+
+      end function det_${S}$_
+
+      !****
+
+      function soln_vec_hom_${S}$_(this) result(y)
+
+         class(bvp_${S}$), intent(inout) :: this
+         ${T}$                           :: y(this%n_e,this%n)
+
+         ${T}$ :: u(this%n_e*this%n)
+
+         @:ASSERT_DEBUG(this%factored, 'matrix has not been factorized')
+
+         ! Evaluate the solution vector y of the homogeneous system
+
+         u = this%sm%soln_vec_hom()
+
+         y = RESHAPE(u, SHAPE(y))
+
+         ! Finish
+
+         return
+
+      end function soln_vec_hom_${S}$_
+
+      !****
+
+      function soln_vec_inhom_${S}$_(this, z_i, z_o) result(y)
+
+         class(bvp_${S}$), intent(inout) :: this
+         ${T}$, intent(in)               :: z_i(:)
+         ${T}$, intent(in)               :: z_o(:)
+         ${T}$                           :: y(this%n_e,this%n)
+
+         ${T}$ :: u(this%n_e*this%n)
+
+         @:CHECK_BOUNDS(SIZE(z_i), this%n_i)
+         @:CHECK_BOUNDS(SIZE(z_o), this%n_o)
+
+         @:ASSERT_DEBUG(this%factored, 'matrix has not been factorized')
+
+         ! Evaluate the solution vector y of the inhomogeneous system
+
+         u = this%sm%soln_vec_inhom(z_i, z_o)
+
+         y = RESHAPE(u, SHAPE(y))
+
+         ! Finish
+
+         return
+
+      end function soln_vec_inhom_${S}$_
+
+      !****
+
+      function resd_vec_hom_${S}$_(this, y) result(dz)
+
+         class(bvp_${S}$), intent(inout) :: this
+         ${T}$, intent(in)               :: y(:,:)
+         ${T}$                           :: dz(this%n_e,this%n)
+
+         ${T}$ :: u(this%n_e*this%n)
+         ${T}$ :: dv(this%n_e*this%n)
+
+         @:CHECK_BOUNDS(SIZE(y,1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(y,2), this%n)
+
+         @:ASSERT_DEBUG(.NOT. this%factored, 'matrix has already been factorized')
+
+         ! Evaluate the residuals vector dy of the homogeneous system
+
+         u = RESHAPE(y, SHAPE(u))
+
+         dv = this%sm%resd_vec_hom(u)
+
+         dz = RESHAPE(dv, SHAPE(dz))
+
+         ! Finish
+
+         return
+
+      end function resd_vec_hom_${S}$_
+
+      !****
+
+      function resd_vec_inhom_${S}$_(this, y, z_i, z_o) result(dz)
+
+         class(bvp_${S}$), intent(inout) :: this
+         ${T}$, intent(in)               :: y(:,:)
+         ${T}$, intent(in)               :: z_i(:)
+         ${T}$, intent(in)               :: z_o(:)
+         ${T}$                           :: dz(this%n_e,this%n)
+
+         ${T}$ :: u(this%n_e*this%n)
+         ${T}$ :: dv(this%n_e*this%n)
+
+         @:CHECK_BOUNDS(SIZE(y,1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(y,2), this%n)
+
+         @:CHECK_BOUNDS(SIZE(z_i), this%n_i)
+         @:CHECK_BOUNDS(SIZE(z_o), this%n_o)
+
+         @:ASSERT_DEBUG(.NOT. this%factored, 'matrix has already been factorized')
+
+         ! Evaluate the residuals vector dy of the inhomogeneous system
+
+         u = RESHAPE(y, SHAPE(u))
+
+         dv = this%sm%resd_vec_inhom(u, z_i, z_o)
+
+         dz = RESHAPE(dv, SHAPE(dz))
+
+         ! Finish
+
+         return
+
+      end function resd_vec_inhom_${S}$_
+
+   #:endfor
+
+end module bvp_m

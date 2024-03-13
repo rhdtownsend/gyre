@@ -1,0 +1,182 @@
+! Module  : special_m
+! Purpose : special mathematical functions
+!
+! Copyright 2019-2024 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module special_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use math_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Access specifiers
+
+   public :: factorial
+   public :: double_factorial
+   public :: legendre_P
+   public :: spherical_Y
+
+   ! Default access
+
+   private
+
+contains
+
+   function factorial(n) result(f)
+
+      integer, intent(in) :: n
+      real(RD)            :: f
+
+      @:ASSERT_DEBUG(n >= 0, 'Invalid n')
+
+      ! Evaluate the factorial n!
+
+      f = GAMMA(REAL(n+1, RD))
+
+      ! Finish
+
+      return
+
+   end function factorial
+
+   !****
+
+   function double_factorial(n) result(f)
+
+      integer, intent(in) :: n
+      real(RD)            :: f
+
+      integer :: k
+
+      @:ASSERT_DEBUG(n >= -1, 'Invalid n')
+
+      ! Evaluate the double factorial n!!
+
+      if (n == 0) then
+
+         f = 1._RD
+
+      elseif (MOD(n, 2) == 0) then
+
+         k = n/2
+         f = 2**k*factorial(k)
+
+      else
+
+         k = (n+1)/2
+         f = factorial(2*k)/(2**k*factorial(k))
+
+      end if
+
+      ! Finish
+
+      return
+
+   end function double_factorial
+
+   !****
+
+   function legendre_P(l, m, x) result(P)
+
+      integer, intent(in)  :: l
+      integer, intent(in)  :: m
+      real(RD), intent(in) :: x
+      real(RD)             :: P
+
+      integer  :: am
+      real(RD) :: y
+      real(RD) :: P_1
+      real(RD) :: P_2
+      integer  :: k
+
+      @:ASSERT(abs(x) <= 1, 'Invalid x')
+
+      ! Evaluate the associated Legendre function P^m_l with degree l
+      ! and order m. The definitions given by [Abramowicz:1970] are
+      ! adopted --- in particular, their eqn. 8.6.6, which uses the
+      ! Condon-Shortley phase term
+
+      am = abs(m)
+
+      if (am > l) then
+
+         P = 0._RD
+
+      elseif (l < 0) then
+
+         P = 0._RD
+
+      else
+
+         y = sqrt((1._RD - x)*(1._RD + x))
+         P = (-1)**am * double_factorial(2*am-1) * y**am
+
+         if (l > am) then
+
+            P_1 = P
+            P = x*(2*am+1)*P_1
+
+            do k = am+2, l
+               P_2 = P_1
+               P_1 = P
+               P = ((2*k-1)*x*P_1 - (k+am-1)*P_2)/(k-am)
+            end do
+
+         endif
+
+      endif
+
+      if (m < 0) then
+         P = (-1)**am*factorial(l-am)/factorial(l+am)*P
+      endif
+
+      ! Finish
+
+      return
+
+   end function legendre_P
+
+   !****
+
+   function spherical_Y(l, m, theta, phi) result(Y)
+
+      integer, intent(in)  :: l
+      integer, intent(in)  :: m
+      real(RD), intent(in) :: theta
+      real(RD), intent(in) :: phi
+      complex(RD)          :: Y
+
+      ! Evaluate the spherical harmonic with degree l and order m
+
+      Y = sqrt((2*l+1)/(4*PI)*factorial(l-m)/factorial(l+m))* &
+         legendre_P(l, m, cos(theta))*exp(CMPLX(0._RD, m*phi, RD))
+
+      ! Finish
+
+      return
+
+   end function spherical_Y
+
+end module special_m

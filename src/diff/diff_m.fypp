@@ -1,0 +1,64 @@
+! Module  : diff_m
+! Purpose : difference equations
+!
+! Copyright 2015 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module diff_m
+
+   ! No implicit typing
+   
+   implicit none
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+   
+      type, abstract :: diff_${S}$
+         integer :: n_e
+      contains
+         procedure(build_${S}$_), deferred :: build
+      end type diff_${S}$
+
+      ! Interfaces
+
+      abstract interface
+
+         subroutine build_${S}$_(this, st, E_l, E_r, scl)
+            use forum_m, only: RD
+            use ext_m
+            use state_m
+            import diff_${S}$
+            class(diff_${S}$), intent(in)  :: this
+            class(state_${S}$), intent(in) :: st
+            ${T}$, intent(out)             :: E_l(:,:)
+            ${T}$, intent(out)             :: E_r(:,:)
+            type(ext_${S}$), intent(out)   :: scl
+         end subroutine build_${S}$_
+
+      end interface
+
+      ! Access specifiers
+
+      public :: diff_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+      
+end module diff_m

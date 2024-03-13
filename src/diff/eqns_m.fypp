@@ -1,0 +1,81 @@
+! Module  : eqns_m
+! Purpose : differential equations evaluation
+!
+! Copyright 2013-2015 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module eqns_m
+
+   ! No implicit typing
+
+   implicit none
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, abstract :: eqns_${S}$
+         integer :: n_e
+      contains
+         procedure(stencil_${S}$_), deferred :: stencil
+         procedure(A_${S}$_), deferred       :: A
+         procedure(xA_${S}$_), deferred      :: xA
+      end type eqns_${S}$
+
+      ! Interfaces
+
+      abstract interface
+
+         subroutine stencil_${S}$_(this, pt)
+            use point_m
+            import eqns_${S}$
+            class(eqns_${S}$), intent(inout) :: this
+            type(point_t), intent(in)        :: pt(:)
+         end subroutine stencil_${S}$_
+
+         function A_${S}$_(this, i, st) result(A)
+            use forum_m, only: RD
+            use state_m
+            import eqns_${S}$
+            class(eqns_${S}$), intent(in)  :: this
+            integer, intent(in)            :: i
+            class(state_${S}$), intent(in) :: st
+            ${T}$                          :: A(this%n_e,this%n_e)
+         end function A_${S}$_
+
+         function xA_${S}$_(this, i, st) result(xA)
+            use forum_m, only: RD
+            use state_m
+            import eqns_${S}$
+            class(eqns_${S}$), intent(in)  :: this
+            integer, intent(in)            :: i
+            class(state_${S}$), intent(in) :: st
+            ${T}$                          :: xA(this%n_e,this%n_e)
+         end function xA_${S}$_
+
+      end interface
+
+      ! Access specifiers
+
+      public :: eqns_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+      
+end module eqns_m

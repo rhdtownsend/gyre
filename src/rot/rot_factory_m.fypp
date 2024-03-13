@@ -1,0 +1,85 @@
+! Module  : rot_factory_m
+! Purpose : factory procedures for r_rot_t and c_rot_t types
+!
+! Copyright 2013-2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module rot_factory_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use mode_par_m
+   use null_rot_m
+   use rot_m
+   use rot_par_m
+   use tar_rot_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   #:for S in DTYPE_SUFFIXES
+
+      ! Interfaces
+
+      interface rot_${S}$
+         module procedure rot_${S}$_
+      end interface rot_${S}$
+
+      ! Access specifiers
+
+      public :: rot_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+      
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function rot_${S}$_(md_p, rt_p) result(rt)
+
+         type(mode_par_t), intent(in)  :: md_p
+         type(rot_par_t), intent(in)   :: rt_p
+         class(rot_${S}$), allocatable :: rt
+
+         ! Create a rot_t type
+
+         select case (rt_p%coriolis_method)
+         case ('NULL')
+            allocate(rt, SOURCE=null_rot_${S}$(md_p))
+         case ('TAR')
+            allocate(rt, SOURCE=tar_rot_${S}$(md_p, rt_p))
+         case default
+            @:ABORT('invalid coriolis_method')
+         end select
+
+         ! Finish
+
+         return
+
+      end function rot_${S}$_
+
+   #:endfor
+
+end module rot_factory_m

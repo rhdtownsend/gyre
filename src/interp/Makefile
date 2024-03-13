@@ -13,7 +13,20 @@ LDFLAGS=`mesasdk_hdf5_link`
 
 # Include other makefiles
 
-SUBDIRS=../extern/core:../common
+SUBDIRS=../core:../common:../math:../matrix
 
 include ../build/Make.inc
 
+# Additional rules
+
+ifeq ($(CRMATH),yes)
+math_m.fpp: math_crmath_m.fpp
+	@ln -sf $< $@
+else
+math_m.fpp: math_intrinsic_m.fpp
+	@ln -sf $< $@
+endif
+
+.INTERMEDIATE: math_m.fpp
+
+.depend: math_m.fpp

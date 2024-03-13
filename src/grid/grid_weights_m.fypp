@@ -1,0 +1,290 @@
+! Module  : grid_weights_m
+! Purpose : grid weighting schemes and factory procedure
+!
+! Copyright 2016-2020 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module grid_weights_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use grid_m
+   use math_m
+   use num_par_m
+   use root_m
+   use status_m
+   
+   ! No implicit typing
+
+   implicit none
+
+   ! Interfaces
+
+   interface grid_t
+      module procedure grid_t_weights_
+   end interface grid_t
+
+   ! Access specifiers
+
+   public :: grid_t
+   public :: uni_weights
+   public :: geo_weights
+   public :: log_weights
+
+   ! Default access
+
+   private
+
+contains
+
+   function grid_t_weights_(w, x_i, x_o) result(gr)
+
+      real(RD), intent(in) :: w(:)
+      real(RD), intent(in) :: x_i
+      real(RD), intent(in) :: x_o
+      type(grid_t)         :: gr
+
+      ! Construct the grid_t using the supplied weights array and range
+      ! (x_i,x_o)
+
+      gr = grid_t((1._RD-w)*x_i + w*x_o)
+
+      ! Finish
+
+      return
+
+   end function grid_t_weights_
+
+   !****
+
+   function uni_weights (n) result(w)
+
+      integer, intent(in) :: n
+      real(RD)            :: w(n)
+
+      integer :: k
+
+      ! Create an n-point array of weights with uniform spacing across
+      ! the [0,1] interval
+
+      weight_loop : do k = 1, n
+         w(k) = (k-1._RD)/(n-1._RD)
+      end do weight_loop
+
+      ! Finish
+
+      return
+
+   end function uni_weights
+
+   !****
+
+   function geo_weights(n, s) result(w)
+
+      integer, intent(in)   :: n
+      real(RD), intent(in)  :: s
+      real(RD)              :: w(n)
+
+      integer            :: m
+      real(RD)           :: g_a
+      real(RD)           :: g_b
+      real(RD)           :: g
+      integer            :: status
+      real(RD)           :: dw
+      integer            :: k
+
+      ! Create an n-point array of weights with geometric spacing in
+      ! each half of the [0,1] interval. The parameter s controls
+      ! the ratio between the boundary cell size and the average cell
+      ! size 1/(n-1)
+
+      if (MOD(n, 2) == 0) then
+
+         ! Even number of points / odd number of cells
+
+         ! Solve for the growth factor g. The upper bound is derived
+         ! by applying a Taylor expansion to the equation for g
+
+         m = n/2-1
+
+         g_a = EPSILON(0._RD)
+         g_b = (s*(n-1)-2*m-1)/m
+
+         call solve_root(geom_func_, g_a, g_b, 0._RD, num_par_t(), g, status)
+
+         ! Set up weights for the inner part of the interval
+
+         w(1) = 0._RD
+         dw = 1._RD/(s*(n-1))
+
+         even_weight_loop : do k = 1, m
+            w(k+1) = w(k) + dw
+            dw = (1._RD+g)*dw
+         end do even_weight_loop
+
+         ! Reflect to get the outer part of the interval
+
+         w(m+2:) = 1._RD - w(m+1:1:-1)
+
+      else
+
+         ! Odd number of points / even number of cells
+
+         ! Solve for the growth factor g. The upper bound is derived
+         ! by applying a Taylor expansion to the equation for g
+
+         m = (n-1)/2
+
+         g_a = EPSILON(0._RD)
+         g_b = (s*(n-1)-2*m)/(m*(m-1))
+
+         call solve_root(geom_func_, g_a, g_b, 0._RD, num_par_t(), g, status)
+
+         ! Set up the inner part of the interval
+
+         w(1) = 0._RD
+         dw = 1._RD/(s*(n-1))
+
+         odd_weight_loop : do k = 1, m-1
+            w(k+1) = w(k) + dw
+            dw = (1._RD+g)*dw
+         end do odd_weight_loop
+
+         ! Reflect to get the outer part of the interval
+
+         w(m+1:) = 0.5_RD
+
+         w(m+2:) = 1._RD - w(m:1:-1)
+
+      end if
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine geom_func_(g, f, status)
+
+         real(RD), intent(in)  :: g
+         real(RD), intent(out) :: f
+         integer, intent(out)  :: status
+
+         ! Calcuate the discriminant for the geometric growth factor
+
+         if (MOD(n, 2) == 0) then
+
+            if (1._RD+g > pow(HUGE(0._RD), 1._RD/m)) then
+               f = - (2._RD + g)
+            else
+               f = (2._RD + s*(n-1)*g)/(1._RD + g)**m - (2._RD + g)
+            endif
+
+         else
+
+            if (1._RD+g > pow(HUGE(0._RD), 1._RD/m)) then
+               f = -2._RD
+            else
+               f = (2._RD + s*(n-1)*g)/(1._RD + g)**m - 2._RD
+            endif
+
+         endif
+
+         ! Finish
+
+         status = STATUS_OK
+
+         return
+
+      end subroutine geom_func_
+
+   end function geo_weights
+
+   !****
+
+   function log_weights(n, s) result(w)
+
+      integer, intent(in)  :: n
+      real(RD), intent(in) :: s
+      real(RD)             :: w(n)
+
+      real(RD) :: dw_1
+      integer  :: k
+      real(RD) :: v
+      real(RD) :: t
+
+      ! Create an n-point array of weights with geometric spacing in
+      ! each half of the [0,1] interval. The parameter s controls
+      ! the ratio between the boundary cell size and the average cell
+      ! size 1/(n-1)
+
+      dw_1 = 1._RD/(s*(n-1))
+
+      if (MOD(n, 2) == 0) then
+
+         ! Even number of points / odd number of cells
+
+         ! Set up the inner part of the interval
+
+         w(1) = 0._RD
+
+         even_weight_loop : do k = 2, n/2
+
+            v = (k-1.5_RD)/(n/2-1.5_RD)
+            t = (1._RD-v)*log(0.5_RD) + v*log(dw_1)
+
+            w(n/2-k+2) = exp(t)
+
+         enddo even_weight_loop
+
+         ! Reflect to get the outer part of the interval
+
+         w(n/2+1:) = 1._RD - w(n/2:1:-1)
+
+      else
+
+         ! Odd number of points / even number of cells
+
+         ! Set up the inner part of the interval
+
+         w(1) = 0._RD
+
+         odd_weight_loop : do k = 2, (n-1)/2
+
+            v = (k-1._RD)/((n-1)/2-1._RD)
+            t = (1._RD-v)*log(0.5_RD) + v*log(dw_1)
+
+            w((n-1)/2-k+2) = exp(t)
+
+         end do odd_weight_loop
+
+         w((n+1)/2) = 0.5_RD
+
+         ! Reflect to get the outer part of the interval
+
+         w((n+1)/2+1:) = 1._RD - w((n-1)/2:1:-1)
+
+      end if
+
+      ! Finish
+
+      return
+
+   end function log_weights
+
+end module grid_weights_m
