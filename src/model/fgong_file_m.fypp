@@ -143,10 +143,6 @@ contains
 
       x = var(1,:)/R_star
 
-      #:if defined('GFORTRAN_PR_69185')
-      allocate(m(n))
-      #:endif
-
       m = exp(var(2,:))
       T = var(3,:)
       P = var(4,:)
