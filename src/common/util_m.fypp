@@ -54,18 +54,6 @@ module util_m
 
    #:endfor
 
-   #:for T, S in zip(FLOAT_TYPES, FLOAT_SUFFIXES)   
-
-      interface integrate
-         module procedure integrate_${S}$_
-      end interface integrate
-
-      interface integral
-         module procedure integral_${S}$_
-      end interface integral
-
-   #:endfor
-
    ! Access specifiers
 
    public :: form_header
@@ -77,8 +65,6 @@ module util_m
    public :: sprint
    public :: subst
    public :: rjust
-   public :: integrate
-   public :: integral
    public :: elem_group_name
 
    ! Default access
@@ -423,73 +409,6 @@ contains
       return
 
    end function rjust
-
-   !****
-
-   #:for T, S in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
-
-      function integrate_${S}$_(x, y, mask) result(int_y)
-
-         real(RD), intent(in)          :: x(:)
-         ${T}$, intent(in)             :: y(:)
-         logical, optional, intent(in) :: mask(:)
-         ${T}$                         :: int_y
-
-         integer :: n
-
-         @:CHECK_BOUNDS(SIZE(y), SIZE(x))
-
-         if (PRESENT(mask)) then
-            @:CHECK_BOUNDS(SIZE(mask), SIZE(x))
-         endif
-
-         ! Integrate y(x) using trapezoidal quadrature, applying the
-         ! optional mask
-         
-         n = SIZE(x)
-
-         if (PRESENT(mask)) then
-            int_y = SUM(0.5_RD*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)), MASK=mask(2:) .AND. mask(:n-1))
-         else
-            int_y = SUM(0.5_RD*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)))
-         endif
-
-         ! Finish
-
-         return
-
-      end function integrate_${S}$_
-
-      !****
-
-      function integral_${S}$_(x, y) result(int_y)
-
-         real(RD), intent(in) :: x(:)
-         ${T}$, intent(in)    :: y(:)
-         ${T}$                :: int_y(SIZE(x))
-
-         integer :: n
-         integer :: i
-
-         @:CHECK_BOUNDS(SIZE(y), SIZE(x))
-
-         ! Calculate the integral of y(x) using trapezoidal quadrature
-
-         n = SIZE(x)
-
-         int_y(1) = 0._RD
-
-         int_loop : do i = 2, n
-            int_y(i) = int_y(i-1) + 0.5_RD*(y(i) + y(i-1))*(x(i) - x(i-1))
-         end do int_loop
-
-         ! Finish
-
-         return
-
-      end function integral_${S}$_
-
-   #:endfor
 
    !****
       

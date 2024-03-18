@@ -1,0 +1,124 @@
+! Module  : integ_m
+! Purpose : quadrature (integration) functions
+!
+! Copyright 2024 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module integ_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use math_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Interfaces
+
+   #:for T, S in zip(FLOAT_TYPES, FLOAT_SUFFIXES)   
+
+      interface integrate
+         module procedure integrate_${S}$_
+      end interface integrate
+
+      interface integral
+         module procedure integral_${S}$_
+      end interface integral
+
+   #:endfor
+
+   ! Access specifiers
+
+   public :: integrate
+   public :: integral
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
+
+      function integrate_${S}$_(x, y, mask) result(int_y)
+
+         real(RD), intent(in)          :: x(:)
+         ${T}$, intent(in)             :: y(:)
+         logical, optional, intent(in) :: mask(:)
+         ${T}$                         :: int_y
+
+         integer :: n
+
+         @:CHECK_BOUNDS(SIZE(y), SIZE(x))
+
+         if (PRESENT(mask)) then
+            @:CHECK_BOUNDS(SIZE(mask), SIZE(x))
+         endif
+
+         ! Integrate y(x) using trapezoidal quadrature, applying the
+         ! optional mask
+         
+         n = SIZE(x)
+
+         if (PRESENT(mask)) then
+            int_y = SUM(0.5_RD*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)), MASK=mask(2:) .AND. mask(:n-1))
+         else
+            int_y = SUM(0.5_RD*(y(2:) + y(:n-1))*(x(2:) - x(:n-1)))
+         endif
+
+         ! Finish
+
+         return
+
+      end function integrate_${S}$_
+
+      !****
+
+      function integral_${S}$_(x, y) result(int_y)
+
+         real(RD), intent(in) :: x(:)
+         ${T}$, intent(in)    :: y(:)
+         ${T}$                :: int_y(SIZE(x))
+
+         integer :: n
+         integer :: i
+
+         @:CHECK_BOUNDS(SIZE(y), SIZE(x))
+
+         ! Calculate the integral of y(x) using trapezoidal quadrature
+
+         n = SIZE(x)
+
+         int_y(1) = 0._RD
+
+         int_loop : do i = 2, n
+            int_y(i) = int_y(i-1) + 0.5_RD*(y(i) + y(i-1))*(x(i) - x(i-1))
+         end do int_loop
+
+         ! Finish
+
+         return
+
+      end function integral_${S}$_
+
+   #:endfor
+
+end module integ_m

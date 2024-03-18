@@ -29,6 +29,7 @@ module wave_m
   use freq_context_m
   use grid_m
   use grid_util_m
+  use integ_m
   use math_m
   use model_m
   use mode_par_m
