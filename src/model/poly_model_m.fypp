@@ -31,6 +31,7 @@ module poly_model_m
    use point_m
 
    use ISO_FORTRAN_ENV
+   use IEEE_ARITHMETIC
 
    ! No implicit typing
 
@@ -275,8 +276,6 @@ contains
       real(RD) :: theta
       real(RD) :: dtheta
 
-      @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'V_2 evaluation at vacuum point')
-
       ! Evaluate the V_2 coefficient
 
       if (pt%x /= 0._RD) then
@@ -286,7 +285,11 @@ contains
          theta = this%in_theta(pt%s)%f(pt%x)
          dtheta = this%in_dtheta(pt%s)%f(pt%x)
 
-         coeff = -(this%n_poly(pt%s) + 1._RD)*this%z_s**2*dtheta/(theta*z)
+         if (theta /= 0._RD) then
+            coeff = -(this%n_poly(pt%s) + 1._RD)*this%z_s**2*dtheta/(theta*z)
+         else
+            coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
+         endif
 
       else
 
@@ -307,8 +310,6 @@ contains
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
       real(RD)                        :: coeff
-
-      @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'As evaluation at vacuum point')
 
       ! Evaluate the As coefficient
 
@@ -437,8 +438,6 @@ contains
       real(RD) :: theta
       real(RD) :: dtheta
 
-      @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'dV_2 evaluation at vacuum point')
-
       ! Evaluate the logarithmic derivative of the V_2 coefficient
 
       if (pt%x /= 0._RD) then
@@ -449,9 +448,17 @@ contains
          dtheta = this%in_dtheta(pt%s)%f(pt%x)
 
          if (this%n_poly(pt%s) /= 0._RD) then
-            dcoeff = -3._RD - z*dtheta/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/dtheta
+            if (theta /= 0._RD) then
+               dcoeff = -3._RD - z*dtheta/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/dtheta
+            else
+               dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
+            end if
          else
-            dcoeff = -3._RD - z*dtheta/theta - this%B(pt%s)*z/dtheta
+            if (theta /= 0._RD) then
+               dcoeff = -3._RD - z*dtheta/theta - this%B(pt%s)*z/dtheta
+            else
+               dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
+            end if
          endif
 
       else
@@ -473,8 +480,6 @@ contains
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
       real(RD)                        :: dcoeff
-
-      @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'dAs evaluation at vacuum point')
 
       ! Evaluate the logarithmic derivative of the As coefficient
 
@@ -499,8 +504,6 @@ contains
       real(RD) :: theta
       real(RD) :: dtheta
 
-      @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'dU evaluation at vacuum point')
-
       ! Evaluate the logarithmic derivative of the U coefficient
 
       if (pt%x /= 0._RD) then
@@ -510,7 +513,11 @@ contains
          theta = this%in_theta(pt%s)%f(pt%x)
          dtheta = this%in_dtheta(pt%s)%f(pt%x)
 
-         dcoeff = 3._RD + this%n_poly(pt%s)*z*dtheta/theta - this%coeff_U_(pt)
+         if (theta /= 0._RD) then
+            dcoeff = 3._RD + this%n_poly(pt%s)*z*dtheta/theta - this%coeff_U_(pt)
+         else
+            dcoeff = IEEE_VALUE(dcoeff, IEEE_NEGATIVE_INF)
+         end if
 
       else
 

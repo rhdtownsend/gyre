@@ -32,6 +32,7 @@ module parfait_model_m
    use util_m
 
    use ISO_FORTRAN_ENV
+   use IEEE_ARITHMETIC
 
    ! No implicit typing
 
@@ -241,8 +242,6 @@ contains
       real(RD) :: w_2
       real(RD) :: z
 
-      @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'V_2 evaluation at vacuum point')
-
       ! Evaluate the V_2 coefficient
 
       associate (k => pt%s)
@@ -280,8 +279,12 @@ contains
 
          ! Evaluate the coefficient
 
-         coeff = this%d(k)/(this%coeff_c_1_(pt)*z)
-
+         if (z /= 0._RD) then
+            coeff = this%d(k)/(this%coeff_c_1_(pt)*z)
+         else
+            coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
+         end if
+            
       end associate
 
       ! Finish
@@ -297,8 +300,6 @@ contains
       class(parfait_model_t), intent(in) :: this
       type(point_t), intent(in)          :: pt
       real(RD)                           :: coeff
-
-      @:ASSERT_DEBUG(.NOT. this%is_vacuum(pt), 'As evaluation at vacuum point')
 
       ! Evaluate the As coefficient
 
