@@ -51,7 +51,7 @@ newly created source directory; this can be achieved, e.g., using the
 .. prompt:: bash
    :substitutions:
 
-   export GYRE_DIR_DIR=$(realpath gyre-|version|)
+   export GYRE_DIR=$(realpath gyre-|version|)
 
 .. _install-compile:
 
