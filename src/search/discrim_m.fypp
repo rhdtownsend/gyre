@@ -57,7 +57,7 @@ contains
 
          class(bvp_${S}$), intent(inout) :: bp
          class(state_${S}$), intent(in)  :: st
-         type(ext_${S}$)                 :: discrim
+         type(ext_${S}$), intent(out)    :: discrim
 
          ! Evaluate the discriminant
 
