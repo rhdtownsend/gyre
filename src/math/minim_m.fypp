@@ -280,7 +280,7 @@ contains
 
                ! New point in left interval
 
-               d = (1._RD-GOLDEN_R)*b + GOLDEN_R*a
+               d = (1._RD-1._RD/GOLDEN_R)*b + 1._RD/GOLDEN_R*a
 
                call eval_func(d, f_d, status)
                if (status /= STATUS_OK) return
@@ -299,7 +299,7 @@ contains
 
                ! New point in right interval
 
-               d = (1._RD-GOLDEN_R)*b + GOLDEN_R*c
+               d = (1._RD-1._RD/GOLDEN_R)*b + 1._RD/GOLDEN_R*c
 
                call eval_func(d, f_d, status)
                if (status /= STATUS_OK) return
