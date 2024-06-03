@@ -4,6 +4,9 @@
 # Build tool executables
 TOOLS ?= yes
 
+# Build additional interfaces
+IFACES ?= yes
+
 # Enable debugging (with a performance penalty)
 DEBUG ?= no
 
@@ -37,6 +40,11 @@ LIB_TARGETS = libgyre
 
 ifeq ($(TOOLS),yes)
   BIN_TARGETS := $(BIN_TARGETS) eval_lambda eval_tidal_coeff build_poly poly_to_fgong poly_to_txt
+endif
+
+ifeq ($(IFACES),yes)
+  BIN_TARGETS := $(BIN_TARGETS) test_gyre_mesa
+  LIB_TARGETS := $(LIB_TARGETS) libgyre_mesa
 endif
 
 # Source file lists & related variables
@@ -73,6 +81,10 @@ poly_to_txt_SRCS = poly_to_txt.fypp
 poly_to_txt_USES = $(libgyre_SRCS)
 poly_to_txt_LIBS = libgyre
 
+test_gyre_mesa_SRCS = test_gyre_mesa.fypp
+test_gyre_mesa_USES = $(libgyre_mesa_SRCS) $(libgyre_SRCS)
+test_gyre_mesa_LIBS = libgyre_mesa libgyre
+
 libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    ad_eqns_m.fypp ad_match_m.fypp ad_trans_m.fypp amdl_file_m.fypp	\
    anapoly_model_m.fypp atmos_m.fypp b3_file_m.fypp			\
@@ -108,6 +120,10 @@ libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    tnad_bvp_m.fypp tnad_diff_m.fypp tnad_eqns_m.fypp			\
    trapz_diff_m.fypp txt_writer_m.fypp util_m.fypp version_m.fypp	\
    wave_m.fypp wdec_file_m.fypp writer_m.fypp
+
+libgyre_mesa_SRCS = gyre_mesa_m.fypp
+libgyre_mesa_USES = ${libgyre_SRCS}
+libgyre_mesa_LIBS = libgyre
 
 # Directories
 

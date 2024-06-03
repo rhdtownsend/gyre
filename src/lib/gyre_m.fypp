@@ -36,6 +36,8 @@ module gyre_m
 
    ! Models
 
+   use evol_model_m
+   use mesa_file_m
    use model_m
    use model_factory_m
 
