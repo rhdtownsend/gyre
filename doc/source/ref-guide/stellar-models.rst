@@ -18,8 +18,6 @@ equilibrium stellar configuration.
    stellar-models/mesa-file-format.rst
    stellar-models/gsm-file-format.rst
    stellar-models/poly-file-format.rst
-   stellar-models/parfait-file-format.rst
-   
    
 
 
