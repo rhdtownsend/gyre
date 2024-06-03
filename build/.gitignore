@@ -1,5 +1,10 @@
-*.f90
-*.o
-*.mod
-*.smod
-.depend
+# Ignore everything...
+*
+
+# ...apart from the build-system files
+!Makefile
+!Make.inc
+!check_sdk_version
+!fypp_deps
+!makedepf08.awk
+!.gitignore
