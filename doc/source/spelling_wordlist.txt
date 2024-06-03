@@ -1,11 +1,16 @@
 asteroseismic
 cgs
 crlibm
+Dalsgaard
 eqn
 eqns
+gravothermal
 monotonized
 monovariate
+Namelist
+namelist
 namelists
+Pesnell
 polytrope
 polytropes
 polytropic
