@@ -225,18 +225,15 @@ contains
       type(ext_rt), allocatable, intent(out) :: discrim_b(:)
       type(ext_rt), allocatable, intent(out) :: discrim_c(:)
 
-      integer              :: n_omega
-      integer              :: c_beg
-      integer              :: c_end
-      integer              :: c_rate
-      integer              :: i
-      type(ext_ct)         :: discrim_i
-      integer              :: status
-      real(RD)             :: discrim_f(SIZE(omega))
-      integer              :: discrim_e(SIZE(omega))
-      type(ext_rt)         :: discrim(SIZE(omega))
-      integer              :: n_brack
-      integer              :: i_brack(SIZE(omega))
+      integer       :: n_omega
+      integer       :: c_beg
+      integer       :: c_end
+      integer       :: c_rate
+      integer       :: i
+      type(ext_ct)  :: discrim_i
+      type(ext_rt)  :: discrim(SIZE(omega))
+      integer       :: n_brack
+      integer       :: i_brack(SIZE(omega))
 
       ! Calculate the discriminant on the omega abscissa
 
@@ -253,8 +250,7 @@ contains
 
          call eval_discrim(bp, state_ct(CMPLX(omega(i), KIND=RD), omega_r=omega(i)), discrim_i)
 
-         discrim_f(i) = FRACTION(abs(discrim_i))
-         discrim_e(i) = EXPONENT(abs(discrim_i))
+         discrim(i) = abs(discrim_i)
 
          if (check_log_level('DEBUG')) then
             write(OUTPUT_UNIT, 110) omega(i), fraction(discrim(i)), exponent(discrim(i))
@@ -262,8 +258,6 @@ contains
          endif
 
       end do discrim_loop
-
-      discrim = scale(ext_rt(discrim_f), discrim_e)
 
       call SYSTEM_CLOCK(c_end)
 
