@@ -84,7 +84,6 @@ contains
 
       type(nad_eqns_t)        :: eq
       type(point_t)           :: pt_m
-      class(model_t), pointer :: ml
 
       ! Construct the nad_diff_t
 

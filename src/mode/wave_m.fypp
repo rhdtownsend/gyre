@@ -1521,7 +1521,6 @@ contains
     complex(RD) :: eul_P
     complex(RD) :: eul_Phi
     complex(RD) :: deul_Phi
-    complex(RD) :: lambda
     real(RD)    :: V_2
     real(RD)    :: U
     real(RD)    :: As
@@ -2575,7 +2574,6 @@ contains
     real(RD)    :: U_l
     real(RD)    :: U_r
     real(RD)    :: c_1
-    complex(RD) :: eul_Phi
      
     ! Calculate the zeta integral
 

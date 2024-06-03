@@ -114,9 +114,6 @@ contains
       complex(RD)               :: omega
       type(ext_ct)              :: discrim
       integer                   :: i_percent
-      integer                   :: status
-      complex(RD), allocatable  :: discrim_map_f(:,:)
-      integer, allocatable      :: discrim_map_e(:,:)
       type(ext_ct), allocatable :: discrim_map(:,:)
       type(contour_map_t)       :: cm
       integer                   :: n_in
@@ -132,8 +129,7 @@ contains
       n_omega_re = SIZE(omega_re)
       n_omega_im = SIZE(omega_im)
 
-      allocate(discrim_map_f(n_omega_re,n_omega_im))
-      allocate(discrim_map_e(n_omega_re,n_omega_im))
+      allocate(discrim_map(n_omega_re,n_omega_im))
 
       n_percent = 0
 
@@ -144,10 +140,7 @@ contains
 
             omega = CMPLX(omega_re(j_re), omega_im(j_im), KIND=RD)
 
-            call eval_discrim(bp, state_ct(omega, omega_r=omega_re(j_re)), discrim)
-
-            discrim_map_f(j_re,j_im) = FRACTION(discrim)
-            discrim_map_e(j_re,j_im) = EXPONENT(discrim)
+            call eval_discrim(bp, state_ct(omega, omega_r=omega_re(j_re)), discrim_map(j_re,j_im))
 
             if (check_log_level('DEBUG')) then
                i_percent = FLOOR(100._RD*((j_im-1)*n_omega_re+j_re)/(n_omega_re*n_omega_im))
@@ -160,8 +153,6 @@ contains
 
          end do discrim_re_loop
       end do discrim_im_loop
-
-      discrim_map = scale(ext_ct(discrim_map_f), discrim_map_e)
 
       call SYSTEM_CLOCK(c_end)
 
@@ -237,7 +228,6 @@ contains
 
          type(ext_ct) :: discrim_a
          type(ext_ct) :: discrim_b
-         integer      :: status
          real(RD)     :: w
 
          ! Evaluate the discriminant at the segment endpoints

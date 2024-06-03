@@ -126,7 +126,6 @@ contains
     integer                 :: n_c
     integer                 :: n_a
     class(model_t), pointer :: ml
-    type(grid_t)            :: gr
 
     ! Classify the mode based on its eigenfunctions
 
