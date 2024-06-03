@@ -1,6 +1,8 @@
 # File     : Make.inc
 # Purpose  : standard makefile rules, targets
 
+SHELL := /bin/bash
+
 #########
 # Checks
 #########
