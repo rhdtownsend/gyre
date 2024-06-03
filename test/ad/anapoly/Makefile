@@ -1,9 +1,9 @@
 # File     : Makefile
-# Purpose  : makefile for test/ad subdir
+# Purpose  : makefile for analytic poly subdir
 
 # Variables
 
-SUBDIRS=num poly anapoly fgong losc mesa
+SUBDIRS=0 1 5
 
 # Rules
 

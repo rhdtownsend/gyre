@@ -1,7 +1,7 @@
 ! Module  : model_par_m
 ! Purpose : model parameters
 !
-! Copyright 2015-2020 Rich Townsend & The GYRE Team
+! Copyright 2015-2024 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -34,6 +34,8 @@ module model_par_m
    ! Derived-type definitions
 
    type :: model_par_t
+      integer                 :: n_poly = 0
+      real(RD)                :: theta_s = 0._RD
       real(RD)                :: Gamma_1 = 5._RD/3._RD
       real(RD)                :: dx_snap = 0._RD
       real(RD)                :: x_i = 0._RD
@@ -70,6 +72,8 @@ contains
       type(model_par_t), intent(out) :: ml_p
 
       integer                          :: n_ml_p
+      integer                          :: n_poly
+      real(RD)                         :: theta_s
       real(RD)                         :: Gamma_1
       real(RD)                         :: dx_snap
       real(RD)                         :: x_i
@@ -88,9 +92,10 @@ contains
       logical                          :: repair_As
       logical                          :: force_linear
 
-      namelist /model/ Gamma_1, dx_snap, x_i, x_o, s, beta_m, beta_p, &
-         model_type, grid_type, file_format, data_format, deriv_type, &
-         file, n, add_center, repair_As, force_linear
+      namelist /model/ n_poly, theta_s, Gamma_1, dx_snap, x_i, x_o, s&
+         &, beta_m, beta_p, model_type, grid_type, file_format,&
+         & data_format, deriv_type, file, n, add_center, repair_As,&
+         & force_linear
 
       ! Count the number of model namelists
 
@@ -115,6 +120,8 @@ contains
 
       ml_p = model_par_t()
 
+      n_poly = ml_p%n_poly
+      theta_s = ml_p%theta_s
       Gamma_1 = ml_p%Gamma_1
       dx_snap = ml_p%dx_snap
       x_i = ml_p%x_i
@@ -139,6 +146,8 @@ contains
 
       ! Store read values
 
+      ml_p%n_poly = n_poly
+      ml_p%theta_s = theta_s
       ml_p%Gamma_1 = Gamma_1
       ml_p%dx_snap = dx_snap
       ml_p%x_i = x_i

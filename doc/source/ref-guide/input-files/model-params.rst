@@ -11,6 +11,7 @@ follows:
 
   - :nml_v:`'HOM'` : Homogeneous compressible model
   - :nml_v:`'POLY'` : Polytropic model read from external file
+  - :nml_v:`'ANAPOLY'` : Analytic polytropic model
   - :nml_v:`'EVOL'` : Evolutionary model read from external file
 
 :nml_n:`file`
@@ -40,28 +41,34 @@ follows:
   - :nml_v:`'MONO'` : Monotonized derivatives (default)
 
 :nml_n:`Gamma_1` (default :nml_v:`5/3`)
-  First adiabatic exponent (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`)
-   
+  First adiabatic exponent (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'`)
+
+:nml_n:`n_poly` (default :nml_n:`0`)
+  Polytropic index (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY'`)
+
+:nml_n:`theta_s` (default :nml_n:`0`)
+  Surface value of polytropic dependent variable (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY'`)
+
 :nml_n:`grid_type` (default :nml_v:`'UNI'`)
-  Model grid type (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`); one of
+  Model grid type (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'`); one of
 
   - :nml_v:`'UNI'` : Uniform spacing
   - :nml_v:`'GEO'` : Geometric spacing
   - :nml_v:`'LOG'` : Logarithmic spacing
 
 :nml_n:`n` (default :nml_v:`10`)
-  Number of points in model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`)
+  Number of points in model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'`)
        
 :nml_n:`s` (default :nml_v:`1`)
   Skewness parameter for model grid (when :nml_n:`model_type`\ =\
-  :nml_v:`'HOM'` and :nml_n:`grid_type`\ =\ :nml_v:`'GEO'`\ \|\
+  :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'` and :nml_n:`grid_type`\ =\ :nml_v:`'GEO'`\ \|\
   :nml_v:`'LOG'`)
 
 :nml_n:`x_i` (default :nml_v:`0`)
-  Inner boundary coordinate of model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`)
+  Inner boundary coordinate of model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'`)
     
 :nml_n:`x_o` (default :nml_v:`1`)
-  Outer boundary coordinate of model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`)
+  Outer boundary coordinate of model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'`)
 
 :nml_n:`dx_snap` (default :nml_v:`0`)
   Threshold for snapping model points together, when

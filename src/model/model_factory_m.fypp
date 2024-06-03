@@ -23,6 +23,7 @@ module model_factory_m
 
    use forum_m, only: RD
 
+   use anapoly_model_m
    use hom_model_m
    use model_m
    use model_par_m
@@ -111,6 +112,10 @@ contains
       case ('HOM')
 
          allocate(ml, SOURCE=hom_model_t(ml_p))
+
+      case ('ANAPOLY')
+
+         allocate(ml, SOURCE=anapoly_model_t(ml_p))
 
       case default
 

@@ -1,0 +1,106 @@
+&constants
+/
+
+&model
+  model_type = 'ANAPOLY'
+  n_poly = 5
+  n = 1000
+  theta_s = 0.01
+/
+
+&mode
+  l = 0
+  tag = 'l=0'
+/
+
+&mode
+  l = 1
+  tag = 'l=1'
+/
+
+&mode
+  l = 2
+  tag = 'l=2'
+/
+
+&mode
+  l = 3
+  tag = 'l=3'
+/
+
+&osc
+/
+
+&rot
+/
+
+&num
+  diff_scheme = 'COLLOC_GL6'
+/
+
+&scan
+  grid_type = 'LINEAR'
+  freq_min = 1.0
+  freq_max = 13.0
+  n_freq = 30
+  tag_list = 'l=0'
+/
+
+&scan
+  grid_type = 'LINEAR'
+  freq_min = 1.0
+  freq_max = 13.0
+  n_freq = 30
+  tag_list = 'l=1'
+/
+
+&scan
+  grid_type = 'INVERSE'
+  freq_min = 0.35
+  freq_max = 1.0
+  n_freq = 30
+  tag_list = 'l=1'
+/
+
+&scan
+  grid_type = 'LINEAR'
+  freq_min = 2.0
+  freq_max = 14.0
+  n_freq = 30
+  tag_list = 'l=2'
+/
+
+&scan
+  grid_type = 'INVERSE'
+  freq_min = 0.55
+  freq_max = 2.0
+  n_freq = 30
+  tag_list = 'l=2'
+/
+
+&scan
+  grid_type = 'LINEAR'
+  freq_min = 3.0
+  freq_max = 15.0
+  n_freq = 30
+  tag_list = 'l=3'
+/
+
+&scan
+  grid_type = 'INVERSE'
+  freq_min = 0.7
+  freq_max = 3.0
+  n_freq = 30
+  tag_list = 'l=3'
+/
+
+&grid
+/
+
+&ad_output
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,n_pg,omega'
+/
+
+&nad_output
+/

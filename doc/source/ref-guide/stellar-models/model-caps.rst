@@ -81,6 +81,11 @@ model-type and file-format combination.
      -
      -
      -
+   * - ANAPOLY
+     - ---
+     -
+     -
+     -
    * - HOM
      - ---
      -

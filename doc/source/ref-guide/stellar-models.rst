@@ -12,6 +12,7 @@ equilibrium stellar configuration.
 
    stellar-models/evol-models.rst
    stellar-models/poly-models.rst
+   stellar-models/anapoly-models.rst
    stellar-models/hom-models.rst
    stellar-models/model-caps.rst
    stellar-models/mesa-file-format.rst
