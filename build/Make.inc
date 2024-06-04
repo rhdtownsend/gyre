@@ -21,7 +21,7 @@ ifneq ($(MAKECMDGOALS),clean)
       else
          $(error Could not determine MESA SDK availability)
       endif
-    endif
+   endif
 
 endif
 
@@ -30,9 +30,11 @@ endif
 ############
 
 ifeq ($(shell uname -s),Darwin)
-   LIB_SUFFIX = .dylib
-else			   
-   LIB_SUFFIX = .so
+   STATIC_LIB_SUFFIX = .a
+   SHARED_LIB_SUFFIX = .dylib
+else
+   STATIC_LIB_SUFFIX = .a
+   SHARED_LIB_SUFFIX = .so
 endif
 
 BIN_DIR ?= ../bin
@@ -42,7 +44,17 @@ INC_DIR ?= ../include
 DEPEND_DIR = .depend
 
 BIN_FILES = $(BIN_TARGETS)
-LIB_FILES = $(addsuffix $(LIB_SUFFIX),$(LIB_TARGETS))
+
+STATIC_LIB_FILES = $(addsuffix $(STATIC_LIB_SUFFIX),$(LIB_TARGETS))
+SHARED_LIB_FILES = $(addsuffix $(SHARED_LIB_SUFFIX),$(LIB_TARGETS))
+
+ifeq ($(SHARED),yes)
+   LIB_FILES = $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) 
+   LIB_SUFFIX = $(SHARED_LIB_SUFFIX)
+else
+   LIB_FILES = $(STATIC_LIB_FILES)
+   LIB_SUFFIX = $(STATIC_LIB_SUFFIX)
+endif
 
 ALL_SRCS = $(foreach target,$(BIN_TARGETS) $(LIB_TARGETS),$($(target)_SRCS) $($(target)_USES))
 
@@ -181,12 +193,17 @@ endif
 # Linking
 ##########
 
+AR = ar
+
 ifeq ($(shell uname -s),Darwin)
-   LIB_LDFLAGS = -shared -install_name $(LIB_DIR)/$@
-   BIN_LDFLAGS = 
+   SHARED_LIB_LDFLAGS = -shared -install_name $(LIB_DIR)/$@
+   ARFLAGS = -cr
 else			   
-   LIB_LDFLAGS = -Wl,--no-warn-execstack -shared -Wl,-rpath -Wl,$(LIB_DIR)
-   BIN_LDFLAGS = -Wl,--no-warn-execstack -Wl,-rpath -Wl,$(LIB_DIR)
+   SHARED_LIB_LDFLAGS = -Wl,--no-warn-execstack -shared -Wl,-rpath -Wl,$(LIB_DIR)
+   ifeq ($(SHARED),yes) then
+      BIN_LDFLAGS = -Wl,--no-warn-execstack -Wl,-rpath -Wl,$(LIB_DIR)
+   endif	
+   ARFLAGS = cr
 endif
 
 ifeq ($(CRMATH),yes)
@@ -203,9 +220,13 @@ $(BIN_FILES) :
 	@echo LD $@
 	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(BIN_LDFLAGS)
 
-$(LIB_FILES) :
+$(STATIC_LIB_FILES) :
+	@echo AR-LIB $@
+	@$(AR) $(ARFLAGS) $@ $^
+
+$(SHARED_LIB_FILES) :
 	@echo LD-LIB $@
-	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(LIB_LDFLAGS)
+	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(SHARED_LIB_LDFLAGS)
 
 #######################
 # Secondary Expansions
@@ -215,6 +236,8 @@ $(LIB_FILES) :
 
 $(BIN_FILES) : % : $$(subst .fypp,.o,$$($$*_SRCS)) $$(addsuffix $(LIB_SUFFIX),$$($$*_LIBS))
 
-$(LIB_FILES) : %$(LIB_SUFFIX) : $$(subst .fypp,.o,$$($$*_SRCS)) $$(addsuffix $(LIB_SUFFIX),$$($$*_LIBS))
+$(STATIC_LIB_FILES) : %$(STATIC_LIB_SUFFIX) : $$(subst .fypp,.o,$$($$*_SRCS))
+
+$(SHARED_LIB_FILES) : %$(SHARED_LIB_SUFFIX) : $$(subst .fypp,.o,$$($$*_SRCS)) $$(addsuffix $(SHARED_LIB_SUFFIX),$$($$*_LIBS))
 
 $(ALL_DEPS) : $(DEPEND_DIR)/%.dep : $$(subst .fypp,.f90,$$($$*_SRCS) $$($$*_USES))

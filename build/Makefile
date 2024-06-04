@@ -10,6 +10,9 @@ IFACES ?= yes
 # Enable debugging (with a performance penalty)
 DEBUG ?= no
 
+# Build & link against shared libraries
+SHARED ?= yes
+
 # Enable OpenMP parallelization
 OMP ?= yes
 
