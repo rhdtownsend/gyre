@@ -41,13 +41,16 @@ EXPERIMENTAL ?= no
 BIN_TARGETS = gyre gyre_tides
 LIB_TARGETS = libgyre
 
+INC_FILES = gyre_m.mod gyre.inc
+
 ifeq ($(TOOLS),yes)
-  BIN_TARGETS := $(BIN_TARGETS) eval_lambda eval_tidal_coeff build_poly poly_to_fgong poly_to_txt
+   BIN_TARGETS := $(BIN_TARGETS) eval_lambda eval_tidal_coeff build_poly poly_to_fgong poly_to_txt
 endif
 
 ifeq ($(IFACES),yes)
-  BIN_TARGETS := $(BIN_TARGETS) test_gyre_mesa
-  LIB_TARGETS := $(LIB_TARGETS) libgyre_mesa
+   BIN_TARGETS := $(BIN_TARGETS) test_gyre_mesa
+   LIB_TARGETS := $(LIB_TARGETS) libgyre_mesa
+   INC_FILES := $(INC_FILES) gyre_mesa_m.mod
 endif
 
 # Source file lists & related variables
