@@ -84,7 +84,7 @@ $(INC_DIR)/% : %
 	@cp $< $@
 
 $(DEPEND_DIR) :
-	mkdir -p $@
+	@mkdir -p $@
 
 clean : almostclean
 	rm -f $(DEPEND_DIR)/*
