@@ -200,7 +200,7 @@ ifeq ($(shell uname -s),Darwin)
    ARFLAGS = -cr
 else			   
    SHARED_LIB_LDFLAGS = -Wl,--no-warn-execstack -shared -Wl,-rpath -Wl,$(LIB_DIR)
-   ifeq ($(SHARED),yes) then
+   ifeq ($(SHARED),yes)
       BIN_LDFLAGS = -Wl,--no-warn-execstack -Wl,-rpath -Wl,$(LIB_DIR)
    endif	
    ARFLAGS = cr
