@@ -22,8 +22,8 @@ build_ref build_ref_arch :
 	@${MAKE} -w -C test $@
 
 clean almostclean :
-	@${MAKE} -w -C src/forum/build $@
-	@${MAKE} -w -C build $@
+	@${MAKE} --no-print-directory -C src/forum/build $@
+	@${MAKE} --no-print-directory -C build $@
 	rm -f ${BIN_DIR}/* ${LIB_DIR}/* ${INC_DIR}/*
 
 .PHONY: all test build_ref build_ref_arch clean almostclean
