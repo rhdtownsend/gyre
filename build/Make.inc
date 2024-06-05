@@ -7,7 +7,7 @@ SHELL := /bin/bash
 # Checks
 #########
 
-MINIMUM_VERSION = 23.7.2
+MINIMUM_VERSION = 21.4.1
 
 ifneq ($(MAKECMDGOALS),clean)
 
@@ -199,11 +199,9 @@ ifeq ($(shell uname -s),Darwin)
    SHARED_LIB_LDFLAGS = -shared -install_name $(LIB_DIR)/$@
    ARFLAGS = -cr
 else			   
-   SHARED_LIB_LDFLAGS = -Wl,--no-warn-execstack -shared -Wl,-rpath -Wl,$(LIB_DIR)
+   SHARED_LIB_LDFLAGS = -shared -Wl,-rpath -Wl,$(LIB_DIR)
    ifeq ($(SHARED),yes)
-      BIN_LDFLAGS = -Wl,--no-warn-execstack -Wl,-rpath -Wl,$(LIB_DIR)
-   else
-      BIN_LDFLAGS = -Wl,--no-warn-execstack
+      BIN_LDFLAGS = -Wl,-rpath -Wl,$(LIB_DIR)
    endif
    ARFLAGS = cr
 endif
