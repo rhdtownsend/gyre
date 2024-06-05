@@ -14,8 +14,6 @@ OUT_FILE=summary.h5
 
 LABEL="polytrope model (n_poly=0.0)"
 
-RELERR=2E-11
-
 # Do the tests
 
 run_gyre $EXEC $IN_FILE "$LABEL"
@@ -23,7 +21,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output $OUT_FILE '' $RELERR rel
+check_output $OUT_FILE '' --relative=2e-13
 if [ $? -ne 0 ]; then
     exit 1;
 fi

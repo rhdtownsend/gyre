@@ -46,9 +46,8 @@ check_output ()
 
     local file_a=$1
     local file_b=$2
-    local errval=$3
-    local errtype=$4
-
+    local h5diff_flags=${@:3}
+    
     # If file_b isn't set, use ref file
 
     if [ ! -e "$file_b" ]; then
@@ -65,26 +64,6 @@ check_output ()
     if [ ! -e "$file_b" ]; then
 	echo "  ...failed: $file_b is missing"
 	return 1
-    fi
-
-    # Set up h5diff flags
-
-    local h5diff_flags=""
-
-    if [ -n "$errval" ]; then
-
-	case $errtype in 
-	    rel|'')
-		h5diff_flags="$h5diff_flags --relative=$errval"
-		;;
-	    abs)
-		h5diff_flags="$h5diff_flags --delta=$errval"
-		;;
-	    *)
-		echo "Invalid errtype"
-		return 1
-	esac
-
     fi
 
     # Do the test

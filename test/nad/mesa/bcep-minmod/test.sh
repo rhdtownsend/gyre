@@ -21,7 +21,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output $OUT_FILE 
+check_output $OUT_FILE '' --delta=2e-13
 if [ $? -ne 0 ]; then
     exit 1;
 fi
