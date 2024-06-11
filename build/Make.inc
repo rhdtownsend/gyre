@@ -109,7 +109,7 @@ vpath %.inc $(SRC_DIRS)
 
 # Flags & files
 
-FPP = ./fypp_deps
+FPP = PYTHONPATH=$(MESASDK_ROOT)/lib/python ./fypp_deps
 
 FPPFLAGS := $(FPPFLAGS) \
 	    --line-numbering \
