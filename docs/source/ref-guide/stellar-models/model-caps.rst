@@ -33,61 +33,61 @@ model-type and file-format combination.
      - R
    * - EVOL
      - AMDL
-     - 
-     - X
-     - 
+     - no
+     - yes
+     - no
    * - EVOL
      - B3
-     - X
-     - X
-     -
+     - yes
+     - yes
+     - no
    * - EVOL
      - FAMDL
-     -
-     - X
-     - 
+     - no
+     - yes
+     - no
    * - EVOL
      - FGONG
-     -
-     - X
-     -
+     - no
+     - yes
+     - no
    * - EVOL
      - GSM
-     - X
-     - X
-     - X
+     - yes
+     - yes
+     - yes
    * - EVOL
      - LOSC
-     -
-     - X
-     - 
+     - no
+     - yes
+     - no
    * - EVOL
      - MESA
-     - X
-     - X
-     - X
+     - yes
+     - yes
+     - yes
    * - EVOL
      - OSC
-     - X
-     - X
-     - X
+     - yes
+     - yes
+     - yes
    * - EVOL
      - WDEC
-     -
-     - X
-     - 
+     - no
+     - yes
+     - no
    * - POLY
      - POLY
-     -
-     -
-     -
+     - no
+     - no
+     - no
    * - ANAPOLY
      - ---
-     -
-     -
-     -
+     - no
+     - no
+     - no
    * - HOM
      - ---
-     -
-     -
-     -
+     - no
+     - no
+     - no
