@@ -90,7 +90,7 @@ clean : almostclean
 	rm -f $(DEPEND_DIR)/*
 
 almostclean :
-	rm -f $(BIN_FILES) $(LIB_FILES) $(INC_FILES) *.f90 *.mod *.smod *.o 
+	rm -f $(BIN_FILES) $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) $(INC_FILES) *.f90 *.mod *.smod *.o 
 
 .PHONY: all install clean almostclean
 
@@ -114,7 +114,7 @@ FPP = PYTHONPATH=$(MESASDK_ROOT)/lib/python ./fypp_deps
 FPPFLAGS := $(FPPFLAGS) \
 	    --line-numbering \
             $(addprefix -I,$(SRC_DIRS)) \
-	    $(addprefix -I,$(INC_DIR)) \
+            $(addprefix -I,$(INC_DIR)) \
             $(foreach opt,DEBUG OMP FPE IEEE,$(if $(filter yes,$($(opt))),-D$(opt)=1,-D$(opt)=0))
 
 ifeq ($(DEBUG),yes)
@@ -180,7 +180,7 @@ $(DEPEND_DIR)/%.anc : %.f90 | $(DEPEND_DIR)
 	@touch $@
 
 $(ALL_DEPS) : | $(DEPEND_DIR)
-	@echo MAKEDEP $* 
+	@echo MAKEDEP $*
 	@$(MAKEDEP) $^ > $@
 
 # Include generated dependencies from .dep files
