@@ -49,7 +49,7 @@ program eval_tidal_coeff
 
    ! Get arguments
 
-   @:ASSERT(n_arg() /= 6, 'Syntax: eval_tidal_coeff [cbar|Gbar_{1..4}|X|X_quad|Y|Y*] coeff R_a e [n|l] m k')
+   @:ASSERT(n_arg() == 6, 'Syntax: eval_tidal_coeff [cbar|Gbar_{1..4}|X|X_quad|Y|Y*] R_a e [n|l] m k')
 
    call get_arg(1, coeff)
    call get_arg(2, R_a)
