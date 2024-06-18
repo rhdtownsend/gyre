@@ -45,6 +45,19 @@ INC_DIR ?= ../include
 FORUM_LIB_DIR ?= $(LIB_DIR)
 FORUM_INC_DIR ?= $(INC_DIR)
 
+SRC_DIRS = $(addprefix ../src/, ad bvp cad common context diff ext	\
+   extern frontend/gyre frontend/tools grid include interp lib math	\
+   matrix mode model nad output par poly rad rot sad search tar tide	\
+   tnad)
+
+ifeq ($(CRMATH),yes)
+   SRC_DIRS := $(SRC_DIRS) ../src/math/crmath
+else
+   SRC_DIRS := $(SRC_DIRS) ../src/math/intrinsic
+endif
+
+MOD_DIRS = $(INC_DIR) $(FORUM_INC_DIR)
+
 # Targets
 
 BIN_TARGETS = gyre gyre_tides
@@ -140,22 +153,9 @@ libgyre_mesa_SRCS = gyre_mesa_m.fypp
 libgyre_mesa_USES = ${libgyre_SRCS}
 libgyre_mesa_LIBS = libgyre
 
-# Directories
+# Additional flags
 
-SRC_DIRS = $(addprefix ../src/, ad bvp cad common context diff ext	\
-   extern frontend/gyre frontend/tools grid include interp lib math	\
-   matrix mode model nad output par poly rad rot sad search tar tide	\
-   tnad)
-
-ifeq ($(CRMATH),yes)
-   SRC_DIRS := $(SRC_DIRS) ../src/math/crmath
-else
-   SRC_DIRS := $(SRC_DIRS) ../src/math/intrinsic
-endif
-
-MOD_PATH = ../include
-
-# Additional link flags
+FPPFLAGS = -I$(FORUM_INC_DIR)
 
 LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB_DIR) -lforum
 

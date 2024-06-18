@@ -116,7 +116,6 @@ FPP = PYTHONPATH=$(MESASDK_ROOT)/lib/python ./fypp_deps
 FPPFLAGS := $(FPPFLAGS) \
 	    --line-numbering \
             $(addprefix -I,$(SRC_DIRS)) \
-            $(addprefix -I,$(INC_DIR)) \
             $(foreach opt,DEBUG OMP FPE IEEE,$(if $(filter yes,$($(opt))),-D$(opt)=1,-D$(opt)=0))
 
 ifeq ($(DEBUG),yes)
@@ -147,7 +146,7 @@ endif
 FC = gfortran
 MAKEDEP = awk -f makedepf08.awk
 
-FFLAGS := $(FFLAGS) -I$(INC_DIR) -std=f2018 \
+FFLAGS := $(FFLAGS) $(addprefix -I,$(MOD_DIRS)) -std=f2018 \
           -finit-real=snan -fbacktrace -fmax-errors=25 -fPIC
 
 ifeq ($(FPE),yes)
