@@ -37,10 +37,6 @@ else
    SHARED_LIB_SUFFIX = .so
 endif
 
-BIN_DIR ?= ../bin
-LIB_DIR ?= ../lib
-INC_DIR ?= ../include
-
 DEPEND_DIR = .depend
 
 BIN_FILES = $(BIN_TARGETS)
@@ -65,11 +61,17 @@ ALL_DEPS = $(addprefix $(DEPEND_DIR)/,$(BIN_TARGETS:%=%.dep) $(LIB_TARGETS:%=%.d
 # Targets
 ##########
 
-all : $(BIN_FILES) $(LIB_FILES)
+all : all-bin all-lib all-inc
 
-install : $(addprefix $(BIN_DIR)/,$(BIN_FILES)) \
-          $(addprefix $(LIB_DIR)/,$(LIB_FILES)) \
-	  $(addprefix $(INC_DIR)/,$(INC_FILES))
+all-bin : $(BIN_FILES)
+all-lib : $(LIB_FILES)
+all-inc : $(INC_FILES)
+
+install : install-bin install-lib install-inc
+
+install-bin : $(addprefix $(BIN_DIR)/,$(BIN_FILES))
+install-lib : $(addprefix $(LIB_DIR)/,$(LIB_FILES))
+install-inc : $(addprefix $(INC_DIR)/,$(INC_FILES))
 
 $(BIN_DIR)/% : %
 	@echo CP $* $@
@@ -92,7 +94,7 @@ clean : almostclean
 almostclean :
 	rm -f $(BIN_FILES) $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) $(INC_FILES) *.f90 *.mod *.smod *.o 
 
-.PHONY: all install clean almostclean
+.PHONY: all all-bin all-lib all-inc install install-bin install-lib install-inc clean almostclean
 
 .SUFFIXES:
 
@@ -226,7 +228,7 @@ $(STATIC_LIB_FILES) :
 
 $(SHARED_LIB_FILES) :
 	@echo LD-LIB $@
-	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(SHARED_LIB_LDFLAGS)
+	$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(SHARED_LIB_LDFLAGS)
 
 #######################
 # Secondary Expansions

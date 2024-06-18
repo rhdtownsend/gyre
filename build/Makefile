@@ -36,6 +36,15 @@ EXPERIMENTAL ?= no
 ### (unless you think you know what you're doing) ###
 #####################################################
 
+# Paths
+
+BIN_DIR ?= ../bin
+LIB_DIR ?= ../lib
+INC_DIR ?= ../include
+
+FORUM_LIB_DIR ?= $(LIB_DIR)
+FORUM_INC_DIR ?= $(INC_DIR)
+
 # Targets
 
 BIN_TARGETS = gyre gyre_tides
@@ -148,7 +157,7 @@ MOD_PATH = ../include
 
 # Additional link flags
 
-LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(LIB_DIR) -lforum
+LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB_DIR) -lforum
 
 # Include standard rules
 
