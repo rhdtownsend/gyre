@@ -1,63 +1,6 @@
 # File     : Makefile
 # Purpose  : makefile for build subdir
 
-# Build tool executables
-TOOLS ?= yes
-
-# Build additional interfaces
-IFACES ?= yes
-
-# Enable debugging (with a performance penalty)
-DEBUG ?= no
-
-# Build & link against shared libraries
-SHARED ?= yes
-
-# Enable OpenMP parallelization
-OMP ?= yes
-
-# Enable FPE checks
-FPE ?= yes
-
-# Enable correctly-rounded math
-CRMATH?=yes
-
-# Enable portable math (for bit-for-bit reproducibility; setting to
-# no may give a performance boost)
-PORTABLE ?= yes
-
-# Use IEEE fortran features
-IEEE ?= yes
-
-# Enable experimental features
-EXPERIMENTAL ?= no
-
-############ DO NOT EDIT BELOW THIS LINE ############
-### (unless you think you know what you're doing) ###
-#####################################################
-
-# Paths
-
-BIN_DIR ?= ../bin
-LIB_DIR ?= ../lib
-INC_DIR ?= ../include
-
-FORUM_LIB_DIR ?= $(LIB_DIR)
-FORUM_INC_DIR ?= $(INC_DIR)
-
-SRC_DIRS = $(addprefix ../src/, ad bvp cad common context diff ext	\
-   extern frontend/gyre frontend/tools grid include interp lib math	\
-   matrix mode model nad output par poly rad rot sad search tar tide	\
-   tnad)
-
-ifeq ($(CRMATH),yes)
-   SRC_DIRS := $(SRC_DIRS) ../src/math/crmath
-else
-   SRC_DIRS := $(SRC_DIRS) ../src/math/intrinsic
-endif
-
-MOD_DIRS = $(INC_DIR) $(FORUM_INC_DIR)
-
 # Targets
 
 BIN_TARGETS = gyre gyre_tides
@@ -66,13 +9,13 @@ LIB_TARGETS = libgyre
 INC_FILES = gyre_m.mod gyre.inc
 
 ifeq ($(TOOLS),yes)
-   BIN_TARGETS := $(BIN_TARGETS) eval_lambda eval_tidal_coeff build_poly poly_to_fgong poly_to_txt
+   BIN_TARGETS += eval_lambda eval_tidal_coeff build_poly poly_to_fgong poly_to_txt
 endif
 
 ifeq ($(IFACES),yes)
-   BIN_TARGETS := $(BIN_TARGETS) test_gyre_mesa
-   LIB_TARGETS := $(LIB_TARGETS) libgyre_mesa
-   INC_FILES := $(INC_FILES) gyre_mesa_m.mod
+   BIN_TARGETS += test_gyre_mesa
+   LIB_TARGETS += libgyre_mesa
+   INC_FILES += gyre_mesa_m.mod
 endif
 
 # Source file lists & related variables
@@ -150,10 +93,12 @@ libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    wave_m.fypp wdec_file_m.fypp writer_m.fypp
 
 libgyre_mesa_SRCS = gyre_mesa_m.fypp
-libgyre_mesa_USES = ${libgyre_SRCS}
+libgyre_mesa_USES = $(libgyre_SRCS)
 libgyre_mesa_LIBS = libgyre
 
-# Additional flags
+# Build flags
+
+FFLAGS = -I$(FORUM_INC_DIR)
 
 FPPFLAGS = -I$(FORUM_INC_DIR)
 

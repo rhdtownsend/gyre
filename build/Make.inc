@@ -1,8 +1,6 @@
 # File     : Make.inc
 # Purpose  : standard makefile rules, targets
 
-SHELL := /bin/bash
-
 #########
 # Checks
 #########
@@ -61,17 +59,17 @@ ALL_DEPS = $(addprefix $(DEPEND_DIR)/,$(BIN_TARGETS:%=%.dep) $(LIB_TARGETS:%=%.d
 # Targets
 ##########
 
-all : all-bin all-lib all-inc
+all : $(BIN_FILES) $(LIB_FILES)
+	@:
 
-all-bin : $(BIN_FILES)
-all-lib : $(LIB_FILES)
-all-inc : $(INC_FILES)
+install : $(addprefix $(BIN_DIR)/,$(BIN_FILES)) \
+	  $(addprefix $(LIB_DIR)/,$(LIB_FILES)) \
+          $(addprefix $(INC_DIR)/,$(INC_FILES))
+	@:
 
-install : install-bin install-lib install-inc
-
-install-bin : $(addprefix $(BIN_DIR)/,$(BIN_FILES))
-install-lib : $(addprefix $(LIB_DIR)/,$(LIB_FILES))
-install-inc : $(addprefix $(INC_DIR)/,$(INC_FILES))
+clean :
+	@rm -rf $(BIN_FILES) $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) \
+                $(INC_FILES) $(DEPEND_DIR) *.f90 *.mod *.smod *.o
 
 $(BIN_DIR)/% : %
 	@echo CP $* $@
@@ -88,13 +86,7 @@ $(INC_DIR)/% : %
 $(DEPEND_DIR) :
 	@mkdir -p $@
 
-clean : almostclean
-	rm -f $(DEPEND_DIR)/*
-
-almostclean :
-	rm -f $(BIN_FILES) $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) $(INC_FILES) *.f90 *.mod *.smod *.o 
-
-.PHONY: all all-bin all-lib all-inc install install-bin install-lib install-inc clean almostclean
+.PHONY: all install clean
 
 .SUFFIXES:
 
@@ -113,15 +105,13 @@ vpath %.inc $(SRC_DIRS)
 
 FPP = PYTHONPATH=$(MESASDK_ROOT)/lib/python ./fypp_deps
 
-FPPFLAGS := $(FPPFLAGS) \
-	    --line-numbering \
-            $(addprefix -I,$(SRC_DIRS)) \
+FPPFLAGS += --line-numbering $(addprefix -I,$(SRC_DIRS)) \
             $(foreach opt,DEBUG OMP FPE IEEE,$(if $(filter yes,$($(opt))),-D$(opt)=1,-D$(opt)=0))
 
 ifeq ($(DEBUG),yes)
-   FPPFLAGS := $(FPPFLAGS) -DLOG_LEVEL=\'DEBUG\'
+   FPPFLAGS += -DLOG_LEVEL=\'DEBUG\'
 else
-   FPPFLAGS := $(FPPFLAGS) -DLOG_LEVEL=\'INFO\'
+   FPPFLAGS += -DLOG_LEVEL=\'INFO\'
 endif
 
 # Rules
@@ -146,35 +136,35 @@ endif
 FC = gfortran
 MAKEDEP = awk -f makedepf08.awk
 
-FFLAGS := $(FFLAGS) $(addprefix -I,$(MOD_DIRS)) -std=f2018 \
-          -finit-real=snan -fbacktrace -fmax-errors=25 -fPIC
+FFLAGS += -std=f2018 -finit-real=snan -fbacktrace -fmax-errors=25 -fPIC
 
 ifeq ($(FPE),yes)
-   FFLAGS := $(FFLAGS) -ffpe-trap=invalid,overflow,zero
+   FFLAGS += -ffpe-trap=invalid,overflow,zero
 endif
 
 ifeq ($(DEBUG),yes)
-   FFLAGS := $(FFLAGS) -Og -ggdb -fcheck=all -Wall \
-             -Wno-unused-dummy-argument -Wno-maybe-uninitialized -finline-limit=0
+   FFLAGS += -Og -ggdb -fcheck=all \
+             -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
+             -finline-limit=0
 else
-   FFLAGS := $(FFLAGS) -O2
+   FFLAGS += -O2
 endif
 
 ifeq ($(OMP),yes)
-   FFLAGS := $(FFLAGS) -fopenmp
+   FFLAGS += -fopenmp
 endif
 
 ifeq ($(PORTABLE),yes)
-   FFLAGS := $(FFLAGS) -ffp-contract=off
+   FFLAGS += -ffp-contract=off
 else
-   FFLAGS := $(FFLAGS) -march=native
+   FFLAGS += -march=native
 endif
 
 # Rules
 
 %.o : $(DEPEND_DIR)/%.anc
 	@echo FC $*
-	@$(FC)$ $(FFLAGS) -c $*.f90
+	@$(FC) $(FFLAGS) -c $*.f90
 
 $(DEPEND_DIR)/%.anc : %.f90 | $(DEPEND_DIR)
 	@$(FC) $(FFLAGS) -fsyntax-only -c $*.f90
@@ -209,10 +199,10 @@ endif
 
 ifeq ($(CRMATH),yes)
    export MESASDK_MATH_SLOT=crmath
-   LDFLAGS := $(LDFLAGS) `crmath_link` `crlibm_link`
+   LDFLAGS += `crmath_link` `crlibm_link`
 else
    export MESASDK_MATH_SLOT=default
-   LDFLAGS := $(LDFLAGS) `crmath_link`
+   LDFLAGS += `crmath_link`
 endif
 
 # Rules
@@ -227,7 +217,7 @@ $(STATIC_LIB_FILES) :
 
 $(SHARED_LIB_FILES) :
 	@echo LD-LIB $@
-	$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(SHARED_LIB_LDFLAGS)
+	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(SHARED_LIB_LDFLAGS)
 
 #######################
 # Secondary Expansions
