@@ -4,8 +4,9 @@
 # Build tool executables
 TOOLS ?= yes
 
-# Build additional interfaces (e.g., the gyre_mesa interface)
-IFACES ?= yes
+# Build additional libraries for interfacing with other codes (e.g.,
+# the gyre_mesa library)
+IFACES ?= no
 
 # Build ForUM internally. If not set to "yes", then
 # you should set FORUM_LIB_DIR and FORUM_INC_DIR to
@@ -25,7 +26,7 @@ OMP ?= yes
 # Enable FPE checks
 FPE ?= yes
 
-# Enable correctly-rounded math
+# Enable correctly rounded math functions
 CRMATH?=yes
 
 # Enable portable math (for bit-for-bit reproducibility; setting to
