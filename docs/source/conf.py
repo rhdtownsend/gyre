@@ -23,9 +23,10 @@ import sphinx_rtd_theme
 
 project = 'GYRE'
 author = 'Rich Townsend & The GYRE Team'
-version = '7.2'
+version = '7.2+dev'
+release = version
 branch = 'master'
-copyright = '2023, Rich Townsend & The GYRE Team'
+copyright = '2024, Rich Townsend & The GYRE Team'
 
 
 # -- General configuration ---------------------------------------------------
@@ -103,13 +104,17 @@ extlinks = {
 
 # Set site-wide targets
 
-if version == 'dev':
-    tarball = 'http://user.astro.wisc.edu/~townsend/resource/download/nightly/gyre-dev.tar.gz'
+if version.endswith('+dev'):
+    dist_dir = 'gyre-dev'
+    tarball = f'{dist_dir}.tar.gz'
+    tarball_url = f'http://user.astro.wisc.edu/~townsend/resource/download/nightly/gyre-dev.tar.gz'
 else:
-    tarball = f'https://github.com/rhdtownsend/gyre/releases/download/v{version}/gyre-{version}.tar.gz'
+    dist_dir = f'gyre-{version}'
+    tarball = f'{dist_dir}.tar.gz'
+    tarball_url = f'https://github.com/rhdtownsend/gyre/releases/download/v{version}/{tarball}'
 
 targets = {
-    'tarball': tarball,
+    'tarball_url': tarball_url,
     'gyre-forums': 'http://user.astro.wisc.edu/~townsend/gyre-forums/',
     'mesa-sdk': 'http://user.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
     'mesa': 'http://mesa.sourceforge.net/',
@@ -120,7 +125,9 @@ rst_prolog = '\n'.join(['.. _{:s}: {:s}'.format(x, targets[x]) for x in targets]
 # Add substitutions for sphinx_substitution_extensions
 
 rep_exts = {"version": version,
-            "author": author}
+            "author": author,
+            "dist_dir": dist_dir,
+            "tarball": tarball}
 
 for rep_ext_key, rep_ext_val in rep_exts.items():
     rst_prolog += "\n.. |{:s}| replace:: {:s}".format(rep_ext_key, rep_ext_val)
@@ -169,13 +176,11 @@ email_automode = True
 
 # Intersphinx mapping
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/doc/stable', None),
     'scipy': ('https://docs.scipy.org/doc/scipy', None),
-    'matplotlib': ('https://matplotlib.org/stable', None),
     'astropy': ('https://docs.astropy.org/en/latest', None),
     'pygyre': ('https://pygyre.readthedocs.io/en/latest', None)
 }
+intersphinx_disabled_reftypes = ["std:doc"]
 
 # Equation number formatting
 math_eqref_format = '{number}'

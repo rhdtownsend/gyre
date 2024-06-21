@@ -22,11 +22,12 @@ components:
 * The `crlibm <https://hal-ens-lyon.archives-ouvertes.fr/ensl-01529804>`__ correctly rounded math library
 * The :git:`crmath <rhdtownsend/crmath>` Fortran 2003 interface to crlibm
 * An OpenMP-aware version of the :netlib:`ODEPACK <odepack>` differential equation library (optional)
+* A `Python <https://www.python.org/>`__ interpreter (3.5 or more recent)
 
-On Linux and MacOS platforms, these components are bundled together in
-the MESA Software Development Kit (SDK), which can be downloaded from
-the `MESA SDK <mesa-sdk_>`__ homepage. Using this SDK is strongly
-recommended.
+On Linux and MacOS platforms, all of these components (save for
+Python 3) are bundled together in the MESA Software Development Kit
+(SDK), which can be downloaded from the `MESA SDK <mesa-sdk_>`__
+homepage. Using this SDK is strongly recommended.
 
 Building GYRE
 =============
@@ -36,13 +37,13 @@ Building GYRE
 Download
 --------
 
-Download the `GYRE source code <tarball_>`__, and unpack it
+Download the `GYRE source code <tarball_url_>`__, and unpack it
 from the command line using the :command:`tar` utility:
 
 .. prompt:: bash
    :substitutions:
 
-   tar xf gyre-|version|.tar.gz
+   tar xf |tarball|
 
 Set the :envvar:`GYRE_DIR` environment variable with the path to the
 newly created source directory; this can be achieved, e.g., using the
@@ -51,7 +52,7 @@ newly created source directory; this can be achieved, e.g., using the
 .. prompt:: bash
    :substitutions:
 
-   export GYRE_DIR=$(realpath gyre-|version|)
+   export GYRE_DIR=$(realpath |dist_dir|)
 
 .. _install-compile:
 
@@ -62,7 +63,7 @@ Compile GYRE using the :command:`make` utility:
 
 .. prompt:: bash
 
-   make -j -C $GYRE_DIR
+   make -j -C $GYRE_DIR install
 
 (the :command:`-j` flags tells :command:`make` to use multiple cores, speeding up the build).
 
@@ -89,50 +90,55 @@ Custom Builds
 =============
 
 Custom builds of GYRE can be created by setting certain environment
-variables, and/or variables in the file
-:file:`{$GYRE_DIR}/src/build/Makefile`, to the value ``yes``. The
-following variables are currently supported:
+variables to the value ``yes``. The following variables are currently
+supported:
+
+TOOLS
+  Build support tools such as :program:`build_poly` and :program:`eval_lambda` (default ``yes``)
+
+IFACES
+  Build additional libraries for interfacing with other codes (default ``no``)
+
+FORUM
+  Build the ForUM library internally (default ``yes``)
 
 DEBUG
   Enable debugging mode (default ``no``)
 
+SHARED
+  Build shared libraries in addition to static ones (default ``yes``)
+
 OMP
   Enable OpenMP parallelization (default ``yes``)
-
-MPI
-  Enable MPI parallelization (default ``no``)
-
-DOUBLE_PRECISION
-  Use double precision floating point arithmetic (default ``yes``)
-
-CRMATH
-  Use correctly rounded math functions (default ``yes``)
-
-IEEE
-  Use Fortran IEEE floating point features (default ``no``)
 
 FPE
   Enable floating point exception checks (default ``yes``)
 
-HDF5
-  Include HDF5 support (default ``yes``)
+CRMATH
+  Enable correctly rounded math functions (default ``yes``)
+
+PORTABLE
+  Enable portable math (default ``yes``)
+
+IEEE
+  Use Fortran IEEE floating point features (default ``yes``)
 
 EXPERIMENTAL
   Enable experimental features (default ``no``)
 
-If a variable is not set, then its default value is assumed.
+If an environment variable is not set, then its default value is assumed.
 
 Git Access
 ==========
 
 Sometimes, you'll want to try out new features in GYRE that haven't
 yet made it into a formal release. In such cases, you can check out
-GYRE directly from the :git:`rhdtownsend/gyre` git repository on
-:git:`GitHub <>`:
+GYRE directly from the :git:`rhdtownsend/gyre <rhdtownsend/gyre>` git
+repository on :git:`GitHub <>`:
 
 .. prompt:: bash
 
-   git clone https://github.com/rhdtownsend/gyre.git
+   git clone --recurse-submodules https://github.com/rhdtownsend/gyre.git
 
 However, a word of caution: GYRE is under constant development, and
 features in the main (``master``) branch can change without warning.

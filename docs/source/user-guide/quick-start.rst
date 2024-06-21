@@ -7,11 +7,11 @@ Quick Start
 To get started with GYRE, follow these five simple steps:
 
 * install the `MESA Software Development Kit <mesa-sdk_>`__;
-* download the `GYRE source code <tarball_>`__;
+* download the `GYRE source code <tarball_url_>`__;
 * unpack the source code using the :command:`tar` utility;
 * set the :envvar:`GYRE_DIR` environment variable to point to the
   newly created source directory;
-* compile GYRE using the command :command:`make -C $GYRE_DIR`.
+* compile GYRE using the command :command:`make -j -C $GYRE_DIR install`.
 
 For a more in-depth installation guide that covers alternative
 use-cases, refer to the :ref:`installation` chapter. If the code
