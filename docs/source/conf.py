@@ -45,6 +45,7 @@ extensions = [
     'sphinxcontrib.spelling',
     'sphinxcontrib.cairosvgconverter',
     'sphinx-prompt',
+    'sphinx_copybutton',
     'sphinx_substitution_extensions',
     'ads_cite',
     'nml_roles'
@@ -107,7 +108,7 @@ extlinks = {
 if version.endswith('+dev'):
     dist_dir = 'gyre-dev'
     tarball = f'{dist_dir}.tar.gz'
-    tarball_url = f'http://user.astro.wisc.edu/~townsend/resource/download/nightly/gyre-dev.tar.gz'
+    tarball_url = f'http://user.astro.wisc.edu/~townsend/resource/download/nightly/{tarball}'
 else:
     dist_dir = f'gyre-{version}'
     tarball = f'{dist_dir}.tar.gz'
