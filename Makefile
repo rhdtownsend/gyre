@@ -1,7 +1,10 @@
 # File     : Makefile
 # Purpose  : top-level makefile
 
-# Build tool executables
+# Build frontend executables (gyre, gyre_tides, etc)
+FRONTENDS ?= yes
+
+# Build tool executables (build_poly, eval_lambda, etc)
 TOOLS ?= yes
 
 # Build additional libraries for interfacing with other codes (e.g.,
@@ -9,7 +12,7 @@ TOOLS ?= yes
 IFACES ?= no
 
 # Build ForUM internally. If not set to "yes", then
-# you should set FORUM_LIB_DIR and FORUM_INC_DIR to
+# you must set FORUM_LIB_DIR and FORUM_INC_DIR to
 # point to where the ForUM library and module files,
 # respectively, are located
 FORUM ?= yes

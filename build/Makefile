@@ -3,10 +3,13 @@
 
 # Targets
 
-BIN_TARGETS = gyre gyre_tides
 LIB_TARGETS = libgyre
 
 INC_FILES = gyre_m.mod gyre.inc
+
+ifeq ($(FRONTENDS),yes)
+   BIN_TARGETS += gyre gyre_tides
+endif
 
 ifeq ($(TOOLS),yes)
    BIN_TARGETS += eval_lambda eval_tidal_coeff build_poly poly_to_fgong poly_to_txt
