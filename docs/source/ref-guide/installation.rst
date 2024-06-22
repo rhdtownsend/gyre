@@ -93,40 +93,48 @@ Custom builds of GYRE can be created by setting certain environment
 variables to the value ``yes``. The following variables are currently
 supported:
 
-TOOLS
-  Build support tools such as :program:`build_poly` and :program:`eval_lambda` (default ``yes``)
+:envvar:`FRONTENDS`
+  Build main frontends such as :program:`gyre` and :program:`gyre_tides` (default ``yes``)
 
-IFACES
+:envvar:`TOOLS`
+  Build tools such as :program:`build_poly` and :program:`eval_lambda` (default ``yes``)
+
+:envvar:`IFACES`
   Build additional libraries for interfacing with other codes (default ``no``)
 
-FORUM
-  Build the ForUM library internally (default ``yes``)
+:envvar:`FORUM`
+  Build the :git:`ForUM <rhdtownsend/forum>` library internally (default ``yes``).  If not set
+  to ``yes``, then you must set the :envvar:`FORUM_LIB_DIR` and :envvar:`FORUM_INC_DIR`
+  environment variables to point to where the ForUM library and module files, respectively,
+  are located
 
-DEBUG
+:envvar:`DEBUG`
   Enable debugging mode (default ``no``)
 
-SHARED
+:envvar:`SHARED`
   Build shared libraries in addition to static ones (default ``yes``)
 
-OMP
+:envvar:`OMP`
   Enable OpenMP parallelization (default ``yes``)
 
-FPE
+:envvar:`FPE`
   Enable floating point exception checks (default ``yes``)
 
-CRMATH
+:envvar:`CRMATH`
   Enable correctly rounded math functions (default ``yes``)
 
-PORTABLE
+:envvar:`PORTABLE`
   Enable portable math (default ``yes``)
 
-IEEE
+:envvar:`IEEE`
   Use Fortran IEEE floating point features (default ``yes``)
 
-EXPERIMENTAL
+:envvar:`EXPERIMENTAL`
   Enable experimental features (default ``no``)
 
-If an environment variable is not set, then its default value is assumed.
+If an environment variable is not set, then its default value is
+assumed. The default values can be altered by editing the file
+:file:`{$GYRE_DIR}/Makefile`.
 
 Git Access
 ==========
