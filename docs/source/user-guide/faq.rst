@@ -15,12 +15,6 @@ How Do I...
 ...compile GYRE?
   See the :ref:`install-compile` section.
 
-...compile a statically linked version of GYRE?
-  Set the :envvar:`STATIC` environment variable to ``yes`` prior to
-  compilation. Note that this currently only works on Linux platforms,
-  and when then :envvar:`CRMATH` environment variable is set to
-  ``no``.
-
 .. _faq-multicore:
 
 ...run GYRE on multiple cores?
@@ -31,17 +25,6 @@ How Do I...
   environment variable to ``yes`` prior to compilation. Then, set the
   :envvar:`OMP_NUM_THREADS` environment variable to the number of threads
   you want to use.
-
-.. _faq-cluster:
-
-...run GYRE on a cluster?
-  GYRE can take advantage of multiple nodes in a computer cluster
-  through its use of :wiki:`MPI <Message_Passing_Interface>`. To enable this functionality,
-  set the :envvar:`MPI` environment variable to ``yes`` prior to
-  compilation. Note that you'll need to use a version of the
-  `MESA Software Development Kit <mesa-sdk_>`__ built with MPI
-  support for your cluster's specific networking technology (e.g.,
-  :wiki:`Infiniband <Infiniband>`); contact the GYRE team for more details.
 
 ...pronounce GYRE?
   With a soft 'g' rhyming with 'wire', like :download:`this <faq/gyre-spoken.mp3>`.
@@ -60,7 +43,7 @@ How Do I...
   panel. Note that this menu is only available when viewing the
   `documentation <https://gyre.readthedocs.io/en/stable/>`__ on `Read
   the Docs <https://readthedocs.org/>`__; it isn't available in a
-  local build within the :file:`{$GYRE_DIR}/doc/sphinx` directory.
+  local build within the :file:`{$GYRE_DIR}/docs` directory.
   Also, the legacy documentation is a work-in-progress, and remains
   incomplete.
 
