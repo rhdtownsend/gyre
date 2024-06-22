@@ -105,7 +105,7 @@ extlinks = {
 
 # Set site-wide targets
 
-if version.endswith('+dev'):
+if version == 'dev':
     dist_dir = 'gyre-dev'
     tarball = f'{dist_dir}.tar.gz'
     tarball_url = f'http://user.astro.wisc.edu/~townsend/resource/download/nightly/{tarball}'
