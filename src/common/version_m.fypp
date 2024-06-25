@@ -1,7 +1,7 @@
 ! Module  : version_m
 ! Purpose : versioning info
 !
-! Copyright 2013-2021 Rich Townsend & The GYRE Team
+! Copyright 2013-2024 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -25,7 +25,7 @@ module version_m
 
    ! Parameter definitions
 
-   character(*), parameter :: VERSION = 'dev'
+   character(*), parameter :: VERSION = '7.2.1'
 
    ! Access specifiers
 
