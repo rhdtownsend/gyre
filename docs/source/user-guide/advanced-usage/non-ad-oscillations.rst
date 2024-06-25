@@ -151,8 +151,7 @@ the corresponding imaginary ones :math:`\Dfunci=0`, as the initial
 trial roots for the non-adiabatic problem. The method is described in
 full in :ads_citet:`goldstein:2020`; it is very effective even for
 strongly non-adiabatic modes with :math:`|\sigmai/\sigmar| \sim 1`,
-although there is an increased computational cost (see :ref:`here <faq-cluster>`
-for one strategy for mitigating this cost).
+although there is an increased computational cost.
 
 To perform non-adiabatic calculations with the contour method, set
 the following parameters in the :nml_g:`osc` namelist group:

@@ -5,6 +5,7 @@ Dalsgaard
 eqn
 eqns
 gravothermal
+Kutta
 monotonized
 monovariate
 Namelist
