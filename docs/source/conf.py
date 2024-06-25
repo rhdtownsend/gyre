@@ -23,7 +23,7 @@ import sphinx_rtd_theme
 
 project = 'GYRE'
 author = 'Rich Townsend & The GYRE Team'
-version = '7.2.1'
+version = 'dev'
 release = version
 branch = 'master'
 copyright = '2024, Rich Townsend & The GYRE Team'
