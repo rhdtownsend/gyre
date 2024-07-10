@@ -1,0 +1,114 @@
+! Program  : eval_love
+! Purpose  : evaluate static Love numbers
+!
+! Copyright 2024 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+program eval_love
+
+   ! Uses
+
+   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
+
+   use gyre_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Variables
+
+   character(:), allocatable :: filename
+   integer                   :: l
+
+   type(model_par_t)        :: ml_p
+   type(osc_par_t)          :: os_p
+   type(rot_par_t)          :: rt_p
+   type(num_par_t)          :: nm_p
+   type(grid_par_t)         :: gr_p
+   type(mode_par_t)         :: md_p
+   class(model_t), pointer  :: ml => null()
+   type(context_t), pointer :: cx
+   type(grid_t)             :: gr
+   type(sad_bvp_t)          :: bp
+   type(state_rt)           :: st
+   real(RD)                 :: w_i(1)
+   real(RD)                 :: w_o(1)
+   type(wave_t)             :: wv
+   real(RD)                 :: k_l
+
+   ! Read parameters
+
+   @:ASSERT(n_arg() == 2, 'Syntax: eval_love filename l')
+
+   call get_arg(1, filename)
+   call get_arg(2, l)
+
+   ! Initialize
+
+   call init_math()
+
+   ! Check arguments
+
+   @:ASSERT(ABS(l) >= 0, 'invalid l')
+
+   ! Set up parameters
+
+   ml_p = model_par_t(model_type='EVOL', file_format='MESA', file=filename)
+
+   os_p = osc_par_t()
+   rt_p = rot_par_t()
+   nm_p = num_par_t()
+   gr_p = grid_par_t(w_osc=10._RD, w_exp=2._RD, w_ctr=10._RD)
+   md_p = mode_par_t(l=l)
+   
+   ! Initialize the model
+
+   ml => model_t(ml_p)
+
+   ! Set up the context
+
+   allocate(cx)
+
+   cx = context_t(ml, gr_p, md_p, os_p, rt_p)
+
+   ! Create the grid (using omega=3 as representative of the f-mode
+   ! frequency)
+
+   gr = grid_t(cx, [3._RD], gr_p, os_p)
+   
+   ! Solve for the tidal response
+
+   bp = sad_bvp_t(cx, gr, md_p, nm_p, os_p)
+
+   w_i = 0._RD
+   w_o = (2*l+1)
+
+   st = state_rt(0._RD)
+
+   wv = wave_t(bp, st, w_i, w_o, 0)
+
+   ! Evaluate the Love number
+
+   k_l = wv%eul_Phi(wv%n)
+
+   print *, k_l
+
+   ! Finish
+   
+end program eval_love

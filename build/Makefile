@@ -12,7 +12,7 @@ ifeq ($(FRONTENDS),yes)
 endif
 
 ifeq ($(TOOLS),yes)
-   BIN_TARGETS += eval_lambda eval_tidal_coeff build_poly poly_to_fgong poly_to_txt
+   BIN_TARGETS += eval_lambda eval_tidal_coeff build_poly poly_to_fgong poly_to_txt eval_love
 endif
 
 ifeq ($(IFACES),yes)
@@ -54,6 +54,10 @@ poly_to_fgong_LIBS = libgyre
 poly_to_txt_SRCS = poly_to_txt.fypp
 poly_to_txt_USES = $(libgyre_SRCS)
 poly_to_txt_LIBS = libgyre
+
+eval_love_SRCS = eval_love.fypp
+eval_love_USES = $(libgyre_SRCS)
+eval_love_LIBS = libgyre
 
 test_gyre_mesa_SRCS = test_gyre_mesa.fypp
 test_gyre_mesa_USES = $(libgyre_mesa_SRCS) $(libgyre_SRCS)

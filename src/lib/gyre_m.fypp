@@ -26,6 +26,7 @@ module gyre_m
    use ad_bvp_m
    use nad_bvp_m
    use rad_bvp_m
+   use sad_bvp_m
    use tnad_bvp_m
 
    ! Grids
@@ -73,6 +74,7 @@ module gyre_m
    use math_m
    use search_m
    use special_m
+   use state_m
    use tar_eigen_m
    use tidal_coeff_m
    use tidal_context_m
