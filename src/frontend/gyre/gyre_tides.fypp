@@ -96,8 +96,6 @@ program gyre_tides
 
    call read_constants(unit)
 
-   call read_constants(unit)
-
    call read_model_par(unit, ml_p)
    call read_osc_par(unit, os_p)
    call read_rot_par(unit, rt_p)
