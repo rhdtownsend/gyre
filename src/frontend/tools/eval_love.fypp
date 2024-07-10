@@ -34,6 +34,8 @@ program eval_love
    ! Variables
 
    character(:), allocatable :: filename
+   character(:), allocatable :: model_type
+   character(:), allocatable :: file_format
    integer                   :: l
 
    type(model_par_t)        :: ml_p
@@ -47,6 +49,8 @@ program eval_love
    type(grid_t)             :: gr
    type(sad_bvp_t)          :: bp
    type(state_rt)           :: st
+   real(RD)                 :: A
+   real(RD)                 :: B
    real(RD)                 :: w_i(1)
    real(RD)                 :: w_o(1)
    type(wave_t)             :: wv
@@ -54,10 +58,12 @@ program eval_love
 
    ! Read parameters
 
-   @:ASSERT(n_arg() == 2, 'Syntax: eval_love filename l')
+   @:ASSERT(n_arg() == 4, 'Syntax: eval_love filename model_type file_format l')
 
    call get_arg(1, filename)
-   call get_arg(2, l)
+   call get_arg(2, model_type)
+   call get_arg(3, file_format)
+   call get_arg(4, l)
 
    ! Initialize
 
@@ -69,7 +75,7 @@ program eval_love
 
    ! Set up parameters
 
-   ml_p = model_par_t(model_type='EVOL', file_format='MESA', file=filename)
+   ml_p = model_par_t(model_type=model_type, file_format=file_format, file=filename)
 
    os_p = osc_par_t()
    rt_p = rot_par_t()
@@ -91,13 +97,15 @@ program eval_love
    ! frequency)
 
    gr = grid_t(cx, [3._RD], gr_p, os_p)
-   
+
    ! Solve for the tidal response
 
    bp = sad_bvp_t(cx, gr, md_p, nm_p, os_p)
 
+   A = 1._RD
+
    w_i = 0._RD
-   w_o = (2*l+1)
+   w_o = (2*l+1)*A
 
    st = state_rt(0._RD)
 
@@ -105,7 +113,9 @@ program eval_love
 
    ! Evaluate the Love number
 
-   k_l = wv%eul_Phi(wv%n)
+   B = wv%eul_Phi(wv%n) - A
+
+   k_l = B/A
 
    print *, k_l
 
