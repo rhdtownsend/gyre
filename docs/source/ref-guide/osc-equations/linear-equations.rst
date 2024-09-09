@@ -73,7 +73,7 @@ Moreover, the thermodynamic partial derivatives are defined as
 .. math::
 
    \Gammi = \left( \pderiv{\ln P}{\ln \rho} \right)_{S}, \quad
-   \upsT = \left( \pderiv{\ln \rho}{\ln T} \right)_{P}, \quad
+   \upsT = - \left( \pderiv{\ln \rho}{\ln T} \right)_{P}, \quad
    \cP = \left( \pderiv{S}{\ln T} \right)_{P}, \quad
    \nabad = \left( \pderiv{\ln T}{\ln P} \right)_{S},
 
