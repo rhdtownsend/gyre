@@ -55,20 +55,20 @@ MAKEFLAGS += --no-print-directory
 
 # Paths
 
-BIN_DIR = $(CURDIR)/bin
-LIB_DIR = $(CURDIR)/lib
-INC_DIR = $(CURDIR)/include
+BIN_DIR ?= $(CURDIR)/bin
+LIB_DIR ?= $(CURDIR)/lib
+INC_DIR ?= $(CURDIR)/include
+
 SRC_DIR = $(CURDIR)/src
+SRC_DIRS = $(addprefix $(SRC_DIR)/,ad bvp cad common context diff ext	\
+   extern frontend/gyre frontend/tools grid include interp lib math	\
+   matrix mode model nad output par poly rad rot sad search tar tide	\
+   tnad)
 
 ifeq ($(FORUM),yes)
    FORUM_LIB_DIR = $(LIB_DIR)
    FORUM_INC_DIR = $(INC_DIR)
 endif
-
-SRC_DIRS = $(addprefix $(SRC_DIR)/,ad bvp cad common context diff ext	\
-   extern frontend/gyre frontend/tools grid include interp lib math	\
-   matrix mode model nad output par poly rad rot sad search tar tide	\
-   tnad)
 
 ifeq ($(CRMATH),yes)
    SRC_DIRS += $(SRC_DIR)/math/crmath
@@ -94,10 +94,10 @@ test build_ref build_ref_arch :
 ifeq ($(FORUM),yes)
 
    install-forum : | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
-	@$(MAKE) -C src/forum install
+	@$(MAKE) -C $(SRC_DIR)/forum install
 
    clean-forum :
-	@$(MAKE) -C src/forum clean
+	@$(MAKE) -C $(SRC_DIR)/forum clean
 
 else
 

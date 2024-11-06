@@ -43,7 +43,7 @@ STATIC_LIB_FILES = $(addsuffix $(STATIC_LIB_SUFFIX),$(LIB_TARGETS))
 SHARED_LIB_FILES = $(addsuffix $(SHARED_LIB_SUFFIX),$(LIB_TARGETS))
 
 ifeq ($(SHARED),yes)
-   LIB_FILES = $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) 
+   LIB_FILES = $(STATIC_LIB_FILES) $(SHARED_LIB_FILES)
    LIB_SUFFIX = $(SHARED_LIB_SUFFIX)
 else
    LIB_FILES = $(STATIC_LIB_FILES)
@@ -63,7 +63,7 @@ all : $(BIN_FILES) $(LIB_FILES)
 	@:
 
 install : $(addprefix $(BIN_DIR)/,$(BIN_FILES)) \
-	  $(addprefix $(LIB_DIR)/,$(LIB_FILES)) \
+          $(addprefix $(LIB_DIR)/,$(LIB_FILES)) \
           $(addprefix $(INC_DIR)/,$(INC_FILES))
 	@:
 
@@ -101,7 +101,7 @@ vpath %.inc $(SRC_DIRS)
 # Preproccessing
 #################
 
-# Flags & files
+# Flags
 
 FPP = PYTHONPATH=$(MESASDK_ROOT)/lib/python ./fypp_deps
 
@@ -131,9 +131,10 @@ endif
 # Compiling
 ############
 
-# Flags & files
+# Flags
 
 FC = gfortran
+
 MAKEDEP = awk -f makedepf08.awk
 
 FFLAGS += -std=f2018 -finit-real=snan -fbacktrace -fmax-errors=25 -fPIC
@@ -188,11 +189,14 @@ AR = ar
 
 ifeq ($(shell uname -s),Darwin)
    SHARED_LIB_LDFLAGS = -shared -install_name $(LIB_DIR)/$@
+   BIN_LDFLAGS =
    ARFLAGS = -cr
 else			   
    SHARED_LIB_LDFLAGS = -shared -Wl,-rpath -Wl,$(LIB_DIR)
    ifeq ($(SHARED),yes)
       BIN_LDFLAGS = -Wl,-rpath -Wl,$(LIB_DIR)
+   else
+      BIN_LDFLAGS =
    endif
    ARFLAGS = cr
 endif
