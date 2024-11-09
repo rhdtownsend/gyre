@@ -41,7 +41,7 @@ from a Fourier time expansion). Here,
    
 .. math::
 
-   \epsT = \left( \frac{R}{a} \right)^{3} = \frac{\Oorb R^{3}}{GM} \frac{q}{1+q}
+   \epsT = \left( \frac{R}{a} \right)^{3} q = \frac{\Oorb^{2} R^{3}}{GM} \frac{q}{1+q}
 
 quantifies the overall strength of the tidal forcing, in terms of the
 companion's mass :math:`q M`, semi-major axis :math:`a` and orbital

@@ -197,7 +197,7 @@ condition is replaced by the outer momentum boundary condition
 described by :ads_citet:`ong:2020`.
 
 Internal Boundaries
-~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^
 
 Across density discontinuities, GYRE applies the boundary conditions
 
