@@ -128,7 +128,11 @@ contains
          ml%z_s = sqrt(6._RD*(1._RD - ml_p%theta_s))
       case (1)
          @:ASSERT(ml_p%theta_s >= 0._RD .AND. ml_p%theta_s < 1._RD, 'invalid theta_s')
-         call solve_root(eval_func_, 0._RD, PI, 0._RD, num_par_t(), ml%z_s, status, f_x_a=1._RD, f_x_b=0._RD)
+         if (ml_p%theta_s == 0._RD) then
+            ml%z_s = PI
+         else
+            call solve_root(eval_func_, 0._RD, PI, 0._RD, num_par_t(), ml%z_s, status)
+         end if
       case (5)
          @:ASSERT(ml_p%theta_s > 0._RD .AND. ml_p%theta_s < 1._RD, 'invalid theta_s')
          ml%z_s = sqrt(3._RD*(pow(ml_p%theta_s, -2._RD/5._RD) - 1._RD))
