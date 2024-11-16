@@ -115,7 +115,14 @@ contains
       read(unit, *)
       read(unit, *)
       read(unit, *)
-      read(unit, *)
+      read(unit, *) iabund ! MAY NOT be the same as later
+
+      ! if there are many chemical elements in the nuclear network,
+      ! those are written on additional lines in the header.
+
+      if (iabund > 14) then
+        read(unit, *)
+      endif
 
       read(unit, *) n, iconst, ivar, iabund, ivers
 
@@ -158,29 +165,48 @@ contains
 
       r = point_data(1,:)
       m = exp(point_data(2,:))*M_star
-      L_r = point_data(7,:)
 
-      T = point_data(3,:)
-      P = point_data(4,:)
-      rho = point_data(5,:)
+      ! subsequent columns depend on file version
 
-      Gamma_1 = point_data(10,:)
-      nabla_ad = point_data(11,:)
-      ups_T = point_data(12,:)
+      if (ivers /= 5) then
+         L_r = point_data(7,:)
 
-      As = point_data(15,:)
+         T = point_data(3,:)
+         P = point_data(4,:)
+         rho = point_data(5,:)
 
-      nabla = point_data(6,:)
+         Gamma_1 = point_data(10,:)
+         nabla_ad = point_data(11,:)
+         ups_T = point_data(12,:)
 
-      kap = point_data(8,:)
-      kap_rho = point_data(18,:)
-      kap_T = point_data(17,:)
+         As = point_data(15,:)
 
-      eps = point_data(9,:)
-      eps_eps_rho = point_data(20,:)
-      eps_eps_T = point_data(19,:)
+         nabla = point_data(6,:)
 
-      Omega_rot = point_data(16,:)
+         kap = point_data(8,:)
+         kap_rho = point_data(18,:)
+         kap_T = point_data(17,:)
+
+         eps = point_data(9,:)
+         eps_eps_rho = point_data(20,:)
+         eps_eps_T = point_data(19,:)
+
+         Omega_rot = point_data(16,:)
+
+      else
+
+         ! only a restricted number of columns
+         ! is available in the "PLATO" format
+
+         P = point_data(3,:)
+         rho = point_data(4,:)
+         Gamma_1 = point_data(5,:)
+         As = point_data(6,:) ! this column actually contains N2 in cgs units
+
+         ! last two columns in PLATO format are Y and Z,
+         ! which GYRE doesn't use in pulsation calculations
+
+      endif
 
       ! Snap grid points
 
@@ -193,41 +219,55 @@ contains
       allocate(V_2(n))
       allocate(U(n))
       allocate(c_1(n))
-      allocate(c_lum(n))
 
       where (x /= 0._RD)
          V_2 = G_GRAVITY*m*rho/(P*r*x**2)
          U = 4._RD*PI*rho*r**3/m
          c_1 = (r/R_star)**3/(m/M_star)
-         c_lum = (L_r/L_star)/x**3
       elsewhere
          V_2 = 4._RD*PI*G_GRAVITY*rho(1)**2*R_star**2/(3._RD*P(1))
          U = 3._RD
          c_1 = 3._RD*(M_star/R_star**3)/(4._RD*PI*rho)
-         c_lum = 4._RD*PI*rho(1)*eps(1)*R_star**3/L_star
       end where
 
-      beta_rad = A_RADIATION*T**4/(3._RD*P)
+      if (ivers == 5) then ! fix As for PLATO format files
+         where (x /= 0._RD)
+            As = r**3*As/(G_GRAVITY*m)
+         elsewhere
+            As = 0._RD
+         end where
+      endif
 
-      c_P = P*ups_T/(rho*T*nabla_ad)
+      if (ivers /= 5) then
+         allocate(c_lum(n))
+         where (x /= 0._RD)
+            c_lum = (L_r/L_star)/x**3
+         elsewhere
+            c_lum = 4._RD*PI*rho(1)*eps(1)*R_star**3/L_star
+         end where
 
-      c_rad = 16._RD*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._RD*kap*rho*L_star)
-      c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
-      c_thk = 4._RD*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
-      c_eps = 4._RD*PI*rho*eps*R_star**3/L_star
+         beta_rad = A_RADIATION*T**4/(3._RD*P)
 
-      allocate(eps_rho(n))
-      allocate(eps_T(n))
+         c_P = P*ups_T/(rho*T*nabla_ad)
 
-      where (eps /= 0._RD)
-         eps_rho = eps_eps_rho/eps
-         eps_T = eps_eps_T/eps
-      elsewhere
-         eps_rho = 0._RD
-         eps_T = 0._RD
-      end where
+         c_rad = 16._RD*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._RD*kap*rho*L_star)
+         c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
+         c_thk = 4._RD*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
+         c_eps = 4._RD*PI*rho*eps*R_star**3/L_star
 
-      Omega_rot = Omega_rot*sqrt(R_star**3/(G_GRAVITY*M_star))
+         allocate(eps_rho(n))
+         allocate(eps_T(n))
+
+         where (eps /= 0._RD)
+            eps_rho = eps_eps_rho/eps
+            eps_T = eps_eps_T/eps
+         elsewhere
+            eps_rho = 0._RD
+            eps_T = 0._RD
+         end where
+
+         Omega_rot = Omega_rot*sqrt(R_star**3/(G_GRAVITY*M_star))
+      endif
 
       ! Initialize the evol_model_t
 
@@ -237,27 +277,28 @@ contains
       call em%define(I_AS, As)
       call em%define(I_U, U)
       call em%define(I_C_1, c_1)
-
       call em%define(I_GAMMA_1, Gamma_1)
-      call em%define(I_UPS_T, ups_T)
-      call em%define(I_NABLA_AD, nabla_ad)
-      call em%define(I_NABLA, nabla)
-      call em%define(I_BETA_RAD, beta_rad)
 
-      call em%define(I_C_LUM, c_lum)
-      call em%define(I_C_RAD, c_rad)
-      call em%define(I_C_THN, c_thn)
-      call em%define(I_C_THK, c_thk)
-      call em%define(I_C_EPS, c_eps)
+      if (ivers /= 5) then
+         call em%define(I_UPS_T, ups_T)
+         call em%define(I_NABLA_AD, nabla_ad)
+         call em%define(I_NABLA, nabla)
+         call em%define(I_BETA_RAD, beta_rad)
 
-      call em%define(I_EPS_RHO, eps_rho)
-      call em%define(I_EPS_T, eps_T)
+         call em%define(I_C_LUM, c_lum)
+         call em%define(I_C_RAD, c_rad)
+         call em%define(I_C_THN, c_thn)
+         call em%define(I_C_THK, c_thk)
+         call em%define(I_C_EPS, c_eps)
 
-      call em%define(I_KAP_RHO, kap_rho)
-      call em%define(I_KAP_T, kap_T)
+         call em%define(I_EPS_RHO, eps_rho)
+         call em%define(I_EPS_T, eps_T)
 
-      call em%define(I_OMEGA_ROT, Omega_rot)
+         call em%define(I_KAP_RHO, kap_rho)
+         call em%define(I_KAP_T, kap_T)
 
+         call em%define(I_OMEGA_ROT, Omega_rot)
+      endif
       call em%commit()
 
       ! Return a pointer
