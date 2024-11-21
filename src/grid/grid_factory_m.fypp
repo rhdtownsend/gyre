@@ -783,7 +783,8 @@ contains
 
       n = SIZE(x)
 
-      ! Extract segment boundaries from the model grid
+      ! Extract internal segment boundaries from the model that fall
+      ! within the grid range
 
       n_s = gr_ml%s_o() - gr_ml%s_i() + 1
 
@@ -796,12 +797,19 @@ contains
          j_s_i = gr_ml%j_s_i(s)
          j_s_o = gr_ml%j_s_o(s)
 
-         x_b(i  ) = gr_ml%pt(j_s_i)%x
-         x_b(i+1) = gr_ml%pt(j_s_o)%x
+         if (s > gr_ml%s_i() .AND. gr_ml%pt(j_s_i)%x >= x(1)) then
+            x_b(i) = gr_ml%pt(j_s_i)%x
+            i = i + 1
+         end if
 
-         i = i + 2
+         if (s < gr_ml%s_o() .AND. gr_ml%pt(j_s_o)%x <= x(n)) then
+            x_b(i) = gr_ml%pt(j_s_o)%x
+            i = i + 1
+         end if
 
       end do seg_loop
+
+      x_b = x_b(:i-1)
 
       ! Remove points from x that are already in x_b
 
