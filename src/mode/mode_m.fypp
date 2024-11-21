@@ -187,6 +187,7 @@ contains
        class default
           call find_turn(this%context(), this%grid(), state_rt(REAL(this%omega)), &
                this%nm_p, this%os_p, j_i, x_i)
+          j_i = j_i + 1
        end select
 
        ! Count winding numbers, taking care to avoid counting nodes at
