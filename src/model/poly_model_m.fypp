@@ -91,16 +91,17 @@ module poly_model_m
 
 contains
 
-   function poly_model_t_(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot) result(ml)
+   function poly_model_t_(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot, deriv_type) result(ml)
 
-      real(RD), intent(in) :: z(:)
-      real(RD), intent(in) :: theta(:)
-      real(RD), intent(in) :: dtheta(:)
-      real(RD), intent(in) :: n_poly(:)
-      real(RD), intent(in) :: Delta_b(:)
-      real(RD), intent(in) :: Gamma_1
-      real(RD), intent(in) :: Omega_rot
-      type(poly_model_t)   :: ml
+      real(RD), intent(in)               :: z(:)
+      real(RD), intent(in)               :: theta(:)
+      real(RD), intent(in)               :: dtheta(:)
+      real(RD), intent(in)               :: n_poly(:)
+      real(RD), intent(in)               :: Delta_b(:)
+      real(RD), intent(in)               :: Gamma_1
+      real(RD), intent(in)               :: Omega_rot
+      character(*), intent(in), optional :: deriv_type
+      type(poly_model_t)                 :: ml
 
       integer  :: n_p
       real(RD) :: x(SIZE(z))
@@ -193,22 +194,40 @@ contains
          j_i = ml%gr%j_s_i(s)
          j_o = ml%gr%j_s_o(s)
 
-         if (ml%n_poly(s) /= 0._RD) then
+         if (PRESENT(deriv_type)) then
 
-            where (z(j_i:j_o) /= 0._RD)
-               d2theta(j_i:j_o) = -2._RD*dtheta(j_i:j_o)/z(j_i:j_o) - ml%B(s)*pow(theta(j_i:j_o), ml%n_poly(s))
-            elsewhere
-               d2theta(j_i:j_o) = -1._RD/3._RD
-            end where
+            ! Calculate spline derivatives numerically
+
+            if (x(j_i) == 0._RD) then
+               ml%in_theta(s) = interp_rt(x(j_i:j_o), theta(j_i:j_o), deriv_type, df_dx_a=0._RD)
+               ml%in_dtheta(s) = interp_rt(x(j_i:j_o), dtheta(j_i:j_o), deriv_type, df_dx_a=-1._RD/3._RD)
+            else
+               ml%in_theta(s) = interp_rt(x(j_i:j_o), theta(j_i:j_o), deriv_type)
+               ml%in_dtheta(s) = interp_rt(x(j_i:j_o), dtheta(j_i:j_o), deriv_type)
+            end if
 
          else
 
-            d2theta(j_i:j_o) = -1._RD/3._RD
+            ! Calculate spline derivatives self-consistently using Lane-Emden equation
 
-         endif
+            if (ml%n_poly(s) /= 0._RD) then
 
-         ml%in_theta(s) = interp_rt(x(j_i:j_o), theta(j_i:j_o), dtheta(j_i:j_o)*ml%z_s)
-         ml%in_dtheta(s) = interp_rt(x(j_i:j_o), dtheta(j_i:j_o), d2theta(j_i:j_o)*ml%z_s)
+               where (z(j_i:j_o) /= 0._RD)
+                  d2theta(j_i:j_o) = -2._RD*dtheta(j_i:j_o)/z(j_i:j_o) - ml%B(s)*pow(theta(j_i:j_o), ml%n_poly(s))
+               elsewhere
+                  d2theta(j_i:j_o) = -1._RD/3._RD
+               end where
+
+            else
+
+               d2theta(j_i:j_o) = -1._RD/3._RD
+
+            endif
+
+            ml%in_theta(s) = interp_rt(x(j_i:j_o), theta(j_i:j_o), dtheta(j_i:j_o)*ml%z_s)
+            ml%in_dtheta(s) = interp_rt(x(j_i:j_o), dtheta(j_i:j_o), d2theta(j_i:j_o)*ml%z_s)
+
+         end if
 
       end do seg_spline_loop
 
