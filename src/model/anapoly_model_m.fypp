@@ -135,11 +135,11 @@ contains
          end if
       case (5)
          @:ASSERT(ml_p%theta_s > 0._RD .AND. ml_p%theta_s < 1._RD, 'invalid theta_s')
-         ml%z_s = sqrt(3._RD*(pow(ml_p%theta_s, -2._RD/5._RD) - 1._RD))
+         ml%z_s = sqrt(3._RD*(1._RD - ml_p%theta_s**2))/ml_p%theta_s
       case default
          @:ABORT('invalid n_poly')
       end select
-         
+
       ml%mu_s = -ml%z_s**2*ml%dtheta_(ml%z_s)
 
       ml%Gamma_1 = ml_p%Gamma_1
