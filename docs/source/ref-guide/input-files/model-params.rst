@@ -36,7 +36,7 @@ follows:
 :nml_n:`deriv_type` (default :nml_v:`'MONO'`)
   Cubic interpolation derivatives type (when :nml_n:`model_type`\ =\ :nml_v:`'POLY'`\ \|\ :nml_v:`'EVOL'`); one of
 
-  - :nml_v:`'NATURAL'` : Natural (spline) derivatives
+  - :nml_v:`'SPLINE'` : Spline (non-local) derivatives
   - :nml_v:`'FINDIFF'` : Finite-difference derivatives
   - :nml_v:`'MONO'` : Monotonized derivatives (default)
 
