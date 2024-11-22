@@ -9,10 +9,10 @@ follows:
 :nml_n:`model_type`
   Type of model to use; one of:
 
-  - :nml_v:`'HOM'` : Homogeneous compressible model
-  - :nml_v:`'POLY'` : Polytropic model read from external file
-  - :nml_v:`'ANAPOLY'` : Analytic polytropic model
-  - :nml_v:`'EVOL'` : Evolutionary model read from external file
+  - :nml_v:`'HOM'` : :ref:`Homogeneous compressible model <hom-models>`
+  - :nml_v:`'POLY'` : :ref:`Polytropic model <poly-models>` read from external file
+  - :nml_v:`'ANAPOLY'` : :ref:`Analytic polytropic model <anapoly-models>`
+  - :nml_v:`'EVOL'` : :ref:`Evolutionary model <evol-models>` read from external file
 
 :nml_n:`file`
   Name of file (when :nml_n:`model_type`\ = \ :nml_v:`'POLY'`\ \|\ :nml_v:`'EVOL'`)
@@ -24,17 +24,24 @@ follows:
   - :nml_v:`'B3'` : B3-format HDF5 file
   - :nml_v:`'FAMDL'` : FAMDL-format text file
   - :nml_v:`'FGONG'` : FGONG-format text file
-  - :nml_v:`'GSM'` : GSM-format HDF5 file
+  - :nml_v:`'GSM'` : :ref:`GSM-format <gsm-file-format>` HDF5 file
   - :nml_v:`'LOSC'` : LOSC-format text file
-  - :nml_v:`'MESA'` : MESA GYRE-format text file
+  - :nml_v:`'MESA'` : :ref:`MESA/GYRE-format <mesa-file-format>` text file
   - :nml_v:`'OSC'` : OSC-format text file
+  - :nml_v:`'POLY'` : :ref:`POLY-format <poly-file-format>` HDF5 file
   - :nml_v:`'WDEC'` : WDEC-format text file
+
+  Using :nml_n:`model_type`\ =\ :nml_v:`'EVOL'` and
+  :nml_n:`file_format`\ =\ :nml_v:`'POLY'` gives similar (but not
+  identical) results to choosing :nml_n:`model_type`\ =\
+  :nml_v:`'POLY'`; the two approaches differ in how the model
+  structure is interpolated.
 
 :nml_n:`data_format` (default :nml_v:`''`, indicates auto-select)
   Fortran format specifier for data read from OSC-, FGONG- and FAMDL-format files
   
 :nml_n:`deriv_type` (default :nml_v:`'MONO'`)
-  Cubic interpolation derivatives type (when :nml_n:`model_type`\ =\ :nml_v:`'POLY'`\ \|\ :nml_v:`'EVOL'`); one of
+  Cubic interpolation derivatives type (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`); one of
 
   - :nml_v:`'SPLINE'` : Spline (non-local) derivatives
   - :nml_v:`'FINDIFF'` : Finite-difference derivatives

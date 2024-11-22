@@ -91,6 +91,8 @@ contains
             call read_mesa_model(ml_p, ml)
          case ('OSC')
             call read_osc_model(ml_p, ml)
+         case ('POLY')
+            call read_poly_model_as_evol(ml_p, ml)
          case ('WDEC')
             call read_wdec_model(ml_p, ml)
          case default
