@@ -50,6 +50,7 @@ module evol_model_m
       real(RD), public             :: L_star
       logical                      :: add_center
       logical                      :: repair_As
+      logical                      :: repair_derivs
       integer                      :: s_i
       integer                      :: s_o
       character(:), allocatable    :: deriv_type
@@ -148,6 +149,8 @@ contains
       ml%L_star = L_star
 
       ml%repair_As = ml_p%repair_As
+      ml%repair_derivs = ml_p%repair_derivs
+
       ml%deriv_type = ml_p%deriv_type
 
       ml%committed = .FALSE.
@@ -292,15 +295,62 @@ contains
 
       class(evol_model_t), intent(inout) :: this
 
-      integer  :: s
-      integer  :: j_i
-      integer  :: j_o
-      real(RD) :: x(this%gr%n)
-      real(RD) :: c_1(this%gr%n)
-      real(RD) :: U(this%gr%n)
-      real(RD) :: dc_1_dx(this%gr%n)
+      integer               :: s
+      integer               :: j_i
+      integer               :: j_o
+      real(RD), allocatable :: x(:)
+      real(RD), allocatable :: V_2(:)
+      real(RD), allocatable :: As(:)
+      real(RD), allocatable :: U(:)
+      real(RD), allocatable :: c_1(:)
+      real(RD), allocatable :: Gamma_1(:)
+      real(RD), allocatable :: dc_1_dx(:)
+      real(RD), allocatable :: dU_dx(:)
 
       ! Commit the model
+
+      ! If necessary, repair derivatives of U and c_1
+
+      if (this%repair_derivs) then
+
+         seg_loop : do s = this%s_i, this%s_o
+
+            j_i = this%gr%j_s_i(s)
+            j_o = this%gr%j_s_o(s)
+
+            ! Get coefficients
+
+            x = this%in(I_U, s)%x()
+
+            U = this%in(I_U, s)%f()
+            c_1 = this%in(I_C_1, s)%f()
+            As = this%in(I_AS, s)%f()
+            V_2 = this%in(I_V_2, s)%f()
+            Gamma_1 = this%in(I_GAMMA_1, S)%f()
+
+            ! Evaluate new derivatives, following eqns. (20) and (21)
+            ! of Takata (2006)
+
+            allocate(dc_1_dx(SIZE(x)))
+            allocate(dU_dx(SIZE(x)))
+
+            where (x /= 0._RD)
+               dc_1_dx = c_1*(3 - U)/x
+               dU_dx = U*(-V_2*x**2/Gamma_1 - As - U + 3)/x
+            elsewhere
+               dc_1_dx = 0._RD
+               dU_dx = 0._RD
+            end where
+
+            this%in(I_C_1,s) = interp_rt(x, c_1, dc_1_dx)
+            this%in(I_U,s) = interp_rt(x, U, dU_dx)
+
+            deallocate(dc_1_dx)
+            deallocate(dU_dx)
+
+         end do seg_loop
+
+      end if
 
       ! Update the committed flag
 

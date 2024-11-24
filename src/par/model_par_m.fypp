@@ -52,6 +52,7 @@ module model_par_m
       integer                 :: n = 10
       logical                 :: add_center = .TRUE.
       logical                 :: repair_As = .FALSE.
+      logical                 :: repair_derivs = .FALSE.
       logical                 :: force_linear = .FALSE.
    end type model_par_t
 
@@ -90,12 +91,13 @@ contains
       integer                          :: n
       logical                          :: add_center
       logical                          :: repair_As
+      logical                          :: repair_derivs
       logical                          :: force_linear
 
       namelist /model/ n_poly, theta_s, Gamma_1, dx_snap, x_i, x_o, s&
          &, beta_m, beta_p, model_type, grid_type, file_format,&
          & data_format, deriv_type, file, n, add_center, repair_As,&
-         & force_linear
+         & repair_derivs, force_linear
 
       ! Count the number of model namelists
 
@@ -138,6 +140,7 @@ contains
       n = ml_p%n
       add_center = ml_p%add_center
       repair_As = ml_p%repair_As
+      repair_derivs = ml_p%repair_derivs
       force_linear = ml_p%force_linear
 
       ! Read the namelist
@@ -164,6 +167,7 @@ contains
       ml_p%n = n
       ml_p%add_center = add_center
       ml_p%repair_As = repair_As
+      ml_p%repair_derivs = repair_derivs
       ml_p%force_linear = force_linear
 
       ! Finish

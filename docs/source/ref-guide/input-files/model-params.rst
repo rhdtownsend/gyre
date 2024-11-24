@@ -90,3 +90,9 @@ follows:
 :nml_n:`repair_As` (default :nml_v:`.FALSE.`)
   Flag to repair inaccuracies in the dimensionless Brunt-Väisälä
   frequency at density discontinuities
+
+:nml_n:`repair_derivs` (default :nml_v:`.FALSE.`)
+  Flag to repair derivatives of :math:`c_1` and :math:`U` structure coefficients
+  (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`), in accordance with equations
+  (20) and (21) of :ads_citet:`takata:2006a`, respectively
+  
