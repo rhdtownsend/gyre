@@ -304,6 +304,7 @@ contains
       real(RD), allocatable :: U(:)
       real(RD), allocatable :: c_1(:)
       real(RD), allocatable :: Gamma_1(:)
+      real(RD), allocatable :: dV_2_dx(:)
       real(RD), allocatable :: dc_1_dx(:)
       real(RD), allocatable :: dU_dx(:)
 
@@ -328,25 +329,31 @@ contains
             V_2 = this%in(I_V_2, s)%f()
             Gamma_1 = this%in(I_GAMMA_1, S)%f()
 
-            ! Evaluate new derivatives, following eqns. (20) and (21)
-            ! of Takata (2006)
+            ! Evaluate new derivatives for V_2, U and c_1, following
+            ! eqns. (20) and (21) of Takata (2006) plus the equation
+            ! of hydrostatic equilibrium
 
-            allocate(dc_1_dx(SIZE(x)))
+            allocate(dV_2_dx(SIZE(x)))
             allocate(dU_dx(SIZE(x)))
+            allocate(dc_1_dx(SIZE(x)))
 
             where (x /= 0._RD)
+               dV_2_dx = V_2*(V_2*x**2 - V_2*x**2/Gamma_1 - As + U - 3._RD)/x
+               dU_dx = U*(-V_2*x**2/Gamma_1 - As - U + 3._RD)/x
                dc_1_dx = c_1*(3 - U)/x
-               dU_dx = U*(-V_2*x**2/Gamma_1 - As - U + 3)/x
             elsewhere
-               dc_1_dx = 0._RD
+               dV_2_dx = 0._RD
                dU_dx = 0._RD
+               dc_1_dx = 0._RD
             end where
 
-            this%in(I_C_1,s) = interp_rt(x, c_1, dc_1_dx)
-            this%in(I_U,s) = interp_rt(x, U, dU_dx)
+            this%in(I_V_2, s) = interp_rt(x, V_2, dV_2_dx)
+            this%in(I_C_1, s) = interp_rt(x, c_1, dc_1_dx)
+            this%in(I_U, s) = interp_rt(x, U, dU_dx)
 
             deallocate(dc_1_dx)
             deallocate(dU_dx)
+            deallocate(dV_2_dx)
 
          end do seg_loop
 
