@@ -87,12 +87,21 @@ follows:
   :nml_v:`'EVOL'`\ \|\ :nml_v:`'POLY'`). If a point does not already
   exist at the origin, then one is added
 
+:nml_n:`interp_type` (default :nml_v:`'CUBIC'`)
+  Interpolation type (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`); one of
+
+  - :nml_v:`'CUBIC'`  : Piecewise cubic
+  - :nml_v:`'LINEAR'` : Piecewise linear
+
 :nml_n:`repair_As` (default :nml_v:`.FALSE.`)
   Flag to repair inaccuracies in the dimensionless Brunt-Väisälä
   frequency at density discontinuities
 
-:nml_n:`repair_derivs` (default :nml_v:`.FALSE.`)
-  Flag to repair derivatives of :math:`c_1` and :math:`U` structure coefficients
-  (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`), in accordance with equations
-  (20) and (21) of :ads_citet:`takata:2006a`, respectively
+:nml_n:`constrain_derivs` (default :nml_v:`.FALSE.`)
+  Flag to constrain first derivatives of :math:`V_2`, :math:`U` and
+  :math:`c_1` structure coefficients (when :nml_n:`model_type`\ =\
+  :nml_v:`'EVOL'` and :nml_n:`deriv_type`\ =\ :nml_v:`'CUBIC'`), in
+  accordance with equations
+  (20) and (21) of :ads_citet:`takata:2006a` and the hydrostatic
+  equilibrium equation
   

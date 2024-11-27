@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=bcep spb spb-qad rgb rgb-isolate-gamma rgb-isolate-pi dcep
+SUBDIRS=bcep spb spb-qad spb-constrain-derivs spb-linear-interp rgb rgb-isolate-gamma rgb-isolate-pi dcep
 
 # Rules
 

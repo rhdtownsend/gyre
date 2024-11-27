@@ -24,8 +24,10 @@ module poly_model_m
    use forum_m, only: RD
 
    use constants_m
+   use cubic_interp_m
    use grid_m
    use interp_m
+   use linear_interp_m
    use math_m
    use model_m
    use point_m
@@ -41,20 +43,20 @@ module poly_model_m
 
    type, extends(model_t) :: poly_model_t
       private
-      type(grid_t)                 :: gr
-      type(interp_rt), allocatable :: in_theta(:)
-      type(interp_rt), allocatable :: in_dtheta(:)
-      real(RD), allocatable        :: n_poly(:)
-      real(RD), allocatable        :: mu_i(:)
-      real(RD), allocatable        :: v_i(:)
-      real(RD), allocatable        :: t(:)
-      real(RD), allocatable        :: B(:)
-      real(RD)                     :: mu_s
-      real(RD)                     :: z_s
-      real(RD)                     :: Gamma_1
-      real(RD)                     :: Omega_rot
-      integer                      :: s_i
-      integer                      :: s_o
+      type(grid_t)                  :: gr
+      class(interp_rt), allocatable :: in_theta(:)
+      class(interp_rt), allocatable :: in_dtheta(:)
+      real(RD), allocatable         :: n_poly(:)
+      real(RD), allocatable         :: mu_i(:)
+      real(RD), allocatable         :: v_i(:)
+      real(RD), allocatable         :: t(:)
+      real(RD), allocatable         :: B(:)
+      real(RD)                      :: mu_s
+      real(RD)                      :: z_s
+      real(RD)                      :: Gamma_1
+      real(RD)                      :: Omega_rot
+      integer                       :: s_i
+      integer                       :: s_o
    contains
       private
       procedure, public :: coeff
@@ -91,17 +93,17 @@ module poly_model_m
 
 contains
 
-   function poly_model_t_(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot, deriv_type) result(ml)
+   function poly_model_t_(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot, interp_type) result(ml)
 
-      real(RD), intent(in)               :: z(:)
-      real(RD), intent(in)               :: theta(:)
-      real(RD), intent(in)               :: dtheta(:)
-      real(RD), intent(in)               :: n_poly(:)
-      real(RD), intent(in)               :: Delta_b(:)
-      real(RD), intent(in)               :: Gamma_1
-      real(RD), intent(in)               :: Omega_rot
-      character(*), intent(in), optional :: deriv_type
-      type(poly_model_t)                 :: ml
+      real(RD), intent(in)     :: z(:)
+      real(RD), intent(in)     :: theta(:)
+      real(RD), intent(in)     :: dtheta(:)
+      real(RD), intent(in)     :: n_poly(:)
+      real(RD), intent(in)     :: Delta_b(:)
+      real(RD), intent(in)     :: Gamma_1
+      real(RD), intent(in)     :: Omega_rot
+      character(*), intent(in) :: interp_type
+      type(poly_model_t)       :: ml
 
       integer  :: n_p
       real(RD) :: x(SIZE(z))
@@ -140,8 +142,16 @@ contains
 
       ! Allocate arrays
 
-      allocate(ml%in_theta(ml%s_i:ml%s_o))
-      allocate(ml%in_dtheta(ml%s_i:ml%s_o))
+      select case(interp_type)
+      case('LINEAR')
+         allocate(linear_interp_rt::ml%in_theta(ml%s_i:ml%s_o))
+         allocate(linear_interp_rt::ml%in_dtheta(ml%s_i:ml%s_o))
+      case('CUBIC')
+         allocate(cubic_interp_rt::ml%in_theta(ml%s_i:ml%s_o))
+         allocate(cubic_interp_rt::ml%in_dtheta(ml%s_i:ml%s_o))
+      case default
+         @:ABORT('invalid interp_type')
+      end select
 
       allocate(ml%n_poly(ml%s_i:ml%s_o))
       allocate(ml%mu_i(ml%s_i:ml%s_o))
@@ -187,47 +197,35 @@ contains
 
       ml%mu_s = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
-      ! Set up per-segment splines
+      ! Set up per-segment interpolants
 
       seg_spline_loop : do s = ml%s_i, ml%s_o
 
          j_i = ml%gr%j_s_i(s)
          j_o = ml%gr%j_s_o(s)
 
-         if (PRESENT(deriv_type)) then
+         select type(in => ml%in_theta(s))
+         type is (linear_interp_rt)
+            in = linear_interp_rt(x(j_i:j_o), theta(j_i:j_o))
+         type is (cubic_interp_rt)
+            in = cubic_interp_rt(x(j_i:j_o), theta(j_i:j_o), dtheta(j_i:j_o)*ml%z_s)
+         end select
 
-            ! Calculate spline derivatives numerically
-
-            if (x(j_i) == 0._RD) then
-               ml%in_theta(s) = interp_rt(x(j_i:j_o), theta(j_i:j_o), deriv_type, df_dx_a=0._RD)
-               ml%in_dtheta(s) = interp_rt(x(j_i:j_o), dtheta(j_i:j_o), deriv_type, df_dx_a=-1._RD/3._RD)
-            else
-               ml%in_theta(s) = interp_rt(x(j_i:j_o), theta(j_i:j_o), deriv_type)
-               ml%in_dtheta(s) = interp_rt(x(j_i:j_o), dtheta(j_i:j_o), deriv_type)
-            end if
-
-         else
-
-            ! Calculate spline derivatives self-consistently using Lane-Emden equation
-
+         select type(in => ml%in_dtheta(s))
+         type is (linear_interp_rt)
+            in = linear_interp_rt(x(j_i:j_o), dtheta(j_i:j_o))
+         type is (cubic_interp_rt)
             if (ml%n_poly(s) /= 0._RD) then
-
                where (z(j_i:j_o) /= 0._RD)
                   d2theta(j_i:j_o) = -2._RD*dtheta(j_i:j_o)/z(j_i:j_o) - ml%B(s)*pow(theta(j_i:j_o), ml%n_poly(s))
                elsewhere
                   d2theta(j_i:j_o) = -1._RD/3._RD
                end where
-
             else
-
                d2theta(j_i:j_o) = -1._RD/3._RD
-
-            endif
-
-            ml%in_theta(s) = interp_rt(x(j_i:j_o), theta(j_i:j_o), dtheta(j_i:j_o)*ml%z_s)
-            ml%in_dtheta(s) = interp_rt(x(j_i:j_o), dtheta(j_i:j_o), d2theta(j_i:j_o)*ml%z_s)
-
-         end if
+            end if
+            in = cubic_interp_rt(x(j_i:j_o), dtheta(j_i:j_o), d2theta(j_i:j_o)*ml%z_s)
+         end select
 
       end do seg_spline_loop
 
@@ -301,8 +299,8 @@ contains
 
          z = pt%x*this%z_s
 
-         theta = this%in_theta(pt%s)%f(pt%x)
-         dtheta = this%in_dtheta(pt%s)%f(pt%x)
+         call this%in_theta(pt%s)%eval_f(pt%x, theta)
+         call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
 
          if (theta /= 0._RD) then
             coeff = -(this%n_poly(pt%s) + 1._RD)*this%z_s**2*dtheta/(theta*z)
@@ -358,7 +356,7 @@ contains
 
          z = pt%x*this%z_s
 
-         theta = this%in_theta(pt%s)%f(pt%x)
+         call this%in_theta(pt%s)%eval_f(pt%x, theta)
 
          if (this%n_poly(pt%s) /= 0._RD) then
             coeff = z**3*this%t(pt%s)*pow(theta, this%n_poly(pt%s))/this%mu_(pt)
@@ -463,8 +461,8 @@ contains
 
          z = pt%x*this%z_s
 
-         theta = this%in_theta(pt%s)%f(pt%x)
-         dtheta = this%in_dtheta(pt%s)%f(pt%x)
+         call this%in_theta(pt%s)%eval_f(pt%x, theta)
+         call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
 
          if (this%n_poly(pt%s) /= 0._RD) then
             if (theta /= 0._RD) then
@@ -529,8 +527,8 @@ contains
 
          z = pt%x*this%z_s
 
-         theta = this%in_theta(pt%s)%f(pt%x)
-         dtheta = this%in_dtheta(pt%s)%f(pt%x)
+         call this%in_theta(pt%s)%eval_f(pt%x, theta)
+         call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
 
          if (theta /= 0._RD) then
             dcoeff = 3._RD + this%n_poly(pt%s)*z*dtheta/theta - this%coeff_U_(pt)
@@ -576,11 +574,14 @@ contains
       type(point_t), intent(in)       :: pt
       real(RD)                        :: mu
 
+      real(RD) :: dtheta
       real(RD) :: v
 
       ! Evaluate the mass coordinate mu
 
-      v = (this%z_s*pt%x)**2*this%in_dtheta(pt%s)%f(pt%x)
+      call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
+
+      v = (this%z_s*pt%x)**2*dtheta
 
       mu = this%mu_i(pt%s) - (v - this%v_i(pt%s))*this%t(pt%s)/this%B(pt%s)
 
@@ -623,11 +624,15 @@ contains
       type(point_t), intent(in)       :: pt
       logical                         :: is_vacuum
 
+      real(RD) :: theta
+
       @:ASSERT_DEBUG(pt%s >= this%s_i .AND. pt%s <= this%s_o, 'Invalid segment')
 
       ! Return whether the point is a vacuum
 
-      is_vacuum = this%in_theta(pt%s)%f(pt%x) == 0._RD
+      call this%in_theta(pt%s)%eval_f(pt%x, theta)
+
+      is_vacuum = theta == 0._RD
 
       ! Finish
 

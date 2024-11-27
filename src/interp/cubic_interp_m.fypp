@@ -1,0 +1,369 @@
+! Module  : cubic_interp_m
+! Purpose : piecewise cubic interpolators
+!
+! Copyright 2015-2024 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module cubic_interp_m
+
+   ! Uses
+
+   use forum_m, only: RD, hdf5io_t, locate
+
+   use deriv_m
+   use interp_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, extends(interp_${S}$) :: cubic_interp_${S}$
+         private
+         real(RD), allocatable :: x(:)     ! Abscissa
+         ${T}$, allocatable    :: f(:)     ! Ordinate
+         ${T}$, allocatable    :: df_dx(:) ! First derivatives
+         integer               :: n        ! Number of points
+      contains
+         private
+         procedure, public :: get_x_min => get_x_min_${S}$_
+         procedure, public :: get_x_max => get_x_max_${S}$_
+         procedure, public :: eval_f => eval_f_${S}$_
+         procedure, public :: eval_df_dx => eval_df_dx_${S}$_
+      end type cubic_interp_${S}$
+
+      ! Interfaces
+
+      interface cubic_interp_${S}$
+         module procedure cubic_interp_${S}$_
+         module procedure cubic_interp_${S}$_eval_derivs_
+      end interface cubic_interp_${S}$
+
+      interface read
+         module procedure read_${S}$_
+      end interface read
+
+      interface write
+         module procedure write_${S}$_
+      end interface write
+
+      ! Access specifiers
+
+      public :: cubic_interp_${S}$
+
+   #:endfor
+
+   public :: read
+   public :: write
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function cubic_interp_${S}$_(x, f, df_dx) result(ci)
+
+         real(RD), intent(in)     :: x(:)
+         ${T}$, intent(in)        :: f(:)
+         ${T}$, intent(in)        :: df_dx(:)
+         type(cubic_interp_${S}$) :: ci
+
+         @:CHECK_BOUNDS(SIZE(f), SIZE(x))
+         @:CHECK_BOUNDS(SIZE(df_dx), SIZE(x))
+
+         @:ASSERT(ALL(x(2:) > x(:SIZE(x)-1)), 'non-monotonic abscissa')
+
+         ! Construct the cubic_interp_t
+
+         ! Store values
+
+         ci%x = x
+         ci%f = f
+         ci%df_dx = df_dx
+
+         ci%n = SIZE(x)
+
+         ! Finish
+
+         return
+
+      end function cubic_interp_${S}$_
+
+      !****
+
+      function cubic_interp_${S}$_eval_derivs_(x, f, deriv_type, df_dx_a, df_dx_b) result(ci)
+
+         real(RD), intent(in)        :: x(:)
+         ${T}$, intent(in)           :: f(:)
+         character(*), intent(in)    :: deriv_type
+         ${T}$, optional, intent(in) :: df_dx_a
+         ${T}$, optional, intent(in) :: df_dx_b
+         type(cubic_interp_${S}$)    :: ci
+
+         @:CHECK_BOUNDS(SIZE(f), SIZE(x))
+
+         ! Construct the cubic_interp_t, with derivatives calculated
+         ! according to deriv_type
+
+         ci = cubic_interp_${S}$(x, f, deriv(x, f, deriv_type, df_dx_a, df_dx_b))
+
+         ! Finish
+
+         return
+
+      end function cubic_interp_${S}$_eval_derivs_
+
+      !****
+
+      subroutine read_${S}$_(hi, ci)
+
+         type(hdf5io_t), intent(inout)         :: hi
+         type(cubic_interp_${S}$), intent(out) :: ci
+
+         real(RD), allocatable :: x(:)
+         ${T}$, allocatable    :: f(:)
+         ${T}$, allocatable    :: df_dx(:)
+
+         ! Read the cubic_interp_t
+
+         call hi%alloc_read_dset('x', x)
+         call hi%alloc_read_dset('f', f)
+         call hi%alloc_read_dset('df_dx', df_dx)
+
+         ci = cubic_interp_${S}$(x, f, df_dx)
+
+         ! Finish
+
+         return
+
+      end subroutine read_${S}$_
+
+      !****
+
+      subroutine write_${S}$_(hi, ci)
+
+         type(hdf5io_t), intent(inout)        :: hi
+         type(cubic_interp_${S}$), intent(in) :: ci
+
+         ! Write the cubic_interp_t
+
+         call hi%write_attr('n', ci%n)
+
+         call hi%write_dset('x', ci%x)
+         call hi%write_dset('f', ci%f)
+         call hi%write_dset('df_dx', ci%df_dx)
+
+         ! Finish
+
+         return
+
+      end subroutine write_${S}$_
+
+      !****
+
+      subroutine get_x_min_${S}$_(this, x_min)
+
+         class(cubic_interp_${S}$), intent(in) :: this
+         real(RD), intent(out)                 :: x_min
+
+         ! Get the minimum abscissa value
+
+         x_min = this%x(1)
+
+         ! Finish
+
+         return
+
+      end subroutine get_x_min_${S}$_
+
+      !****
+
+      subroutine get_x_max_${S}$_(this, x_max)
+
+         class(cubic_interp_${S}$), intent(in) :: this
+         real(RD), intent(out)                 :: x_max
+
+         ! Get the maximum abscissa value
+
+         x_max = this%x(this%n)
+
+         ! Finish
+
+         return
+
+      end subroutine get_x_max_${S}$_
+
+      !****
+
+      subroutine eval_f_${S}$_(this, x, f)
+
+         class(cubic_interp_${S}$), intent(in) :: this
+         real(RD), intent(in)                  :: x
+         ${T}$, intent(out)                    :: f
+
+         integer, save :: i = 1
+         integer       :: j
+         real(RD)      :: h
+         real(RD)      :: w
+
+         !$OMP THREADPRIVATE (i)
+
+         ! Set up the bracketing index
+
+         call locate(this%x, x, i)
+         @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+         j = MIN(i, this%n-1)
+
+         ! Set up the interpolation weight
+
+         h = this%x(j+1) - this%x(j)
+         w = (x - this%x(j))/h
+
+         ! Evaluate the function
+
+         f = &
+            this%f(j)*dphi_dt_(1._RD-w, 0) + &
+            this%f(j+1)*dphi_dt_(w, 0) - &
+            this%df_dx(j)*dpsi_dt_(1._RD-w, 0)/h**(-1) + &
+            this%df_dx(j+1)*dpsi_dt_(w, 0)/h**(-1)
+
+         ! (the last two lines included for bit-for-bit compatibility)
+
+         ! Finish
+
+         return
+
+      end subroutine eval_f_${S}$_
+
+      !****
+         
+      subroutine eval_df_dx_${S}$_(this, x, df_dx)
+
+         class(cubic_interp_${S}$), intent(in) :: this
+         real(RD), intent(in)                  :: x
+         ${T}$, intent(out)                    :: df_dx
+
+         integer, save :: i = 1
+         integer       :: j
+         real(RD)      :: h
+         real(RD)      :: w
+
+         !$OMP THREADPRIVATE (i)
+
+         ! Set up the bracketing index
+
+         call locate(this%x, x, i)
+         @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+         j = MIN(i, this%n-1)
+
+         ! Set up the interpolation weight
+
+         h = this%x(j+1) - this%x(j)
+         w = (x - this%x(j))/h
+
+         ! Evaluate the function derivative
+
+         df_dx = &
+            -this%f(j)*dphi_dt_(1._RD-w, 1)/h + &
+            this%f(j+1)*dphi_dt_(w, 1)/h + &
+            this%df_dx(j)*dpsi_dt_(1._RD-w, 1) + &
+            this%df_dx(j+1)*dpsi_dt_(w, 1)
+         
+         ! Finish
+
+         return
+
+      end subroutine eval_df_dx_${S}$_
+
+   #:endfor
+
+   !****
+      
+   function dphi_dt_(t, n) result(dphi_dt)
+
+      real(RD), intent(in) :: t
+      integer, intent(in)  :: n
+      real(RD)             :: dphi_dt
+
+      ! Evaluate the n'th derivative of the Hermite phi basis function
+
+      select case (n)
+      case (-1)
+         dphi_dt = t**3 - t**4/2._RD
+      case (0)
+         dphi_dt = 3._RD*t**2 - 2._RD*t**3
+      case (1)
+         dphi_dt = 6._RD*t - 6._RD*t**2
+      case (2)
+         dphi_dt = 6._RD - 12._RD*t
+      case (3)
+         dphi_dt = -12._RD
+      case (4:)
+         dphi_dt = 0._RD
+      case default
+         @:ABORT('invalid n')
+      end select
+
+      ! Finish
+
+      return
+
+   end function dphi_dt_
+
+   !****
+
+   function dpsi_dt_(t, n) result(dpsi_dt)
+
+      real(RD), intent(in) :: t
+      integer, intent(in)  :: n
+      real(RD)             :: dpsi_dt
+
+      ! Evaluate the n'th derivative of the Hermite psi basis function
+
+      select case (n)
+      case (-1)
+         dpsi_dt = t**4/4._RD - t**3/3._RD
+      case (0)
+         dpsi_dt = t**3 - t**2
+      case (1)
+         dpsi_dt = 3._RD*t**2 - 2._RD*t
+      case (2)
+         dpsi_dt = 6._RD*t - 2._RD
+      case (3)
+         dpsi_dt = 6._RD
+      case (4:)
+         dpsi_dt = 0._RD
+      case default
+         @:ABORT('invalid n')
+      end select
+
+      ! Finish
+
+      return
+
+   end function dpsi_dt_
+
+end module cubic_interp_m

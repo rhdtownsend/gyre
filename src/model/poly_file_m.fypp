@@ -100,7 +100,7 @@ contains
 
       ! Initialize the poly_model_t
 
-      allocate(pm, SOURCE=poly_model_t(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot))
+      allocate(pm, SOURCE=poly_model_t(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot, ml_p%interp_type))
 
       ! Return a pointer
 

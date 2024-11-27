@@ -1,0 +1,275 @@
+! Module  : linear_interp_m
+! Purpose : piecewise linear interpolators
+!
+! Copyright 2015-2024 Rich Townsend
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module linear_interp_m
+
+   ! Uses
+
+   use forum_m, only: RD, hdf5io_t, locate
+
+   use interp_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, extends(interp_${S}$) :: linear_interp_${S}$
+         private
+         real(RD), allocatable :: x(:)     ! Abscissa
+         ${T}$, allocatable    :: f(:)     ! Ordinate
+         ${T}$, allocatable    :: df_dx(:) ! First derivatives
+         integer               :: n        ! Number of points
+      contains
+         private
+         procedure, public :: get_x_min => get_x_min_${S}$_
+         procedure, public :: get_x_max => get_x_max_${S}$_
+         procedure, public :: eval_f => eval_f_${S}$_
+         procedure, public :: eval_df_dx => eval_df_dx_${S}$_
+      end type linear_interp_${S}$
+
+      ! Interfaces
+
+      interface linear_interp_${S}$
+         module procedure linear_interp_${S}$_
+      end interface linear_interp_${S}$
+
+      interface read
+         module procedure read_${S}$_
+      end interface read
+
+      interface write
+         module procedure write_${S}$_
+      end interface write
+
+      ! Access specifiers
+
+      public :: linear_interp_${S}$
+
+   #:endfor
+
+   public :: read
+   public :: write
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function linear_interp_${S}$_(x, f) result(li)
+
+         real(RD), intent(in)      :: x(:)
+         ${T}$, intent(in)         :: f(:)
+         type(linear_interp_${S}$) :: li
+
+         integer  :: n
+
+         @:CHECK_BOUNDS(SIZE(f), SIZE(x))
+
+         @:ASSERT(ALL(x(2:) > x(:SIZE(x)-1)), 'non-monotonic abscissa')
+
+         ! Construct the linear_interp_t
+
+         ! Store values
+
+         li%x = x
+         li%f = f
+
+         n = SIZE(x)
+
+         li%df_dx = (f(2:) - f(:n-1))/(x(2:) - x(:n-1))
+
+         li%n = n
+
+         ! Finish
+
+         return
+
+      end function linear_interp_${S}$_
+
+      !****
+
+      subroutine read_${S}$_(hi, li)
+
+         type(hdf5io_t), intent(inout)          :: hi
+         type(linear_interp_${S}$), intent(out) :: li
+
+         real(RD), allocatable :: x(:)
+         ${T}$, allocatable    :: f(:)
+
+         ! Read the linear_interp_t
+
+         call hi%alloc_read_dset('x', x)
+         call hi%alloc_read_dset('f', f)
+
+         li = linear_interp_${S}$(x, f)
+
+         ! Finish
+
+         return
+
+      end subroutine read_${S}$_
+
+      !****
+
+      subroutine write_${S}$_(hi, li)
+
+         type(hdf5io_t), intent(inout)         :: hi
+         type(linear_interp_${S}$), intent(in) :: li
+
+         ! Write the linear_interp_t
+
+         call hi%write_attr('n', li%n)
+
+         call hi%write_dset('x', li%x)
+         call hi%write_dset('f', li%f)
+         
+         ! Finish
+
+         return
+
+      end subroutine write_${S}$_
+
+      !****
+
+      subroutine get_x_min_${S}$_(this, x_min)
+
+         class(linear_interp_${S}$), intent(in) :: this
+         real(RD), intent(out)                  :: x_min
+
+         ! Get the minimum abscissa value
+
+         x_min = this%x(1)
+
+         ! Finish
+
+         return
+
+      end subroutine get_x_min_${S}$_
+
+      !****
+
+      subroutine get_x_max_${S}$_(this, x_max)
+
+         class(linear_interp_${S}$), intent(in) :: this
+         real(RD), intent(out)                  :: x_max
+
+         ! Get the maximum abscissa value
+
+         x_max = this%x(this%n)
+
+         ! Finish
+
+         return
+
+      end subroutine get_x_max_${S}$_
+
+      !****
+
+      subroutine eval_f_${S}$_(this, x, f)
+
+         class(linear_interp_${S}$), intent(in) :: this
+         real(RD), intent(in)                   :: x
+         ${T}$, intent(out)                     :: f
+
+         integer, save :: i = 1
+         integer       :: j
+         real(RD)      :: h
+         real(RD)      :: w
+
+         !$OMP THREADPRIVATE (i)
+
+         ! Set up the bracketing index
+
+         call locate(this%x, x, i)
+         @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+         j = MIN(i, this%n-1)
+
+         ! Set up the interpolation weight
+
+         h = this%x(j+1) - this%x(j)
+         w = (x - this%x(j))/h
+
+         ! Evaluate the function
+
+         f = this%f(j)*(1._RD-w) + this%f(j+1)*w
+
+         ! Finish
+
+         return
+
+      end subroutine eval_f_${S}$_
+
+      !****
+         
+      subroutine eval_df_dx_${S}$_(this, x, df_dx)
+
+         class(linear_interp_${S}$), intent(in) :: this
+         real(RD), intent(in)                   :: x
+         ${T}$, intent(out)                     :: df_dx
+
+         integer, save :: i = 1
+         integer       :: j
+
+         !$OMP THREADPRIVATE (i)
+
+         ! Set up the bracketing index
+
+         call locate(this%x, x, i)
+         @:ASSERT(i >= 1 .AND. i <= this%n, 'out-of-bounds interpolation')
+
+         ! Evaluate the function derivative -- note that this is
+         ! discontinuous across abscissa points
+
+         if (x == this%x(1)) then
+
+            df_dx = this%df_dx(1)
+
+         elseif (x == this%x(this%n)) then
+
+            df_dx = this%df_dx(this%n-1)
+
+         elseif (x == this%x(j)) then
+
+            df_dx = 0.5_RD*(this%df_dx(j-1) + this%df_dx(j))
+
+         else
+
+            df_dx = this%df_dx(j)
+
+         end if
+
+         ! Finish
+
+         return
+
+      end subroutine eval_df_dx_${S}$_
+
+   #:endfor
+
+end module linear_interp_m

@@ -27,7 +27,7 @@ module rad_bvp_m
    use context_m
    use ext_m
    use grid_m
-   use interp_m
+   use integ_m
    use model_m
    use mode_par_m
    use num_par_m
@@ -244,7 +244,6 @@ contains
       integer                 :: s
       integer                 :: j_i
       integer                 :: j_o
-      type(interp_rt)         :: in
       real(RD)                :: eul_phi(bp%n)
       real(RD)                :: y_3(bp%n)
       real(RD)                :: y_g(4,bp%n)
@@ -289,9 +288,11 @@ contains
          j_i = bp%gr%j_s_i(s)
          j_o = bp%gr%j_s_o(s)
 
-         in = interp_rt(bp%gr%pt(j_i:j_o)%x, deul_phi(j_i:j_o), 'MONO')
+         eul_phi(j_i:j_o) = integral(bp%gr%pt(j_i:j_o)%x, deul_phi(j_i:j_o))
 
-         eul_phi(j_i:j_o) = in%int_f()
+         if (s > bp%gr%s_i()) then
+            eul_phi(j_i:j_o) = eul_phi(j_i:j_o) + eul_phi(j_i-1)
+         end if
 
       end do seg_loop
 

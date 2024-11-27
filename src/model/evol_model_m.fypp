@@ -24,7 +24,10 @@ module evol_model_m
    use forum_m, only: RD
 
    use constants_m
+   use cubic_interp_m
+   use deriv_m
    use grid_m
+   use linear_interp_m
    use interp_m
    use math_m
    use model_m
@@ -42,19 +45,21 @@ module evol_model_m
 
    type, extends(model_t) :: evol_model_t
       private
-      type(grid_t)                 :: gr
-      type(interp_rt), allocatable :: in(:,:)
-      logical, allocatable         :: in_def(:)
-      real(RD), public             :: M_star
-      real(RD), public             :: R_star
-      real(RD), public             :: L_star
-      logical                      :: add_center
-      logical                      :: repair_As
-      logical                      :: repair_derivs
-      integer                      :: s_i
-      integer                      :: s_o
-      character(:), allocatable    :: deriv_type
-      logical                      :: committed
+      type(grid_t)                  :: gr
+      class(interp_rt), allocatable :: in(:,:)
+      real(RD), allocatable         :: coeffs(:,:)
+      logical, allocatable          :: defined(:)
+      real(RD), public              :: M_star
+      real(RD), public              :: R_star
+      real(RD), public              :: L_star
+      logical                       :: add_center
+      logical                       :: repair_As
+      logical                       :: constrain_derivs
+      integer                       :: s_i
+      integer                       :: s_o
+      character(:), allocatable     :: interp_type
+      character(:), allocatable     :: deriv_type
+      logical                       :: committed
    contains
       private
       procedure, public :: define
@@ -133,24 +138,24 @@ contains
 
       ! Allocate arrays
 
-      ml%s_i = ml%gr%s_i()
-      ml%s_o = ml%gr%s_o()
+      allocate(ml%coeffs(ml%gr%n,I_LAST))
+      allocate(ml%defined(I_LAST))
 
-      allocate(ml%in(I_LAST,ml%s_i:ml%s_o))
-
-      allocate(ml%in_def(I_LAST))
-
-      ml%in_def = .FALSE.
+      ml%defined = .FALSE.
 
       ! Other initializations
+
+      ml%s_i = ml%gr%s_i()
+      ml%s_o = ml%gr%s_o()
 
       ml%M_star = M_star
       ml%R_star = R_star
       ml%L_star = L_star
 
       ml%repair_As = ml_p%repair_As
-      ml%repair_derivs = ml_p%repair_derivs
+      ml%constrain_derivs = ml_p%constrain_derivs
 
+      ml%interp_type = ml_p%interp_type
       ml%deriv_type = ml_p%deriv_type
 
       ml%committed = .FALSE.
@@ -169,21 +174,19 @@ contains
       integer, intent(in)                :: i
       real(RD), intent(in)               :: coeff(:)
 
-      real(RD), allocatable :: coeff_(:)
-      real(RD)              :: coeff_0
-      integer               :: s
-      integer               :: j_i
-      integer               :: j_o
+      real(RD) :: coeff_0
 
-      @:ASSERT_DEBUG(.NOT. this%committed, 'Cannot define coefficient after committing model')
+      @:ASSERT_DEBUG(.NOT. this%committed, 'model has already been committed')
 
       @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'Invalid index')
 
       ! Define the i'th coefficient
 
-      ! If necessary, add a central point
-
       if (this%add_center) then
+
+         ! Add a central point
+
+         @:CHECK_BOUNDS(SIZE(coeff)+1, this%gr%n)
 
          select case (i)
          case (I_U)
@@ -205,41 +208,24 @@ contains
 
          end select
 
-         coeff_ = [coeff_0,coeff]
+         this%coeffs(:,i) = [coeff_0,coeff]
 
       else
 
-         coeff_ = coeff
+         @:CHECK_BOUNDS(SIZE(coeff), this%gr%n)
+         
+         this%coeffs(:,i) = coeff
 
       endif
 
-      @:CHECK_BOUNDS(SIZE(coeff_), this%gr%n)
+      this%defined(i) = .TRUE.
 
       ! If necessary, repair data at segment boundaries
 
       select case (i)
       case (I_AS)
-         if (this%repair_As) call repair_coeff_(this%gr, coeff_)
+         if (this%repair_As) call repair_coeff_(this%gr, this%coeffs(:,i))
       end select
-
-      ! Set up per-segment interpolants
-
-      seg_loop : do s = this%s_i, this%s_o
-
-         ! Set up the interpolant
-
-         j_i = this%gr%j_s_i(s)
-         j_o = this%gr%j_s_o(s)
-
-         if (this%gr%pt(j_i)%x == 0._RD) then
-            this%in(i,s) = interp_rt(this%gr%pt(j_i:j_o)%x, coeff_(j_i:j_o), this%deriv_type, df_dx_a=0._RD)
-         else
-            this%in(i,s) = interp_rt(this%gr%pt(j_i:j_o)%x, coeff_(j_i:j_o), this%deriv_type)
-         endif
-
-      end do seg_loop
-
-      this%in_def(i) = .TRUE.
 
       ! Finish
 
@@ -295,69 +281,22 @@ contains
 
       class(evol_model_t), intent(inout) :: this
 
-      integer               :: s
-      integer               :: j_i
-      integer               :: j_o
-      real(RD), allocatable :: x(:)
-      real(RD), allocatable :: V_2(:)
-      real(RD), allocatable :: As(:)
-      real(RD), allocatable :: U(:)
-      real(RD), allocatable :: c_1(:)
-      real(RD), allocatable :: Gamma_1(:)
-      real(RD), allocatable :: dV_2_dx(:)
-      real(RD), allocatable :: dc_1_dx(:)
-      real(RD), allocatable :: dU_dx(:)
+      @:ASSERT_DEBUG(.NOT. this%committed, 'model has already been committed')
 
-      ! Commit the model
+      ! Allocate and initialize interpolants
 
-      ! If necessary, repair derivatives of U and c_1
+      select case(this%interp_type)
+      case('LINEAR')
+         allocate(this%in, SOURCE=linear_interp_())
+      case('CUBIC')
+         allocate(this%in, SOURCE=cubic_interp_())
+      case default
+         @:ABORT('invalid deriv_type')
+      end select
 
-      if (this%repair_derivs) then
+      ! Free up space
 
-         seg_loop : do s = this%s_i, this%s_o
-
-            j_i = this%gr%j_s_i(s)
-            j_o = this%gr%j_s_o(s)
-
-            ! Get coefficients
-
-            x = this%in(I_U, s)%x()
-
-            U = this%in(I_U, s)%f()
-            c_1 = this%in(I_C_1, s)%f()
-            As = this%in(I_AS, s)%f()
-            V_2 = this%in(I_V_2, s)%f()
-            Gamma_1 = this%in(I_GAMMA_1, S)%f()
-
-            ! Evaluate new derivatives for V_2, U and c_1, following
-            ! eqns. (20) and (21) of Takata (2006) plus the equation
-            ! of hydrostatic equilibrium
-
-            allocate(dV_2_dx(SIZE(x)))
-            allocate(dU_dx(SIZE(x)))
-            allocate(dc_1_dx(SIZE(x)))
-
-            where (x /= 0._RD)
-               dV_2_dx = V_2*(V_2*x**2 - V_2*x**2/Gamma_1 - As + U - 3._RD)/x
-               dU_dx = U*(-V_2*x**2/Gamma_1 - As - U + 3._RD)/x
-               dc_1_dx = c_1*(3 - U)/x
-            elsewhere
-               dV_2_dx = 0._RD
-               dU_dx = 0._RD
-               dc_1_dx = 0._RD
-            end where
-
-            this%in(I_V_2, s) = interp_rt(x, V_2, dV_2_dx)
-            this%in(I_C_1, s) = interp_rt(x, c_1, dc_1_dx)
-            this%in(I_U, s) = interp_rt(x, U, dU_dx)
-
-            deallocate(dc_1_dx)
-            deallocate(dU_dx)
-            deallocate(dV_2_dx)
-
-         end do seg_loop
-
-      end if
+      deallocate(this%coeffs)
 
       ! Update the committed flag
 
@@ -366,6 +305,171 @@ contains
       ! Finish
 
       return
+
+   contains
+
+      function linear_interp_() result(li)
+
+         type(linear_interp_rt), allocatable :: li(:,:)
+
+         integer :: i
+         integer :: s
+         integer :: j_i
+         integer :: j_o
+
+         ! Allocate the linear interpolants
+
+         allocate(li(this%s_i:this%s_o,I_LAST))
+
+         ! Initialize them
+
+         coeff_loop : do i = 1, I_LAST
+
+            if (this%is_defined(i)) then
+
+               seg_loop : do s = this%s_i, this%s_o
+
+                  j_i = this%gr%j_s_i(s)
+                  j_o = this%gr%j_s_o(s)
+
+                  associate( &
+                     x => this%gr%pt(j_i:j_o)%x, &
+                     coeff => this%coeffs(j_i:j_o,i))
+
+                     li(s,i) = linear_interp_rt(x, coeff)
+
+                  end associate
+
+               end do seg_loop
+
+            end if
+
+         end do coeff_loop
+
+         ! Finish
+
+         return
+
+      end function linear_interp_
+
+      !****
+
+      function cubic_interp_() result(ci)
+
+         type(cubic_interp_rt), allocatable :: ci(:,:)
+
+         real(RD), allocatable :: dV_2_dx(:)
+         real(RD), allocatable :: dU_dx(:)
+         real(RD), allocatable :: dc_1_dx(:)
+         integer               :: i
+         integer               :: s
+         integer               :: j_i
+         integer               :: j_o
+         real(RD), allocatable :: dcoeff_dx(:)
+
+         ! Allocate the cubic interpolants
+
+         allocate(ci(this%s_i:this%s_o,I_LAST))
+
+         ! Check if derivative constraining is required
+
+         if (this%constrain_derivs) then
+
+            @:ASSERT(this%is_defined(I_V_2), 'V_2 must be defined when constrain_derivs == .TRUE.')
+            @:ASSERT(this%is_defined(I_AS), 'As must be defined when constrain_derivs == .TRUE.')
+            @:ASSERT(this%is_defined(I_U), 'U must be defined when constrain_derivs == .TRUE.')
+            @:ASSERT(this%is_defined(I_C_1), 'c_1 must be defined when constrain_derivs == .TRUE.')
+            @:ASSERT(this%is_defined(I_GAMMA_1), 'Gamma_1 must be defined when constrain_derivs == .TRUE.')
+
+            associate( &
+               x => this%gr%pt%x, &
+               V_2 => this%coeffs(:,I_U), &
+               As => this%coeffs(:,I_AS), &
+               U => this%coeffs(:,I_U), &
+               c_1 => this%coeffs(:,I_C_1), &
+               Gamma_1 => this%coeffs(:,I_GAMMA_1))
+
+               ! Evaluate derivatives for V_2, U and c_1, following
+               ! eqns. (20) and (21) of Takata (2006) plus the equation
+               ! of hydrostatic equilibrium
+
+               allocate(dV_2_dx(this%gr%n))
+               allocate(dU_dx(this%gr%n))
+               allocate(dc_1_dx(this%gr%n))
+
+               where (x /= 0._RD)
+                  dV_2_dx = V_2*(V_2*x**2 - V_2*x**2/Gamma_1 - As + U - 3._RD)/x
+                  dU_dx = U*(-V_2*x**2/Gamma_1 - As - U + 3._RD)/x
+                  dc_1_dx = c_1*(3 - U)/x
+               elsewhere
+                  dV_2_dx = 0._RD
+                  dU_dx = 0._RD
+                  dc_1_dx = 0._RD
+               end where
+
+            end associate
+
+         end if
+
+         ! Initialize the interpolants
+
+         coeff_loop : do i = 1, I_LAST
+
+            if (this%is_defined(i)) then
+
+               seg_loop : do s = this%s_i, this%s_o
+
+                  j_i = this%gr%j_s_i(s)
+                  j_o = this%gr%j_s_o(s)
+
+                  associate( &
+                     x => this%gr%pt(j_i:j_o)%x, &
+                     coeff => this%coeffs(j_i:j_o,i))
+
+                     ! Evaluate derivatives
+
+                     if (this%constrain_derivs) then
+
+                        select case(i)
+                        case(I_V_2)
+                           dcoeff_dx = dV_2_dx(j_i:j_o)
+                        case(I_U)
+                           dcoeff_dx = dU_dx(j_i:j_o)
+                        case(I_C_1)
+                           dcoeff_dx = dc_1_dx(j_i:j_o)
+                        case default
+                           if (x(1) == 0._RD) then
+                              dcoeff_dx = deriv(x, coeff, this%deriv_type, df_dx_a=0._RD)
+                           else
+                              dcoeff_dx = deriv(x, coeff, this%deriv_type)
+                           endif
+                        end select
+
+                     else
+
+                        if (x(1) == 0._RD) then
+                           dcoeff_dx = deriv(x, coeff, this%deriv_type, df_dx_a=0._RD)
+                        else
+                           dcoeff_dx = deriv(x, coeff, this%deriv_type)
+                        endif
+
+                     end if
+
+                     ci(s,i) = cubic_interp_rt(x, coeff, dcoeff_dx)
+
+                  end associate
+
+               end do seg_loop
+
+            end if
+
+         end do coeff_loop
+
+         ! Finish
+
+         return
+
+      end function cubic_interp_
 
    end subroutine commit
 
@@ -378,17 +482,20 @@ contains
       type(point_t), intent(in)       :: pt
       real(RD)                        :: coeff
 
-      @:ASSERT_DEBUG(this%committed, 'Cannot evaluate coefficient before committing model')
+      real(RD) :: f
 
-      @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'Invalid index')
-      @:ASSERT_DEBUG(this%is_defined(i), 'Undefined coefficient')
+      @:ASSERT_DEBUG(this%committed, 'model has not yet been commited')
 
-      @:ASSERT_DEBUG(pt%s >= this%s_i .AND. pt%s <= this%s_o, 'Invalid segment')
+      @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'invalid index')
+      @:ASSERT_DEBUG(this%is_defined(i), 'undefined coefficient')
+
+      @:ASSERT_DEBUG(pt%s >= this%s_i .AND. pt%s <= this%s_o, 'invalid segment')
 
       ! Evaluate the i'th coefficient
 
       associate (s => pt%s, x => pt%x)
-         coeff = this%in(i,s)%f(x)
+         call this%in(s,i)%eval_f(x, f)
+         coeff = f
       end associate
 
       ! Finish
@@ -406,12 +513,15 @@ contains
       type(point_t), intent(in)       :: pt
       real(RD)                        :: dcoeff
 
-      @:ASSERT_DEBUG(this%committed, 'Cannot evaluate coefficient before committing model')
+      real(RD) :: f
+      real(RD) :: df_dx
 
-      @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'Invalid index')
-      @:ASSERT_DEBUG(this%is_defined(i), 'Undefined coefficient')
+      @:ASSERT_DEBUG(this%committed, 'model has not yet been committed')
 
-      @:ASSERT_DEBUG(pt%s >= this%s_i .AND. pt%s <= this%s_o, 'Invalid segment')
+      @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'invalid index')
+      @:ASSERT_DEBUG(this%is_defined(i), 'undefined coefficient')
+
+      @:ASSERT_DEBUG(pt%s >= this%s_i .AND. pt%s <= this%s_o, 'invalid segment')
 
       ! Evaluate the logarithmic derivative of the i'th coefficient
 
@@ -419,7 +529,9 @@ contains
          if (x == 0._RD) then
             dcoeff = 0._RD
          else
-            dcoeff = x*this%in(i,s)%df_dx(x)/this%in(i,s)%f(x)
+            call this%in(s,i)%eval_f(x, f)
+            call this%in(s,i)%eval_df_dx(x, df_dx)
+            dcoeff = x*df_dx/f
          end if
       end associate
 
@@ -514,7 +626,7 @@ contains
 
       ! Return the definition status of the i'th coefficient
 
-      is_defined = this%in_def(i)
+      is_defined = this%defined(i)
 
       ! Finish
 
