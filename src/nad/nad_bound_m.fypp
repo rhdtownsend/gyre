@@ -1,7 +1,7 @@
 ! Module  : nad_bound_m
 ! Purpose : nonadiabatic boundary conditions
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2024 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -238,16 +238,20 @@ contains
          this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
       case (DZIEM_TYPE)
          this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
+         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
          this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
       case (ISOTHRM_TYPE)
          call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V), &
             this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
+         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
       case (UNNO_TYPE)
          call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V), &
             this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
+         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
       case (JCD_TYPE)
          call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V), &
             this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
+         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
       case default
          @:ABORT('invalid type_o')
       end select
@@ -607,6 +611,7 @@ contains
 
       associate( &
          V => this%coeff(2,J_V), &
+         U => this%coeff(2,J_U), &
          c_1 => this%coeff(2,J_C_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
          c_thn => this%coeff(2,J_C_THN), &
@@ -634,7 +639,7 @@ contains
          B(1,5) = 0._RD
          B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(0._RD)
+         B(2,1) = alpha_grv*(U)
          B(2,2) = alpha_grv*(0._RD)
          B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
          B(2,4) = alpha_grv*(1._RD)
@@ -696,6 +701,7 @@ contains
       associate( &
          V => this%coeff(2,J_V), &
          As => this%coeff(2,J_AS), &
+         U => this%coeff(2,J_U), &
          c_1 => this%coeff(2,J_C_1), &
          Gamma_1 => this%coeff(2,J_GAMMA_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
@@ -746,7 +752,7 @@ contains
          B(1,5) = 0._RD
          B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(0._RD)
+         B(2,1) = alpha_grv*(U)
          B(2,2) = alpha_grv*(0._RD)
          B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
          B(2,4) = alpha_grv*(1._RD)
@@ -819,6 +825,7 @@ contains
       associate( &
          V => this%coeff(2,J_V), &
          As => this%coeff(2,J_AS), &
+         U => this%coeff(2,J_U), &
          c_1 => this%coeff(2,J_C_1), &
          Gamma_1 => this%coeff(2,J_GAMMA_1), &
          nabla_ad => this%coeff(2,J_NABLA_AD), &
@@ -853,7 +860,7 @@ contains
          B(1,5) = 0._RD
          B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(0._RD)
+         B(2,1) = alpha_grv*(U)
          B(2,2) = alpha_grv*(0._RD)
          B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
          B(2,4) = alpha_grv*(1._RD)
