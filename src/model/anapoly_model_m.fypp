@@ -47,6 +47,7 @@ module anapoly_model_m
       private
       type(grid_t) :: gr
       integer      :: n_poly
+      real(RD)     :: theta_s
       real(RD)     :: z_s
       real(RD)     :: mu_s
       real(RD)     :: Gamma_1
@@ -140,6 +141,8 @@ contains
          @:ABORT('invalid n_poly')
       end select
 
+      ml%theta_s = ml_p%theta_s
+
       ml%mu_s = -ml%z_s**2*ml%dtheta_(ml%z_s)
 
       ml%Gamma_1 = ml_p%Gamma_1
@@ -188,20 +191,28 @@ contains
 
       ! Evaluate the polytropic dependent variable
 
-      select case (this%n_poly)
-      case (0)
-         theta = 1._RD - z**2/6._RD
-      case (1)
-         if (z /= 0._RD) then
-            theta = sin(z)/z
-         else
-            theta = 1._RD
-         end if
-      case (5)
-         theta = 1._RD/sqrt(1._RD + z**2/3._RD)
-      case default
-         @:ABORT('invalid polytropic index')
-      end select
+      if (z == this%z_s) then
+
+         theta = this%theta_s
+
+      else
+
+         select case (this%n_poly)
+         case (0)
+            theta = 1._RD - z**2/6._RD
+         case (1)
+            if (z /= 0._RD) then
+               theta = sin(z)/z
+            else
+               theta = 1._RD
+            end if
+         case (5)
+            theta = 1._RD/sqrt(1._RD + z**2/3._RD)
+         case default
+            @:ABORT('invalid polytropic index')
+         end select
+
+      end if
 
       ! Finish
 
