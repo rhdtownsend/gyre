@@ -42,15 +42,15 @@ module model_m
    integer, parameter :: I_BETA_RAD = 9
    integer, parameter :: I_C_LUM = 10
    integer, parameter :: I_C_RAD = 11
-   integer, parameter :: I_C_THN = 13
-   integer, parameter :: I_C_THK = 14
-   integer, parameter :: I_C_EPS = 15
-   integer, parameter :: I_C_EGV = 16
-   integer, parameter :: I_EPS_RHO = 17
-   integer, parameter :: I_EPS_T = 18
-   integer, parameter :: I_KAP_RHO = 19
-   integer, parameter :: I_KAP_T = 20
-   integer, parameter :: I_OMEGA_ROT = 21
+   integer, parameter :: I_C_THN = 12
+   integer, parameter :: I_C_THK = 13
+   integer, parameter :: I_C_EPS = 14
+   integer, parameter :: I_C_EGV = 15
+   integer, parameter :: I_EPS_RHO = 16
+   integer, parameter :: I_EPS_T = 17
+   integer, parameter :: I_KAP_RHO = 18
+   integer, parameter :: I_KAP_T = 19
+   integer, parameter :: I_OMEGA_ROT = 20
 
    integer, parameter :: I_LAST = I_OMEGA_ROT
 
