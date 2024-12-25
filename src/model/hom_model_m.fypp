@@ -52,6 +52,7 @@ module hom_model_m
       procedure, public :: coeff
       procedure         :: coeff_V_2_
       procedure         :: coeff_As_
+      procedure, public :: coeff_U_D
       procedure, public :: dcoeff
       procedure         :: dcoeff_V_2_
       procedure         :: dcoeff_As_
@@ -207,6 +208,24 @@ contains
       return
 
    end function coeff_As_
+
+   !****
+
+   function coeff_U_D(this, pt) result(coeff)
+
+      class(hom_model_t), intent(in) :: this
+      type(point_t), intent(in)      :: pt
+      real(RD)                       :: coeff
+
+      ! Evaluate the U_D = U*dlnrho/dlnr coefficient
+
+      coeff = 0._RD
+
+      ! Finish
+
+      return
+
+   end function coeff_U_D
 
    !****
 

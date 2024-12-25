@@ -64,6 +64,7 @@ module poly_model_m
       procedure         :: coeff_As_
       procedure         :: coeff_U_
       procedure         :: coeff_c_1_
+      procedure, public :: coeff_U_D
       procedure, public :: dcoeff
       procedure         :: dcoeff_V_2_
       procedure         :: dcoeff_As_
@@ -401,6 +402,55 @@ contains
       return
 
    end function coeff_c_1_
+
+   !****
+
+   function coeff_U_D(this, pt) result(coeff)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: coeff
+
+      real(RD) :: z
+      real(RD) :: theta
+      real(RD) :: dtheta
+
+      ! Evaluate the U_D = U*dlnrho/dlnr coefficient
+
+      if (pt%x /= 0._RD) then
+
+         z = pt%x*this%z_s
+
+         call this%in_theta(pt%s)%eval_f(pt%x, theta)
+         call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
+
+         if (this%n_poly(pt%s) == 0._RD) then
+
+            coeff = 0._RD
+
+         elseif(this%n_poly(pt%s) == 1._RD) then
+
+            coeff = this%n_poly(pt%s)*this%t(pt%s)*z**4 * &
+               dtheta/this%mu_(pt)
+
+         else
+
+            coeff = this%n_poly(pt%s)*this%t(pt%s)*z**4 * &
+               pow(theta, this%n_poly(pt%s)-1._RD)*dtheta/this%mu_(pt)
+
+         end if
+
+      else
+
+         coeff = 0._RD
+
+      end if
+
+      ! Finish
+
+      return
+
+   end function coeff_U_D
 
    !****
 

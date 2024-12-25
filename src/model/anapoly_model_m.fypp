@@ -63,6 +63,7 @@ module anapoly_model_m
       procedure         :: coeff_As_
       procedure         :: coeff_U_
       procedure         :: coeff_c_1_
+      procedure, public :: coeff_U_D
       procedure, public :: dcoeff
       procedure         :: dcoeff_V_2_
       procedure         :: dcoeff_As_
@@ -421,6 +422,39 @@ contains
       return
 
    end function coeff_c_1_
+
+   !****
+
+   function coeff_U_D(this, pt) result(coeff)
+
+      class(anapoly_model_t), intent(in) :: this
+      type(point_t), intent(in)          :: pt
+      real(RD)                           :: coeff
+
+      real(RD) :: z
+      real(RD) :: theta
+
+      ! Evaluate the U_D = U*dlnrho/dlnr coefficient
+
+      z = pt%x*this%z_s
+
+      select case (this%n_poly)
+      case(0)
+         coeff = 0._RD
+      case(1)
+         coeff = -z**2
+      case(5)
+         theta = this%theta_(z)
+         coeff = -5._RD*z**2*theta**4
+      case default
+         @:ABORT('invalid polytropic index')
+      end select
+
+      ! Finish
+
+      return
+
+   end function coeff_U_D
 
    !****
 
