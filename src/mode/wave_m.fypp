@@ -23,12 +23,14 @@ module wave_m
 
   use forum_m, only: RD
 
+  use anapoly_model_m
   use constants_m
   use context_m
   use ext_m
   use freq_context_m
   use grid_m
   use grid_util_m
+  use hom_model_m
   use integ_m
   use math_m
   use model_m
@@ -36,6 +38,7 @@ module wave_m
   use num_par_m
   use osc_par_m
   use point_m
+  use poly_model_m
   use rot_m
   use state_m
   use util_m
@@ -58,7 +61,7 @@ module wave_m
      type(osc_par_t), public  :: os_p
      type(point_t)            :: pt_i
      type(point_t)            :: pt_o
-     logical                  :: fix_surf
+     logical                  :: is_vacuum
      complex(RD), allocatable :: y_c(:,:)
      real(RD)                 :: E_scl2
      type(ext_ct), public     :: discrim
@@ -231,13 +234,11 @@ contains
 
     wv%E_scl2 = wv%E(use_cache=.FALSE.)/abs(wv%scl)**2
 
-    ! Determine whether integral expressions will need a surface fix-up
-    ! (due to having a vacuum outer boundary condition but non-vacuum
-    ! outer point)
+    ! Cache the vacuum surface flag
 
     associate( &
-         ml => cx%model() )
-      wv%fix_surf = os_p%outer_bound == 'VACUUM' .AND. .NOT. ml%is_vacuum(wv%pt_o)
+       ml => cx%model() )
+       wv%is_vacuum = ml%is_vacuum(wv%pt_o)
     end associate
 
     ! Finish
@@ -370,9 +371,58 @@ contains
     class(wave_t), intent(in) :: this
     complex(RD)               :: omega_int
 
-    ! Calculate the dimensionless frequency from the zeta integral
+    complex(RD) :: W
+    complex(RD) :: y_1
+    complex(RD) :: y_2
+    complex(RD) :: y_3
+    complex(RD) :: y_4
+    real(RD)    :: U
+    real(RD)    :: c_1
+    real(RD)    :: Omega_rot
+    complex(RD) :: l_e
+    complex(RD) :: S
 
-    omega_int = sqrt(this%zeta()/this%E())
+    ! Calculate the dimensionless frequency from the weight integral
+    ! (see Townsend & Kuenzi 2025)
+
+    ! Evaluate the weight integral
+
+    W = this%zeta()
+
+    ! Evaluate the surface term
+
+    if (.NOT. this%is_vacuum) then
+
+       y_1 = this%y_i(1, this%n)
+       y_2 = this%y_i(2, this%n)
+       y_3 = this%y_i(3, this%n)
+       y_4 = this%y_i(4, this%n)
+
+       associate(                 &
+          ml => this%cx%model(),  &
+          pt => this%pt_o,        &
+          l_i => this%l_i)
+
+          U = ml%coeff(I_U, pt)
+          c_1 = ml%coeff(I_C_1, pt)
+
+          Omega_rot = this%cx%Omega_rot(pt)
+
+          l_e = this%cx%l_e(Omega_rot, this%st)
+
+          S = (U*(y_2 + y_3)*CONJG(y_1) + y_3*CONJG(y_4 + (l_e + 1._RD)*y_3))/c_1**2 * pt%x**(2*l_e+1._RD)
+
+       end associate
+
+    else
+
+       S = 0._RD
+
+    end if
+
+    ! Evaluate the frequency
+
+    omega_int = sqrt((W + S)/this%E())
 
     ! Finish
 
@@ -1323,51 +1373,82 @@ contains
     integer, intent(in)       :: j
     complex(RD)               :: dzeta_dx
 
-    complex(RD) :: xi_r
-    complex(RD) :: eul_P
-    complex(RD) :: eul_Phi
-    complex(RD) :: deul_Phi
+    complex(RD) :: y_1
+    complex(RD) :: y_2
+    complex(RD) :: y_3
+    complex(RD) :: y_4
     real(RD)    :: V_2
     real(RD)    :: U
     real(RD)    :: As
     real(RD)    :: c_1
     real(RD)    :: Gamma_1
+    real(RD)    :: U_D
     real(RD)    :: Omega_rot
     complex(RD) :: l_e
-    real(RD)    :: x4_V
 
-    ! Calculate the dimensionless frequency weight function.  This is
-    ! based on the derivative of equation (7) of [Kawaler:1985] (as
-    ! corrected by [Townsend:2023]) with respect to x; note that that
-    ! equation was derived for adiabatic pulsation, and the simple
-    ! extension to non-adiabatic pulsation implemented here may not be
-    ! quite correct
+    ! Calculate the dimensionless frequency weight function. This is
+    ! based on equation (xx) of [Townsend:2025], with dzeta_dx = dW_nn/dx
 
     associate ( &
          ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
+         pt => this%gr%pt(j), &
+         l_i => this%l_i)
 
-      xi_r = this%xi_r(j)
-      eul_P = this%eul_P(j)
-      eul_Phi = this%eul_Phi(j)
-      deul_Phi = this%deul_Phi(j)
+       y_1 = this%y_i(1, j)
+       y_2 = this%y_i(2, j)
+       y_3 = this%y_i(3, j)
+       y_4 = this%y_i(4, j)
 
-      V_2 = ml%coeff(I_V_2, pt)
-      As = ml%coeff(I_AS, pt)
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
-      
-      Omega_rot = this%cx%Omega_rot(pt)
+       U = ml%coeff(I_U, pt)
+       c_1 = ml%coeff(I_C_1, pt)
+       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
-      l_e = this%cx%l_e(Omega_rot, this%st)
+       Omega_rot = this%cx%Omega_rot(pt)
 
-      x4_V = pt%x**2/V_2
+       l_e = this%cx%l_e(Omega_rot, this%st)
 
-      dzeta_dx = abs(eul_P)**2*(U*x4_V/(Gamma_1*c_1**2)) + &
-                 abs(xi_r)**2*(pt%x**2*U*As/c_1**2) - &
-                 abs(pt%x*deul_Phi + (l_e+1._RD)*eul_Phi)**2
-           
+       if (ml%is_vacuum(pt)) then
+
+          ! Take special care at vacuum points: V_2 and As are
+          ! undefined but U_D = U*dlnrho/dlnr is well behaved
+          ! (also, y_1 == y_2)
+
+          select type(ml)
+          class is(anapoly_model_t)
+             U_D = ml%coeff_U_D(pt)
+          class is(hom_model_t)
+             U_D = ml%coeff_U_D(pt)
+          class is(poly_model_t)
+             U_D = ml%coeff_U_D(pt)
+          class default
+             @:ABORT('unable to evaluate U_D at vacuum point')
+          end select
+
+          dzeta_dx =  (-abs(y_1)**2*U_D - abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2 * pt%x**(2._RD*l_i)
+
+       else
+
+          V_2 = ml%coeff(I_V_2, pt)
+          As = ml%coeff(I_AS, pt)
+
+          if (l_i /= 0) then
+
+             if (pt%x /= 0._RD) then
+                dzeta_dx = (abs(y_2)**2*U*V_2*pt%x**2/Gamma_1 + abs(y_1)**2*U*As - &
+                   abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2 * pt%x**(2._RD*l_i)
+             else
+                dzeta_dx = 0._RD
+             end if
+
+          else
+
+             dzeta_dx = (abs(y_2)**2*U*V_2*pt%x**2/Gamma_1 + abs(y_1)**2*U*As - &
+                abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2
+
+          endif
+
+       end if
+
     end associate
 
     ! Finish
@@ -2584,7 +2665,8 @@ contains
 
     zeta = integrate(this%gr%pt%x, dzeta_dx)
 
-    ! Add on corrections associated with discontinuities
+    ! Add on corrections associated with discontinuities at double
+    ! points
 
     select case (this%os_p%zeta_scheme)
     case ('KAWALER','KAWALER_GRAV','DUPRET')
@@ -2613,30 +2695,6 @@ contains
           end associate
 
        end do
-
-       ! Surface fix-ups
-
-       if (this%fix_surf) then
-
-          ! Add the term that comes from the surface density
-          ! discontinuity
-
-          associate(                   &
-               ml => this%cx%model(),  &
-               pt => this%gr%pt_o() )
-
-            xi_r = this%xi_r(this%n)
-
-            U_l = ml%coeff(I_U, pt)
-            U_r = 0._RD
-
-            c_1 = ml%coeff(I_C_1, pt)
-
-            zeta = zeta - CONJG(xi_r)*xi_r*pt%x**3*(U_r - U_l)/c_1**2
-
-          end associate
-
-       end if
 
     end select
 
