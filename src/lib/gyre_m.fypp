@@ -32,7 +32,9 @@ module gyre_m
    ! Grids
 
    use grid_m
-   use grid_factory_m
+   use grid_refine_m
+   use grid_scaffold_m
+   use point_m
    use scan_m
 
    ! Models

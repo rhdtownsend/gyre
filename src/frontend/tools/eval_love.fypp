@@ -87,16 +87,20 @@ program eval_love
 
    ml => model_t(ml_p)
 
+   ! Set up the scaffold grid
+
+   gr = grid_t(ml, gr_p)
+
    ! Set up the context
 
    allocate(cx)
 
-   cx = context_t(ml, gr_p, md_p, os_p, rt_p)
+   cx = context_t(ml, gr, md_p, os_p, rt_p)
 
-   ! Create the grid (using omega=3 as representative of the f-mode
+   ! Refine the grid (using omega=3 as representative of the f-mode
    ! frequency)
 
-   gr = grid_t(cx, [3._RD], gr_p, os_p)
+   call refine_grid(gr, cx, [3._RD], gr_p, os_p)
 
    ! Solve for the tidal response
 

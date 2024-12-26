@@ -74,10 +74,11 @@ libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    diff_m.fypp discrim_m.fypp eqns_m.fypp evol_model_m.fypp		\
    ext_complex_m.fypp ext_m.fypp ext_real_m.fypp famdl_file_m.fypp	\
    fgong_file_m.fypp freq_context_m.fypp freq_m.fypp gyre_m.fypp	\
-   grid_factory_m.fypp grid_m.fypp grid_par_m.fypp grid_spec_m.fypp	\
-   grid_util_m.fypp grid_weights_m.fypp gsm_file_m.fypp			\
-   hdf_writer_m.fypp hom_model_m.fypp interp_m.fypp integ_m.fypp	\
-   linalg_m.fypp linear_interp_m.fypp losc_file_m.fypp math_m.fypp	\
+   grid_m.fypp grid_par_m.fypp grid_refine_m.fypp			\
+   grid_scaffold_m.fypp grid_spec_m.fypp grid_util_m.fypp		\
+   grid_weights_m.fypp gsm_file_m.fypp hdf_writer_m.fypp		\
+   hom_model_m.fypp interp_m.fypp integ_m.fypp linalg_m.fypp		\
+   linear_interp_m.fypp losc_file_m.fypp math_m.fypp			\
    magnus_diff_m.fypp mesa_file_m.fypp minim_m.fypp			\
    minmod_search_m.fypp mirk_diff_m.fypp mode_m.fypp mode_par_m.fypp	\
    model_factory_m.fypp model_m.fypp model_par_m.fypp			\

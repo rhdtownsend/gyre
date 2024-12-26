@@ -25,7 +25,7 @@ module tidal_context_m
 
    use context_m
    use model_m
-   use grid_par_m
+   use grid_m
    use mode_par_m
    use orbit_par_m
    use osc_par_m
@@ -53,10 +53,10 @@ module tidal_context_m
 
 contains
 
-   function context_t_(ml, gr_p, md_p, or_p, os_p, rt_p) result(cx)
+   function context_t_(ml, gr, md_p, or_p, os_p, rt_p) result(cx)
 
       class(model_t), pointer, intent(in) :: ml
-      type(grid_par_t), intent(in)        :: gr_p
+      type(grid_t), intent(in)            :: gr
       type(mode_par_t), intent(in)        :: md_p
       type(orbit_par_t), intent(in)       :: or_p
       type(osc_par_t), intent(in)         :: os_p
@@ -91,7 +91,7 @@ contains
 
       end select
 
-      cx = context_t(ml, gr_p, md_p, os_p, rt_p_)
+      cx = context_t(ml, gr, md_p, os_p, rt_p_)
 
       ! Finish
 

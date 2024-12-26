@@ -1,0 +1,216 @@
+! Module  : grid_scaffold_m
+! Purpose : procedures to generate scaffold grids
+!
+! Copyright 2013-2024 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module grid_scaffold_m
+
+   ! Uses
+
+   use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO, sort_indices, unique_indices
+
+   use grid_m
+   use grid_par_m
+   use model_m
+   use point_m
+   use util_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Interfaces
+
+   interface grid_t
+      module procedure grid_t_scaffold_
+   end interface grid_t
+
+   ! Access specifiers
+
+   public :: grid_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function grid_t_scaffold_(ml, gr_p) result(gr)
+
+      class(model_t), pointer, intent(in) :: ml
+      type(grid_par_t), intent(in)        :: gr_p
+      type(grid_t)                        :: gr
+
+      ! Create the scaffold grid
+
+      select case (gr_p%scaffold_src)
+
+      case ('MODEL')
+
+         gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
+
+         if (check_log_level('INFO')) then
+            write(OUTPUT_UNIT, 110) 'Scaffold grid from model'
+110         format(3X,A)
+         end if
+
+      case ('FILE')
+
+         gr = grid_from_file_(gr_p%file, gr_p%file_format, ml%grid(), gr_p%x_i, gr_p%x_o)
+
+         if (check_log_level('INFO')) then
+            write(OUTPUT_UNIT, 110) 'Scaffold grid from file '//TRIM(gr_p%file)
+         end if
+
+      case default
+
+         @:ABORT('invalid scaffold_src')
+
+      end select
+
+      ! Finish
+
+      return
+
+   end function grid_t_scaffold_
+
+   !****
+
+   function grid_from_file_(file, file_format, gr_ml, x_i, x_o) result(gr)
+
+      character(*), intent(in) :: file
+      character(*), intent(in) :: file_format
+      type(grid_t)             :: gr_ml
+      real(RD), intent(in)     :: x_i
+      real(RD), intent(in)     :: x_o
+      type(grid_t)             :: gr
+
+      type(hdf5io_t)        :: hi
+      real(RD), allocatable :: x(:)
+      integer               :: unit
+      integer               :: n
+      integer               :: i
+      integer               :: n_s
+      real(RD), allocatable :: x_b(:)
+      integer               :: s
+      integer               :: j_s_i
+      integer               :: j_s_o
+      logical, allocatable  :: mask(:)
+
+      ! Read the grid abscissa from a file
+
+      select case (file_format)
+      case('DETAIL')
+
+         hi = hdf5io_t(file, OPEN_FILE_RO)
+         call hi%alloc_read_dset('x', x)
+         call hi%final()
+
+      case('TEXT')
+
+         open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+
+         n = 0
+
+         count_loop : do
+            read(unit, *, end=100)
+            n = n + 1
+         end do count_loop
+
+100      continue
+
+         rewind(unit)
+
+         allocate(x(n))
+
+         read_loop : do i = 1, n
+            read(unit, *) x(i)
+         end do read_loop
+
+         close(unit)
+
+      case default
+
+         @:ABORT('invalid file_type')
+
+      end select
+
+      ! Now construct a grid that's "compatible" with the model
+
+      ! First, eliminate any duplicates in x
+
+      x = x(unique_indices(x))
+
+      n = SIZE(x)
+
+      ! Extract internal segment boundaries from the model that fall
+      ! within the grid range
+
+      n_s = gr_ml%s_o() - gr_ml%s_i() + 1
+
+      allocate(x_b(2*n_s))
+
+      i = 1
+
+      seg_loop: do s = gr_ml%s_i(), gr_ml%s_o()
+
+         j_s_i = gr_ml%j_s_i(s)
+         j_s_o = gr_ml%j_s_o(s)
+
+         if (s > gr_ml%s_i() .AND. gr_ml%pt(j_s_i)%x >= x(1)) then
+            x_b(i) = gr_ml%pt(j_s_i)%x
+            i = i + 1
+         end if
+
+         if (s < gr_ml%s_o() .AND. gr_ml%pt(j_s_o)%x <= x(n)) then
+            x_b(i) = gr_ml%pt(j_s_o)%x
+            i = i + 1
+         end if
+
+      end do seg_loop
+
+      x_b = x_b(:i-1)
+
+      ! Remove points from x that are already in x_b
+
+      allocate(mask(n))
+
+      do i = 1, n
+         mask(i) = .NOT. ANY(x(i) == x_b)
+      end do
+
+      x = PACK(x, mask)
+
+      ! Merge the two abscissae
+
+      x = [x, x_b]
+
+      x = x(sort_indices(x))
+
+      ! Set up the grid
+
+      gr = grid_t(grid_t(x), x_i, x_o)
+
+      ! Finish
+
+      return
+
+   end function grid_from_file_
+
+end module grid_scaffold_m

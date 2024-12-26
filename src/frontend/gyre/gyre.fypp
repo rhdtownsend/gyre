@@ -172,18 +172,22 @@ program gyre
       call select_par(gr_p, md_p(i)%tag, gr_p_sel)
       call select_par(sc_p, md_p(i)%tag, sc_p_sel)
 
+      ! Create the scaffold grid
+
+      gr = grid_t(ml, gr_p_sel)
+
       ! Set up the context
 
-      cx = context_t(ml, gr_p_sel, md_p(i), os_p_sel, rt_p_sel)
+      cx = context_t(ml, gr, md_p(i), os_p_sel, rt_p_sel)
 
       ! Set up the frequency arrays
 
       call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'REAL', omega_re)
       call build_scan(cx, md_p(i), os_p_sel, sc_p_sel, 'IMAG', omega_im)
 
-      ! Create the grid
+      ! Refine the grid
 
-      gr = grid_t(cx, omega_re, gr_p_sel, os_p_sel)
+      call refine_grid(gr, cx, omega_re, gr_p_sel, os_p_sel)
 
       ! Set frequency bounds and perform checks
 

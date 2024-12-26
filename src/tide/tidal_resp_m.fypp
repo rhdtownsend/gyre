@@ -29,8 +29,9 @@ module tidal_resp_m
    use ext_m
    use freq_m
    use grid_m
-   use grid_factory_m
    use grid_par_m
+   use grid_scaffold_m
+   use grid_refine_m
    use grid_spec_m
    use math_m
    use mode_par_m
@@ -276,7 +277,7 @@ contains
       ! Set up the scaffold grid (used for tide classification and bc
       ! setting)
 
-      gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
+      gr = grid_t(ml, gr_p)
 
       pt_o = gr%pt_o()
 
@@ -316,7 +317,7 @@ contains
 
             md_p(l,m) = mode_par_t(l=l, m=m)
 
-            cx(l,m) = context_t(ml, gr_p, md_p(l,m), or_p, os_p, rt_p)
+            cx(l,m) = context_t(ml, gr, md_p(l,m), or_p, os_p, rt_p)
 
             k_loop : do k = k_min, k_max
 
@@ -342,7 +343,7 @@ contains
          y_T = 0._RD
       end where
 
-      ! Set up the grid using grid specs
+      ! Refine the skeleton grid using grid specs
 
       allocate(gs(l_min:l_max,m_min:m_max,k_min:k_max))
       allocate(gs_mask(l_min:l_max,m_min:m_max,k_min:k_max))
@@ -366,9 +367,7 @@ contains
       end do gs_l_loop
 
       if (COUNT(gs_mask) > 0) then
-         gr = grid_t(PACK(gs, MASK=gs_mask), gr_p, os_p)
-      else
-         gr = ml%grid()
+         call refine_grid(gr, PACK(gs, MASK=gs_mask), gr_p, os_p)
       end if
 
       ! Finish

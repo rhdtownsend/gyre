@@ -1,7 +1,7 @@
-! Module  : grid_factory_m
-! Purpose : factory procedures for grid_t type
+! Module  : grid_refine_m
+! Purpose : procedures for grid_t refinement
 !
-! Copyright 2013-2022 Rich Townsend & The GYRE Team
+! Copyright 2013-2024 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,7 +17,7 @@
 
 #:include 'gyre.inc'
 
-module grid_factory_m
+module grid_refine_m
 
    ! Uses
 
@@ -30,7 +30,6 @@ module grid_factory_m
    use grid_util_m
    use math_m
    use model_m
-   use mode_par_m
    use osc_par_m
    use point_m
    use state_m
@@ -44,14 +43,14 @@ module grid_factory_m
 
    ! Interfaces
 
-   interface grid_t
-      module procedure grid_t_context_
-      module procedure grid_t_grid_spec_
-   end interface grid_t
+   interface refine_grid
+      module procedure refine_grid_context_
+      module procedure refine_grid_spec_
+   end interface refine_grid
 
    ! Access specifiers
 
-   public :: grid_t
+   public :: refine_grid
 
    ! Default access
 
@@ -59,36 +58,36 @@ module grid_factory_m
 
 contains
 
-   function grid_t_context_(cx, omega, gr_p, os_p) result(gr)
+   subroutine refine_grid_context_(gr, cx, omega, gr_p, os_p)
 
+      type(grid_t), intent(inout)          :: gr
       type(context_t), pointer, intent(in) :: cx
       real(RD), intent(in)                 :: omega(:)
       type(grid_par_t), intent(in)         :: gr_p
       type(osc_par_t), intent(in)          :: os_p
-      type(grid_t)                         :: gr
 
       type(grid_spec_t) :: gs
 
-      ! Construct the grid_t using the supplied context
+      ! Refine the grid_t using the supplied context
 
       gs = grid_spec_t(cx, omega)
 
-      gr = grid_t([gs], gr_p, os_p)
+      call refine_grid_spec_(gr, [gs], gr_p, os_p)
 
       ! Finish
 
       return
 
-   end function grid_t_context_
+   end subroutine refine_grid_context_
 
    !****
 
-   function grid_t_grid_spec_(gs, gr_p, os_p) result(gr)
+   subroutine refine_grid_spec_(gr, gs, gr_p, os_p)
 
+      type(grid_t), intent(inout)   :: gr
       type(grid_spec_t), intent(in) :: gs(:)
       type(grid_par_t), intent(in)  :: gr_p
       type(osc_par_t), intent(in)   :: os_p
-      type(grid_t)                  :: gr
 
       class(model_t), pointer :: ml => null()
       integer                 :: i
@@ -96,9 +95,9 @@ contains
 
       @:ASSERT_DEBUG(SIZE(gs) >= 1, 'too few grid_specs')
 
-      ! Construct the grid_t using the supplied array of
-      ! grid_specs. Each grid spec supplies a context and the set of
-      ! frequencies to adopt for that context
+      ! Refine the grid_t using the supplied array of grid_specs. Each
+      ! grid spec supplies a context and the set of frequencies to
+      ! adopt for that context
 
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 100) 'Building spatial grid'
@@ -116,34 +115,7 @@ contains
          @:ASSERT_DEBUG(ASSOCIATED(gs(i)%cx%model(), ml), 'contexts are associated with different models')
       end do check_loop
 
-      ! Create the scaffold grid
-
-      select case (gr_p%scaffold_src)
-
-      case ('MODEL')
-
-         gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
-
-         if (check_log_level('INFO')) then
-            write(OUTPUT_UNIT, 110) 'Scaffold grid from model'
-110         format(3X,A)
-         end if
-
-      case ('FILE')
-
-         gr = grid_from_file_(gr_p%file, gr_p%file_format, ml%grid(), gr_p%x_i, gr_p%x_o)
-
-         if (check_log_level('INFO')) then
-            write(OUTPUT_UNIT, 110) 'Scaffold grid from file '//TRIM(gr_p%file)
-         end if
-
-      case default
-
-         @:ABORT('invalid scaffold_src')
-
-      end select
-
-      ! Add points
+      ! Build the grid by adding points to the scaffold grid
 
       call add_points_(gs, gr_p, os_p, gr)
 
@@ -174,7 +146,7 @@ contains
 
       ! Finish
 
-   end function grid_t_grid_spec_
+   end subroutine refine_grid_spec_
 
    !****
 
@@ -714,127 +686,4 @@ contains
 
    end function refine_center_
 
-   !****
-
-   function grid_from_file_(file, file_format, gr_ml, x_i, x_o) result(gr)
-
-      character(*), intent(in) :: file
-      character(*), intent(in) :: file_format
-      type(grid_t)             :: gr_ml
-      real(RD), intent(in)     :: x_i
-      real(RD), intent(in)     :: x_o
-      type(grid_t)             :: gr
-
-      type(hdf5io_t)        :: hi
-      real(RD), allocatable :: x(:)
-      integer               :: unit
-      integer               :: n
-      integer               :: i
-      integer               :: n_s
-      real(RD), allocatable :: x_b(:)
-      integer               :: s
-      integer               :: j_s_i
-      integer               :: j_s_o
-      logical, allocatable  :: mask(:)
-
-      ! Read the grid abscissa from a file
-
-      select case (file_format)
-      case('DETAIL')
-
-         hi = hdf5io_t(file, OPEN_FILE_RO)
-         call hi%alloc_read_dset('x', x)
-         call hi%final()
-
-      case('TEXT')
-
-         open(NEWUNIT=unit, FILE=file, STATUS='OLD')
-
-         n = 0
-
-         count_loop : do
-            read(unit, *, end=100)
-            n = n + 1
-         end do count_loop
-
-100      continue
-
-         rewind(unit)
-
-         allocate(x(n))
-
-         read_loop : do i = 1, n
-            read(unit, *) x(i)
-         end do read_loop
-
-         close(unit)
-
-      case default
-
-         @:ABORT('invalid file_type')
-
-      end select
-
-      ! Now construct a grid that's "compatible" with the model
-
-      ! First, eliminate any duplicates in x
-
-      x = x(unique_indices(x))
-
-      n = SIZE(x)
-
-      ! Extract internal segment boundaries from the model that fall
-      ! within the grid range
-
-      n_s = gr_ml%s_o() - gr_ml%s_i() + 1
-
-      allocate(x_b(2*n_s))
-
-      i = 1
-
-      seg_loop: do s = gr_ml%s_i(), gr_ml%s_o()
-
-         j_s_i = gr_ml%j_s_i(s)
-         j_s_o = gr_ml%j_s_o(s)
-
-         if (s > gr_ml%s_i() .AND. gr_ml%pt(j_s_i)%x >= x(1)) then
-            x_b(i) = gr_ml%pt(j_s_i)%x
-            i = i + 1
-         end if
-
-         if (s < gr_ml%s_o() .AND. gr_ml%pt(j_s_o)%x <= x(n)) then
-            x_b(i) = gr_ml%pt(j_s_o)%x
-            i = i + 1
-         end if
-
-      end do seg_loop
-
-      x_b = x_b(:i-1)
-
-      ! Remove points from x that are already in x_b
-
-      allocate(mask(n))
-
-      do i = 1, n
-         mask(i) = .NOT. ANY(x(i) == x_b)
-      end do
-
-      x = PACK(x, mask)
-
-      ! Merge the two abscissae
-
-      x = [x, x_b]
-
-      x = x(sort_indices(x))
-
-      ! Set up the grid
-
-      gr = grid_t(grid_t(x), x_i, x_o)
-
-      ! Finish
-
-      return
-
-   end function grid_from_file_
-
-end module grid_factory_m
+end module grid_refine_m
