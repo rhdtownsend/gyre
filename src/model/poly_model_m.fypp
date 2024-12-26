@@ -329,10 +329,23 @@ contains
       type(point_t), intent(in)       :: pt
       real(RD)                        :: coeff
 
+      real(RD) :: z
+      real(RD) :: theta
+      real(RD) :: dtheta
+
       ! Evaluate the As coefficient
 
-      coeff = this%coeff_V_2_(pt)*pt%x**2 * &
-         (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/this%Gamma_1)
+      z = pt%x*this%z_s
+
+      call this%in_theta(pt%s)%eval_f(pt%x, theta)
+      call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
+
+      if (theta /= 0._RD) then
+         coeff = -(this%n_poly(pt%s) + 1._RD)*z*dtheta/theta * &
+            (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/this%Gamma_1)
+      else
+         coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
+      endif
 
       ! Finish
 
