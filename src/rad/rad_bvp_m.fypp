@@ -38,7 +38,6 @@ module rad_bvp_m
    use rad_diff_m
    use rad_trans_m
    use state_m
-   use util_m
    use wave_m
 
    use ISO_FORTRAN_ENV

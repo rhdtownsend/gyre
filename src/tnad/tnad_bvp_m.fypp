@@ -27,7 +27,6 @@ module tnad_bvp_m
    use context_m
    use ext_m
    use grid_m
-   use grid_factory_m
    use model_m
    use mode_par_m
    use nad_bound_m
