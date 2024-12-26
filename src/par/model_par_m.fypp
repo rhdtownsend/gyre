@@ -53,7 +53,7 @@ module model_par_m
       integer                 :: n = 10
       logical                 :: add_center = .TRUE.
       logical                 :: repair_As = .FALSE.
-      logical                 :: constrain_derivs = .TRUE.
+      logical                 :: constrain_derivs = .FALSE.
       logical                 :: force_linear = .FALSE.
    end type model_par_t
 
