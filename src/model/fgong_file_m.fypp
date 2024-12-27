@@ -32,6 +32,7 @@ module fgong_file_m
    use util_m
 
    use ISO_FORTRAN_ENV
+   use IEEE_ARITHMETIC
 
    ! No implicit typing
 
@@ -165,7 +166,11 @@ contains
       allocate(c_1(n))
 
       where (x /= 0._RD)
-         V_2 = G_GRAVITY*(m*M_star)*rho/(P*x**3*R_star)
+         where (P /= 0._RD)
+            V_2 = G_GRAVITY*(m*M_star)*rho/(P*x**3*R_star)
+         elsewhere
+            V_2 = IEEE_VALUE(V_2, IEEE_POSITIVE_INF)
+         end where
          U = 4._RD*PI*rho*(x*R_star)**3/(m*M_star)
          c_1 = x**3/m
       elsewhere
@@ -178,7 +183,13 @@ contains
 
       Omega_rot = 0._RD
 
-      beta_rad = A_RADIATION*T**4/(3._RD*P)
+      allocate(beta_rad(n))
+
+      where (P /= 0._RD)
+         beta_rad = A_RADIATION*T**4/(3._RD*P)
+      elsewhere
+         beta_rad = IEEE_VALUE(beta_rad, IEEE_POSITIVE_INF)
+      end where
 
       ! Initialize the evol_model_t
 
