@@ -46,6 +46,7 @@ program build_poly
    real(RD)                  :: Gamma_1
    real(RD), allocatable     :: z_b(:)
    real(RD), allocatable     :: Delta_b(:)
+   real(RD)                  :: theta_s
    real(RD)                  :: dz
    real(RD)                  :: toler
    character(FILENAME_LEN)   :: file
@@ -55,7 +56,7 @@ program build_poly
    integer                   :: n_r_out
    type(hdf5io_t)            :: hi
 
-   namelist /poly/ n_r, n_poly, Gamma_1, z_b, Delta_b
+   namelist /poly/ n_r, n_poly, Gamma_1, z_b, Delta_b, theta_s
    namelist /num/ dz, toler
    namelist /out/ file
 
@@ -73,6 +74,7 @@ program build_poly
 
    n_r = 1
    Gamma_1 = 5._RD/3._RD
+   theta_s = 0._RD
 
    n_poly(1) = 0._RD
 
@@ -100,7 +102,7 @@ program build_poly
 
    ! Solve the Lane-Emden equation
 
-   call solve_lane_emden(n_poly, z_b, Delta_b, dz, toler, z, theta, dtheta, n_r_out)
+   call solve_lane_emden(n_poly, z_b, Delta_b, theta_s, dz, toler, z, theta, dtheta, n_r_out)
 
    if (n_r_out < n_r) then
       write(OUTPUT_UNIT, 100) 'Warning: only', n_r_out, 'of', n_r, 'regions used'

@@ -16,7 +16,7 @@ input file can contain only one. Allowable parameters are:
 :nml_n:`n_r` (default :nml_v:`1`)
   Number of regions
 
-:nml_n:`n_poly` (default :nml_v:`0`)
+:nml_n:`n_poly` (default :nml_v:`0.`)
   Comma-separated list of length :nml_n:`n_r`, specifying polytropic indices for regions
 
 :nml_n:`z_b`
@@ -29,6 +29,9 @@ input file can contain only one. Allowable parameters are:
 
 :nml_n:`Gamma_1` (default :nml_v:`5./3.`)
   First adiabatic exponent
+
+:nml_n:`theta_s` (default :nml_v:`0`)
+  Target surface value of of polytropic dependent variable :math:`\theta`
 
 Numerical Parameters
 --------------------

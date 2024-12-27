@@ -33,14 +33,6 @@ module lane_emden_m
 
    implicit none
 
-   ! Module variables
-
-   real(RD), save :: n_poly_m
-   real(RD), save :: B_m
-   real(RD), save :: x_m
-
-   !$OMP THREADPRIVATE(n_poly_m, B_m, x_m)
-
    ! Access specifiers
 
    public :: solve_lane_emden
@@ -49,11 +41,12 @@ module lane_emden_m
 
 contains
 
-   subroutine solve_lane_emden(n_poly, z_b, Delta_b, dz, tol, z, theta, dtheta, n_r_out)
+   subroutine solve_lane_emden(n_poly, z_b, Delta_b, theta_s, dz, tol, z, theta, dtheta, n_r_out)
 
       real(RD), intent(in)               :: n_poly(:)
       real(RD), intent(in)               :: z_b(:)
       real(RD), intent(in)               :: Delta_b(:)
+      real(RD), intent(in)               :: theta_s
       real(RD), intent(in)               :: dz
       real(RD), intent(in)               :: tol
       real(RD), allocatable, intent(out) :: z(:)
@@ -73,9 +66,11 @@ contains
       real(RD)              :: dx
       real(RD)              :: x_exp
       real(RD)              :: y_exp(2)
+      real(RD)              :: B
       integer               :: n_r
       logical               :: first
       integer               :: i
+      real(RD)              :: x_bdy
       integer               :: istate
       real(RD)              :: rwork(22+NEQ*MAX(16,NEQ+9)+3*NG)
       integer               :: iwork(20+NEQ)
@@ -103,17 +98,14 @@ contains
 
       dx = dz
 
-      n_poly_m = n_poly(1)
-      B_m = 1._RD
-
       x_exp = 0._RD
 
       expand_loop : do
 
          ! Use a forth-order expansion of the Lane-Emden solutions
 
-         y_exp(1) = 1._RD - x_exp**2/6._RD + n_poly_m*x_exp**4/120._RD
-         y_exp(2) = -x_exp/3._RD + n_poly_m*x_exp**3/30._RD
+         y_exp(1) = 1._RD - x_exp**2/6._RD + n_poly(1)*x_exp**4/120._RD
+         y_exp(2) = -x_exp/3._RD + n_poly(1)*x_exp**3/30._RD
 
          if (x_exp < X_BEG) then
 
@@ -143,18 +135,18 @@ contains
       ! Now continue by intergrating to each boundary point, or to the
       ! surface
 
+      B = 1._RD
+
       n_r = SIZE(z_b) + 1
 
       first = .TRUE.
 
       region_loop : do i = 1, n_r
 
-         n_poly_m = n_poly(i)
-
          if (i < n_r) then
-            x_m = z_b(i)
+            x_bdy = z_b(i)
          else
-            x_m = HUGE(0._RD)
+            x_bdy = HUGE(0._RD)
          endif
 
          istate = 1
@@ -180,9 +172,9 @@ contains
                y(:,n) = y(:,n-1)
             end if
 
-            call LSODAR(lane_emden_rhs, [NEQ], y(:,n), x(n), x(n-1)+dx, 1, [0._RD,0._RD], [tol,tol], &
-               1, istate, 0, rwork, SIZE(rwork), iwork, SIZE(iwork), lane_emden_jac, 1, &
-               lane_emden_constr, NG, jroot)
+            call LSODAR(lane_emden_rhs_, [NEQ], y(:,n), x(n), x(n-1)+dx, 1, [0._RD,0._RD], [tol,tol], &
+               1, istate, 0, rwork, SIZE(rwork), iwork, SIZE(iwork), lane_emden_jac_, 1, &
+               lane_emden_constr_, NG, jroot)
 
             ! Check for success
 
@@ -231,11 +223,11 @@ contains
 
          ! Update B 
 
-         B_m = f*t_t**2*B_m
+         B = f*t_t**2*B
 
       end do region_loop
 
-      y(1,n) = 0._RD
+      y(1,n) = theta_s
 
       ! Record how many regions were actually encountered
 
@@ -252,77 +244,77 @@ contains
 
       return
 
+   contains
+
+      subroutine lane_emden_rhs_(neq, x, y, dy_dx)
+
+         integer, intent(in)   :: neq
+         real(RD), intent(in)  :: x
+         real(RD), intent(in)  :: y(neq)
+         real(RD), intent(out) :: dy_dx(neq)
+
+         ! Calculate the right-hand side vector
+
+         dy_dx(1) = y(2)
+         if (n_poly(i) /= 0._RD) then
+            dy_dx(2) = -B*abs(y(1))**n_poly(i) - 2._RD*y(2)/x
+         else
+            dy_dx(2) = -B - 2._RD*y(2)/x
+         endif
+
+         ! Finish
+
+         return
+
+      end subroutine lane_emden_rhs_
+
+      !****
+
+      subroutine lane_emden_jac_(neq, x, y, ml, mu, pd, nrowpd)
+
+         integer, intent(in)   :: neq
+         real(RD), intent(in)  :: x
+         real(RD), intent(in)  :: y(neq)
+         integer, intent(in)   :: ml
+         integer, intent(in)   :: mu
+         integer, intent(in)   :: nrowpd
+         real(RD), intent(out) :: pd(nrowpd,neq)
+
+         ! Calculate the Jacobian matrix
+
+         pd(1,1) = 0._RD
+         pd(1,2) = 1._RD
+
+         pd(2,1) = -n_poly(i)*B*abs(y(1))**(n_poly(i)-1._RD)*SIGN(1._RD, y(1))
+         pd(2,2) = -2._RD/x
+
+         ! Finish
+
+         return
+
+      end subroutine lane_emden_jac_
+
+      !****
+
+      subroutine lane_emden_constr_(neq, x, y, ng, gout)
+
+         integer, intent(in)   :: neq
+         real(RD), intent(in)  :: x
+         real(RD), intent(in)  :: y(neq)
+         integer, intent(in)   :: ng
+         real(RD), intent(out) :: gout(ng)
+
+         ! Calculate the constraint function
+
+         gout(1) = x - x_bdy      ! Region boundary
+         gout(2) = y(1) - theta_s ! Surface
+
+         ! Finish
+
+         return
+
+      end subroutine lane_emden_constr_
+
    end subroutine solve_lane_emden
-
-   !****
-
-   subroutine lane_emden_rhs(neq, x, y, dy_dx)
-
-      integer, intent(in)   :: neq
-      real(RD), intent(in)  :: x
-      real(RD), intent(in)  :: y(neq)
-      real(RD), intent(out) :: dy_dx(neq)
-
-      ! Calculate the right-hand side vector
-
-      dy_dx(1) = y(2)
-      if (n_poly_m /= 0._RD) then
-         dy_dx(2) = -B_m*abs(y(1))**n_poly_m - 2._RD*y(2)/x
-      else
-         dy_dx(2) = -B_m - 2._RD*y(2)/x
-      endif
-
-      ! Finish
-
-      return
-
-   end subroutine lane_emden_rhs
-
-   !****
-
-   subroutine lane_emden_jac(neq, x, y, ml, mu, pd, nrowpd)
-
-      integer, intent(in)   :: neq
-      real(RD), intent(in)  :: x
-      real(RD), intent(in)  :: y(neq)
-      integer, intent(in)   :: ml
-      integer, intent(in)   :: mu
-      integer, intent(in)   :: nrowpd
-      real(RD), intent(out) :: pd(nrowpd,neq)
-
-      ! Calculate the Jacobian matrix
-
-      pd(1,1) = 0._RD
-      pd(1,2) = 1._RD
-
-      pd(2,1) = -n_poly_m*B_m*abs(y(1))**(n_poly_m-1._RD)*SIGN(1._RD, y(1))
-      pd(2,2) = -2._RD/x
-
-      ! Finish
-
-      return
-
-   end subroutine lane_emden_jac
-
-   !****
-
-   subroutine lane_emden_constr(neq, x, y, ng, gout)
-
-      integer, intent(in)   :: neq
-      real(RD), intent(in)  :: x
-      real(RD), intent(in)  :: y(neq)
-      integer, intent(in)   :: ng
-      real(RD), intent(out) :: gout(ng)
-
-      ! Calculate the constraint function
-
-      gout(1) = x - x_m ! Region boundary
-      gout(2) = y(1)    ! Surface
-
-      ! Finish
-
-      return
-
-   end subroutine lane_emden_constr
 
 end module lane_emden_m
