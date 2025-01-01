@@ -1,7 +1,7 @@
 ! Module  : evol_model_m
 ! Purpose : stellar evolutionary model
 !
-! Copyright 2013-2024 Rich Townsend & The GYRE Team
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -371,46 +371,6 @@ contains
 
          allocate(ci(this%s_i:this%s_o,I_LAST))
 
-         ! Check if derivative constraining is required
-
-         if (this%constrain_derivs) then
-
-            @:ASSERT(this%is_defined(I_V_2), 'V_2 must be defined when constrain_derivs == .TRUE.')
-            @:ASSERT(this%is_defined(I_AS), 'As must be defined when constrain_derivs == .TRUE.')
-            @:ASSERT(this%is_defined(I_U), 'U must be defined when constrain_derivs == .TRUE.')
-            @:ASSERT(this%is_defined(I_C_1), 'c_1 must be defined when constrain_derivs == .TRUE.')
-            @:ASSERT(this%is_defined(I_GAMMA_1), 'Gamma_1 must be defined when constrain_derivs == .TRUE.')
-
-            associate( &
-               x => this%gr%pt%x, &
-               V_2 => this%coeffs(:,I_V_2), &
-               As => this%coeffs(:,I_AS), &
-               U => this%coeffs(:,I_U), &
-               c_1 => this%coeffs(:,I_C_1), &
-               Gamma_1 => this%coeffs(:,I_GAMMA_1))
-
-               ! Evaluate derivatives for V_2, U and c_1, following
-               ! eqns. (20) and (21) of Takata (2006) plus the equation
-               ! of hydrostatic equilibrium
-
-               allocate(dV_2_dx(this%gr%n))
-               allocate(dU_dx(this%gr%n))
-               allocate(dc_1_dx(this%gr%n))
-
-               where (x /= 0._RD)
-                  dV_2_dx = V_2*(V_2*x**2 - V_2*x**2/Gamma_1 - As + U - 3._RD)/x
-                  dU_dx = U*(-V_2*x**2/Gamma_1 - As - U + 3._RD)/x
-                  dc_1_dx = c_1*(3._RD - U)/x
-               elsewhere
-                  dV_2_dx = 0._RD
-                  dU_dx = 0._RD
-                  dc_1_dx = 0._RD
-               end where
-
-            end associate
-
-         end if
-
          ! Initialize the interpolants
 
          coeff_loop : do i = 1, I_LAST
@@ -428,32 +388,13 @@ contains
 
                      ! Evaluate derivatives
 
-                     if (this%constrain_derivs) then
-
-                        select case(i)
-                        case(I_V_2)
-                           dcoeff_dx = dV_2_dx(j_i:j_o)
-                        case(I_U)
-                           dcoeff_dx = dU_dx(j_i:j_o)
-                        case(I_C_1)
-                           dcoeff_dx = dc_1_dx(j_i:j_o)
-                        case default
-                           if (x(1) == 0._RD) then
-                              dcoeff_dx = deriv(x, coeff, this%deriv_type, df_dx_a=0._RD)
-                           else
-                              dcoeff_dx = deriv(x, coeff, this%deriv_type)
-                           endif
-                        end select
-
+                     if (x(1) == 0._RD) then
+                        dcoeff_dx = deriv(x, coeff, this%deriv_type, df_dx_a=0._RD)
                      else
-
-                        if (x(1) == 0._RD) then
-                           dcoeff_dx = deriv(x, coeff, this%deriv_type, df_dx_a=0._RD)
-                        else
-                           dcoeff_dx = deriv(x, coeff, this%deriv_type)
-                        endif
-
+                        dcoeff_dx = deriv(x, coeff, this%deriv_type)
                      end if
+
+                     ! Initialize the cubic interpolant
 
                      ci(s,i) = cubic_interp_rt(x, coeff, dcoeff_dx)
 

@@ -329,7 +329,8 @@ contains
          ml => this%cx%model() )
 
          if (PRESENT(freq_frame)) then
-            freq = (this%st%omega + freq_shift(freq_frame, this%cx, this%md_p))*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
+            freq = (this%st%omega + &
+               freq_shift(freq_frame, this%cx, this%md_p))*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
          else
             freq = this%st%omega*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
          endif

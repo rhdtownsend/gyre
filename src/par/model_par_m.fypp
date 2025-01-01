@@ -1,7 +1,7 @@
 ! Module  : model_par_m
 ! Purpose : model parameters
 !
-! Copyright 2015-2024 Rich Townsend & The GYRE Team
+! Copyright 2015-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -53,7 +53,7 @@ module model_par_m
       integer                 :: n = 10
       logical                 :: add_center = .TRUE.
       logical                 :: repair_As = .FALSE.
-      logical                 :: constrain_derivs = .FALSE.
+      logical                 :: constrain_derivs = .TRUE.
       logical                 :: force_linear = .FALSE.
    end type model_par_t
 
