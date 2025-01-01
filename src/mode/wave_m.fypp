@@ -19,2669 +19,2380 @@
 
 module wave_m
 
-  ! Uses
+   ! Uses
+   
+   use forum_m, only: RD
 
-  use forum_m, only: RD
+   use anapoly_model_m
+   use constants_m
+   use context_m
+   use ext_m
+   use freq_context_m
+   use grid_m
+   use grid_util_m
+   use hom_model_m
+   use integ_m
+   use math_m
+   use model_m
+   use mode_par_m
+   use num_par_m
+   use osc_par_m
+   use point_m
+   use poly_model_m
+   use rot_m
+   use state_m
+   use util_m
 
-  use anapoly_model_m
-  use constants_m
-  use context_m
-  use ext_m
-  use freq_context_m
-  use grid_m
-  use grid_util_m
-  use hom_model_m
-  use integ_m
-  use math_m
-  use model_m
-  use mode_par_m
-  use num_par_m
-  use osc_par_m
-  use point_m
-  use poly_model_m
-  use rot_m
-  use state_m
-  use util_m
+   use ISO_FORTRAN_ENV
 
-  use ISO_FORTRAN_ENV
+   ! No implicit typing
 
-  ! No implicit typing
+   implicit none
 
-  implicit none
+   ! Derived-type definitions
 
-  ! Derived-type definitions
-
-  type :: wave_t
-     private
-     type(state_ct)           :: st
-     type(context_t)          :: cx
-     type(grid_t)             :: gr
-     type(mode_par_t), public :: md_p
-     type(num_par_t), public  :: nm_p
-     type(osc_par_t), public  :: os_p
-     type(point_t)            :: pt_i
-     type(point_t)            :: pt_o
-     logical                  :: is_vacuum
-     complex(RD), allocatable :: y_c(:,:)
-     real(RD)                 :: E_scl2
-     type(ext_ct), public     :: discrim
-     complex(RD), public      :: scl
-     complex(RD), public      :: omega
-     complex(RD), public      :: l_i
-     integer, public          :: n
-     integer, public          :: j_ref
-     integer, public          :: l
-     integer, public          :: m
-     logical, public          :: static
-     integer, public          :: id
+   type :: wave_t
+      private
+      type(state_ct)           :: st
+      type(context_t)          :: cx
+      type(grid_t)             :: gr
+      type(mode_par_t), public :: md_p
+      type(num_par_t), public  :: nm_p
+      type(osc_par_t), public  :: os_p
+      type(point_t)            :: pt_i
+      type(point_t)            :: pt_o
+      logical                  :: is_vacuum
+      complex(RD), allocatable :: y_c(:,:)
+      real(RD)                 :: E_scl2
+      type(ext_ct), public     :: discrim
+      complex(RD), public      :: scl
+      complex(RD), public      :: omega
+      complex(RD), public      :: l_i
+      integer, public          :: n
+      integer, public          :: j_ref
+      integer, public          :: l
+      integer, public          :: m
+      logical, public          :: static
+      integer, public          :: id
    contains
-     private
-     procedure, public :: state
-     procedure, public :: context
-     procedure, public :: model
-     procedure, public :: grid
-     procedure, public :: freq
-     procedure, public :: dfreq_rot
-     procedure, public :: omega_int
-     procedure, public :: x
-     procedure, public :: dx_min
-     procedure, public :: dx_max
-     procedure, public :: dx_rms
-     procedure, public :: y_i
-     procedure, public :: xi_r
-     procedure, public :: xi_h
-     procedure, public :: eul_Phi
-     procedure, public :: deul_Phi
-     procedure, public :: lag_S
-     procedure, public :: lag_L
-     procedure, public :: eul_P
-     procedure, public :: lag_P
-     procedure, public :: eul_rho
-     procedure, public :: lag_rho
-     procedure, public :: eul_T
-     procedure, public :: lag_T
-     procedure, public :: lambda
-     procedure, public :: dE_dx
-     procedure, public :: dW_dx
-     procedure, public :: dW_eps_dx
-     procedure, public :: dQ_dx
-     procedure, public :: dzeta_dx
-     procedure         :: dzeta_dx_pesnell_
-     procedure         :: dzeta_dx_kawaler_
-     procedure         :: dzeta_dx_kawaler_grav_
-     procedure         :: dzeta_dx_dupret_
-     procedure, public :: dzeta_dm
-     procedure         :: dzeta_dm_kawaler_
-     procedure, public :: dbeta_dx
-     procedure, public :: dtau_ss_dx
-     procedure, public :: dtau_tr_dx
-     procedure, public :: Yt_1
-     procedure, public :: Yt_2
-     procedure, public :: I_0
-     procedure, public :: I_1
-     procedure, public :: alpha_0
-     procedure, public :: alpha_1
-     procedure, public :: prop_type
-     procedure, public :: lag_T_eff
-     procedure, public :: lag_g_eff
-     procedure, public :: f_T
-     procedure, public :: f_g
-     procedure, public :: psi_T
-     procedure, public :: psi_g
-     procedure, public :: E
-     procedure, public :: E_p
-     procedure, public :: E_g
-     procedure, public :: E_norm
-     procedure, public :: E_ratio
-     procedure, public :: H
-     procedure, public :: W
-     procedure, public :: W_eps
-     procedure, public :: Q
-     procedure, public :: tau_ss
-     procedure, public :: tau_tr
-     procedure, public :: zeta
-     procedure, public :: beta
-     procedure, public :: dOmega_rot
-     procedure, public :: eta
-  end type wave_t
+      private
+      procedure, public :: state
+      procedure, public :: context
+      procedure, public :: model
+      procedure, public :: grid
+      procedure, public :: freq
+      procedure, public :: dfreq_rot
+      procedure, public :: omega_int
+      procedure, public :: x
+      procedure, public :: dx_min
+      procedure, public :: dx_max
+      procedure, public :: dx_rms
+      procedure, public :: y_i
+      procedure, public :: xi_r
+      procedure, public :: xi_h
+      procedure, public :: eul_Phi
+      procedure, public :: deul_Phi
+      procedure, public :: lag_S
+      procedure, public :: lag_L
+      procedure, public :: eul_P
+      procedure, public :: lag_P
+      procedure, public :: eul_rho
+      procedure, public :: lag_rho
+      procedure, public :: eul_T
+      procedure, public :: lag_T
+      procedure, public :: lambda
+      procedure, public :: dE_dx
+      procedure, public :: dW_dx
+      procedure, public :: dW_eps_dx
+      procedure, public :: dQ_dx
+      procedure, public :: dzeta_dx
+      procedure, public :: dbeta_dx
+      procedure, public :: dtau_ss_dx
+      procedure, public :: dtau_tr_dx
+      procedure, public :: Yt_1
+      procedure, public :: Yt_2
+      procedure, public :: I_0
+      procedure, public :: I_1
+      procedure, public :: alpha_0
+      procedure, public :: alpha_1
+      procedure, public :: prop_type
+      procedure, public :: lag_T_eff
+      procedure, public :: lag_g_eff
+      procedure, public :: f_T
+      procedure, public :: f_g
+      procedure, public :: psi_T
+      procedure, public :: psi_g
+      procedure, public :: E
+      procedure, public :: E_p
+      procedure, public :: E_g
+      procedure, public :: E_norm
+      procedure, public :: E_ratio
+      procedure, public :: H
+      procedure, public :: W
+      procedure, public :: W_eps
+      procedure, public :: Q
+      procedure, public :: tau_ss
+      procedure, public :: tau_tr
+      procedure, public :: zeta
+      procedure, public :: beta
+      procedure, public :: dOmega_rot
+      procedure, public :: eta
+   end type wave_t
 
-  ! Interfaces
+   ! Interfaces
 
-  interface wave_t
-     module procedure wave_t_
-  end interface wave_t
+   interface wave_t
+      module procedure wave_t_
+   end interface wave_t
 
-  interface reallocate
-     module procedure reallocate_wave_t_1_
-  end interface reallocate
+   interface reallocate
+      module procedure reallocate_wave_t_1_
+   end interface reallocate
 
-  ! Access specifiers
+   ! Access specifiers
 
-  public :: wave_t
-  public :: reallocate
+   public :: wave_t
+   public :: reallocate
 
-  ! Default access
+   ! Default access
 
-  private
+   private
 
 contains
 
-  function wave_t_(st, y_c, discrim, cx, gr, md_p, nm_p, os_p, id, static) result(wv)
+   function wave_t_(st, y_c, discrim, cx, gr, md_p, nm_p, os_p, id, static) result(wv)
 
-    type(state_ct), intent(in)    :: st
-    complex(RD), intent(in)       :: y_c(:,:)
-    type(ext_ct), intent(in)      :: discrim
-    type(context_t), intent(in)   :: cx
-    type(grid_t), intent(in)      :: gr
-    type(mode_par_t), intent(in)  :: md_p
-    type(num_par_t), intent(in)   :: nm_p
-    type(osc_par_t), intent(in)   :: os_p
-    integer, intent(in)           :: id
-    logical, intent(in), optional :: static
-    type(wave_t)                  :: wv
+      type(state_ct), intent(in)    :: st
+      complex(RD), intent(in)       :: y_c(:,:)
+      type(ext_ct), intent(in)      :: discrim
+      type(context_t), intent(in)   :: cx
+      type(grid_t), intent(in)      :: gr
+      type(mode_par_t), intent(in)  :: md_p
+      type(num_par_t), intent(in)   :: nm_p
+      type(osc_par_t), intent(in)   :: os_p
+      integer, intent(in)           :: id
+      logical, intent(in), optional :: static
+      type(wave_t)                  :: wv
 
-    real(RD) :: x_ref
+      real(RD) :: x_ref
 
-    @:CHECK_BOUNDS(SIZE(y_c, 1), 6)
-    @:CHECK_BOUNDS(SIZE(y_c, 2), gr%n)
+      @:CHECK_BOUNDS(SIZE(y_c, 1), 6)
+      @:CHECK_BOUNDS(SIZE(y_c, 2), gr%n)
 
-    ! Construct the wave_t
+      ! Construct the wave_t
 
-    wv%st = st
-    wv%cx = cx
-    wv%gr = gr
+      wv%st = st
+      wv%cx = cx
+      wv%gr = gr
 
-    wv%md_p = md_p
-    wv%nm_p = nm_p
-    wv%os_p = os_p
+      wv%md_p = md_p
+      wv%nm_p = nm_p
+      wv%os_p = os_p
 
-    wv%y_c = y_c
+      wv%y_c = y_c
 
-    wv%omega = st%omega
-    wv%discrim = discrim
+      wv%omega = st%omega
+      wv%discrim = discrim
 
-    wv%scl = 1._RD
+      wv%scl = 1._RD
 
-    associate (ml => cx%model(), &
-               pt_i => cx%point_i())
-      wv%l_i = cx%l_e(cx%Omega_rot(pt_i), st)
-    end associate
+      associate(           &
+         ml => cx%model(), &
+         pt_i => cx%point_i())
+         wv%l_i = cx%l_e(cx%Omega_rot(pt_i), st)
+      end associate
 
-    wv%n = gr%n
+      wv%n = gr%n
 
-    wv%l = md_p%l
-    wv%m = md_p%m
-    
-    wv%id = id
+      wv%l = md_p%l
+      wv%m = md_p%m
 
-    if (PRESENT(static)) then
-       wv%static = static
-    else
-       wv%static = .FALSE.
-    end if
+      wv%id = id
 
-    ! Locate the reference point
-
-    wv%pt_i = gr%pt_i()
-    wv%pt_o = gr%pt_o()
-
-    x_ref = MIN(MAX(os_p%x_ref, wv%pt_i%x), wv%pt_o%x)
-
-    wv%j_ref = MINLOC(abs(gr%pt%x - x_ref), DIM=1)
-
-    ! Cache the ratio E/|scl|**2, to avoid having to perform (expensive)
-    ! E integrations in the future
-
-    wv%E_scl2 = wv%E(use_cache=.FALSE.)/abs(wv%scl)**2
-
-    ! Cache the vacuum surface flag
-
-    associate( &
-       ml => cx%model() )
-       wv%is_vacuum = ml%is_vacuum(wv%pt_o)
-    end associate
-
-    ! Finish
-
-    return
-
-  end function wave_t_
-
-  !****
-
-  $:REALLOCATE('type(wave_t)', 'wave_t', 1)
-
-  !****
-
-  function state (this) result(st)
-
-    class(wave_t), intent(in) :: this
-    type(state_ct)            :: st
-
-    ! Return the wave's state
-
-    st = this%st
-
-    ! Finish
-
-    return
-
-  end function state
-
-  !****
-
-  function context (this) result(cx)
-
-    class(wave_t), intent(in) :: this
-    type(context_t)           :: cx
-
-    ! Return the wave's context
-
-    cx = this%cx
-
-    ! Finish
-
-    return
-
-  end function context
-
-  !****
-
-  function model (this) result(ml)
-
-    class(wave_t), intent(in) :: this
-    class(model_t), pointer   :: ml
-
-    ! Return the wave's model
-
-    ml => this%cx%model()
-
-    ! Finish
-
-    return
-
-  end function model
-
-  !****
-
-  function grid (this) result(gr)
-
-    class(wave_t), intent(in) :: this
-    type(grid_t)              :: gr
-
-    ! Return the wave's grid
-
-    gr = this%gr
-
-    ! Finish
-
-    return
-
-  end function grid
-
-  !****
-
-  function freq (this, freq_units, freq_frame)
-
-    class(wave_t), intent(in)          :: this
-    character(*), intent(in)           :: freq_units
-    character(*), optional, intent(in) :: freq_frame
-    complex(RD)                        :: freq
-
-    ! Calculate the frequency
-
-    associate( &
-         ml => this%cx%model() )
-
-      if (PRESENT(freq_frame)) then
-         freq = (this%st%omega + freq_shift(freq_frame, this%cx, this%md_p))*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
+      if (PRESENT(static)) then
+         wv%static = static
       else
-         freq = this%st%omega*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
-      endif
+         wv%static = .FALSE.
+      end if
 
-    end associate
+      ! Locate the reference point
 
-    ! Finish
-    
-    return
+      wv%pt_i = gr%pt_i()
+      wv%pt_o = gr%pt_o()
 
-  end function freq
+      x_ref = MIN(MAX(os_p%x_ref, wv%pt_i%x), wv%pt_o%x)
 
-  !****
+      wv%j_ref = MINLOC(abs(gr%pt%x - x_ref), DIM=1)
 
-  function dfreq_rot (this, freq_units)
+      ! Cache the ratio E/|scl|**2, to avoid having to perform (expensive)
+      ! E integrations in the future
 
-    class(wave_t), intent(in) :: this
-    character(*), intent(in)  :: freq_units
-    real(RD)                  :: dfreq_rot
+      wv%E_scl2 = wv%E(use_cache=.FALSE.)/abs(wv%scl)**2
 
-    associate( &
+      ! Cache the vacuum surface flag
+
+      associate( &
+         ml => cx%model() )
+         wv%is_vacuum = ml%is_vacuum(wv%pt_o)
+      end associate
+
+      ! Finish
+
+      return
+
+   end function wave_t_
+
+   !****
+
+   $:REALLOCATE('type(wave_t)', 'wave_t', 1)
+
+   !****
+
+   function state(this) result(st)
+
+      class(wave_t), intent(in) :: this
+      type(state_ct)            :: st
+
+      ! Return the wave's state
+
+      st = this%st
+
+      ! Finish
+
+      return
+
+   end function state
+
+   !****
+
+   function context(this) result(cx)
+
+      class(wave_t), intent(in) :: this
+      type(context_t)           :: cx
+
+      ! Return the wave's context
+
+      cx = this%cx
+
+      ! Finish
+
+      return
+
+   end function context
+
+   !****
+
+   function model(this) result(ml)
+
+      class(wave_t), intent(in) :: this
+      class(model_t), pointer   :: ml
+
+      ! Return the wave's model
+
+      ml => this%cx%model()
+
+      ! Finish
+
+      return
+
+   end function model
+
+   !****
+
+   function grid(this) result(gr)
+
+      class(wave_t), intent(in) :: this
+      type(grid_t)              :: gr
+
+      ! Return the wave's grid
+
+      gr = this%gr
+
+      ! Finish
+
+      return
+
+   end function grid
+
+   !****
+
+   function freq(this, freq_units, freq_frame)
+
+      class(wave_t), intent(in)          :: this
+      character(*), intent(in)           :: freq_units
+      character(*), optional, intent(in) :: freq_frame
+      complex(RD)                        :: freq
+
+      ! Calculate the frequency
+
+      associate( &
          ml => this%cx%model() )
 
-      dfreq_rot = this%dOmega_rot()*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
-    
-    end associate
+         if (PRESENT(freq_frame)) then
+            freq = (this%st%omega + freq_shift(freq_frame, this%cx, this%md_p))*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
+         else
+            freq = this%st%omega*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
+         endif
 
-  end function dfreq_rot
+      end associate
 
-  !****
+      ! Finish
 
-  function omega_int (this)
+      return
 
-    class(wave_t), intent(in) :: this
-    complex(RD)               :: omega_int
+   end function freq
 
-    complex(RD) :: W
-    complex(RD) :: y_1
-    complex(RD) :: y_2
-    complex(RD) :: y_3
-    complex(RD) :: y_4
-    real(RD)    :: U
-    real(RD)    :: c_1
-    real(RD)    :: Omega_rot
-    complex(RD) :: l_e
-    complex(RD) :: S
+   !****
 
-    ! Calculate the dimensionless frequency from the weight integral
-    ! (see Townsend & Kuenzi 2025)
+   function dfreq_rot(this, freq_units)
 
-    ! Evaluate the weight integral
+      class(wave_t), intent(in) :: this
+      character(*), intent(in)  :: freq_units
+      real(RD)                  :: dfreq_rot
 
-    W = this%zeta()
+      associate( &
+         ml => this%cx%model() )
 
-    ! Evaluate the surface term
+         dfreq_rot = this%dOmega_rot()*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
 
-    if (.NOT. this%is_vacuum) then
+      end associate
 
-       y_1 = this%y_i(1, this%n)
-       y_2 = this%y_i(2, this%n)
-       y_3 = this%y_i(3, this%n)
-       y_4 = this%y_i(4, this%n)
+   end function dfreq_rot
 
-       associate(                 &
-          ml => this%cx%model(),  &
-          pt => this%pt_o,        &
-          l_i => this%l_i)
+   !****
 
-          U = ml%coeff(I_U, pt)
-          c_1 = ml%coeff(I_C_1, pt)
+   function omega_int(this)
 
-          Omega_rot = this%cx%Omega_rot(pt)
+      class(wave_t), intent(in) :: this
+      complex(RD)               :: omega_int
 
-          l_e = this%cx%l_e(Omega_rot, this%st)
+      complex(RD) :: W
+      complex(RD) :: y_1
+      complex(RD) :: y_2
+      complex(RD) :: y_3
+      complex(RD) :: y_4
+      real(RD)    :: U
+      real(RD)    :: c_1
+      real(RD)    :: Omega_rot
+      complex(RD) :: l_e
+      complex(RD) :: S
 
-          S = (U*(y_2 + y_3)*CONJG(y_1) + y_3*CONJG(y_4 + (l_e + 1._RD)*y_3))/c_1**2 * pt%x**(2*l_e+1._RD)
+      ! Calculate the dimensionless frequency from the weight integral
+      ! (see Townsend & Kuenzi 2025)
 
-       end associate
+      ! Evaluate the weight integral
 
-    else
+      W = this%zeta()
 
-       S = 0._RD
+      ! Evaluate the surface term
 
-    end if
+      if (.NOT. this%is_vacuum) then
 
-    ! Evaluate the frequency
+         y_1 = this%y_i(1, this%n)
+         y_2 = this%y_i(2, this%n)
+         y_3 = this%y_i(3, this%n)
+         y_4 = this%y_i(4, this%n)
 
-    omega_int = sqrt((W + S)/this%E())
+         associate(                 &
+            ml => this%cx%model(),  &
+            pt => this%pt_o,        &
+            l_i => this%l_i)
 
-    ! Finish
+            U = ml%coeff(I_U, pt)
+            c_1 = ml%coeff(I_C_1, pt)
 
-    return
+            Omega_rot = this%cx%Omega_rot(pt)
 
-  end function omega_int
+            l_e = this%cx%l_e(Omega_rot, this%st)
 
-  !****
+            S = (U*(y_2 + y_3)*CONJG(y_1) + y_3*CONJG(y_4 + (l_e + 1._RD)*y_3))/c_1**2 * pt%x**(2*l_e+1._RD)
 
-  function x (this, j)
+         end associate
 
-     class(wave_t), intent(in) :: this
-     integer, intent(in)       :: j
-     real(RD)                  :: x
+      else
 
-     ! Return the abscissa
+         S = 0._RD
 
-     x = this%gr%pt(j)%x
+      end if
 
-     ! Finish
+      ! Evaluate the frequency
 
-     return
+      omega_int = sqrt((W + S)/this%E())
 
-  end function x
+      ! Finish
 
-  !****
+      return
 
-  function dx_min (this)
+   end function omega_int
 
-     class(wave_t), intent(in) :: this
-     real(RD)                  :: dx_min
+   !****
 
-     real(RD) :: dx(this%n-1)
+   function x(this, j)
 
-     ! Return the minimum abscissa spacing
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      real(RD)                  :: x
 
-     dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
+      ! Return the abscissa
 
-     dx_min = MINVAL(dx, MASK=dx/=0._RD)
+      x = this%gr%pt(j)%x
 
-     ! Finish
+      ! Finish
 
-     return
+      return
 
-  end function dx_min
+   end function x
 
-  !****
+   !****
 
-  function dx_max (this)
+   function dx_min(this)
 
-     class(wave_t), intent(in) :: this
-     real(RD)                  :: dx_max
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: dx_min
 
-     real(RD) :: dx(this%n-1)
+      real(RD) :: dx(this%n-1)
 
-     ! Return the maximum abscissa spacing
+      ! Return the minimum abscissa spacing
 
-     dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
+      dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
 
-     dx_max = MAXVAL(dx, MASK=dx/=0._RD)
+      dx_min = MINVAL(dx, MASK=dx/=0._RD)
 
-     ! Finish
+      ! Finish
 
-     return
+      return
 
-  end function dx_max
+   end function dx_min
 
-  !****
+   !****
 
-  function dx_rms (this)
+   function dx_max(this)
 
-     class(wave_t), intent(in) :: this
-     real(RD)                  :: dx_rms
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: dx_max
 
-     real(RD) :: dx(this%n-1)
+      real(RD) :: dx(this%n-1)
 
-     ! Return the root-mean-square abscissa spacing
+      ! Return the maximum abscissa spacing
 
-     dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
+      dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
 
-     dx_rms = sqrt(SUM(dx**2, MASK=dx/=0._RD)/COUNT(dx/=0._RD))
+      dx_max = MAXVAL(dx, MASK=dx/=0._RD)
 
-     ! Finish
+      ! Finish
 
-     return
+      return
 
-  end function dx_rms
+   end function dx_max
 
-  !****
+   !****
 
-  function y_i (this, i, j)
+   function dx_rms(this)
 
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: i
-    integer, intent(in)       :: j
-    complex(RD)               :: y_i
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: dx_rms
 
-    ! Evaluate y(i)
+      real(RD) :: dx(this%n-1)
 
-    y_i = this%scl*this%y_c(i, j)
+      ! Return the root-mean-square abscissa spacing
 
-    ! Finish
+      dx = this%gr%pt(2:)%x - this%gr%pt(:this%n)%x
 
-    return
+      dx_rms = sqrt(SUM(dx**2, MASK=dx/=0._RD)/COUNT(dx/=0._RD))
 
-  end function y_i
+      ! Finish
 
-  !****
+      return
 
-  function xi_r (this, j)
+   end function dx_rms
 
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: xi_r
+   !****
 
-    real(RD)    :: x
-    complex(RD) :: y_1
+   function y_i(this, i, j)
 
-    ! Evaluate the radial displacement perturbation, in units of
-    ! R_star
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: i
+      integer, intent(in)       :: j
+      complex(RD)               :: y_i
 
-    associate ( &
+      ! Evaluate y(i)
+
+      y_i = this%scl*this%y_c(i, j)
+
+      ! Finish
+
+      return
+
+   end function y_i
+
+   !****
+
+   function xi_r(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: xi_r
+
+      real(RD)    :: x
+      complex(RD) :: y_1
+
+      ! Evaluate the radial displacement perturbation, in units of
+      ! R_star
+
+      associate ( &
          l_i => this%l_i )
 
-      x = this%x(j)
+         x = this%x(j)
 
-      y_1 = this%y_i(1, j)
+         y_1 = this%y_i(1, j)
 
-      if (l_i /= 1._RD) then
+         if (l_i /= 1._RD) then
 
-         if (x /= 0._RD) then
-            xi_r = y_1*pow(x, l_i-1._RD)
+            if (x /= 0._RD) then
+               xi_r = y_1*pow(x, l_i-1._RD)
+            else
+               xi_r = 0._RD
+            endif
+
          else
-            xi_r = 0._RD
+
+            xi_r = y_1
+
          endif
-       
-      else
-       
-         xi_r = y_1
 
-      endif
+      end associate
 
-    end associate
+      ! Finish
 
-    ! Finish
+      return
 
-    return
+   end function xi_r
 
-  end function xi_r
+   !****
 
-  !****
+   function xi_h(this, j)
 
-  function xi_h (this, j)
-    
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: xi_h
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: xi_h
 
-    complex(RD) :: y_2
-    complex(RD) :: y_3
-    complex(RD) :: y_4
-    real(RD)    :: U
-    real(RD)    :: c_1 
-    real(RD)    :: Omega_rot
-    complex(RD) :: omega_c
-    complex(RD) :: lambda
+      complex(RD) :: y_2
+      complex(RD) :: y_3
+      complex(RD) :: y_4
+      real(RD)    :: U
+      real(RD)    :: c_1 
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
 
-    ! Evaluate the horizontal displacement perturbation, in units of
-    ! R_star
+      ! Evaluate the horizontal displacement perturbation, in units of
+      ! R_star
 
-    if (this%l /= 0) then
+      if (this%l /= 0) then
 
-       associate ( &
+         associate (               &
             ml => this%cx%model(), &
-            pt => this%gr%pt(j), &
+            pt => this%gr%pt(j),   &
             l_i => this%l_i)
+
+            y_3 = this%y_i(3, j)
+
+            Omega_rot = this%cx%Omega_rot(pt)
+
+            if (this%static) then
+
+               ! Static cases require a slightly different approach to
+               ! evaluate xi_h, since (y_2+y_3)/(c_1*omega_c**2) = 0/0 is
+               ! undefined. Instead, use the continuity equation under
+               ! the assumption of incompressibility
+
+               y_4 = this%y_i(4, j)
+
+               U = ml%coeff(I_U, pt)
+
+               lambda = this%cx%lambda(Omega_rot, this%st)
+
+               if (l_i /= 1._RD) then
+
+                  if (pt%x /= 0._RD) then
+                     xi_h = -((4._RD-U)*y_3+y_4)*pow(pt%x, l_i-1._RD)/lambda
+                  else
+                     xi_h = 0._RD
+                  end if
+
+               else
+
+                  xi_h = -((4._RD-U)*y_3+y_4)/lambda
+
+               endif
+
+            else
+
+               ! Non-static modes
+
+               y_2 = this%y_i(2, j)
+
+               c_1 = ml%coeff(I_C_1, pt)
+
+               omega_c = this%cx%omega_c(Omega_rot, this%st)
+
+               if (l_i /= 1._RD) then
+
+                  if (pt%x /= 0._RD) then
+                     xi_h = (y_2+y_3)*pow(pt%x, l_i-1._RD)/(c_1*omega_c**2)
+                  else
+                     xi_h = 0._RD
+                  end if
+
+               else
+
+                  xi_h = (y_2+y_3)/(c_1*omega_c**2)
+
+               endif
+
+            endif
+
+         end associate
+
+      else
+
+         xi_h = 0._RD
+
+      end if
+
+      ! Finish
+
+      return
+
+   end function xi_h
+
+   !****
+
+   function eul_Phi(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: eul_Phi
+
+      complex(RD) :: y_3
+      real(RD)    :: c_1
+
+      ! Evaluate the Eulerian gravitational potential perturbation, in
+      ! units of G M_star / R_star
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j),   &
+         l_i => this%l_i )
 
          y_3 = this%y_i(3, j)
 
+         c_1 = ml%coeff(I_C_1, pt)
+
+         if (l_i /= 0._RD) then
+
+            if (pt%x /= 0._RD) then
+               eul_Phi = y_3*pow(pt%x, l_i)/c_1
+            else
+               eul_Phi = 0._RD
+            endif
+
+         else
+
+            eul_Phi = y_3/c_1
+
+         endif
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function eul_Phi
+
+   !****
+
+   function deul_Phi(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: deul_Phi
+
+      complex(RD) :: y_4
+      real(RD)    :: c_1
+
+      ! Evaluate the Eulerian potential gradient (gravity) perturbation,
+      ! in units of G M_star / R_star**2
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j),   &
+         l_i => this%l_i )
+
+         y_4 = this%y_i(4, j)
+
+         c_1 = ml%coeff(I_C_1, pt)
+
+         if (l_i /= 1._RD) then
+
+            if (pt%x /= 0._RD) then
+               deul_Phi = y_4*pow(pt%x, l_i-1._RD)/c_1
+            else
+               deul_Phi = 0._RD
+            end if
+
+         else
+
+            deul_Phi = y_4/c_1
+
+         end if
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function deul_Phi
+
+   !****
+
+   function lag_S(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: lag_S
+
+      complex(RD) :: y_5
+
+      ! Evaluate the Lagrangian specific entropy perturbation, in units
+      ! of c_p
+
+      associate (             &
+         pt => this%gr%pt(j), &
+         l_i => this%l_i )
+
+         y_5 = this%y_i(5, j)
+
+         if (pt%x /= 0._RD) then
+            lag_S = y_5*pow(pt%x, l_i-2._RD)
+         else
+            lag_S = 0._RD
+         endif
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function lag_S
+
+   !****
+
+   function lag_L(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: lag_L
+
+      complex(RD) :: y_6
+
+      ! Evaluate the Lagrangian radiative luminosity perturbation, in
+      ! units of L_star
+
+      associate (             &
+         pt => this%gr%pt(j), &
+         l_i => this%l_i )
+
+         y_6 = this%y_i(6, j)
+
+         if (pt%x /= 0._RD) then
+            lag_L = y_6*pow(pt%x, l_i+1._RD)
+         else
+            lag_L = 0._RD
+         endif
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function lag_L
+
+   !****
+
+   function eul_P(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: eul_P
+
+      complex(RD) :: y_2
+      complex(RD) :: V_2
+
+      ! Evaluate the Eulerian pressure perturbation, in units of P
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j),   &
+         l_i => this%l_i )
+
+         y_2 = this%y_i(2, j)
+
+         V_2 = ml%coeff(I_V_2, pt)
+
+         if (l_i /= 0._RD) then
+
+            if (pt%x /= 0._RD) then
+               eul_P = V_2*y_2*pow(pt%x, l_i)
+            else
+               eul_P = 0._RD
+            end if
+
+         else
+
+            eul_P = V_2*y_2
+
+         endif
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function eul_P
+
+   !****
+
+   function lag_P(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: lag_P
+
+      complex(RD) :: y_1
+      complex(RD) :: y_2
+      real(RD)    :: V_2
+
+      ! Evaluate the Lagrangian pressure perturbation, in units of P
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j),   &
+         l_i => this%l_i )
+
+         y_1 = this%y_i(1, j)
+         y_2 = this%y_i(2, j)
+
+         V_2 = ml%coeff(I_V_2, pt)
+
+         if (l_i /= 0._RD) then
+
+            if (pt%x /= 0._RD) then
+               lag_P = V_2*(y_2 - y_1)*pow(pt%x, l_i)
+            else
+               lag_P = 0._RD
+            end if
+
+         else
+
+            lag_P = V_2*(y_2 - y_1)
+
+         endif
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function lag_P
+
+   !****
+
+   function eul_rho(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: eul_rho
+
+      complex(RD) :: xi_r
+      complex(RD) :: lag_rho
+      real(RD)    :: U
+      real(RD)    :: dU
+      real(RD)    :: D
+
+      ! Evaluate the Eulerian density perturbation, in units of rho
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j) )
+
+         xi_r = this%xi_r(j)
+         lag_rho = this%lag_rho(j)
+
+         U = ml%coeff(I_U, pt)
+         dU =ml%dcoeff(I_U, pt)
+
+         D = dU + U - 3._RD
+
+         if (pt%x /= 0._RD) then
+            eul_rho = lag_rho - D*xi_r/pt%x
+         else
+            eul_rho = lag_rho
+         endif
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function eul_rho
+
+   !****
+
+   function lag_rho(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: lag_rho
+
+      complex(RD) :: lag_P
+      complex(RD) :: lag_S
+      real(RD)    :: Gamma_1
+      real(RD)    :: ups_T
+
+      ! Evaluate the Lagrangian density perturbation, in units of
+      ! rho. This expression implements eqn. (13.83) of [Unno:1989]
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j) )
+
+         lag_P = this%lag_P(j)
+         lag_S = this%lag_S(j)
+
+         Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+
+         if (lag_S /= 0._RD) then
+
+            ups_T = ml%coeff(I_UPS_T, pt)
+
+            lag_rho = lag_P/Gamma_1 - ups_T*lag_S
+
+         else
+
+            lag_rho = lag_P/Gamma_1
+
+         end if
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function lag_rho
+
+   !****
+
+   function eul_T(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: eul_T
+
+      complex(RD) :: xi_r
+      complex(RD) :: lag_T
+      real(RD)    :: V_2
+      real(RD)    :: nabla
+
+      ! Evaluate the Lagrangian temperature perturbation, in units of T
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j) )
+
+         xi_r = this%xi_r(j)
+         lag_T = this%lag_T(j)
+
+         V_2 = ml%coeff(I_V_2, pt)
+         nabla = ml%coeff(I_NABLA, pt)
+
+         eul_T = lag_T + nabla*V_2*pt%x*xi_r
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function eul_T
+
+   !****
+
+   function lag_T(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: lag_T
+
+      complex(RD) :: lag_P
+      complex(RD) :: lag_S
+      real(RD)    :: nabla_ad
+
+      ! Evaluate the Lagrangian temperature perturbation, in units of
+      ! T. This expression implements eqn. (13.84) of [Unno:1989]
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j) )
+
+         lag_P = this%lag_P(j)
+         lag_S = this%lag_S(j)
+
+         nabla_ad = ml%coeff(I_NABLA_AD, pt)
+
+         lag_T = nabla_ad*lag_P + lag_S
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function lag_T
+
+   !****
+
+   function lambda(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: lambda
+
+      real(RD) :: Omega_rot
+
+      ! Evaluate the angular eigenvalue
+
+      associate ( &
+         pt => this%gr%pt(j) )
+
          Omega_rot = this%cx%Omega_rot(pt)
 
-         if (this%static) then
+         lambda = this%cx%lambda(Omega_rot, this%st)
 
-            ! Static cases require a slightly different approach to
-            ! evaluate xi_h, since (y_2+y_3)/(c_1*omega_c**2) = 0/0 is
-            ! undefined. Instead, use the continuity equation under
-            ! the assumption of incompressibility
+      end associate
 
-            y_4 = this%y_i(4, j)
+      ! Finish
 
-            U = ml%coeff(I_U, pt)
+      return
 
-            lambda = this%cx%lambda(Omega_rot, this%st)
+   end function lambda
 
-            if (l_i /= 1._RD) then
+   !****
 
-               if (pt%x /= 0._RD) then
-                  xi_h = -((4._RD-U)*y_3+y_4)*pow(pt%x, l_i-1._RD)/lambda
-               else
-                  xi_h = 0._RD
-               end if
+   function dE_dx(this, j)
 
-            else
-               
-               xi_h = -((4._RD-U)*y_3+y_4)/lambda
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      real(RD)                  :: dE_dx
 
-            endif
+      complex(RD) :: xi_r
+      complex(RD) :: xi_h
+      complex(RD) :: lambda
+      real(RD)    :: U
+      real(RD)    :: c_1
 
-         else
+      ! Evaluate the differential inertia, in units of M_star
+      ! R_star**2. This expression is based on eqn. (3.139) of [Aerts:2010]
 
-            ! Non-static modes
-
-            y_2 = this%y_i(2, j)
-
-            c_1 = ml%coeff(I_C_1, pt)
-
-            omega_c = this%cx%omega_c(Omega_rot, this%st)
-
-            if (l_i /= 1._RD) then
-
-               if (pt%x /= 0._RD) then
-                  xi_h = (y_2+y_3)*pow(pt%x, l_i-1._RD)/(c_1*omega_c**2)
-               else
-                  xi_h = 0._RD
-               end if
-               
-            else
-            
-               xi_h = (y_2+y_3)/(c_1*omega_c**2)
-
-            endif
-
-         endif
-
-       end associate
-
-    else
-
-       xi_h = 0._RD
-
-    end if
-
-    ! Finish
-
-    return
-    
-  end function xi_h
-
-  !****
-
-  function eul_Phi (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: eul_Phi
-
-    complex(RD) :: y_3
-    real(RD)    :: c_1
-    
-    ! Evaluate the Eulerian gravitational potential perturbation, in
-    ! units of G M_star / R_star
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j), &
-         l_i => this%l_i )
-
-      y_3 = this%y_i(3, j)
-
-      c_1 = ml%coeff(I_C_1, pt)
-
-      if (l_i /= 0._RD) then
-
-         if (pt%x /= 0._RD) then
-            eul_Phi = y_3*pow(pt%x, l_i)/c_1
-         else
-            eul_Phi = 0._RD
-         endif
-
-      else
-
-         eul_Phi = y_3/c_1
-
-      endif
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function eul_Phi
-
-  !****
-
-  function deul_Phi (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: deul_Phi
-
-    complex(RD) :: y_4
-    real(RD)    :: c_1
-    
-    ! Evaluate the Eulerian potential gradient (gravity) perturbation,
-    ! in units of G M_star / R_star**2
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j), &
-         l_i => this%l_i )
-
-      y_4 = this%y_i(4, j)
-
-      c_1 = ml%coeff(I_C_1, pt)
-
-      if (l_i /= 1._RD) then
-
-         if (pt%x /= 0._RD) then
-            deul_Phi = y_4*pow(pt%x, l_i-1._RD)/c_1
-         else
-            deul_Phi = 0._RD
-         end if
-       
-      else
-
-         deul_Phi = y_4/c_1
-
-      end if
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function deul_Phi
-
-  !****
-
-  function lag_S (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: lag_S
-
-    complex(RD) :: y_5
-
-    ! Evaluate the Lagrangian specific entropy perturbation, in units
-    ! of c_p
-
-    associate ( &
-         pt => this%gr%pt(j), &
-         l_i => this%l_i )
-
-      y_5 = this%y_i(5, j)
-
-      if (pt%x /= 0._RD) then
-         lag_S = y_5*pow(pt%x, l_i-2._RD)
-      else
-         lag_S = 0._RD
-      endif
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function lag_S
-
-  !****
-
-  function lag_L (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: lag_L
-
-    complex(RD) :: y_6
-
-    ! Evaluate the Lagrangian radiative luminosity perturbation, in
-    ! units of L_star
-
-    associate ( &
-         pt => this%gr%pt(j), &
-         l_i => this%l_i )
-
-      y_6 = this%y_i(6, j)
-
-      if (pt%x /= 0._RD) then
-         lag_L = y_6*pow(pt%x, l_i+1._RD)
-      else
-         lag_L = 0._RD
-      endif
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function lag_L
-
-  !****
-
-  function eul_P (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: eul_P
-
-    complex(RD) :: y_2
-    complex(RD) :: V_2
-
-    ! Evaluate the Eulerian pressure perturbation, in units of P
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j), &
-         l_i => this%l_i )
-
-      y_2 = this%y_i(2, j)
-
-      V_2 = ml%coeff(I_V_2, pt)
-
-      if (l_i /= 0._RD) then
-
-         if (pt%x /= 0._RD) then
-            eul_P = V_2*y_2*pow(pt%x, l_i)
-         else
-            eul_P = 0._RD
-         end if
-
-      else
-
-         eul_P = V_2*y_2
-
-      endif
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function eul_P
-  
-  !****
-
-  function lag_P (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: lag_P
-
-    complex(RD) :: y_1
-    complex(RD) :: y_2
-    real(RD)    :: V_2
-
-    ! Evaluate the Lagrangian pressure perturbation, in units of P
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j), &
-         l_i => this%l_i )
-
-      y_1 = this%y_i(1, j)
-      y_2 = this%y_i(2, j)
-
-      V_2 = ml%coeff(I_V_2, pt)
-
-      if (l_i /= 0._RD) then
-
-         if (pt%x /= 0._RD) then
-            lag_P = V_2*(y_2 - y_1)*pow(pt%x, l_i)
-         else
-            lag_P = 0._RD
-         end if
-
-      else
-
-         lag_P = V_2*(y_2 - y_1)
-
-      endif
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function lag_P
-
-  !****
-
-  function eul_rho (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: eul_rho
-
-    complex(RD) :: xi_r
-    complex(RD) :: lag_rho
-    real(RD)    :: U
-    real(RD)    :: dU
-    real(RD)    :: D
-
-    ! Evaluate the Eulerian density perturbation, in units of rho
-
-    associate ( &
+      associate (               &
          ml => this%cx%model(), &
          pt => this%gr%pt(j) )
 
-      xi_r = this%xi_r(j)
-      lag_rho = this%lag_rho(j)
+         xi_r = this%xi_r(j)
+         xi_h = this%xi_h(j)
 
-      U = ml%coeff(I_U, pt)
-      dU =ml%dcoeff(I_U, pt)
+         lambda = this%lambda(j)
 
-      D = dU + U - 3._RD
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
 
-      if (pt%x /= 0._RD) then
-         eul_rho = lag_rho - D*xi_r/pt%x
-      else
-         eul_rho = lag_rho
-      endif
+         dE_dx = (abs(xi_r)**2 + abs(lambda)*abs(xi_h)**2)*U*pt%x**2/c_1
 
-    end associate
+      end associate
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function eul_rho
+   end function dE_dx
 
-  !****
+   !****
 
-  function lag_rho (this, j)
+   function dW_dx(this, j)
 
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: lag_rho
+      use evol_model_m
 
-    complex(RD) :: lag_P
-    complex(RD) :: lag_S
-    real(RD)    :: Gamma_1
-    real(RD)    :: ups_T
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      real(RD)                  :: dW_dx
 
-    ! Evaluate the Lagrangian density perturbation, in units of
-    ! rho. This expression implements eqn. (13.83) of [Unno:1989]
+      real(RD)    :: t_dyn
+      real(RD)    :: t_kh
+      complex(RD) :: lag_T
+      complex(RD) :: lag_S
+      real(RD)    :: c_thk
 
-    associate ( &
+      ! Evaluate the differential work, in units of G M_star**2/R_star.
+      ! This expression is based on eqn. (25.9) of [Unno:1989]
+
+      select type (ml => this%cx%model())
+      class is (evol_model_t)
+         t_dyn = sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
+         t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
+      class default
+         t_dyn = 1._RD
+         t_kh = 1._RD
+      end select
+
+      associate (               &
          ml => this%cx%model(), &
          pt => this%gr%pt(j) )
 
-      lag_P = this%lag_P(j)
-      lag_S = this%lag_S(j)
+         lag_T = this%lag_T(j)
+         lag_S = this%lag_S(j)
 
-      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+         c_thk = ml%coeff(I_C_THK, pt)
 
-      if (lag_S /= 0._RD) then
+         dW_dx = PI*AIMAG(CONJG(lag_T)*lag_S)*c_thk*pt%x**2*t_dyn/t_kh
 
-         ups_T = ml%coeff(I_UPS_T, pt)
+      end associate
 
-         lag_rho = lag_P/Gamma_1 - ups_T*lag_S
+      ! Finish
 
-      else
+      return
 
-         lag_rho = lag_P/Gamma_1
+   end function dW_dx
 
-      end if
+   !****
 
-    end associate
+   function dQ_dx(this, j)
 
-    ! Finish
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: dQ_dx
 
-    return
-    
-  end function lag_rho
+      complex(RD) :: xi_r
+      complex(RD) :: xi_h
+      real(RD)    :: U
+      real(RD)    :: c_1
 
-  !****
+      ! Evaluate the differential overlap. This expression is based on
+      ! the first line of eqn. (9) of [Burkart:2012]
 
-  function eul_T (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: eul_T
-
-    complex(RD) :: xi_r
-    complex(RD) :: lag_T
-    real(RD)    :: V_2
-    real(RD)    :: nabla
-
-    ! Evaluate the Lagrangian temperature perturbation, in units of T
-
-    associate ( &
+      associate (               &
          ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      xi_r = this%xi_r(j)
-      lag_T = this%lag_T(j)
-
-      V_2 = ml%coeff(I_V_2, pt)
-      nabla = ml%coeff(I_NABLA, pt)
-      
-      eul_T = lag_T + nabla*V_2*pt%x*xi_r
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function eul_T
-
-  !****
-
-  function lag_T (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: lag_T
-
-    complex(RD) :: lag_P
-    complex(RD) :: lag_S
-    real(RD)    :: nabla_ad
-
-    ! Evaluate the Lagrangian temperature perturbation, in units of
-    ! T. This expression implements eqn. (13.84) of [Unno:1989]
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      lag_P = this%lag_P(j)
-      lag_S = this%lag_S(j)
-
-      nabla_ad = ml%coeff(I_NABLA_AD, pt)
-      
-      lag_T = nabla_ad*lag_P + lag_S
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function lag_T
-
-  !****
-
-  function lambda (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: lambda
-
-    real(RD) :: Omega_rot
-
-    ! Evaluate the angular eigenvalue
-
-    associate ( &
-         pt => this%gr%pt(j) )
-      
-      Omega_rot = this%cx%Omega_rot(pt)
-    
-      lambda = this%cx%lambda(Omega_rot, this%st)
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function lambda
-    
-  !****
-
-  function dE_dx (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    real(RD)                  :: dE_dx
-
-    complex(RD) :: xi_r
-    complex(RD) :: xi_h
-    complex(RD) :: lambda
-    real(RD)    :: U
-    real(RD)    :: c_1
-
-    ! Evaluate the differential inertia, in units of M_star
-    ! R_star**2. This expression is based on eqn. (3.139) of [Aerts:2010]
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      xi_r = this%xi_r(j)
-      xi_h = this%xi_h(j)
-
-      lambda = this%lambda(j)
-
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-
-      dE_dx = (abs(xi_r)**2 + abs(lambda)*abs(xi_h)**2)*U*pt%x**2/c_1
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dE_dx
-
-  !****
-
-  function dW_dx (this, j)
-
-    use evol_model_m
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    real(RD)                  :: dW_dx
-
-    real(RD)    :: t_dyn
-    real(RD)    :: t_kh
-    complex(RD) :: lag_T
-    complex(RD) :: lag_S
-    real(RD)    :: c_thk
-
-    ! Evaluate the differential work, in units of G M_star**2/R_star.
-    ! This expression is based on eqn. (25.9) of [Unno:1989]
-
-    select type (ml => this%cx%model())
-    class is (evol_model_t)
-       t_dyn = sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
-       t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
-    class default
-       t_dyn = 1._RD
-       t_kh = 1._RD
-    end select
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      lag_T = this%lag_T(j)
-      lag_S = this%lag_S(j)
-    
-      c_thk = ml%coeff(I_C_THK, pt)
-
-      dW_dx = PI*AIMAG(CONJG(lag_T)*lag_S)*c_thk*pt%x**2*t_dyn/t_kh
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dW_dx
-
-  !****
-
-  function dQ_dx (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: dQ_dx
-
-    complex(RD) :: xi_r
-    complex(RD) :: xi_h
-    real(RD)    :: U
-    real(RD)    :: c_1
-
-    ! Evaluate the differential overlap. This expression is based on
-    ! the first line of eqn. (9) of [Burkart:2012]
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j), &
+         pt => this%gr%pt(j),   &
          l => this%l)
 
-      xi_r = this%xi_r(j)
-      xi_h = this%xi_h(j)
+         xi_r = this%xi_r(j)
+         xi_h = this%xi_h(j)
 
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
 
-      dQ_dx = l*(xi_r + (l+1)*xi_h)*U*pt%x**(l+1)/(4*PI*c_1)
+         dQ_dx = l*(xi_r + (l+1)*xi_h)*U*pt%x**(l+1)/(4*PI*c_1)
 
-    end associate
+      end associate
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function dQ_dx
+   end function dQ_dx
 
-  !****
+   !****
 
-  function dW_eps_dx (this, j)
+   function dW_eps_dx(this, j)
 
-    use evol_model_m
+      use evol_model_m
 
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    real(RD)                  :: dW_eps_dx
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      real(RD)                  :: dW_eps_dx
 
-    real(RD)    :: t_dyn
-    real(RD)    :: t_kh
-    complex(RD) :: lag_rho
-    complex(RD) :: lag_T
-    real(RD)    :: c_eps
-    complex(RD) :: eps_rho
-    complex(RD) :: eps_T
-    real(RD)    :: omega_r
+      real(RD)    :: t_dyn
+      real(RD)    :: t_kh
+      complex(RD) :: lag_rho
+      complex(RD) :: lag_T
+      real(RD)    :: c_eps
+      complex(RD) :: eps_rho
+      complex(RD) :: eps_T
+      real(RD)    :: omega_r
 
-    ! Evaluate the differential work associated with nuclear
-    ! processes, in units of G M_star**2/R_star.  This expression is
-    ! based on eqn. (25.9) of [Unno:1989]
-    
-    select type (ml => this%cx%model())
-    class is (evol_model_t)
-       t_dyn = sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
-       t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
-    class default
-       t_dyn = 1._RD
-       t_kh = 1._RD
-    end select
+      ! Evaluate the differential work associated with nuclear
+      ! processes, in units of G M_star**2/R_star.  This expression is
+      ! based on eqn. (25.9) of [Unno:1989]
 
-    associate ( &
+      select type (ml => this%cx%model())
+      class is (evol_model_t)
+         t_dyn = sqrt(ml%R_star**3/(G_GRAVITY*ml%M_star))
+         t_kh = (G_GRAVITY*ml%M_star**2/ml%R_star)/ml%L_star
+      class default
+         t_dyn = 1._RD
+         t_kh = 1._RD
+      end select
+
+      associate (               &
          ml => this%cx%model(), &
          pt => this%gr%pt(j) )
 
-      lag_rho = this%lag_rho(j)
-      lag_T = this%lag_T(j)
+         lag_rho = this%lag_rho(j)
+         lag_T = this%lag_T(j)
 
-      c_eps = ml%coeff(I_C_EPS, pt)
-      
-      eps_rho = this%cx%eps_rho(this%st, pt)
-      eps_T = this%cx%eps_T(this%st, pt)
-      
-      omega_r = REAL(this%st%omega)
+         c_eps = ml%coeff(I_C_EPS, pt)
 
-      dW_eps_dx = PI/omega_r*REAL(CONJG(lag_T)*c_eps*(eps_rho*lag_rho + eps_T*lag_T))*pt%x**2*t_dyn/t_kh
+         eps_rho = this%cx%eps_rho(this%st, pt)
+         eps_T = this%cx%eps_T(this%st, pt)
 
-    end associate
+         omega_r = REAL(this%st%omega)
 
-    ! Finish
+         dW_eps_dx = PI/omega_r*REAL(CONJG(lag_T)*c_eps*(eps_rho*lag_rho + eps_T*lag_T))*pt%x**2*t_dyn/t_kh
 
-    return
+      end associate
 
-  end function dW_eps_dx
+      ! Finish
 
-  !****
+      return
 
-  function dzeta_dx (this, j)
+   end function dW_eps_dx
 
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: dzeta_dx
+   !****
 
-    ! Calculate the dimensionless frequency weight function.
-    
-    select case (this%os_p%zeta_scheme)
-    case ('PESNELL')
-       dzeta_dx = this%dzeta_dx_pesnell_(j)
-    case ('KAWALER')
-       dzeta_dx = this%dzeta_dx_kawaler_(j)
-    case ('KAWALER_GRAV')
-       dzeta_dx = this%dzeta_dx_kawaler_grav_(j)
-    case ('DUPRET')
-       dzeta_dx = this%dzeta_dx_dupret_(j)
-    case default
-       @:ABORT('Invalid zeta_scheme')
-    end select
+   function dzeta_dx(this, j)
 
-    ! Finish
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: dzeta_dx
 
-    return
+      complex(RD) :: y_1
+      complex(RD) :: y_2
+      complex(RD) :: y_3
+      complex(RD) :: y_4
+      real(RD)    :: V_2
+      real(RD)    :: U
+      real(RD)    :: As
+      real(RD)    :: c_1
+      real(RD)    :: Gamma_1
+      real(RD)    :: U_D
+      real(RD)    :: Omega_rot
+      complex(RD) :: l_e
 
-  end function dzeta_dx
-    
-  !****
+      ! Calculate the dimensionless frequency weight function. This is
+      ! based on equation (xx) of [Townsend:2025], with dzeta_dx =
+      ! dW_nn/dx
 
-  function dzeta_dx_pesnell_(this, j) result(dzeta_dx)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: dzeta_dx
-
-    complex(RD) :: xi_r
-    complex(RD) :: xi_h
-    complex(RD) :: eul_Phi
-    complex(RD) :: eul_rho
-    complex(RD) :: lag_rho
-    complex(RD) :: lag_P
-    complex(RD) :: lambda
-    real(RD)    :: V_2
-    real(RD)    :: U
-    real(RD)    :: c_1
-    real(RD)    :: x4_V
-
-    ! Calculate the dimensionless frequency weight function.  This is
-    ! based on the derivative of equation (A5) of [Pesnell:1987] with
-    ! respect to x. NOTE: This doesn't seem to agree in any way with
-    ! the other weight functions (Kawaler, Dupret)
-
-    associate ( &
+      associate (               &
          ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      xi_r = this%xi_r(j)
-      xi_h = this%xi_h(j)
-      eul_Phi = this%eul_Phi(j)
-      eul_rho = this%eul_rho(j)
-      lag_rho = this%lag_rho(j)
-      lag_P = this%lag_P(j)
-
-      lambda = this%lambda(j)
-
-      V_2 = ml%coeff(I_V_2, pt)
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-
-      x4_V = pt%x**2/V_2
-
-      dzeta_dx = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)) + &
-                 2._RD*REAL(lambda*CONJG(xi_r)*xi_h/c_1*(pt%x**2*U/c_1)) + &
-                 CONJG(eul_rho)*eul_Phi*(pt%x**2*U/c_1) + &
-                 abs(xi_r)**2*(U-4._RD)/c_1*(pt%x**2*U/c_1)
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dzeta_dx_pesnell_
-
-  !****
-
-  function dzeta_dx_kawaler_(this, j) result(dzeta_dx)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: dzeta_dx
-
-    complex(RD) :: y_1
-    complex(RD) :: y_2
-    complex(RD) :: y_3
-    complex(RD) :: y_4
-    real(RD)    :: V_2
-    real(RD)    :: U
-    real(RD)    :: As
-    real(RD)    :: c_1
-    real(RD)    :: Gamma_1
-    real(RD)    :: U_D
-    real(RD)    :: Omega_rot
-    complex(RD) :: l_e
-
-    ! Calculate the dimensionless frequency weight function. This is
-    ! based on equation (xx) of [Townsend:2025], with dzeta_dx = dW_nn/dx
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j), &
+         pt => this%gr%pt(j),   &
          l_i => this%l_i)
 
-       y_1 = this%y_i(1, j)
-       y_2 = this%y_i(2, j)
-       y_3 = this%y_i(3, j)
-       y_4 = this%y_i(4, j)
+         y_1 = this%y_i(1, j)
+         y_2 = this%y_i(2, j)
+         y_3 = this%y_i(3, j)
+         y_4 = this%y_i(4, j)
 
-       U = ml%coeff(I_U, pt)
-       c_1 = ml%coeff(I_C_1, pt)
-       Gamma_1 = ml%coeff(I_GAMMA_1, pt)
-
-       Omega_rot = this%cx%Omega_rot(pt)
-
-       l_e = this%cx%l_e(Omega_rot, this%st)
-
-       if (ml%is_vacuum(pt)) then
-
-          ! Take special care at vacuum points: V_2 and As are
-          ! undefined but U_D = U*dlnrho/dlnr is well behaved
-          ! (also, y_1 == y_2)
-
-          select type(ml)
-          class is(anapoly_model_t)
-             U_D = ml%coeff_U_D(pt)
-          class is(hom_model_t)
-             U_D = ml%coeff_U_D(pt)
-          class is(poly_model_t)
-             U_D = ml%coeff_U_D(pt)
-          class default
-             @:ABORT('unable to evaluate U_D at vacuum point')
-          end select
-
-          dzeta_dx =  (-abs(y_1)**2*U_D - abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2 * pt%x**(2._RD*l_i)
-
-       else
-
-          V_2 = ml%coeff(I_V_2, pt)
-          As = ml%coeff(I_AS, pt)
-
-          if (l_i /= 0) then
-
-             if (pt%x /= 0._RD) then
-                dzeta_dx = (abs(y_2)**2*U*V_2*pt%x**2/Gamma_1 + abs(y_1)**2*U*As - &
-                   abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2 * pt%x**(2._RD*l_i)
-             else
-                dzeta_dx = 0._RD
-             end if
-
-          else
-
-             dzeta_dx = (abs(y_2)**2*U*V_2*pt%x**2/Gamma_1 + abs(y_1)**2*U*As - &
-                abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2
-
-          endif
-
-       end if
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dzeta_dx_kawaler_
-
-  !****
-
-  function dzeta_dx_kawaler_grav_(this, j) result(dzeta_dx)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: dzeta_dx
-
-    complex(RD) :: xi_r
-    complex(RD) :: eul_P
-    complex(RD) :: eul_Phi
-    complex(RD) :: deul_Phi
-    real(RD)    :: V_2
-    real(RD)    :: U
-    real(RD)    :: As
-    real(RD)    :: c_1
-    real(RD)    :: Gamma_1
-    real(RD)    :: x4_V
-
-    ! Calculate the gravitational part of the dimensionless frequency
-    ! weight function.  This is based on the derivative of the N term
-    ! in equation (7) of [Kawaler:1985]; note that that equation was
-    ! derived for adiabatic pulsation, and the simple extension to
-    ! non-adiabatic pulsation implemented here may not be quite
-    ! correct
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      xi_r = this%xi_r(j)
-      eul_P = this%eul_P(j)
-      eul_Phi = this%eul_Phi(j)
-      deul_Phi = this%deul_Phi(j)
-
-      V_2 = ml%coeff(I_V_2, pt)
-      As = ml%coeff(I_AS, pt)
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
-      
-      x4_V = pt%x**2/V_2
-
-      dzeta_dx = abs(xi_r)**2*(pt%x**2*U*As/c_1**2)
-           
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dzeta_dx_kawaler_grav_
-
-  !****
-
-  function dzeta_dx_dupret_(this, j) result(dzeta_dx)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: dzeta_dx
-
-    complex(RD) :: xi_r
-    complex(RD) :: eul_Phi
-    complex(RD) :: eul_rho
-    complex(RD) :: lag_rho
-    complex(RD) :: lag_P
-    real(RD)    :: V_2
-    real(RD)    :: V
-    real(RD)    :: U
-    real(RD)    :: As
-    real(RD)    :: c_1
-    real(RD)    :: Gamma_1
-    real(RD)    :: x4_V
-
-    ! Calculate the dimensionless frequency weight function.  This is
-    ! based on the derivative of equation (1.71) of [Dupret:2002a]
-    ! with respect to x
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      xi_r = this%xi_r(j)
-      eul_Phi = this%eul_Phi(j)
-      eul_rho = this%eul_rho(j)
-      lag_rho = this%lag_rho(j)
-      lag_P = this%lag_P(j)
-
-      V_2 = ml%coeff(I_V_2, pt)
-      V = V_2*pt%x**2
-      As = ml%coeff(I_AS, pt)
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
-
-      x4_V = pt%x**2/V_2
-
-      dzeta_dx = CONJG(lag_rho)*lag_P*(U*x4_V/(c_1**2)) + &
-                 2._RD*REAL(lag_rho*CONJG(xi_r)*(pt%x/c_1)*(pt%x**2*U/c_1)) + &
-                 CONJG(eul_rho)*eul_Phi*(pt%x**2*U/c_1) - &
-                 abs(xi_r)**2*(-V/Gamma_1-As)/c_1*(pt%x**2*U/c_1)
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dzeta_dx_dupret_
-  
-  !****
-
-  function dzeta_dm (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: dzeta_dm
-
-    ! Calculate the dimensionless frequency weight function.
-    
-    select case (this%os_p%zeta_scheme)
-    case ('KAWALER')
-       dzeta_dm = this%dzeta_dm_kawaler_(j)
-    case default
-       @:ABORT('Invalid zeta_scheme')
-    end select
-
-    ! Finish
-
-    return
-
-  end function dzeta_dm
-    
-  !****
-
-  function dzeta_dm_kawaler_(this, j) result(dzeta_dm)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: dzeta_dm
-
-    complex(RD) :: xi_r
-    complex(RD) :: eul_P
-    complex(RD) :: eul_Phi
-    complex(RD) :: deul_Phi
-    real(RD)    :: V_2
-    real(RD)    :: U
-    real(RD)    :: As
-    real(RD)    :: c_1
-    real(RD)    :: Gamma_1
-    real(RD)    :: Omega_rot
-    complex(RD) :: l_e
-
-    ! Calculate the dimensionless frequency weight function.  This is
-    ! based on the derivative of equation (7) of [Kawaler:1985] with
-    ! respect to m; note that that equation was derived for adiabatic
-    ! pulsation, and the simple extension to non-adiabatic pulsation
-    ! implemented here may not be quite correct
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      xi_r = this%xi_r(j)
-      eul_P = this%eul_P(j)
-      eul_Phi = this%eul_Phi(j)
-      deul_Phi = this%deul_Phi(j)
-
-      V_2 = ml%coeff(I_V_2, pt)
-      As = ml%coeff(I_AS, pt)
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
-      
-      Omega_rot = this%cx%Omega_rot(pt)
-
-      l_e = this%cx%l_e(Omega_rot, this%st)
-
-      if (pt%x /= 0) then
-         dzeta_dm = abs(eul_P)**2/(V_2*Gamma_1*c_1) + &
-                    abs(xi_r)**2*(As/c_1) - &
-                    abs(pt%x*deul_Phi + (l_e+1._RD)*eul_Phi)**2*(c_1/(U*pt%x**2))
-      else
-         dzeta_dm = 0._RD
-      endif
-           
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dzeta_dm_kawaler_
-
-  !****
-
-  function dbeta_dx (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    real(RD)                  :: dbeta_dx
-
-    complex(RD) :: xi_r
-    complex(RD) :: xi_h
-    real(RD)    :: U
-    real(RD)    :: c_1
-    complex(RD) :: lambda
-    real(RD)    :: E
-    
-    ! Calculate the (unnormalized) rotation splitting kernel. This is
-    ! based on the derivative of equation 3.357 of [Aerts:2010] with
-    ! respect to x
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      xi_r = this%xi_r(j)
-      xi_h = this%xi_h(j)
-
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-
-      ! Question: should the following be lambda or l(l+1)?
-
-      lambda = this%lambda(j)
-
-      E = this%E()
-
-      dbeta_dx = REAL((abs(xi_r)**2 + (lambda-1._RD)*abs(xi_h)**2 - &
-                       2._RD*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dbeta_dx
-
-  !****
-
-  function dtau_ss_dx (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    real(RD)                  :: dtau_ss_dx
-
-    complex(RD) :: lag_P
-    complex(RD) :: lag_rho
-    real(RD)    :: V_2
-    real(RD)    :: c_1
-    real(RD)    :: U
-    
-    ! Evaluate the steady-state differential torque, in units of G
-    ! M_star**2/R_star. This expression is based on eqn. (13) of
-    ! [Townsend:2018]
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j), &
-         m => this%m )
-
-      lag_P = this%lag_P(j)
-
-      lag_rho = this%lag_rho(j)
-
-      V_2 = ml%coeff(I_V_2, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-      U = ml%coeff(I_U, pt)
-
-      dtau_ss_dx = m*pt%x**2*AIMAG(lag_rho*CONJG(lag_P))*(U/(2._RD*c_1**2*V_2))
-      
-    end associate
-
-    ! Finish
-
-    return
-
-  end function dtau_ss_dx
-
-  !****
-
-  function dtau_tr_dx (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    real(RD)                  :: dtau_tr_dx
-
-    complex(RD) :: xi_r
-    complex(RD) :: eul_P
-    complex(RD) :: eul_rho
-    complex(RD) :: lag_rho
-    complex(RD) :: eul_Phi
-    real(RD)    :: V_2
-    real(RD)    :: U
-    real(RD)    :: c_1
-    real(RD)    :: Omega_rot
-    complex(RD) :: omega_c
-
-    ! Evaluate the transient differential torque, in units of G
-    ! M_star**2/R_star. This expression is based on eqn. (14) of
-    ! [Towsend:2018]
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j), &
-         m => this%m )
-
-      xi_r = this%xi_r(j)
-
-      eul_P = this%eul_P(j)
-
-      lag_rho = this%lag_rho(j)
-      eul_rho = this%eul_rho(j)
-
-      eul_Phi = this%eul_Phi(j)
-
-      V_2 = ml%coeff(I_V_2, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-      U = ml%coeff(I_U, pt)
-
-      Omega_rot = this%cx%Omega_rot(pt)
-
-      omega_c = this%cx%omega_c(Omega_rot, this%st)
-
-      dtau_tr_dx = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._RD)*( &
-           lag_rho*CONJG(eul_P)/(c_1*V_2) + &
-           eul_rho*CONJG(eul_Phi) + &
-           xi_r*CONJG(eul_rho)*pt%x/c_1))*(U/(2._RD*c_1))
-           
-    end associate
-
-    ! Finish
-
-    return
-    
-  end function dtau_tr_dx
-
-  !****
-
-  function Yt_1 (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: Yt_1
-
-    complex(RD) :: y_1
-    complex(RD) :: y_3
-    complex(RD) :: y_4
-    real(RD)    :: Jt
-
-    ! Evaluate the Takata Y_1 function. This expression is equivalent to
-    ! eqn. (69) of [Takata:2006b], divided by x**(2-l)
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      y_1 = this%y_i(1, j)
-      y_3 = this%y_i(3, j)
-      y_4 = this%y_i(4, j)
-
-      Jt = 1._RD - ml%coeff(I_U, pt)/3._RD
-
-      Yt_1 = Jt*y_1 + (y_3 - y_4)/3._RD
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function Yt_1
-
-  !****
-
-  function Yt_2 (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: Yt_2
-
-    complex(RD) :: y_1
-    complex(RD) :: y_2
-
-    ! Evaluate the Takata Y_2 function. This expression is equivalent to 
-    ! eqn. (70) of [Takata:2006b], divided by V
-
-    y_1 = this%y_i(1, j)
-    y_2 = this%y_i(2, j)
-
-    Yt_2 = y_2 - y_1
-
-    ! Finish
-
-    return
-
-  end function Yt_2
-
-  !****
-
-  function I_0 (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: I_0
-
-    complex(RD) :: y_1
-    complex(RD) :: y_4
-    real(RD)    :: U
-    real(RD)    :: c_1
-    
-    ! Evaluate the I_0 integral, which should be zero for radial
-    ! cases. This expression is based on eqn. (42) of [Takata:2006a]
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j), &
-         l_i => this%l_i )
-
-      y_1 = this%y_i(1, j)
-      y_4 = this%y_i(4, j)
-
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-
-      if (pt%x /= 0._RD) then
-         I_0 = pow(pt%x, l_i+1._RD)*(U*y_1 + y_4)/c_1
-      else
-         I_0 = 0._RD
-      endif
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function I_0
-
-  !****
-
-  function I_1 (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    complex(RD)               :: I_1
-
-    complex(RD) :: y_1
-    complex(RD) :: y_2
-    complex(RD) :: y_3
-    complex(RD) :: y_4
-    real(RD)    :: U
-    real(RD)    :: c_1
-    real(RD)    :: Omega_rot
-    complex(RD) :: omega_c
-
-    ! Evaluate the I_0 integral, which should be zero for dipole
-    ! cases. This expression is based on eqn. (43) of [Takata:2006a]
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j), &
-         l_i => this%l_i )
-
-      y_1 = this%y_i(1, j)
-      y_2 = this%y_i(2, j)
-      y_3 = this%y_i(3, j)
-      y_4 = this%y_i(4, j)
-
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-
-      Omega_rot = this%cx%Omega_rot(pt)
-
-      omega_c = this%cx%omega_c(Omega_rot, this%st)
-
-      if (pt%x /= 0._RD) then
-         I_1 = pow(pt%x, l_i+2._RD)*(c_1*omega_c**2*U*y_1 - U*y_2 - &
-               (c_1*omega_c**2 + 2._RD)*y_3 + (c_1*omega_c**2 - 1._RD)*y_4)/c_1**2
-      else
-         I_1 = 0._RD
-      endif
-
-    end associate
-      
-    ! Finish
-
-    return
-
-  end function I_1
-
-  !****
-
-  function alpha_0 (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    real(RD)                  :: alpha_0
-
-    real(RD)    :: U
-    real(RD)    :: c_1
-    real(RD)    :: Omega_rot
-    complex(RD) :: omega_c
-    complex(RD) :: lambda
-
-    ! Evaluate the alpha_0 excitation parameter defined in equation
-    ! (26.10) of Unno et al. (2017)
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j))
-
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-
-      Omega_rot = this%cx%Omega_rot(pt)
-
-      omega_c = this%cx%omega_c(Omega_rot, this%st)
-      lambda = this%cx%lambda(Omega_rot, this%st)
-
-      alpha_0 = 4._RD - U - abs(lambda)/(c_1*abs(omega_c)**2) + c_1*abs(omega_c)**2
-
-    end associate
-
-    ! Finish
-
-    return
-
-  end function alpha_0
-
-  !****
-
-  function alpha_1 (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    real(RD)                  :: alpha_1
-
-    real(RD)    :: alpha_0
-    real(RD)    :: V
-    real(RD)    :: U
-    real(RD)    :: c_1
-    real(RD)    :: Gamma_1
-    real(RD)    :: nabla_ad
-    real(RD)    :: kap_T
-    real(RD)    :: kap_rho
-    real(RD)    :: Omega_rot
-    complex(RD) :: omega_c
-    complex(RD) :: lambda
-
-    ! Evaluate the alpha_1 excitation parameter defined in equation
-    ! (26.12) of Unno et al. (2017)
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j))
-
-      alpha_0 = this%alpha_0(j)
-
-      V = ml%coeff(I_V_2, pt)*pt%x**2
-      U = ml%coeff(I_U, pt)
-      c_1 = ml%coeff(I_C_1, pt)
-
-      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
-      nabla_ad = ml%coeff(I_NABLA_AD, pt)
-
-      kap_T = ml%coeff(I_KAP_T, pt)
-      kap_rho = ml%coeff(I_KAP_RHO, pt)
-
-      Omega_rot = this%cx%Omega_rot(pt)
-
-      omega_c = this%cx%omega_c(Omega_rot, this%st)
-      lambda = this%cx%lambda(Omega_rot, this%st)
-
-      if (V /= 0._RD) then
-         alpha_1 = 4._RD - 1._RD/nabla_ad - kap_T - kap_rho/(nabla_ad*Gamma_1) + &
-                   (1._RD - abs(lambda)/(c_1*abs(omega_c)**2*V))*(c_1*abs(omega_c)**2 - U)/(nabla_ad*alpha_0)
-      else
-         alpha_1 = SIGN(HUGE(0._RD), (c_1*abs(omega_c)**2 - U)/(nabla_ad*alpha_0))
-      endif
-         
-    end associate
-
-    ! Finish
-
-    return
-
-  end function alpha_1
-
-  !****
-
-  function prop_type (this, j)
-
-    class(wave_t), intent(in) :: this
-    integer, intent(in)       :: j
-    integer                   :: prop_type
-
-    real(RD) :: V
-    real(RD) :: As
-    real(RD) :: U
-    real(RD) :: c_1
-    real(RD) :: Gamma_1
-    real(RD) :: Omega_rot
-    real(RD) :: lambda
-    real(RD) :: omega_c
-    real(RD) :: g_4
-    real(RD) :: g_2
-    real(RD) :: g_0
-    real(RD) :: gamma
-
-    ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
-
-    associate ( &
-         ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
-
-      if (ml%is_vacuum(pt)) then
-
-         prop_type = 0
-
-      else
-
-         ! Calculate the discriminant gamma
-
-         V = ml%coeff(I_V_2, pt)*pt%x**2
-         As = ml%coeff(I_AS, pt)
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
          Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
          Omega_rot = this%cx%Omega_rot(pt)
 
-         lambda = REAL(this%lambda(j))
+         l_e = this%cx%l_e(Omega_rot, this%st)
 
-         omega_c = REAL(this%cx%omega_c(Omega_rot, this%st))
+         if (ml%is_vacuum(pt)) then
 
-         g_4 = -4._RD*V/Gamma_1*c_1
-         g_2 = (As - V/Gamma_1 - U + 4._RD)**2 + 4._RD*V/Gamma_1*As + 4._RD*lambda
-         g_0 = -4._RD*lambda*As/c_1
-       
-         gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
+            ! Take special care at vacuum points: V_2 and As are
+            ! undefined but U_D = U*dlnrho/dlnr is well behaved
+            ! (also, y_1 == y_2)
 
-         ! Use the sign of gamma to set up prop_type
-         
-         if (gamma > 0._RD) then
+            select type(ml)
+            class is(anapoly_model_t)
+               U_D = ml%coeff_U_D(pt)
+            class is(hom_model_t)
+               U_D = ml%coeff_U_D(pt)
+            class is(poly_model_t)
+               U_D = ml%coeff_U_D(pt)
+            class default
+               @:ABORT('unable to evaluate U_D at vacuum point')
+            end select
+
+            dzeta_dx =  (-abs(y_1)**2*U_D - abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2 * pt%x**(2._RD*l_i)
+
+         else
+
+            V_2 = ml%coeff(I_V_2, pt)
+            As = ml%coeff(I_AS, pt)
+
+            if (l_i /= 0) then
+
+               if (pt%x /= 0._RD) then
+                  dzeta_dx = (abs(y_2)**2*U*V_2*pt%x**2/Gamma_1 + abs(y_1)**2*U*As - &
+                     abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2 * pt%x**(2._RD*l_i)
+               else
+                  dzeta_dx = 0._RD
+               end if
+
+            else
+
+               dzeta_dx = (abs(y_2)**2*U*V_2*pt%x**2/Gamma_1 + abs(y_1)**2*U*As - &
+                  abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2
+
+            endif
+
+         end if
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function dzeta_dx
+
+   !****
+
+   function dbeta_dx(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      real(RD)                  :: dbeta_dx
+
+      complex(RD) :: xi_r
+      complex(RD) :: xi_h
+      real(RD)    :: U
+      real(RD)    :: c_1
+      complex(RD) :: lambda
+      real(RD)    :: E
+
+      ! Calculate the (unnormalized) rotation splitting kernel. This is
+      ! based on the derivative of equation 3.357 of [Aerts:2010] with
+      ! respect to x
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j) )
+
+         xi_r = this%xi_r(j)
+         xi_h = this%xi_h(j)
+
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+
+         ! Question: should the following be lambda or l(l+1)?
+
+         lambda = this%lambda(j)
+
+         E = this%E()
+
+         dbeta_dx = REAL((abs(xi_r)**2 + (lambda-1._RD)*abs(xi_h)**2 - &
+            2._RD*xi_r*CONJG(xi_h))*U*pt%x**2/c_1)/E
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function dbeta_dx
+
+   !****
+
+   function dtau_ss_dx(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      real(RD)                  :: dtau_ss_dx
+
+      complex(RD) :: lag_P
+      complex(RD) :: lag_rho
+      real(RD)    :: V_2
+      real(RD)    :: c_1
+      real(RD)    :: U
+
+      ! Evaluate the steady-state differential torque, in units of G
+      ! M_star**2/R_star. This expression is based on eqn. (13) of
+      ! [Townsend:2018]
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j),   &
+         m => this%m )
+
+         lag_P = this%lag_P(j)
+
+         lag_rho = this%lag_rho(j)
+
+         V_2 = ml%coeff(I_V_2, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+         U = ml%coeff(I_U, pt)
+
+         dtau_ss_dx = m*pt%x**2*AIMAG(lag_rho*CONJG(lag_P))*(U/(2._RD*c_1**2*V_2))
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function dtau_ss_dx
+
+   !****
+
+   function dtau_tr_dx(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      real(RD)                  :: dtau_tr_dx
+
+      complex(RD) :: xi_r
+      complex(RD) :: eul_P
+      complex(RD) :: eul_rho
+      complex(RD) :: lag_rho
+      complex(RD) :: eul_Phi
+      real(RD)    :: V_2
+      real(RD)    :: U
+      real(RD)    :: c_1
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+
+      ! Evaluate the transient differential torque, in units of G
+      ! M_star**2/R_star. This expression is based on eqn. (14) of
+      ! [Towsend:2018]
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j),   &
+         m => this%m )
+
+         xi_r = this%xi_r(j)
+
+         eul_P = this%eul_P(j)
+
+         lag_rho = this%lag_rho(j)
+         eul_rho = this%eul_rho(j)
+
+         eul_Phi = this%eul_Phi(j)
+
+         V_2 = ml%coeff(I_V_2, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+         U = ml%coeff(I_U, pt)
+
+         Omega_rot = this%cx%Omega_rot(pt)
+
+         omega_c = this%cx%omega_c(Omega_rot, this%st)
+
+         dtau_tr_dx = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._RD)*( &
+            lag_rho*CONJG(eul_P)/(c_1*V_2) + &
+            eul_rho*CONJG(eul_Phi) + &
+            xi_r*CONJG(eul_rho)*pt%x/c_1))*(U/(2._RD*c_1))
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function dtau_tr_dx
+
+   !****
+
+   function Yt_1(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: Yt_1
+
+      complex(RD) :: y_1
+      complex(RD) :: y_3
+      complex(RD) :: y_4
+      real(RD)    :: Jt
+
+      ! Evaluate the Takata Y_1 function. This expression is equivalent to
+      ! eqn. (69) of [Takata:2006b], divided by x**(2-l)
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j) )
+
+         y_1 = this%y_i(1, j)
+         y_3 = this%y_i(3, j)
+         y_4 = this%y_i(4, j)
+
+         Jt = 1._RD - ml%coeff(I_U, pt)/3._RD
+
+         Yt_1 = Jt*y_1 + (y_3 - y_4)/3._RD
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function Yt_1
+
+   !****
+
+   function Yt_2(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: Yt_2
+
+      complex(RD) :: y_1
+      complex(RD) :: y_2
+
+      ! Evaluate the Takata Y_2 function. This expression is equivalent to 
+      ! eqn. (70) of [Takata:2006b], divided by V
+
+      y_1 = this%y_i(1, j)
+      y_2 = this%y_i(2, j)
+
+      Yt_2 = y_2 - y_1
+
+      ! Finish
+
+      return
+
+   end function Yt_2
+
+   !****
+
+   function I_0(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: I_0
+
+      complex(RD) :: y_1
+      complex(RD) :: y_4
+      real(RD)    :: U
+      real(RD)    :: c_1
+
+      ! Evaluate the I_0 integral, which should be zero for radial
+      ! cases. This expression is based on eqn. (42) of [Takata:2006a]
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j),   &
+         l_i => this%l_i )
+
+         y_1 = this%y_i(1, j)
+         y_4 = this%y_i(4, j)
+
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+
+         if (pt%x /= 0._RD) then
+            I_0 = pow(pt%x, l_i+1._RD)*(U*y_1 + y_4)/c_1
+         else
+            I_0 = 0._RD
+         endif
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function I_0
+
+   !****
+
+   function I_1(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: I_1
+
+      complex(RD) :: y_1
+      complex(RD) :: y_2
+      complex(RD) :: y_3
+      complex(RD) :: y_4
+      real(RD)    :: U
+      real(RD)    :: c_1
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+
+      ! Evaluate the I_0 integral, which should be zero for dipole
+      ! cases. This expression is based on eqn. (43) of [Takata:2006a]
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j),   &
+         l_i => this%l_i )
+
+         y_1 = this%y_i(1, j)
+         y_2 = this%y_i(2, j)
+         y_3 = this%y_i(3, j)
+         y_4 = this%y_i(4, j)
+
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+
+         Omega_rot = this%cx%Omega_rot(pt)
+
+         omega_c = this%cx%omega_c(Omega_rot, this%st)
+
+         if (pt%x /= 0._RD) then
+            I_1 = pow(pt%x, l_i+2._RD)*(c_1*omega_c**2*U*y_1 - U*y_2 - &
+               (c_1*omega_c**2 + 2._RD)*y_3 + (c_1*omega_c**2 - 1._RD)*y_4)/c_1**2
+         else
+            I_1 = 0._RD
+         endif
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function I_1
+
+   !****
+
+   function alpha_0(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      real(RD)                  :: alpha_0
+
+      real(RD)    :: U
+      real(RD)    :: c_1
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
+
+      ! Evaluate the alpha_0 excitation parameter defined in equation
+      ! (26.10) of Unno et al. (2017)
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j))
+
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+
+         Omega_rot = this%cx%Omega_rot(pt)
+
+         omega_c = this%cx%omega_c(Omega_rot, this%st)
+         lambda = this%cx%lambda(Omega_rot, this%st)
+
+         alpha_0 = 4._RD - U - abs(lambda)/(c_1*abs(omega_c)**2) + c_1*abs(omega_c)**2
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function alpha_0
+
+   !****
+
+   function alpha_1(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      real(RD)                  :: alpha_1
+
+      real(RD)    :: alpha_0
+      real(RD)    :: V
+      real(RD)    :: U
+      real(RD)    :: c_1
+      real(RD)    :: Gamma_1
+      real(RD)    :: nabla_ad
+      real(RD)    :: kap_T
+      real(RD)    :: kap_rho
+      real(RD)    :: Omega_rot
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
+
+      ! Evaluate the alpha_1 excitation parameter defined in equation
+      ! (26.12) of Unno et al. (2017)
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j))
+
+         alpha_0 = this%alpha_0(j)
+
+         V = ml%coeff(I_V_2, pt)*pt%x**2
+         U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+
+         Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+         nabla_ad = ml%coeff(I_NABLA_AD, pt)
+
+         kap_T = ml%coeff(I_KAP_T, pt)
+         kap_rho = ml%coeff(I_KAP_RHO, pt)
+
+         Omega_rot = this%cx%Omega_rot(pt)
+
+         omega_c = this%cx%omega_c(Omega_rot, this%st)
+         lambda = this%cx%lambda(Omega_rot, this%st)
+
+         if (V /= 0._RD) then
+            alpha_1 = 4._RD - 1._RD/nabla_ad - kap_T - kap_rho/(nabla_ad*Gamma_1) + &
+               (1._RD - abs(lambda)/(c_1*abs(omega_c)**2*V))*(c_1*abs(omega_c)**2 - U)/(nabla_ad*alpha_0)
+         else
+            alpha_1 = SIGN(HUGE(0._RD), (c_1*abs(omega_c)**2 - U)/(nabla_ad*alpha_0))
+         endif
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end function alpha_1
+
+   !****
+
+   function prop_type(this, j)
+
+      class(wave_t), intent(in) :: this
+      integer, intent(in)       :: j
+      integer                   :: prop_type
+
+      real(RD) :: V
+      real(RD) :: As
+      real(RD) :: U
+      real(RD) :: c_1
+      real(RD) :: Gamma_1
+      real(RD) :: Omega_rot
+      real(RD) :: lambda
+      real(RD) :: omega_c
+      real(RD) :: g_4
+      real(RD) :: g_2
+      real(RD) :: g_0
+      real(RD) :: gamma
+
+      ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
+
+      associate (               &
+         ml => this%cx%model(), &
+         pt => this%gr%pt(j) )
+
+         if (ml%is_vacuum(pt)) then
 
             prop_type = 0
 
          else
 
-            if (REAL(c_1*omega_c**2) < As) then
-               prop_type = -1
+            ! Calculate the discriminant gamma
+
+            V = ml%coeff(I_V_2, pt)*pt%x**2
+            As = ml%coeff(I_AS, pt)
+            U = ml%coeff(I_U, pt)
+            c_1 = ml%coeff(I_C_1, pt)
+            Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+
+            Omega_rot = this%cx%Omega_rot(pt)
+
+            lambda = REAL(this%lambda(j))
+
+            omega_c = REAL(this%cx%omega_c(Omega_rot, this%st))
+
+            g_4 = -4._RD*V/Gamma_1*c_1
+            g_2 = (As - V/Gamma_1 - U + 4._RD)**2 + 4._RD*V/Gamma_1*As + 4._RD*lambda
+            g_0 = -4._RD*lambda*As/c_1
+
+            gamma = (g_4*omega_c**4 + g_2*omega_c**2 + g_0)/omega_c**2
+
+            ! Use the sign of gamma to set up prop_type
+
+            if (gamma > 0._RD) then
+
+               prop_type = 0
+
             else
-               prop_type = 1
+
+               if (REAL(c_1*omega_c**2) < As) then
+                  prop_type = -1
+               else
+                  prop_type = 1
+               endif
+
             endif
 
          endif
 
-      endif
+      end associate
 
-    end associate
-    
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function prop_type
+   end function prop_type
 
-  !****
+   !****
 
-  function lag_T_eff (this)
+   function lag_T_eff(this)
 
-    class(wave_t), intent(in) :: this
-    complex(RD)               :: lag_T_eff
+      class(wave_t), intent(in) :: this
+      complex(RD)               :: lag_T_eff
 
-    complex(RD) :: xi_r
-    complex(RD) :: lag_L
+      complex(RD) :: xi_r
+      complex(RD) :: lag_L
 
-    ! Calculate the effective temperature perturbation at x_ref
-    ! (assumed to correspond to the photosphere), in units of
-    ! T_eff. This expression is based on the standard definition of
-    ! effective temperature
+      ! Calculate the effective temperature perturbation at x_ref
+      ! (assumed to correspond to the photosphere), in units of
+      ! T_eff. This expression is based on the standard definition of
+      ! effective temperature
 
-    associate (j => this%j_ref)
+      associate (j => this%j_ref)
 
-      xi_r = this%xi_r(j)
-      lag_L = this%lag_L(j)
+         xi_r = this%xi_r(j)
+         lag_L = this%lag_L(j)
 
-      lag_T_eff = 0.25_RD*(lag_L - 2._RD*xi_r)
+         lag_T_eff = 0.25_RD*(lag_L - 2._RD*xi_r)
 
-    end associate
+      end associate
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function lag_T_eff
+   end function lag_T_eff
 
-  !****
+   !****
 
-  function lag_g_eff (this)
+   function lag_g_eff(this)
 
-    class(wave_t), intent(in) :: this
-    complex(RD)               :: lag_g_eff
+      class(wave_t), intent(in) :: this
+      complex(RD)               :: lag_g_eff
 
-    complex(RD) :: xi_r
-    complex(RD) :: deul_Phi
-    real(RD)    :: c_1
-    real(RD)    :: U
+      complex(RD) :: xi_r
+      complex(RD) :: deul_Phi
+      real(RD)    :: c_1
+      real(RD)    :: U
 
-    ! Calculate the effective gravity perturbation at x_ref (assumed
-    ! to correspond to the photosphere), in units of the gravity. This
-    ! expression is based on eqn. (24) of [Dupret:2002b]
+      ! Calculate the effective gravity perturbation at x_ref (assumed
+      ! to correspond to the photosphere), in units of the gravity. This
+      ! expression is based on eqn. (24) of [Dupret:2002b]
 
-    associate ( &
-         j => this%j_ref, &
-         ml => this%cx%model(), &
+      associate (                      &
+         j => this%j_ref,              &
+         ml => this%cx%model(),        &
          pt => this%gr%pt(this%j_ref), &
          omega => this%st%omega )
 
-      xi_r = this%xi_r(j)
-      deul_Phi = this%deul_Phi(j)
+         xi_r = this%xi_r(j)
+         deul_Phi = this%deul_Phi(j)
 
-      c_1 = ml%coeff(I_C_1, pt)
-      U = ml%coeff(I_U, pt)
+         c_1 = ml%coeff(I_C_1, pt)
+         U = ml%coeff(I_U, pt)
 
-      lag_g_eff = (c_1/pt%x)*deul_Phi + (U - (2._RD + c_1*omega**2))*xi_r/pt%x
+         lag_g_eff = (c_1/pt%x)*deul_Phi + (U - (2._RD + c_1*omega**2))*xi_r/pt%x
 
-    end associate
+      end associate
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function lag_g_eff
+   end function lag_g_eff
 
-  !****
+   !****
 
-  function f_T (this)
+   function f_T(this)
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: f_T
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: f_T
 
-    complex(RD) :: C_T
+      complex(RD) :: C_T
 
-    ! Evaluate the non-adiabatic f_T parameter. This is expression is
-    ! based on eqn. (5) of [Dupret:2003]
+      ! Evaluate the non-adiabatic f_T parameter. This is expression is
+      ! based on eqn. (5) of [Dupret:2003]
 
-    associate (j => this%j_ref)
+      associate (j => this%j_ref)
 
-      C_T = this%lag_T_eff()/this%xi_r(j)
+         C_T = this%lag_T_eff()/this%xi_r(j)
 
-      f_T = abs(C_T)
+         f_T = abs(C_T)
 
-    end associate
+      end associate
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function f_T
+   end function f_T
 
-  !****
+   !****
 
-  function f_g (this)
+   function f_g(this)
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: f_g
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: f_g
 
-    complex(RD) :: C_g
+      complex(RD) :: C_g
 
-    ! Evaluate the non-adiabatic f_g parameter. This is expression is
-    ! based on eqn. (6) of [Dupret:2003]
+      ! Evaluate the non-adiabatic f_g parameter. This is expression is
+      ! based on eqn. (6) of [Dupret:2003]
 
-    associate (j => this%j_ref)
+      associate (j => this%j_ref)
 
-      C_g = this%lag_g_eff()/this%xi_r(j)
+         C_g = this%lag_g_eff()/this%xi_r(j)
 
-      f_g = -abs(C_g)
+         f_g = -abs(C_g)
 
-    end associate
+      end associate
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function f_g
+   end function f_g
 
-  !****
+   !****
 
-  function psi_T (this)
+   function psi_T(this)
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: psi_T
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: psi_T
 
-    complex(RD) :: C_T
+      complex(RD) :: C_T
 
-    ! Calculate the non-adiabatic psi_T parameter, in radians. This is
-    ! expression is based on eqn. (5) of [Dup2003]
+      ! Calculate the non-adiabatic psi_T parameter, in radians. This is
+      ! expression is based on eqn. (5) of [Dup2003]
 
-    associate (j => this%j_ref)
+      associate (j => this%j_ref)
 
-      C_T = this%lag_T_eff()/this%xi_r(j)
+         C_T = this%lag_T_eff()/this%xi_r(j)
 
-      psi_T = atan2(AIMAG(C_T), REAL(C_T))
+         psi_T = atan2(AIMAG(C_T), REAL(C_T))
 
-    end associate
+      end associate
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function psi_T
+   end function psi_T
 
-  !****
+   !****
 
-  function psi_g (this)
+   function psi_g(this)
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: psi_g
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: psi_g
 
-    ! Calculate the non-adiabatic psi_g parameter, in radians
+      ! Calculate the non-adiabatic psi_g parameter, in radians
 
-    psi_g = PI
+      psi_g = PI
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function psi_g
+   end function psi_g
 
-  !****
+   !****
 
-  function E (this, use_cache)
+   function E(this, use_cache)
 
-    class(wave_t), intent(in)     :: this
-    logical, intent(in), optional :: use_cache
-    real(RD)                      :: E
+      class(wave_t), intent(in)     :: this
+      logical, intent(in), optional :: use_cache
+      real(RD)                      :: E
 
-    logical               :: use_cache_
-    integer               :: j
-    real(RD), allocatable :: x(:)
-    real(RD), allocatable :: dE_dx(:)
+      logical               :: use_cache_
+      integer               :: j
+      real(RD), allocatable :: x(:)
+      real(RD), allocatable :: dE_dx(:)
 
-    ! Calculate the inertia, in units of M_star R_star**2
+      ! Calculate the inertia, in units of M_star R_star**2
 
-    if (PRESENT(use_cache)) then
-       use_cache_ = use_cache
-    else
-       use_cache_ = .TRUE.
-    endif
-
-    if (use_cache_) then
-
-       E = this%E_scl2*abs(this%scl)**2
-
-    else
-
-       allocate(x(this%n))
-       allocate(dE_dx(this%n))
-
-       !$OMP PARALLEL DO
-       do j = 1, this%n
-          x(j) = this%gr%pt(j)%x
-          dE_dx(j) = this%dE_dx(j)
-       end do
-
-       E = integrate(x, dE_dx)
-
-    end if
-
-    ! Finish
-
-    return
-
-  end function E
-
-  !****
-
-  function E_p (this)
-
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: E_p
-
-    integer  :: j
-    real(RD) :: dE_dx(this%n)
-
-    ! Calculate the inertia in acoustic-wave propagation regions, in
-    ! units of M_star R_star**2
-
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       if (this%prop_type(j) == 1) then
-          dE_dx(j) = this%dE_dx(j)
-       else
-          dE_dx(j) = 0._RD
-       endif
-    end do
-
-    E_p = integrate(this%gr%pt%x, dE_dx)
-
-    ! Finish
-
-    return
-
-  end function E_p
-
-  !****
-
-  function E_g (this)
-
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: E_g
-
-    integer  :: j
-    real(RD) :: dE_dx(this%n)
-
-    ! Calculate the inertia in gravity-wave propagation regions, in
-    ! units of M_star R_star**2
-
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       if (this%prop_type(j) == -1) then
-          dE_dx(j) = this%dE_dx(j)
-       else
-          dE_dx(j) = 0._RD
-       endif
-    end do
-
-    E_g = integrate(this%gr%pt%x, dE_dx)
-
-    ! Finish
-
-    return
-
-  end function E_g
-
-  !****
-
-  function E_norm (this)
- 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: E_norm
-
-    real(RD)    :: E
-    complex(RD) :: xi_r
-    complex(RD) :: xi_h
-    complex(RD) :: lambda
-    real(RD)    :: A2
-
-    ! Calculate the normalized inertia. This expression is based on
-    ! eqn. (3.140) of [Aer2010]
-
-    associate (j => this%j_ref)
-
-      E = this%E()
-
-      xi_r = this%xi_r(j)
-      xi_h = this%xi_h(j)
-
-      lambda = this%lambda(j)
-
-      select case (this%os_p%inertia_norm)
-      case ('RADIAL')
-         A2 = abs(xi_r)**2
-      case ('HORIZ')
-         A2 = abs(lambda)*abs(xi_h)**2
-      case ('BOTH')
-         A2 = abs(xi_r)**2 + abs(lambda)*abs(xi_h)**2
-      case default
-         @:ABORT('Invalid inertia_norm')
-      end select
-
-      if (A2 == 0._RD) then
-         @:WARN('Amplitude at x_ref is zero; not normalizing inertia')
-         E_norm = E
+      if (PRESENT(use_cache)) then
+         use_cache_ = use_cache
       else
-         E_norm = E/A2
+         use_cache_ = .TRUE.
       endif
 
-    end associate
+      if (use_cache_) then
 
-    ! Finish
+         E = this%E_scl2*abs(this%scl)**2
 
-    return
+      else
 
-  end function E_norm
+         allocate(x(this%n))
+         allocate(dE_dx(this%n))
 
-  !****
+         !$OMP PARALLEL DO
+         do j = 1, this%n
+            x(j) = this%gr%pt(j)%x
+            dE_dx(j) = this%dE_dx(j)
+         end do
 
-  function E_ratio (this)
- 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: E_ratio
+         E = integrate(x, dE_dx)
 
-    integer  :: j
-    real(RD) :: dE_dx(this%n)
-    real(RD) :: E_above
-    real(RD) :: E_below
+      end if
 
-    ! Calculate the ratio of the inertia above the reference point, to
-    ! the combined (above/below) inertia
+      ! Finish
 
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       dE_dx(j) = this%dE_dx(j)
-    end do
+      return
 
-    if (this%j_ref < this%n) then
-       associate (j_a => this%j_ref, j_b => this%n)
-         E_above = integrate(this%gr%pt(j_a:j_b)%x, dE_dx(j_a:j_b))
-       end associate
-    else
-       E_above = 0._RD
-    endif
+   end function E
 
-    if (this%j_ref > 1) then
-       associate (j_a => 1, j_b => this%j_ref)
-         E_below = integrate(this%gr%pt(j_a:j_b)%x, dE_dx(j_a:j_b))
-       end associate
-    else
-       E_below = 0._RD
-    endif
+   !****
 
-    E_ratio = E_above/(E_below + E_above)
+   function E_p(this)
 
-    ! Finish
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: E_p
 
-    return
+      integer  :: j
+      real(RD) :: dE_dx(this%n)
 
-  end function E_ratio
+      ! Calculate the inertia in acoustic-wave propagation regions, in
+      ! units of M_star R_star**2
 
-  !****
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         if(this%prop_type(j) == 1) then
+            dE_dx(j) = this%dE_dx(j)
+         else
+            dE_dx(j) = 0._RD
+         endif
+      end do
 
-  function H (this)
+      E_p = integrate(this%gr%pt%x, dE_dx)
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: H
+      ! Finish
 
-    ! Calculate the total energy (i.e., twice the volume-integrated
-    ! kinetic energy), in units of G M_star**2 / R_star
+      return
 
-    H = 0.5_RD*REAL(this%st%omega)**2*this%E()
+   end function E_p
 
-    ! Finish
+   !****
 
-    return
+   function E_g(this)
 
-  end function H
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: E_g
 
-  !****
+      integer  :: j
+      real(RD) :: dE_dx(this%n)
 
-  function W (this)
+      ! Calculate the inertia in gravity-wave propagation regions, in
+      ! units of M_star R_star**2
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: W
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         if(this%prop_type(j) == -1) then
+            dE_dx(j) = this%dE_dx(j)
+         else
+            dE_dx(j) = 0._RD
+         endif
+      end do
 
-    integer  :: j
-    real(RD) :: dW_dx(this%n)
-    
-    ! Calculate the total work, in units of G M_star**2/R_star
+      E_g = integrate(this%gr%pt%x, dE_dx)
 
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       dW_dx(j) = this%dW_dx(j)
-    end do
+      ! Finish
 
-    W = integrate(this%gr%pt%x, dW_dx)
+      return
 
-    ! Finish
+   end function E_g
 
-    return
+   !****
 
-  end function W
+   function E_norm(this)
 
-  !****
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: E_norm
 
-  function W_eps (this)
+      real(RD)    :: E
+      complex(RD) :: xi_r
+      complex(RD) :: xi_h
+      complex(RD) :: lambda
+      real(RD)    :: A2
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: W_eps
-    
-    integer  :: j
-    real(RD) :: dW_eps_dx(this%n)
-    
-    ! Calculate the total work associated with nuclear processes, in
-    ! units of G M_star**2/R_star
+      ! Calculate the normalized inertia. This expression is based on
+      ! eqn. (3.140) of [Aer2010]
 
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       dW_eps_dx(j) = this%dW_eps_dx(j)
-    end do
+      associate (j => this%j_ref)
 
-    W_eps = integrate(this%gr%pt%x, dW_eps_dx)
+         E = this%E()
 
-    ! Finish
+         xi_r = this%xi_r(j)
+         xi_h = this%xi_h(j)
 
-    return
+         lambda = this%lambda(j)
 
-  end function W_eps
+         select case(this%os_p%inertia_norm)
+         case ('RADIAL')
+            A2 = abs(xi_r)**2
+         case ('HORIZ')
+            A2 = abs(lambda)*abs(xi_h)**2
+         case ('BOTH')
+            A2 = abs(xi_r)**2 + abs(lambda)*abs(xi_h)**2
+         case default
+            @:ABORT('Invalid inertia_norm')
+         end select
 
-  !****
+         if (A2 == 0._RD) then
+            @:WARN('Amplitude at x_ref is zero; not normalizing inertia')
+            E_norm = E
+         else
+            E_norm = E/A2
+         endif
 
-  function Q (this)
+      end associate
 
-    class(wave_t), intent(in) :: this
-    complex(RD)               :: Q
+      ! Finish
 
-    integer     :: j
-    complex(RD) :: dQ_dx(this%n)
-    
-    ! Calculate the overlap integral
+      return
 
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       dQ_dx(j) = this%dQ_dx(j)
-    end do
+   end function E_norm
 
-    Q = integrate(this%gr%pt%x, dQ_dx)
+   !****
 
-    ! Finish
+   function E_ratio(this)
 
-    return
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: E_ratio
 
-  end function Q
+      integer  :: j
+      real(RD) :: dE_dx(this%n)
+      real(RD) :: E_above
+      real(RD) :: E_below
 
-  !****
+      ! Calculate the ratio of the inertia above the reference point, to
+      ! the combined (above/below) inertia
 
-  function tau_ss (this)
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         dE_dx(j) = this%dE_dx(j)
+      end do
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: tau_ss
+      if(this%j_ref < this%n) then
+         associate (j_a => this%j_ref, j_b => this%n)
+            E_above = integrate(this%gr%pt(j_a:j_b)%x, dE_dx(j_a:j_b))
+         end associate
+      else
+         E_above = 0._RD
+      endif
 
-    integer  :: j
-    real(RD) :: dtau_dx(this%n)
-    
-    ! Evaluate the steady-state total torque, in units of G
-    ! M_star**2/R_star. This expression is based on eqn. (18) of
-    ! [Townsend:2018]
+      if(this%j_ref > 1) then
+         associate (j_a => 1, j_b => this%j_ref)
+            E_below = integrate(this%gr%pt(j_a:j_b)%x, dE_dx(j_a:j_b))
+         end associate
+      else
+         E_below = 0._RD
+      endif
 
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       dtau_dx(j) = this%dtau_ss_dx(j)
-    end do
+      E_ratio = E_above/(E_below + E_above)
 
-    tau_ss = integrate(this%gr%pt%x, dtau_dx)
+      ! Finish
 
-    ! Finish
+      return
 
-    return
+   end function E_ratio
 
-  end function tau_ss
+   !****
 
-  !****
+   function H(this)
 
-  function tau_tr (this)
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: H
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: tau_tr
+      ! Calculate the total energy (i.e., twice the volume-integrated
+      ! kinetic energy), in units of G M_star**2 / R_star
 
-    integer  :: j
-    real(RD) :: dtau_dx(this%n)
-    
-    ! Evaluate the transient total torque, in units of G
-    ! M_star**2/R_star. This expression is based on eqn. (18) of
-    ! [Townsend:2018]
+      H = 0.5_RD*REAL(this%st%omega)**2*this%E()
 
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       dtau_dx(j) = this%dtau_tr_dx(j)
-    end do
+      ! Finish
 
-    tau_tr = integrate(this%gr%pt%x, dtau_dx)
+      return
 
-    ! Finish
+   end function H
 
-    return
+   !****
 
-  end function tau_tr
+   function W(this)
 
-  !****
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: W
 
-  function zeta (this)
+      integer  :: j
+      real(RD) :: dW_dx(this%n)
 
-    class(wave_t), intent(in) :: this
-    complex(RD)               :: zeta
+      ! Calculate the total work, in units of G M_star**2/R_star
 
-    integer     :: j
-    complex(RD) :: dzeta_dx(this%n)
-    integer     :: s
-    integer     :: j_l
-    integer     :: j_r
-    complex(RD) :: xi_r
-    real(RD)    :: U_l
-    real(RD)    :: U_r
-    real(RD)    :: c_1
-     
-    ! Calculate the zeta integral
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         dW_dx(j) = this%dW_dx(j)
+      end do
 
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       dzeta_dx(j) = this%dzeta_dx(j)
-    end do
+      W = integrate(this%gr%pt%x, dW_dx)
 
-    zeta = integrate(this%gr%pt%x, dzeta_dx)
+      ! Finish
 
-    ! Add on corrections associated with discontinuities at double
-    ! points
+      return
 
-    select case (this%os_p%zeta_scheme)
-    case ('KAWALER','KAWALER_GRAV','DUPRET')
+   end function W
 
-       ! Discontinuties at double points
+   !****
 
-       do s = this%gr%s_i(), this%gr%s_o()-1
+   function W_eps(this)
 
-          j_l = this%gr%j_s_o(s)
-          j_r = this%gr%j_s_i(s+1)
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: W_eps
 
-          associate(                    &
-               ml => this%cx%model(),   &
-               pt_l => this%gr%pt(j_l), &
-               pt_r => this%gr%pt(j_r) )
+      integer  :: j
+      real(RD) :: dW_eps_dx(this%n)
+
+      ! Calculate the total work associated with nuclear processes, in
+      ! units of G M_star**2/R_star
+
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         dW_eps_dx(j) = this%dW_eps_dx(j)
+      end do
+
+      W_eps = integrate(this%gr%pt%x, dW_eps_dx)
+
+      ! Finish
+
+      return
+
+   end function W_eps
+
+   !****
+
+   function Q(this)
+
+      class(wave_t), intent(in) :: this
+      complex(RD)               :: Q
+
+      integer     :: j
+      complex(RD) :: dQ_dx(this%n)
+
+      ! Calculate the overlap integral
+
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         dQ_dx(j) = this%dQ_dx(j)
+      end do
+
+      Q = integrate(this%gr%pt%x, dQ_dx)
+
+      ! Finish
+
+      return
+
+   end function Q
+
+   !****
+
+   function tau_ss(this)
+
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: tau_ss
+
+      integer  :: j
+      real(RD) :: dtau_dx(this%n)
+
+      ! Evaluate the steady-state total torque, in units of G
+      ! M_star**2/R_star. This expression is based on eqn. (18) of
+      ! [Townsend:2018]
+
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         dtau_dx(j) = this%dtau_ss_dx(j)
+      end do
+
+      tau_ss = integrate(this%gr%pt%x, dtau_dx)
+
+      ! Finish
+
+      return
+
+   end function tau_ss
+
+   !****
+
+   function tau_tr(this)
+
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: tau_tr
+
+      integer  :: j
+      real(RD) :: dtau_dx(this%n)
+
+      ! Evaluate the transient total torque, in units of G
+      ! M_star**2/R_star. This expression is based on eqn. (18) of
+      ! [Townsend:2018]
+
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         dtau_dx(j) = this%dtau_tr_dx(j)
+      end do
+
+      tau_tr = integrate(this%gr%pt%x, dtau_dx)
+
+      ! Finish
+
+      return
+
+   end function tau_tr
+
+   !****
+
+   function zeta(this)
+
+      class(wave_t), intent(in) :: this
+      complex(RD)               :: zeta
+
+      integer     :: j
+      complex(RD) :: dzeta_dx(this%n)
+      integer     :: s
+      integer     :: j_l
+      integer     :: j_r
+      complex(RD) :: xi_r
+      real(RD)    :: U_l
+      real(RD)    :: U_r
+      real(RD)    :: c_1
+
+      ! Calculate the zeta integral
+
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         dzeta_dx(j) = this%dzeta_dx(j)
+      end do
+
+      zeta = integrate(this%gr%pt%x, dzeta_dx)
+
+      ! Add on corrections associated with discontinuities at double
+      ! points
+
+      do s = this%gr%s_i(), this%gr%s_o()-1
+
+         j_l = this%gr%j_s_o(s)
+         j_r = this%gr%j_s_i(s+1)
+
+         associate(                  &
+            ml => this%cx%model(),   &
+            pt_l => this%gr%pt(j_l), &
+            pt_r => this%gr%pt(j_r) )
 
             xi_r = this%xi_r(j_l)
 
@@ -2692,112 +2403,110 @@ contains
 
             zeta = zeta - CONJG(xi_r)*xi_r*pt_l%x**3*(U_r - U_l)/c_1**2
 
-          end associate
+         end associate
 
-       end do
+      end do
 
-    end select
+      ! Finish
 
-    ! Finish
+      return
 
-    return
+   end function zeta
 
-  end function zeta
+   !****
 
-  !****
+   function beta(this)
 
-  function beta (this)
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: beta
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: beta
+      integer  :: j
+      real(RD) :: dbeta_dx(this%n)
 
-    integer  :: j
-    real(RD) :: dbeta_dx(this%n)
-     
-    ! Calculate the rotational splitting factor. This is based on
-    ! equation (3.357) of [Aer2010]; the Ledoux constant follows from
-    ! equation (3.361) [ibid] as C_nl = 1 - beta
+      ! Calculate the rotational splitting factor. This is based on
+      ! equation (3.357) of [Aer2010]; the Ledoux constant follows from
+      ! equation (3.361) [ibid] as C_nl = 1 - beta
 
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       dbeta_dx(j) = this%dbeta_dx(j)
-    end do
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         dbeta_dx(j) = this%dbeta_dx(j)
+      end do
 
-    beta = integrate(this%gr%pt%x, dbeta_dx)
+      beta = integrate(this%gr%pt%x, dbeta_dx)
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function beta
+   end function beta
 
-  !****
+   !****
 
-  function domega_rot (this)
+   function domega_rot(this)
 
-    class(wave_t), intent(in) :: this
-    complex(RD)               :: domega_rot
+      class(wave_t), intent(in) :: this
+      complex(RD)               :: domega_rot
 
-    integer  :: j
-    real(RD) :: dbeta_dx(this%n)
-    real(RD) :: Omega_rot(this%n)
+      integer  :: j
+      real(RD) :: dbeta_dx(this%n)
+      real(RD) :: Omega_rot(this%n)
 
-    ! Calculate the rotational splitting between modes of adjacent
-    ! m. This is based on eqn. 3.355 of [Aer2010].
+      ! Calculate the rotational splitting between modes of adjacent
+      ! m. This is based on eqn. 3.355 of [Aer2010].
 
-    !$OMP PARALLEL DO
-    do j = 1, this%n
+      !$OMP PARALLEL DO
+      do j = 1, this%n
 
-       dbeta_dx(j) = this%dbeta_dx(j)
+         dbeta_dx(j) = this%dbeta_dx(j)
 
-       associate ( &
+         associate (               &
             ml => this%cx%model(), &
             pt => this%gr%pt(j))
 
-         Omega_rot(j) = this%cx%Omega_rot(pt)
+            Omega_rot(j) = this%cx%Omega_rot(pt)
 
-       end associate
-       
-    end do
+         end associate
 
-    domega_rot = integrate(this%gr%pt%x, dbeta_dx*Omega_rot)
+      end do
 
-    ! Finish
+      domega_rot = integrate(this%gr%pt%x, dbeta_dx*Omega_rot)
 
-    return
+      ! Finish
 
-  end function domega_rot
+      return
 
-  !****
+   end function domega_rot
 
-  function eta (this)
+   !****
 
-    class(wave_t), intent(in) :: this
-    real(RD)                  :: eta
+   function eta(this)
 
-    integer  :: j
-    real(RD) :: dW_dx(this%n)
-    real(RD) :: D
+      class(wave_t), intent(in) :: this
+      real(RD)                  :: eta
 
-    ! Calculate the normalized growth rate defined (as eta') by [Stel1978]
+      integer  :: j
+      real(RD) :: dW_dx(this%n)
+      real(RD) :: D
 
-    !$OMP PARALLEL DO
-    do j = 1, this%n
-       dW_dx(j) = this%dW_dx(j)
-    end do
+      ! Calculate the normalized growth rate defined (as eta') by [Stel1978]
 
-    D = integrate(this%gr%pt%x, abs(dW_dx))
+      !$OMP PARALLEL DO
+      do j = 1, this%n
+         dW_dx(j) = this%dW_dx(j)
+      end do
 
-    if (D /= 0._RD) then
-       eta = integrate(this%gr%pt%x, dW_dx)/D
-    else
-       eta = 0._RD
-    endif
+      D = integrate(this%gr%pt%x, abs(dW_dx))
 
-    ! Finish
+      if (D /= 0._RD) then
+         eta = integrate(this%gr%pt%x, dW_dx)/D
+      else
+         eta = 0._RD
+      endif
 
-    return
+      ! Finish
 
-  end function eta
+      return
+
+   end function eta
 
 end module wave_m

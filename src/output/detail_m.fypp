@@ -258,7 +258,6 @@ contains
             ('dW_eps_dx', 'wv%dW_eps_dx(j)'), &
             ('dQ_dx', 'wv%dQ_dx(j)'), &
             ('dzeta_dx', 'wv%dzeta_dx(j)'), &
-            ('dzeta_dm', 'wv%dzeta_dm(j)'), &
             ('dbeta_dx', 'wv%dbeta_dx(j)'), &
             ('dtau_ss_dx', 'wv%dtau_ss_dx(j)'), &
             ('dtau_tr_dx', 'wv%dtau_tr_dx(j)'), &
