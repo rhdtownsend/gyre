@@ -78,14 +78,14 @@ endif
 
 # Rules
 
-all : install-forum
-	@$(MAKE) -C build
+install : build | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
+	@$(MAKE) -C build $@
 
-install : all | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
-	@$(MAKE) -C build install
+build : install-forum
+	@$(MAKE) -C build $@
 
 clean : clean-forum
-	@$(MAKE) -C build clean
+	@$(MAKE) -C build $@
 	@rm -rf $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
 
 test build_ref build_ref_arch :

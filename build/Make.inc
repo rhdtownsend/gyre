@@ -59,12 +59,12 @@ ALL_DEPS = $(addprefix $(DEPEND_DIR)/,$(BIN_TARGETS:%=%.dep) $(LIB_TARGETS:%=%.d
 # Targets
 ##########
 
-all : $(BIN_FILES) $(LIB_FILES)
-	@:
-
 install : $(addprefix $(BIN_DIR)/,$(BIN_FILES)) \
           $(addprefix $(LIB_DIR)/,$(LIB_FILES)) \
           $(addprefix $(INC_DIR)/,$(INC_FILES))
+	@:
+
+build : $(BIN_FILES) $(LIB_FILES)
 	@:
 
 clean :
