@@ -86,7 +86,7 @@ $(INC_DIR)/% : %
 $(DEPEND_DIR) :
 	@mkdir -p $@
 
-.PHONY: all install clean
+.PHONY: install build clean
 
 .SUFFIXES:
 

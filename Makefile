@@ -103,7 +103,7 @@ else
 
 endif
 
-.PHONY: all install clean test build_ref build_ref_arch install-forum clean-forum
+.PHONY: install build clean test build_ref build_ref_arch install-forum clean-forum
 
 $(BIN_DIR) $(LIB_DIR) $(INC_DIR) :
 	@mkdir -p $@
