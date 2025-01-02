@@ -59,11 +59,11 @@ newly created source directory; this can be achieved, e.g., using the
 Compile
 -------
 
-Compile GYRE using the :command:`make` utility:
+Compile and install GYRE using the :command:`make` utility:
 
 .. prompt:: bash
 
-   make -j -C $GYRE_DIR install
+   make -j -C $GYRE_DIR
 
 (the :command:`-j` flags tells :command:`make` to use multiple cores, speeding up the build).
 
@@ -97,7 +97,7 @@ supported:
   Build main frontends such as :program:`gyre` and :program:`gyre_tides` (default ``yes``)
 
 :envvar:`TOOLS`
-  Build tools such as :program:`build_poly` and :program:`eval_lambda` (default ``yes``)
+  Build the support tools listed in the :ref:`support-tools` appendix (default ``yes``)
 
 :envvar:`IFACES`
   Build additional libraries for interfacing with other codes (default ``no``)
@@ -128,9 +128,6 @@ supported:
 
 :envvar:`IEEE`
   Use Fortran IEEE floating point features (default ``yes``)
-
-:envvar:`EXPERIMENTAL`
-  Enable experimental features (default ``no``)
 
 If an environment variable is not set, then its default value is
 assumed. The default values can be altered by editing the file

@@ -11,7 +11,7 @@ To get started with GYRE, follow these five simple steps:
 * unpack the source code using the :command:`tar` utility;
 * set the :envvar:`GYRE_DIR` environment variable to point to the
   newly created source directory;
-* compile GYRE using the command :command:`make -j -C $GYRE_DIR install`.
+* compile and install GYRE using the command :command:`make -j -C $GYRE_DIR`.
 
 For a more in-depth installation guide that covers alternative
 use-cases, refer to the :ref:`installation` chapter. If the code
