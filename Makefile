@@ -39,9 +39,6 @@ PORTABLE ?= yes
 # Use IEEE fortran features
 IEEE ?= yes
 
-# Enable experimental features
-EXPERIMENTAL ?= no
-
 ############ DO NOT EDIT BELOW THIS LINE ############
 ### (unless you think you know what you're doing) ###
 #####################################################
