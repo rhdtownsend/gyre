@@ -1,7 +1,7 @@
 ! Module  : model_factory_m
 ! Purpose : factory procedures for model_t
 !
-! Copyright 2016-2023 Rich Townsend & The GYRE Team
+! Copyright 2016-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -91,8 +91,6 @@ contains
             call read_mesa_model(ml_p, ml)
          case ('OSC')
             call read_osc_model(ml_p, ml)
-         case ('POLY')
-            call read_poly_model_as_evol(ml_p, ml)
          case ('WDEC')
             call read_wdec_model(ml_p, ml)
          case default

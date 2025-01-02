@@ -28,14 +28,7 @@ follows:
   - :nml_v:`'LOSC'` : LOSC-format text file
   - :nml_v:`'MESA'` : :ref:`MESA/GYRE-format <mesa-file-format>` text file
   - :nml_v:`'OSC'` : OSC-format text file
-  - :nml_v:`'POLY'` : :ref:`POLY-format <poly-file-format>` HDF5 file
   - :nml_v:`'WDEC'` : WDEC-format text file
-
-  Using :nml_n:`model_type`\ =\ :nml_v:`'EVOL'` and
-  :nml_n:`file_format`\ =\ :nml_v:`'POLY'` gives similar (but not
-  identical) results to choosing :nml_n:`model_type`\ =\
-  :nml_v:`'POLY'`; the two approaches differ in how the model
-  structure is interpolated.
 
 :nml_n:`data_format` (default :nml_v:`''`, indicates auto-select)
   Fortran format specifier for data read from OSC-, FGONG- and FAMDL-format files

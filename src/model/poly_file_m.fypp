@@ -40,7 +40,6 @@ module poly_file_m
    ! Access specifiers
 
    public :: read_poly_model
-   public :: read_poly_model_as_evol
 
    ! Default access
 
@@ -115,94 +114,5 @@ contains
       return
 
    end subroutine read_poly_model
-
-   !****
-
-   subroutine read_poly_model_as_evol(ml_p, ml)
-
-      type(model_par_t), intent(in)        :: ml_p
-      class(model_t), pointer, intent(out) :: ml
-
-      class(model_t), pointer      :: pm
-      type(grid_t)                 :: gr
-      real(RD), allocatable        :: x(:)
-      integer                      :: n
-      real(RD), allocatable        :: V_2(:)
-      real(RD), allocatable        :: As(:)
-      real(RD), allocatable        :: U(:)
-      real(RD), allocatable        :: c_1(:)
-      real(RD), allocatable        :: Gamma_1(:)
-      real(RD), allocatable        :: Omega_rot(:)
-      integer                      :: j
-      class(evol_model_t), pointer :: em
-
-      ! Read the poly-format file and convert to an evol_model_t
-
-      call read_poly_model(ml_p, pm)
-
-      ! Extract the grid
-
-      gr = pm%grid()
-      x = gr%pt%x
-
-      n = gr%n
-
-      ! Next, extract structure variables
-
-      allocate(V_2(n))
-      allocate(As(n))
-      allocate(U(n))
-      allocate(c_1(n))
-
-      allocate(Gamma_1(n))
-
-      allocate(Omega_rot(n))
-
-      do j = 1, n
-
-         V_2(j) = pm%coeff(I_V_2, gr%pt(j))
-         As(j) = pm%coeff(I_AS, gr%pt(j))
-         U(j) = pm%coeff(I_U, gr%pt(j))
-         c_1(j) = pm%coeff(I_C_1, gr%pt(j))
-
-         Gamma_1(j) = pm%coeff(I_GAMMA_1, gr%pt(j))
-
-         Omega_rot(j) = pm%coeff(I_OMEGA_ROT, gr%pt(j))
-
-      end do
-
-!      V_2(n) = HUGE(0._RD)
-!      As(n) = HUGE(0._RD)
-      V_2(n) = 1E10
-      As(n) = 1E10
-
-      ! Construct the evol_model_t
-
-      allocate(em, SOURCE=evol_model_t(x, M_SUN, R_SUN, L_SUN, ml_p))
-
-      call em%define(I_V_2, V_2)
-      call em%define(I_AS, As)
-      call em%define(I_U, U)
-      call em%define(I_C_1, c_1)
-
-      call em%define(I_GAMMA_1, Gamma_1)
-
-      call em%define(I_OMEGA_ROT, Omega_rot)
-
-      call em%commit()
-
-      ! Return a pointer
-
-      ml => em
-
-      ! Free up pm
-
-      deallocate(pm)
-
-      ! Finish
-
-      return
-
-   end subroutine read_poly_model_as_evol
 
 end module poly_file_m
