@@ -9,6 +9,7 @@ spderiv	\partial#1/\partial#2
 npderiv	\frac{\partial^{#3}#1}{\partial#2^{#3}}
 diff	{\rm d}#1
 ii	{\rm i}
+real	\operatorname{Re}
 nablah	\nabla_{\rm h}
 Dfunc	\mathcal{D}
 Dfuncr	\Dfunc_{\rm R}

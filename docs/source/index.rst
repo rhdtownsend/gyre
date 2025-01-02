@@ -49,4 +49,4 @@ oscillations, similar numerical techniques can be brought to bear.
 
    appendices/comp-ptrope.rst
    appendices/build-poly.rst
-   appendices/eval-lambda.rst
+   appendices/support-tools.rst
