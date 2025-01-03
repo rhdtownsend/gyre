@@ -15,28 +15,28 @@ coefficients used in tidal expansions, as follows:
    * - Label
      - Symbol
      - Description
-   * - `cbar`
+   * - :code:`cbar`
      - :math:`\cbar_{\ell,m,k}`
      - expansion coefficient for tidal potential
-   * - `Gbar_1`
+   * - :code:`Gbar_1`
      - :math:`\Gbar^{(1)}_{\ell,m,k}`
      - expansion coefficient for secular rate-of-change of longitude of periapsis
-   * - `Gbar_2`
+   * - :code:`Gbar_2`
      - :math:`\Gbar^{(2)}_{\ell,m,k}`
      - expansion coefficient for secular rate-of-change of semi-major axis
-   * - `Gbar_3`
+   * - :code:`Gbar_3`
      - :math:`\Gbar^{(3)}_{\ell,m,k}`
      - expansion coefficient for secular rate-of-change of eccentricity
-   * - `Gbar_4`
+   * - :code:`Gbar_4`
      - :math:`\Gbar^{(4)}_{\ell,m,k}`
      - expansion coefficient for secular rate-of-change of spin
-   * - `X`
+   * - :code:`X`
      - :math:`X^{-(\ell+1),-m}_{-k}`
      - Hansen coefficient
-   * - `Y`
+   * - :code:`Y`
      - :math:`\real[Y^{m}_{\ell}(\pi/2,0)]`
      - spherical harmonic at equator/prime meridian
-   * - `Y*`
+   * - :code:`Y*`
      - :math:`\real[Y^{m*}_{\ell}(\pi/2,0)]`
      - complex conjugate spherical harmonic at equator/prime meridian
 

@@ -28,19 +28,19 @@ Parameters
 
 .. option:: q_min
 
-   Starting point in :math:`\{q\}` grid
+   Start value in spin parameter grid
 
 .. option:: q_max
 
-   Ending point in :math:`\{q\}` grid
+   End value in spin parameter grid
 
 .. option:: n_q
 
-   Number of points in :math:`\{q\}` grid.
+   Number of points in spin parameter grid
 
 .. option:: log_q
 
-   Flag to use logarithmic spacing in :math:`\{q\}` grid
+   Flag to use logarithmic spacing in spin parameter grid
 
 .. option:: rossby
 

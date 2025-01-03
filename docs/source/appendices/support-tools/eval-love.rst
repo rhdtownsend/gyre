@@ -8,7 +8,7 @@ eval_love
 The :program:`eval_love` tool evaluates the hydrostatic Love number
 :math:`k_{\ell}` of an input stellar model (see
 :ads_citealp:`ogilvie:2014` for the adopted definition of
-:math:`k_{\ell`).
+:math:`k_{\ell}`).
 
 Syntax
 ------

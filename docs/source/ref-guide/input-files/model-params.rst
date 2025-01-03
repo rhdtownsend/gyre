@@ -34,7 +34,8 @@ follows:
   Fortran format specifier for data read from OSC-, FGONG- and FAMDL-format files
   
 :nml_n:`deriv_type` (default :nml_v:`'MONO'`)
-  Cubic interpolation derivatives type (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`); one of
+  Cubic interpolation derivatives type (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`
+  and :nml_n:`interp_type`\ =\ :nml_v:`'CUBIC'`); One
 
   - :nml_v:`'SPLINE'` : Spline (non-local) derivatives
   - :nml_v:`'FINDIFF'` : Finite-difference derivatives
@@ -81,7 +82,7 @@ follows:
   exist at the origin, then one is added
 
 :nml_n:`interp_type` (default :nml_v:`'CUBIC'`)
-  Interpolation type (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`); one of
+  Interpolation type (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`\ \|\ :nml_v:`'POLY'`); one of
 
   - :nml_v:`'CUBIC'`  : Piecewise cubic
   - :nml_v:`'LINEAR'` : Piecewise linear
@@ -92,9 +93,7 @@ follows:
 
 :nml_n:`constrain_derivs` (default :nml_v:`.FALSE.`)
   Flag to constrain first derivatives of :math:`V_2`, :math:`U` and
-  :math:`c_1` structure coefficients (when :nml_n:`model_type`\ =\
-  :nml_v:`'EVOL'` and :nml_n:`deriv_type`\ =\ :nml_v:`'CUBIC'`), in
-  accordance with equations
+  :math:`c_1` structure coefficients, in accordance with equations
   (20) and (21) of :ads_citet:`takata:2006a` and the hydrostatic
   equilibrium equation
   
