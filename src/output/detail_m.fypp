@@ -16,6 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #:include 'gyre.inc'
+#:include 'model.inc'
 
 module detail_m
 
@@ -496,23 +497,14 @@ contains
 
       select case (item)
 
+         #:for N, I in zip(COEFF_NAMES, COEFF_IDX_NAMES)
+            case ('${N}$')
+               call wr%write('${N}$', [(ml%coeff(${I}$, gr%pt(j)), j=1,gr%n)])
+            case ('d${N}$')
+               call wr%write('d${N}$', [(ml%dcoeff(${I}$, gr%pt(j)), j=1,gr%n)])
+         #:endfor
+
          #:for N, E in ( &
-            ('V_2', 'ml%coeff(I_V_2, gr%pt(j))'), &
-            ('As', 'ml%coeff(I_AS, gr%pt(j))'), &
-            ('U', 'ml%coeff(I_U, gr%pt(j))'), &
-            ('c_1', 'ml%coeff(I_C_1, gr%pt(j))'), &
-            ('Gamma_1', 'ml%coeff(I_GAMMA_1, gr%pt(j))'), &
-            ('nabla', 'ml%coeff(I_NABLA, gr%pt(j))'), &
-            ('nabla_ad', 'ml%coeff(I_NABLA_AD, gr%pt(j))'), &
-            ('dnabla_ad', 'ml%dcoeff(I_NABLA_AD, gr%pt(j))'), &
-            ('upsilon_T', 'ml%coeff(I_UPS_T, gr%pt(j))'), &
-            ('c_lum', 'ml%coeff(I_C_LUM, gr%pt(j))'), &
-            ('c_rad', 'ml%coeff(I_C_RAD, gr%pt(j))'), &
-            ('c_thn', 'ml%coeff(I_C_THN, gr%pt(j))'), &
-            ('c_thk', 'ml%coeff(I_C_THK, gr%pt(j))'), &
-            ('c_eps', 'ml%coeff(I_C_EPS, gr%pt(j))'), &
-            ('kap_rho', 'ml%coeff(I_KAP_RHO, gr%pt(j))'), &
-            ('kap_T', 'ml%coeff(I_KAP_T, gr%pt(j))'), &
             ('Delta_p', 'ml%Delta_p(gr%x_i(), gr%x_o())'), &
             ('Delta_g', 'ml%Delta_g(gr%x_i(), gr%x_o(), l*(l+1._RD))'))
             case ('${N}$')

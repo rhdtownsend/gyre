@@ -16,6 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #:include 'gyre.inc'
+#:include 'model.inc'
 
 module model_m
 
@@ -31,28 +32,11 @@ module model_m
 
    ! Parameter definitions
 
-   integer, parameter :: I_V_2 = 1
-   integer, parameter :: I_As = 2
-   integer, parameter :: I_U = 3
-   integer, parameter :: I_C_1 = 4
-   integer, parameter :: I_GAMMA_1 = 5
-   integer, parameter :: I_UPS_T = 6
-   integer, parameter :: I_NABLA_AD = 7
-   integer, parameter :: I_NABLA = 8
-   integer, parameter :: I_BETA_RAD = 9
-   integer, parameter :: I_C_LUM = 10
-   integer, parameter :: I_C_RAD = 11
-   integer, parameter :: I_C_THN = 12
-   integer, parameter :: I_C_THK = 13
-   integer, parameter :: I_C_EPS = 14
-   integer, parameter :: I_C_EGV = 15
-   integer, parameter :: I_EPS_RHO = 16
-   integer, parameter :: I_EPS_T = 17
-   integer, parameter :: I_KAP_RHO = 18
-   integer, parameter :: I_KAP_T = 19
-   integer, parameter :: I_OMEGA_ROT = 20
-
-   integer, parameter :: I_LAST = I_OMEGA_ROT
+   #:for I, N in enumerate(COEFF_IDX_NAMES)
+       integer, parameter :: ${N}$ = ${I+1}$
+   #:endfor
+       
+   integer, parameter :: I_LAST = ${len(COEFF_IDX_NAMES)}$
 
    ! Derived-type definitions
 

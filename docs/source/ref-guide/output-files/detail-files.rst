@@ -444,7 +444,7 @@ Stellar Structure
 
 .. list-table::
    :header-rows: 1
-   :widths: 15 10 10 65
+   :widths: 20 10 10 60
 
    * - Item
      - Symbol
@@ -490,11 +490,11 @@ Stellar Structure
      - :math:`\Gammi`
      - real(:nml_v:`n`)
      - adiabatic exponent; defined in :ref:`osc-linear-eqns` section
-   * - :nml_v:`nabla`\ [#only-N]_
-     - :math:`\nabla`
+   * - :nml_v:`upsilon_T`\ [#only-N]_
+     - :math:`\upsT`
      - real(:nml_v:`n`)
-     - temperature gradient; defined in :ref:`osc-struct-coeffs` section
-       :ref:`osc-dimless-form` section
+     - thermodynamic coefficient; defined in :ref:`osc-linear-eqns`
+       section
    * - :nml_v:`nabla_ad`\ [#only-N]_
      - :math:`\nabad`
      - real(:nml_v:`n`)
@@ -503,12 +503,16 @@ Stellar Structure
    * - :nml_v:`dnabla_ad`\ [#only-N]_
      - :math:`\dnabad`
      - real(:nml_v:`n`)
-     - derivative of adiabatic temperature gradient
-   * - :nml_v:`upsilon_T`\ [#only-N]_
-     - :math:`\upsT`
+     - logarithmic derivative of adiabatic temperature gradient 
+   * - :nml_v:`beta_rad`\ [#only-D]_
+     - :math:`\beta`
      - real(:nml_v:`n`)
-     - thermodynamic coefficient; defined in :ref:`osc-linear-eqns`
-       section
+     - ratio of radiation pressure to gas pressure
+   * - :nml_v:`nabla`\ [#only-N]_
+     - :math:`\nabla`
+     - real(:nml_v:`n`)
+     - temperature gradient; defined in :ref:`osc-struct-coeffs` section
+       :ref:`osc-dimless-form` section
    * - :nml_v:`c_lum`\ [#only-N]_
      - :math:`\clum`
      - real(:nml_v:`n`)
@@ -534,15 +538,10 @@ Stellar Structure
      - real(:nml_v:`n`)
      - structure coefficient; defined in :ref:`osc-struct-coeffs`
        section
-   * - :nml_v:`kap_rho`\ [#only-N]_
-     - :math:`\kaprho`
+   * - :nml_v:`c_egv`\ [#only-N]_
+     - :math:`\cegv`
      - real(:nml_v:`n`)
-     - opacity partial; defined in :ref:`osc-linear-eqns`
-       section
-   * - :nml_v:`kap_T`\ [#only-N]_
-     - :math:`\kapT`
-     - real(:nml_v:`n`)
-     - opacity partial; defined in :ref:`osc-linear-eqns`
+     - structure coefficient; defined in :ref:`osc-struct-coeffs`
        section
    * - :nml_v:`eps_rho`\ [#only-N]_
      - :math:`\epsnucrho`
@@ -553,6 +552,16 @@ Stellar Structure
      - :math:`\epsnucT`
      - real(:nml_v:`n`)
      - nuclear energy generation partial; defined in :ref:`osc-linear-eqns`
+       section
+   * - :nml_v:`kap_rho`\ [#only-N]_
+     - :math:`\kaprho`
+     - real(:nml_v:`n`)
+     - opacity partial; defined in :ref:`osc-linear-eqns`
+       section
+   * - :nml_v:`kap_T`\ [#only-N]_
+     - :math:`\kapT`
+     - real(:nml_v:`n`)
+     - opacity partial; defined in :ref:`osc-linear-eqns`
        section
    * - :nml_v:`M_r`\ [#only-D]_
      - :math:`M_r`
