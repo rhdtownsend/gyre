@@ -9,8 +9,8 @@ Specification
 The structure of a composite polytrope is specified completely by
 
 * a set of :math:`\nreg` polytropic indices :math:`n_{i}`
-* a set of :math:`\nreg-1` boundary coordinates :math:`z_{i-1/2}`
-* a set of :math:`\nreg` density jumps :math:`\Delta_{i-1/2} \equiv \ln [\rho_{i}(z_{i-1/2})/\rho_{i-1}(z_{i-1/2}]`
+* a set of :math:`\nreg-1` boundary coordinates :math:`z_{i+1/2}`
+* a set of :math:`\nreg-1` density jumps :math:`\Delta_{i+1/2} \equiv \ln [\rho_{i+1}(z_{i+1/2})/\rho_{i}(z_{i+1/2})]`
 
 Although the normalizing densities :math:`\rho_{i,0}` have so far
 been left unspecified, it's convenient to choose them as the density
@@ -45,19 +45,19 @@ with initial conditions established from the preceding region via
 .. math::
 
    \left.
-   \begin{gathered}
-   \theta_{i} = 1, \\
-   \theta'_{i} = \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i-1}^{n_{i-1}+1}}{\theta_{i}^{n_{i}+1}} \frac{t_{i}}{t_{i-1}} \, \theta'_{i-1}, \\
-   B_{i} = \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i}^{n_{i}+1}}{\theta_{i-1}^{n_{i-1}+1}} \frac{t_{i}^{2}}{t_{i-1}^{2}} \, B_{i-1}, \\
-   \ln t_{i} = \ln t_{i-1} + n_{i-1} \ln \theta_{i-1} - n_{i} \ln \theta_{i} + \Delta_{i-1/2}.
-   \end{gathered}
+   \begin{aligned}
+   \theta_{i} &= 1, \\
+   \ln t_{i} &= \ln t_{i-1} + n_{i-1} \ln \theta_{i-1} - n_{i} \ln \theta_{i} + \Delta_{i-1/2}, \\
+   B_{i} &= \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i}^{n_{i}+1}}{\theta_{i-1}^{n_{i-1}+1}} \frac{t_{i}^{2}}{t_{i-1}^{2}} \, B_{i-1}, \\
+   \theta'_{i} &= \frac{B_{i}}{B_{i-1}} \frac{t_{i-1}}{t_{i}} \, \theta'_{i-1}.
+   \end{aligned}
    \right\} \quad \text{at}\ z=z_{i-1/2}
 
 The IVP in the final region (:math:`i=\nreg`) involves integrating
 from :math:`z_{\nreg-1/2}` until :math:`\theta_{\nreg} = 0`. This
 point defines the stellar surface, :math:`z=z_{\rm s}`. For some
-choices of :math:`n_{i}`, :math:`z_{i-1/2}` and/or
-:math:`\Delta_{i-1/2}`, the point :math:`\theta=0` can arise in an
+choices of :math:`n_{i}`, :math:`z_{i+1/2}` and/or
+:math:`\Delta_{i+1/2}`, the point :math:`\theta=0` can arise in an
 earlier region :math:`i = \nreg_{\rm t} < \nreg`; in such cases, the
 model specification must be truncated to :math:`\nreg_{\rm t}`
 regions.

@@ -72,18 +72,19 @@ generalization of the usual :wiki:`Lane-Emden equation
 Continuity Relations
 --------------------
 
-At the boundary between adjacent regions, the pressure and interior
-mass must be continuous. If :math:`z_{i-1/2}` denotes the coordinate
-of the boundary between the :math:`i-1` and :math:`i` regions, then
-these continuity relations are expressed as
+At the boundary between adjacent regions, the pressure :math:`P` and
+potentiual gradient :math:`\sderiv{\Phi}{r}` must be continuous. If
+:math:`z_{i+1/2}` denotes the coordinate of the boundary between the
+:math:`i` and :math:`i+1` regions, then these continuity relations are
+expressed as
 
 .. math::
 
    \left.
-   \begin{gathered}
-   B_{i} = \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i}^{n_{i}+1}}{\theta_{i-1}^{n_{i-1}+1}} \frac{\rho_{i,0}^{2}}{\rho_{i-1,0}^{2}} \, B_{i-1}, \\
-   \theta'_{i} = \frac{n_{i-1} + 1}{n_{i} + 1} \frac{\theta_{i-1}^{n_{i-1}+1}}{\theta_{i}^{n_{i}+1}} \frac{\rho_{i,0}}{\rho_{i-1,0}} \, \theta'_{i-1},
-   \end{gathered}
-   \right\} \quad \text{at} \ z = z_{i-1/2}
+   \begin{aligned}
+   B_{i+1} &= \frac{n_{i} + 1}{n_{i+1} + 1} \frac{\theta_{i+1}^{n_{i+1}+1}}{\theta_{i}^{n_{i}+1}} \frac{\rho_{i+1,0}^{2}}{\rho_{i,0}^{2}} \, B_{i}, \\
+   \theta'_{i+1} &= \frac{B_{i+1}}{B_{i}} \frac{\rho_{i,0}}{\rho_{i+1,0}} \, \theta'_{i},
+   \end{aligned}
+   \right\} \quad \text{at} \ z = z_{i+1/2}
 
 respectively.
