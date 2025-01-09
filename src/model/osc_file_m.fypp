@@ -94,6 +94,7 @@ contains
       real(RD), allocatable       :: c_thn(:)
       real(RD), allocatable       :: c_thk(:)
       real(RD), allocatable       :: c_eps(:)
+      real(RD), allocatable       :: c_egv(:)
       real(RD), allocatable       :: eps_rho(:)
       real(RD), allocatable       :: eps_T(:)
       type(evol_model_t), pointer :: em
@@ -216,6 +217,9 @@ contains
       c_thk = 4._RD*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
       c_eps = 4._RD*PI*rho*eps*R_star**3/L_star
 
+      allocate(c_egv(n))
+      c_egv = 0._RD
+
       allocate(eps_rho(n))
       allocate(eps_T(n))
 
@@ -249,6 +253,7 @@ contains
       call em%define(I_C_THN, c_thn)
       call em%define(I_C_THK, c_thk)
       call em%define(I_C_EPS, c_eps)
+      call em%define(I_C_EGV, c_egv)
 
       call em%define(I_EPS_RHO, eps_rho)
       call em%define(I_EPS_T, eps_T)
