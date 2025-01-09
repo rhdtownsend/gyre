@@ -187,6 +187,8 @@ contains
          i = I_C_THK
       case ('c_eps')
          i = I_C_EPS
+      case ('c_egv')
+         i = I_C_EGV
       case ('eps_rho')
          i = I_EPS_RHO
       case ('eps_T')
@@ -198,7 +200,7 @@ contains
       case ('Omega_rot')
          i = I_OMEGA_ROT
       case default
-         i = 0
+         @:ABORT('invalid coefficient name')
       end select
 
       ! Finish
@@ -265,6 +267,8 @@ contains
          name = 'c_thk'
       case (I_C_EPS)
          name = 'c_eps'
+      case (I_C_EGV)
+         name = 'c_egv'
       case (I_EPS_RHO)
          name = 'eps_rho'
       case (I_EPS_T)
@@ -276,7 +280,7 @@ contains
       case (I_OMEGA_ROT)
          name = 'Omega_rot'
       case default
-         name = ''
+         @:ABORT('invalid coefficient index')
       end select
 
       ! Finish
