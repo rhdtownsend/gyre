@@ -575,13 +575,17 @@ contains
 
       select case (i)
       case (I_V_2)
-         @:ABORT('not implemented yet: I_V_2')
+!         @:ABORT('not implemented yet: I_V_2')
+         dcoeff = 0._RD
       case (I_AS)
-         @:ABORT('not implemented yet: I_AS')
+!         @:ABORT('not implemented yet: I_AS')
+         dcoeff = 0._RD
       case (I_U)
-         @:ABORT('not implemented yet: I_U')
+!         @:ABORT('not implemented yet: I_U')
+         dcoeff = 0._RD
       case (I_C_1)
-         @:ABORT('not implemented yet: I_C_1')
+!         @:ABORT('not implemented yet: I_C_1')
+         dcoeff = 0._RD
       case (I_GAMMA_1)
          dcoeff = 0._RD
       case (I_UPS_T)

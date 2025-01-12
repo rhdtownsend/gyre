@@ -23,7 +23,9 @@ module wave_m
    
    use forum_m, only: RD
 
-   use anapoly_model_m
+   use anapoly_0_model_m
+   use anapoly_1_model_m
+   use anapoly_5_model_m
    use constants_m
    use context_m
    use ext_m
@@ -1325,9 +1327,13 @@ contains
             ! (also, y_1 == y_2)
 
             select type(ml)
-            class is(anapoly_model_t)
-               U_D = ml%coeff_U_D(pt)
             class is(hom_model_t)
+               U_D = ml%coeff_U_D(pt)
+            class is(anapoly_0_model_t)
+               U_D = ml%coeff_U_D(pt)
+            class is(anapoly_1_model_t)
+               U_D = ml%coeff_U_D(pt)
+            class is(anapoly_5_model_t)
                U_D = ml%coeff_U_D(pt)
             class is(poly_model_t)
                U_D = ml%coeff_U_D(pt)
