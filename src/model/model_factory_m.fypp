@@ -26,7 +26,7 @@ module model_factory_m
    use anapoly_0_model_m
    use anapoly_1_model_m
    use anapoly_5_model_m
-   use anapoly51_model_m
+   use anapoly_5_1_model_m
    use hom_model_m
    use model_m
    use model_par_m
@@ -128,9 +128,9 @@ contains
 
          allocate(ml, SOURCE=anapoly_5_model_t(ml_p))
 
-      case ('ANAPOLY51')
+      case ('ANAPOLY_5_1')
 
-         allocate(ml, SOURCE=anapoly51_model_t(ml_p))
+         allocate(ml, SOURCE=anapoly_5_1_model_t(ml_p))
 
       case default
 

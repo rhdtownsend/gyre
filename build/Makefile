@@ -66,7 +66,7 @@ test_gyre_mesa_LIBS = libgyre_mesa libgyre
 libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    ad_eqns_m.fypp ad_match_m.fypp ad_trans_m.fypp amdl_file_m.fypp	\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp			\
-   anapoly_5_model_m.fypp anapoly51_model_m.fypp atmos_m.fypp		\
+   anapoly_5_model_m.fypp anapoly_5_1_model_m.fypp atmos_m.fypp		\
    b3_file_m.fypp band_sysmtx_m.fypp blas_lapack_m.fypp			\
    block_sysmtx_m.fypp bound_m.fypp bracket_search_m.fypp bvp_m.fypp	\
    cheb_fit_m.fypp colloc_diff_m.fypp constants_m.fypp context_m.fypp	\

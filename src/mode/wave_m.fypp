@@ -26,6 +26,7 @@ module wave_m
    use anapoly_0_model_m
    use anapoly_1_model_m
    use anapoly_5_model_m
+   use anapoly_5_1_model_m
    use constants_m
    use context_m
    use ext_m
@@ -1334,6 +1335,8 @@ contains
             class is(anapoly_1_model_t)
                U_D = ml%coeff_U_D(pt)
             class is(anapoly_5_model_t)
+               U_D = ml%coeff_U_D(pt)
+            class is(anapoly_5_1_model_t)
                U_D = ml%coeff_U_D(pt)
             class is(poly_model_t)
                U_D = ml%coeff_U_D(pt)

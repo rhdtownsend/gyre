@@ -14,6 +14,7 @@ follows:
   - :nml_v:`'ANAPOLY_0'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=0` 
   - :nml_v:`'ANAPOLY_1'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=1` 
   - :nml_v:`'ANAPOLY_5'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=5` 
+  - :nml_v:`'ANAPOLY_5_1'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=5,1` 
   - :nml_v:`'EVOL'` : :ref:`Evolutionary model <evol-models>` read from external file
 
 :nml_n:`file`
@@ -48,6 +49,9 @@ follows:
 
 :nml_n:`theta_s` (default :nml_n:`0`)
   Surface value of polytropic dependent variable (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY_*'`)
+
+:nml_n:`z_match` (default :nml_n:`3.0`)
+  Polytropic independent variable at match point between inner and outer regions (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY_5_1'`)
 
 :nml_n:`grid_type` (default :nml_v:`'UNI'`)
   Model grid type (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`); one of
