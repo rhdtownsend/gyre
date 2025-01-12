@@ -1,7 +1,7 @@
-! Module  : anapoly_model_m
-! Purpose : stellar analytic polytrope model
+! Module  : anapoly_1_model_m
+! Purpose : stellar analytic n_poly=1 polytrope model
 !
-! Copyright 2024 Rich Townsend & The GYRE Team
+! Copyright 2024-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -17,7 +17,7 @@
 
 #:include 'gyre.inc'
 
-module anapoly_model_m
+module anapoly_1_model_m
 
    ! Uses
 
@@ -43,10 +43,9 @@ module anapoly_model_m
 
    ! Derived-type definitions
 
-   type, extends(model_t) :: anapoly_model_t
+   type, extends(model_t) :: anapoly_1_model_t
       private
       type(grid_t) :: gr
-      integer      :: n_poly
       real(RD)     :: theta_s
       real(RD)     :: z_s
       real(RD)     :: mu_s
@@ -74,17 +73,17 @@ module anapoly_model_m
       procedure, public :: Delta_p
       procedure, public :: Delta_g
       procedure, public :: grid
-   end type anapoly_model_t
+   end type anapoly_1_model_t
 
    ! Interfaces
 
-   interface anapoly_model_t
-      module procedure anapoly_model_t_
-   end interface anapoly_model_t
+   interface anapoly_1_model_t
+      module procedure anapoly_1_model_t_
+   end interface anapoly_1_model_t
 
    ! Access specifiers
 
-   public :: anapoly_model_t
+   public :: anapoly_1_model_t
 
    ! Default access
 
@@ -92,20 +91,20 @@ module anapoly_model_m
 
 contains
 
-   function anapoly_model_t_(ml_p) result(ml)
+   function anapoly_1_model_t_(ml_p) result(ml)
 
       use grid_weights_m
 
       type(model_par_t), intent(in) :: ml_p
-      type(anapoly_model_t)         :: ml
+      type(anapoly_1_model_t)       :: ml
 
       real(RD), allocatable :: w(:)
       integer               :: status
 
-      ! Construct the anapoly_model_t
+      ! Construct the anapoly_1_model_t
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 100) 'Constructing analytic polytrope model'
+         write(OUTPUT_UNIT, 100) 'Constructing analytic n_poly=1 polytrope model'
 100      format(A)
       endif
 
@@ -122,25 +121,13 @@ contains
 
       ml%gr = grid_t(w, ml_p%x_i, ml_p%x_o)
 
-      ml%n_poly = ml_p%n_poly
+      @:ASSERT(ml_p%theta_s >= 0._RD .AND. ml_p%theta_s < 1._RD, 'invalid theta_s')
 
-      select case (ml%n_poly)
-      case (0)
-         @:ASSERT(ml_p%theta_s >= 0._RD .AND. ml_p%theta_s < 1._RD, 'invalid theta_s')
-         ml%z_s = sqrt(6._RD*(1._RD - ml_p%theta_s))
-      case (1)
-         @:ASSERT(ml_p%theta_s >= 0._RD .AND. ml_p%theta_s < 1._RD, 'invalid theta_s')
-         if (ml_p%theta_s == 0._RD) then
-            ml%z_s = PI
-         else
-            call solve_root(eval_func_, 0._RD, PI, 0._RD, num_par_t(), ml%z_s, status)
-         end if
-      case (5)
-         @:ASSERT(ml_p%theta_s > 0._RD .AND. ml_p%theta_s < 1._RD, 'invalid theta_s')
-         ml%z_s = sqrt(3._RD*(1._RD - ml_p%theta_s**2))/ml_p%theta_s
-      case default
-         @:ABORT('invalid n_poly')
-      end select
+      if (ml_p%theta_s == 0._RD) then
+         ml%z_s = PI
+      else
+         call solve_root(eval_func_, 0._RD, PI, 0._RD, num_par_t(), ml%z_s, status)
+      end if
 
       ml%theta_s = ml_p%theta_s
 
@@ -180,15 +167,15 @@ contains
 
       end subroutine eval_func_
 
-   end function anapoly_model_t_
+   end function anapoly_1_model_t_
 
    !****
 
    function theta_(this, z) result(theta)
 
-      class(anapoly_model_t), intent(in) :: this
-      real(RD), intent(in)               :: z
-      real(RD)                           :: theta
+      class(anapoly_1_model_t), intent(in) :: this
+      real(RD), intent(in)                 :: z
+      real(RD)                             :: theta
 
       ! Evaluate the polytropic dependent variable
 
@@ -198,20 +185,11 @@ contains
 
       else
 
-         select case (this%n_poly)
-         case (0)
-            theta = 1._RD - z**2/6._RD
-         case (1)
-            if (z /= 0._RD) then
-               theta = sin(z)/z
-            else
-               theta = 1._RD
-            end if
-         case (5)
-            theta = 1._RD/sqrt(1._RD + z**2/3._RD)
-         case default
-            @:ABORT('invalid polytropic index')
-         end select
+         if (z /= 0._RD) then
+            theta = sin(z)/z
+         else
+            theta = 1._RD
+         end if
 
       end if
 
@@ -225,26 +203,17 @@ contains
 
    function dtheta_(this, z) result(dtheta)
 
-      class(anapoly_model_t), intent(in) :: this
-      real(RD), intent(in)               :: z
-      real(RD)                           :: dtheta
+      class(anapoly_1_model_t), intent(in) :: this
+      real(RD), intent(in)                 :: z
+      real(RD)                             :: dtheta
 
       ! Evaluate the derivative of the polytropic dependent variable
 
-      select case (this%n_poly)
-      case (0)
-         dtheta = -z/3._RD
-      case (1)
-         if (z /= 0._RD) then
-            dtheta = cos(z)/z - sin(z)/z**2
-         else
-            dtheta = 0._RD
-         end if
-      case (5)
-         dtheta = -z/(3._RD*sqrt(1._RD + z**2/3._RD)**3)
-      case default
-         @:ABORT('invalid polytropic index')
-      end select
+      if (z /= 0._RD) then
+         dtheta = cos(z)/z - sin(z)/z**2
+      else
+         dtheta = 0._RD
+      end if
 
       ! Finish
 
@@ -256,10 +225,10 @@ contains
 
    function coeff(this, i, pt)
 
-      class(anapoly_model_t), intent(in) :: this
-      integer, intent(in)                :: i
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: coeff
+      class(anapoly_1_model_t), intent(in) :: this
+      integer, intent(in)                  :: i
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: coeff
 
       @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'invalid index')
       @:ASSERT_DEBUG(this%is_defined(i), 'undefined coefficient')
@@ -297,9 +266,9 @@ contains
 
    function coeff_V_2_(this, pt) result(coeff)
 
-      class(anapoly_model_t), intent(in) :: this
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: coeff
+      class(anapoly_1_model_t), intent(in) :: this
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: coeff
 
       real(RD) :: z
       real(RD) :: theta
@@ -315,14 +284,14 @@ contains
          dtheta = this%dtheta_(z)
 
          if (theta /= 0._RD) then
-            coeff = -(this%n_poly + 1._RD)*this%z_s**2*dtheta/(theta*z)
+            coeff = -2._RD*this%z_s**2*dtheta/(theta*z)
          else
             coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
          endif
 
       else
 
-         coeff = (this%n_poly + 1._RD)*this%z_s**2/3._RD
+         coeff = 2._RD*this%z_s**2/3._RD
 
       endif
 
@@ -336,9 +305,9 @@ contains
 
    function coeff_As_(this, pt) result(coeff)
 
-      class(anapoly_model_t), intent(in) :: this
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: coeff
+      class(anapoly_1_model_t), intent(in) :: this
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: coeff
 
       real(RD) :: z
       real(RD) :: theta
@@ -352,8 +321,8 @@ contains
       dtheta = this%dtheta_(z)
 
       if (theta /= 0._RD) then
-         coeff = -(this%n_poly + 1._RD)*z*dtheta/theta * &
-            (this%n_poly/(this%n_poly + 1._RD) - 1._RD/this%Gamma_1)
+         coeff = -2._RD*z*dtheta/theta * &
+            (1._RD/2._RD - 1._RD/this%Gamma_1)
       else
          coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
       endif
@@ -368,9 +337,9 @@ contains
 
    function coeff_U_(this, pt) result(coeff)
 
-      class(anapoly_model_t), intent(in) :: this
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: coeff
+      class(anapoly_1_model_t), intent(in) :: this
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: coeff
 
       real(RD) :: z
       real(RD) :: theta
@@ -385,11 +354,7 @@ contains
          theta = this%theta_(z)
          dtheta = this%dtheta_(z)
 
-         if (this%n_poly /= 0) then
-            coeff = -z*theta**this%n_poly/dtheta
-         else
-            coeff = -z/dtheta
-         endif
+         coeff = -z*theta/dtheta
 
       else
 
@@ -407,9 +372,9 @@ contains
 
    function coeff_c_1_(this, pt) result(coeff)
 
-      class(anapoly_model_t), intent(in) :: this
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: coeff
+      class(anapoly_1_model_t), intent(in) :: this
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: coeff
 
       real(RD) :: z
       real(RD) :: dtheta
@@ -440,28 +405,17 @@ contains
 
    function coeff_U_D(this, pt) result(coeff)
 
-      class(anapoly_model_t), intent(in) :: this
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: coeff
+      class(anapoly_1_model_t), intent(in) :: this
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: coeff
 
       real(RD) :: z
-      real(RD) :: theta
 
       ! Evaluate the U_D = U*dlnrho/dlnr coefficient
 
       z = pt%x*this%z_s
 
-      select case (this%n_poly)
-      case(0)
-         coeff = 0._RD
-      case(1)
-         coeff = -z**2
-      case(5)
-         theta = this%theta_(z)
-         coeff = -5._RD*z**2*theta**4
-      case default
-         @:ABORT('invalid polytropic index')
-      end select
+      coeff = -z**2
 
       ! Finish
 
@@ -473,10 +427,10 @@ contains
 
    function dcoeff(this, i, pt)
 
-      class(anapoly_model_t), intent(in) :: this
-      integer, intent(in)                :: i
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: dcoeff
+      class(anapoly_1_model_t), intent(in) :: this
+      integer, intent(in)                  :: i
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: dcoeff
 
       @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'invalid index')
       @:ASSERT_DEBUG(this%is_defined(i), 'undefined coefficient')
@@ -514,9 +468,9 @@ contains
 
    function dcoeff_V_2_(this, pt) result(dcoeff)
 
-      class(anapoly_model_t), intent(in) :: this
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: dcoeff
+      class(anapoly_1_model_t), intent(in) :: this
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: dcoeff
 
       real(RD) :: z
       real(RD) :: theta
@@ -531,19 +485,11 @@ contains
          theta = this%theta_(z)
          dtheta = this%dtheta_(z)
 
-         if (this%n_poly /= 0) then
-            if (theta /= 0._RD) then
-               dcoeff = -3._RD - z*dtheta/theta - z*theta**this%n_poly/dtheta
-            else
-               dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
-            end if
+         if (theta /= 0._RD) then
+            dcoeff = -3._RD - z*dtheta/theta - z*theta/dtheta
          else
-            if (theta /= 0._RD) then
-               dcoeff = -3._RD - z*dtheta/theta - z/dtheta
-            else
-               dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
-            end if
-         endif
+            dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
+         end if
 
       else
 
@@ -561,14 +507,34 @@ contains
 
    function dcoeff_As_(this, pt) result(dcoeff)
 
-      class(anapoly_model_t), intent(in) :: this
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: dcoeff
+      class(anapoly_1_model_t), intent(in) :: this
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: dcoeff
+
+      real(RD) :: z
+      real(RD) :: theta
+      real(RD) :: dtheta
 
       ! Evaluate the logarithmic derivative of the As coefficient
 
-      dcoeff = this%dcoeff_V_2_(pt)*pt%x**2 * &
-         (this%n_poly/(this%n_poly + 1._RD) - 1._RD/this%Gamma_1)
+      if (pt%x /= 0._RD) then
+
+         z = pt%x*this%z_s
+
+         theta = this%theta_(z)
+         dtheta = this%dtheta_(z)
+
+         if (theta /= 0._RD) then
+            dcoeff = -1._RD - z*dtheta/theta - z*theta/dtheta
+         else
+            dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
+         end if
+
+      else
+
+         dcoeff = 2._RD
+
+      endif
 
       ! Finish
 
@@ -580,9 +546,9 @@ contains
 
    function dcoeff_U_(this, pt) result(dcoeff)
 
-      class(anapoly_model_t), intent(in) :: this
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: dcoeff
+      class(anapoly_1_model_t), intent(in) :: this
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: dcoeff
 
       real(RD) :: z
       real(RD) :: theta
@@ -598,7 +564,7 @@ contains
          dtheta = this%dtheta_(z)
 
          if (theta /= 0._RD) then
-            dcoeff = 3._RD + this%n_poly*z*dtheta/theta - this%coeff_U_(pt)
+            dcoeff = 3._RD + z*dtheta/theta - this%coeff_U_(pt)
          else
             dcoeff = IEEE_VALUE(dcoeff, IEEE_NEGATIVE_INF)
          end if
@@ -619,9 +585,9 @@ contains
 
    function dcoeff_c_1_(this, pt) result(dcoeff)
 
-      class(anapoly_model_t), intent(in) :: this
-      type(point_t), intent(in)          :: pt
-      real(RD)                           :: dcoeff
+      class(anapoly_1_model_t), intent(in) :: this
+      type(point_t), intent(in)            :: pt
+      real(RD)                             :: dcoeff
 
       ! Evaluate the logarithmic derivative of the c_1 coefficient
 
@@ -637,7 +603,7 @@ contains
 
    function is_defined(this, i)
 
-      class(anapoly_model_t), intent(in) :: this
+      class(anapoly_1_model_t), intent(in) :: this
       integer, intent(in)                :: i
       logical                            :: is_defined
 
@@ -662,7 +628,7 @@ contains
 
    function is_vacuum(this, pt)
 
-      class(anapoly_model_t), intent(in) :: this
+      class(anapoly_1_model_t), intent(in) :: this
       type(point_t), intent(in)          :: pt
       logical                            :: is_vacuum
 
@@ -686,10 +652,10 @@ contains
 
    function Delta_p (this, x_i, x_o)
 
-      class(anapoly_model_t), intent(in) :: this
-      real(RD), intent(in)               :: x_i
-      real(RD), intent(in)               :: x_o
-      real(RD)                           :: Delta_p
+      class(anapoly_1_model_t), intent(in) :: this
+      real(RD), intent(in)                 :: x_i
+      real(RD), intent(in)                 :: x_o
+      real(RD)                             :: Delta_p
 
       @:ABORT('not yet implemented')
 
@@ -699,11 +665,11 @@ contains
 
    function Delta_g (this, x_i, x_o, lambda)
 
-      class(anapoly_model_t), intent(in) :: this
-      real(RD), intent(in)               :: x_i
-      real(RD), intent(in)               :: x_o
-      real(RD), intent(in)               :: lambda
-      real(RD)                           :: Delta_g
+      class(anapoly_1_model_t), intent(in) :: this
+      real(RD), intent(in)                 :: x_i
+      real(RD), intent(in)                 :: x_o
+      real(RD), intent(in)                 :: lambda
+      real(RD)                             :: Delta_g
 
       @:ABORT('not yet implemented')
 
@@ -713,8 +679,8 @@ contains
 
    function grid(this) result(gr)
 
-      class(anapoly_model_t), intent(in) :: this
-      type(grid_t)                       :: gr
+      class(anapoly_1_model_t), intent(in) :: this
+      type(grid_t)                         :: gr
 
       ! Return the grid
 
@@ -726,4 +692,4 @@ contains
 
    end function grid
 
-end module anapoly_model_m
+end module anapoly_1_model_m

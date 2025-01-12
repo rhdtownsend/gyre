@@ -34,7 +34,6 @@ module model_par_m
    ! Derived-type definitions
 
    type :: model_par_t
-      integer                 :: n_poly = 0
       real(RD)                :: theta_s = 0._RD
       real(RD)                :: Gamma_1 = 5._RD/3._RD
       real(RD)                :: dx_snap = 0._RD
@@ -43,6 +42,7 @@ module model_par_m
       real(RD)                :: s = 1._RD
       real(RD)                :: beta_m = 1._RD
       real(RD)                :: beta_p = 1._RD
+      real(RD)                :: z_match = 3.0_RD
       character(256)          :: model_type = 'HOM'
       character(256)          :: grid_type = 'UNI'
       character(256)          :: file_format = ''
@@ -55,6 +55,7 @@ module model_par_m
       logical                 :: repair_As = .FALSE.
       logical                 :: constrain_derivs = .TRUE.
       logical                 :: force_linear = .FALSE.
+      logical                 :: resolve_match = .TRUE.
    end type model_par_t
 
    ! Access specifiers
@@ -74,7 +75,6 @@ contains
       type(model_par_t), intent(out) :: ml_p
 
       integer                          :: n_ml_p
-      integer                          :: n_poly
       real(RD)                         :: theta_s
       real(RD)                         :: Gamma_1
       real(RD)                         :: dx_snap
@@ -83,6 +83,7 @@ contains
       real(RD)                         :: s
       real(RD)                         :: beta_m
       real(RD)                         :: beta_p
+      real(RD)                         :: z_match
       character(LEN(ml_p%model_type))  :: model_type
       character(LEN(ml_p%grid_type))   :: grid_type
       character(LEN(ml_p%file_format)) :: file_format
@@ -95,11 +96,12 @@ contains
       logical                          :: repair_As
       logical                          :: constrain_derivs
       logical                          :: force_linear
+      logical                          :: resolve_match
 
-      namelist /model/ n_poly, theta_s, Gamma_1, dx_snap, x_i, x_o, s&
-         &, beta_m, beta_p, model_type, grid_type, file_format,&
+      namelist /model/ theta_s, Gamma_1, dx_snap, x_i, x_o, s&
+         &, beta_m, beta_p, z_match, model_type, grid_type, file_format,&
          & data_format, interp_type, deriv_type, file, n, add_center, &
-         & repair_As, constrain_derivs, force_linear
+         & repair_As, constrain_derivs, force_linear, resolve_match
 
       ! Count the number of model namelists
 
@@ -124,7 +126,6 @@ contains
 
       ml_p = model_par_t()
 
-      n_poly = ml_p%n_poly
       theta_s = ml_p%theta_s
       Gamma_1 = ml_p%Gamma_1
       dx_snap = ml_p%dx_snap
@@ -133,6 +134,7 @@ contains
       s = ml_p%s
       beta_m = ml_p%beta_m
       beta_p = ml_p%beta_p
+      z_match = ml_p%z_match
       model_type = ml_p%model_type
       grid_type = ml_p%grid_type
       file_format = ml_p%file_format
@@ -145,6 +147,7 @@ contains
       repair_As = ml_p%repair_As
       constrain_derivs = ml_p%constrain_derivs
       force_linear = ml_p%force_linear
+      resolve_match = ml_p%resolve_match
 
       ! Read the namelist
 
@@ -152,7 +155,6 @@ contains
 
       ! Store read values
 
-      ml_p%n_poly = n_poly
       ml_p%theta_s = theta_s
       ml_p%Gamma_1 = Gamma_1
       ml_p%dx_snap = dx_snap
@@ -161,6 +163,7 @@ contains
       ml_p%s = s
       ml_p%beta_m = beta_m
       ml_p%beta_p = beta_p
+      ml_p%z_match = z_match
       ml_p%model_type = model_type
       ml_p%grid_type = grid_type
       ml_p%file_format = file_format
@@ -173,6 +176,7 @@ contains
       ml_p%repair_As = repair_As
       ml_p%constrain_derivs = constrain_derivs
       ml_p%force_linear = force_linear
+      ml_p%resolve_match = resolve_match
 
       ! Finish
 

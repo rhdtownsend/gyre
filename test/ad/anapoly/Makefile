@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=0 1 5
+SUBDIRS=0 1 5 5-1
 
 # Rules
 

@@ -11,7 +11,10 @@ follows:
 
   - :nml_v:`'HOM'` : :ref:`Homogeneous compressible model <hom-models>`
   - :nml_v:`'POLY'` : :ref:`Polytropic model <poly-models>` read from external file
-  - :nml_v:`'ANAPOLY'` : :ref:`Analytic polytropic model <anapoly-models>`
+  - :nml_v:`'ANAPOLY_0'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=0` 
+  - :nml_v:`'ANAPOLY_1'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=1` 
+  - :nml_v:`'ANAPOLY_5'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=5` 
+  - :nml_v:`'ANAPOLY_5_1'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=5,1` 
   - :nml_v:`'EVOL'` : :ref:`Evolutionary model <evol-models>` read from external file
 
 :nml_n:`file`
@@ -42,34 +45,34 @@ follows:
   - :nml_v:`'MONO'` : Monotonized derivatives (default)
 
 :nml_n:`Gamma_1` (default :nml_v:`5/3`)
-  First adiabatic exponent (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'`)
-
-:nml_n:`n_poly` (default :nml_n:`0`)
-  Polytropic index (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY'`)
+  First adiabatic exponent (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`)
 
 :nml_n:`theta_s` (default :nml_n:`0`)
-  Surface value of polytropic dependent variable (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY'`)
+  Surface value of polytropic dependent variable (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY_*'`)
+
+:nml_n:`z_match` (default :nml_n:`3.0`)
+  Polytropic independent variable at match point between inner and outer regions (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY_5_1'`)
 
 :nml_n:`grid_type` (default :nml_v:`'UNI'`)
-  Model grid type (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'`); one of
+  Model grid type (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`); one of
 
   - :nml_v:`'UNI'` : Uniform spacing
   - :nml_v:`'GEO'` : Geometric spacing
   - :nml_v:`'LOG'` : Logarithmic spacing
 
 :nml_n:`n` (default :nml_v:`10`)
-  Number of points in model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'`)
+  Number of points in model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`)
        
 :nml_n:`s` (default :nml_v:`1`)
   Skewness parameter for model grid (when :nml_n:`model_type`\ =\
-  :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'` and :nml_n:`grid_type`\ =\ :nml_v:`'GEO'`\ \|\
+  :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'` and :nml_n:`grid_type`\ =\ :nml_v:`'GEO'`\ \|\
   :nml_v:`'LOG'`)
 
 :nml_n:`x_i` (default :nml_v:`0`)
-  Inner boundary coordinate of model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'`)
+  Inner boundary coordinate of model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`)
     
 :nml_n:`x_o` (default :nml_v:`1`)
-  Outer boundary coordinate of model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY'`)
+  Outer boundary coordinate of model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`)
 
 :nml_n:`dx_snap` (default :nml_v:`0`)
   Threshold for snapping model points together, when
