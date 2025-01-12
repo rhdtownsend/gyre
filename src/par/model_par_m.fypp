@@ -34,7 +34,6 @@ module model_par_m
    ! Derived-type definitions
 
    type :: model_par_t
-      integer                 :: n_poly = 0
       real(RD)                :: theta_s = 0._RD
       real(RD)                :: Gamma_1 = 5._RD/3._RD
       real(RD)                :: dx_snap = 0._RD
@@ -76,7 +75,6 @@ contains
       type(model_par_t), intent(out) :: ml_p
 
       integer                          :: n_ml_p
-      integer                          :: n_poly
       real(RD)                         :: theta_s
       real(RD)                         :: Gamma_1
       real(RD)                         :: dx_snap
@@ -100,7 +98,7 @@ contains
       logical                          :: force_linear
       logical                          :: resolve_trans
 
-      namelist /model/ n_poly, theta_s, Gamma_1, dx_snap, x_i, x_o, s&
+      namelist /model/ theta_s, Gamma_1, dx_snap, x_i, x_o, s&
          &, beta_m, beta_p, z_trans, model_type, grid_type, file_format,&
          & data_format, interp_type, deriv_type, file, n, add_center, &
          & repair_As, constrain_derivs, force_linear, resolve_trans
@@ -128,7 +126,6 @@ contains
 
       ml_p = model_par_t()
 
-      n_poly = ml_p%n_poly
       theta_s = ml_p%theta_s
       Gamma_1 = ml_p%Gamma_1
       dx_snap = ml_p%dx_snap
@@ -158,7 +155,6 @@ contains
 
       ! Store read values
 
-      ml_p%n_poly = n_poly
       ml_p%theta_s = theta_s
       ml_p%Gamma_1 = Gamma_1
       ml_p%dx_snap = dx_snap

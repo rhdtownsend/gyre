@@ -2,8 +2,7 @@
 /
 
 &model
-  model_type = 'ANAPOLY'
-  n_poly = 5
+  model_type = 'ANAPOLY_5'
   n = 1000
   theta_s = 0.2
 /

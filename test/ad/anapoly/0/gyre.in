@@ -2,8 +2,7 @@
 /
 
 &model
-  model_type = 'ANAPOLY'
-  n_poly = 0
+  model_type = 'ANAPOLY_0'
   n = 1000
 /
 
