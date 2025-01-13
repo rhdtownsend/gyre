@@ -48,14 +48,13 @@ module anapoly_5_1_model_m
    type, extends(model_t) :: anapoly_5_1_model_t
       private
       type(grid_t) :: gr
-      real(RD)     :: t(2)
-      real(RD)     :: B(2)
       real(RD)     :: C(2)
+      real(RD)     :: B_e
       real(RD)     :: z_m
       real(RD)     :: z_s
-      real(RD)     :: mu_m
+      real(RD)     :: v_c
+      real(RD)     :: v_e
       real(RD)     :: mu_s
-      real(RD)     :: dtheta_m
       real(RD)     :: theta_s
       real(RD)     :: Gamma_1
       real(RD)     :: Omega_rot
@@ -135,7 +134,7 @@ contains
 
       @:ASSERT(ml_p%theta_s >= 0._RD .AND. ml_p%theta_s < 1._RD, 'invalid theta_s')
 
-      call solve_struct_(ml_p%theta_s, ml_p%z_match, ml%t, ml%B, ml%C, ml%z_s, ml%mu_m, ml%mu_s, ml%dtheta_m)
+      call solve_struct_(ml_p%theta_s, ml_p%z_match, ml%C, ml%B_e, ml%z_s, ml%v_c, ml%v_e, ml%mu_s)
 
       ! Store other data
 
@@ -178,53 +177,45 @@ contains
 
    !****
 
-   subroutine solve_struct_(theta_s, z_m, t, B, C, z_s, mu_m, mu_s, dtheta_m)
+   subroutine solve_struct_(theta_s, z_m, C, B_e, z_s, v_c, v_e, mu_s)
 
       real(RD), intent(in)  :: theta_s
       real(RD), intent(in)  :: z_m
-      real(RD), intent(out) :: t(:)
-      real(RD), intent(out) :: B(:)
       real(RD), intent(out) :: C(:)
+      real(RD), intent(out) :: B_e
       real(RD), intent(out) :: z_s
-      real(RD), intent(out) :: mu_m
+      real(RD), intent(out) :: v_c
+      real(RD), intent(out) :: v_e
       real(RD), intent(out) :: mu_s
-      real(RD), intent(out) :: dtheta_m
 
-      real(RD) :: theta_i
-      real(RD) :: theta_o
-      real(RD) :: dtheta_i
-      real(RD) :: dtheta_o
+      real(RD) :: theta_c
+      real(RD) :: theta_e
+      real(RD) :: dtheta_c
+      real(RD) :: dtheta_e
       real(RD) :: alpha
       real(RD) :: A(2,2)
       real(RD) :: z_s_0
       real(RD) :: dtheta_s
       integer  :: status
 
-      @:CHECK_BOUNDS(SIZE(t), 2)
-      @:CHECK_BOUNDS(SIZE(B), 2)
       @:CHECK_BOUNDS(SIZE(C), 2)
 
       ! Given z_m and theta_s, solve for the mixed polytrope structure
 
       ! First, evauate quantities on either side of the matching point
 
-      theta_i = 1._RD/sqrt(1._RD + z_m**2/3._RD)
-      dtheta_i = -z_m/(3._RD*sqrt(1._RD + z_m**2/3._RD)**3)
+      theta_c = 1._RD/sqrt(1._RD + z_m**2/3._RD)
+      dtheta_c = -z_m/(3._RD*sqrt(1._RD + z_m**2/3._RD)**3)
 
-      theta_o = 1._RD
+      B_e = 3._RD*theta_c**4
 
-      t(1) = 1._RD
-      t(2)= (theta_i**5/theta_o**1)*t(1)
-
-      B(1) = 1._RD
-      B(2) = (6._RD/2._RD)*(theta_o**2/theta_i**6)*(t(2)/t(1))**2*B(1)
-
-      dtheta_o = (B(2)/B(1))*(t(1)/t(2))*dtheta_i
+      theta_e = theta_c**5
+      dtheta_e = 3._RD*theta_c**4*dtheta_c
 
       ! Solve for coefficients in the outer (n_poly=1) region by
       ! matching theta_o and dtheta_o
 
-      alpha = sqrt(B(2))
+      alpha = sqrt(B_e)
 
       A(1,1) = sin(alpha*z_m)/(alpha*z_m)
       A(1,2) = cos(alpha*z_m)/(alpha*z_m)
@@ -232,8 +223,8 @@ contains
       A(2,1) = cos(alpha*z_m)/z_m - sin(alpha*z_m)/(alpha*z_m**2)
       A(2,2) = -sin(alpha*z_m)/z_m - cos(alpha*z_m)/(alpha*z_m**2)
 
-      C(1) = theta_o
-      C(2) = dtheta_o
+      C(1) = theta_e
+      C(2) = dtheta_e
 
       call LA_GESV(A, C)
 
@@ -252,15 +243,15 @@ contains
          call solve_root(eval_func_, z_m, z_s_0, 0._RD, num_par_t(), z_s, status)
       end if
 
+      ! Set up mass values
+
+      v_c = z_m**2*dtheta_c
+      v_e = z_m**2*dtheta_e
+
       dtheta_s = C(1)*( cos(alpha*z_s)/z_s - sin(alpha*z_s)/(alpha*z_s**2)) + &
                  C(2)*(-sin(alpha*z_s)/z_s - cos(alpha*z_s)/(alpha*z_s**2))
 
-      ! Set up mass values
-
-      mu_m = -z_m**2*dtheta_i
-      mu_s = mu_m - t(2)/B(2)*(z_s**2*dtheta_s - z_m**2*dtheta_o)
-
-      dtheta_m = dtheta_o
+      mu_s = - v_c - (z_s**2*dtheta_s - v_e)/B_e
 
       ! Finish
 
@@ -313,7 +304,7 @@ contains
 
          else
 
-            alpha = sqrt(this%B(2))
+            alpha = sqrt(this%B_e)
 
             theta = this%C(1)*sin(alpha*z)/(alpha*z) + &
                     this%C(2)*cos(alpha*z)/(alpha*z)
@@ -352,7 +343,7 @@ contains
 
          else
 
-            alpha = sqrt(this%B(2))
+            alpha = sqrt(this%B_e)
 
             dtheta = this%C(1)*( cos(alpha*z)/z - sin(alpha*z)/(alpha*z**2)) + &
                      this%C(2)*(-sin(alpha*z)/z - cos(alpha*z)/(alpha*z**2))
@@ -532,11 +523,11 @@ contains
          if ((this%resolve_m .AND. pt%s == this%s_i) .OR. &
              (.NOT. this%resolve_m .AND. z < this%z_m)) then
 
-            coeff = this%t(1)*z**3*theta**5/this%mu_(pt)
+            coeff = z**3*theta**5/this%mu_(pt)
 
          else
 
-            coeff = this%t(2)*z**3*theta/this%mu_(pt)
+            coeff = z**3*theta/this%mu_(pt)
 
          end if
 
@@ -602,11 +593,11 @@ contains
       if ((this%resolve_m .AND. pt%s == this%s_i) .OR. &
           (.NOT. this%resolve_m .AND. z < this%z_m)) then
 
-         coeff = this%t(1)*z**4*theta**4*dtheta/this%mu_(pt)
+         coeff = z**4*theta**4*dtheta/this%mu_(pt)
 
       else
 
-         coeff = this%t(2)*z**4*dtheta/this%mu_(pt)
+         coeff = z**4*dtheta/this%mu_(pt)
 
       end if
 
@@ -615,8 +606,6 @@ contains
       return
 
    end function coeff_U_D
-
-   !****
 
    !****
 
@@ -685,11 +674,11 @@ contains
             if ((this%resolve_m .AND. pt%s == this%s_i) .OR. &
                 (.NOT. this%resolve_m .AND. z < this%z_m)) then
 
-               dcoeff = -3._RD - z*dtheta/theta - this%B(1)*z*theta**5/dtheta
+               dcoeff = -3._RD - z*dtheta/theta - z*theta**5/dtheta
 
             else
 
-               dcoeff = -3._RD - z*dtheta/theta - this%B(2)*z*theta/dtheta
+               dcoeff = -3._RD - z*dtheta/theta - this%B_e*z*theta/dtheta
 
             end if
 
@@ -737,11 +726,11 @@ contains
             if ((this%resolve_m .AND. pt%s == this%s_i) .OR. &
                 (.NOT. this%resolve_m .AND. z < this%z_m)) then
 
-               dcoeff = -1._RD - z*dtheta/theta - this%B(1)*z*theta**5/dtheta
+               dcoeff = -1._RD - z*dtheta/theta - z*theta**5/dtheta
 
             else
 
-               dcoeff = -1._RD - z*dtheta/theta - this%B(2)*z*theta/dtheta
+               dcoeff = -1._RD - z*dtheta/theta - this%B_e*z*theta/dtheta
 
             end if
 
@@ -857,7 +846,7 @@ contains
 
       else
 
-         mu = this%mu_m - this%t(2)/this%B(2)*(z**2*dtheta - this%z_m**2*this%dtheta_m)
+         mu = - this%v_c - (z**2*dtheta - this%v_e)/this%B_e
 
       end if
 
