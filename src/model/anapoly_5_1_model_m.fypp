@@ -132,13 +132,10 @@ contains
 
       ! Solve for the polytrope structure
 
-      @:ASSERT(ml_p%theta_s >= 0._RD .AND. ml_p%theta_s < 1._RD, 'invalid theta_s')
-
-      call solve_struct_(ml_p%theta_s, ml_p%z_match, ml%C, ml%B_e, ml%z_s, ml%v_c, ml%v_e, ml%mu_s)
+      call solve_struct_(ml_p%theta_s, ml_p%x_match, ml%C, ml%B_e, ml%z_m, ml%z_s, ml%v_c, ml%v_e, ml%mu_s)
 
       ! Store other data
 
-      ml%z_m = ml_p%z_match
       ml%theta_s = ml_p%theta_s
 
       ml%Gamma_1 = ml_p%Gamma_1
@@ -177,17 +174,24 @@ contains
 
    !****
 
-   subroutine solve_struct_(theta_s, z_m, C, B_e, z_s, v_c, v_e, mu_s)
+   subroutine solve_struct_(theta_s, x_m, C, B_e, z_m, z_s, v_c, v_e, mu_s)
 
       real(RD), intent(in)  :: theta_s
-      real(RD), intent(in)  :: z_m
+      real(RD), intent(in)  :: x_m
       real(RD), intent(out) :: C(:)
       real(RD), intent(out) :: B_e
+      real(RD), intent(out) :: z_m
       real(RD), intent(out) :: z_s
       real(RD), intent(out) :: v_c
       real(RD), intent(out) :: v_e
       real(RD), intent(out) :: mu_s
 
+      real(RD) :: z_m_a
+      real(RD) :: z_m_b
+      real(RD) :: D_a
+      real(RD) :: D_b
+      real(RD) :: D
+      real(RD) :: tol
       real(RD) :: theta_c
       real(RD) :: theta_e
       real(RD) :: dtheta_c
@@ -200,48 +204,95 @@ contains
 
       @:CHECK_BOUNDS(SIZE(C), 2)
 
-      ! Given z_m and theta_s, solve for the mixed polytrope structure
+      @:ASSERT((theta_s == 0._RD .OR. theta_s >= EPSILON(0._RD)) .AND. theta_s < 1._RD, 'invalid theta_s')
+      @:ASSERT(x_m > 0._RD .AND. x_m < 1._RD, 'invalid x_m')
 
-      ! First, evauate quantities on either side of the matching point
+      ! Given x_m and theta_s, solve for the mixed polytrope structure
 
-      theta_c = 1._RD/sqrt(1._RD + z_m**2/3._RD)
-      dtheta_c = -z_m/(3._RD*sqrt(1._RD + z_m**2/3._RD)**3)
+      ! First, initialize brackets on z_m
 
-      B_e = 3._RD*theta_c**4
-
-      theta_e = theta_c**5
-      dtheta_e = 3._RD*theta_c**4*dtheta_c
-
-      ! Solve for coefficients in the outer (n_poly=1) region by
-      ! matching theta_o and dtheta_o
-
-      alpha = sqrt(B_e)
-
-      A(1,1) = sin(alpha*z_m)/(alpha*z_m)
-      A(1,2) = cos(alpha*z_m)/(alpha*z_m)
-
-      A(2,1) = cos(alpha*z_m)/z_m - sin(alpha*z_m)/(alpha*z_m**2)
-      A(2,2) = -sin(alpha*z_m)/z_m - cos(alpha*z_m)/(alpha*z_m**2)
-
-      C(1) = theta_e
-      C(2) = dtheta_e
-
-      call LA_GESV(A, C)
-
-      ! Determine the surface point, where theta drops to theta_s
-
-      z_s_0 = atan2(-C(2), C(1))/alpha
-
-      do
-         if (z_s_0 > z_m) exit
-         z_s_0 = z_s_0 + PI/alpha
-      end do
-
-      if (theta_s == 0._RD) then
-         z_s = z_s_0
+      z_m_a = 0._RD
+      if (theta_s > 0._RD) then
+         z_m_b = sqrt(3._RD*(theta_s**(-2._RD/5._RD) - 1._RD))
       else
-         call solve_root(eval_func_, z_m, z_s_0, 0._RD, num_par_t(), z_s, status)
+         z_m_b = sqrt(3._RD*(EPSILON(0._RD)**(-2._RD/5._RD) - 1._RD))
       end if
+
+      D_a = x_m
+      D_b = x_m - 1._RD
+
+      ! Now refine brackets until convergence
+
+      refine_loop : do
+
+         ! Calculate the midpoint
+
+         z_m = 0.5_RD*(z_m_a + z_m_b)
+
+         ! Evaluate quantities on either side of the matching point
+
+         theta_c = 1._RD/sqrt(1._RD + z_m**2/3._RD)
+         dtheta_c = -z_m/(3._RD*sqrt(1._RD + z_m**2/3._RD)**3)
+
+         B_e = 3._RD*theta_c**4
+
+         theta_e = theta_c**5
+         dtheta_e = 3._RD*theta_c**4*dtheta_c
+
+         ! Solve for coefficients in the outer (n_poly=1) region by
+         ! matching theta_o and dtheta_o
+
+         alpha = sqrt(B_e)
+
+         A(1,1) = sin(alpha*z_m)/(alpha*z_m)
+         A(1,2) = cos(alpha*z_m)/(alpha*z_m)
+
+         A(2,1) = cos(alpha*z_m)/z_m - sin(alpha*z_m)/(alpha*z_m**2)
+         A(2,2) = -sin(alpha*z_m)/z_m - cos(alpha*z_m)/(alpha*z_m**2)
+
+         C(1) = theta_e
+         C(2) = dtheta_e
+
+         call LA_GESV(A, C)
+
+         ! Determine the surface point, where theta drops to theta_s
+
+         z_s_0 = atan2(-C(2), C(1))/alpha
+
+         do
+            if (z_s_0 > z_m) exit
+            z_s_0 = z_s_0 + PI/alpha
+         end do
+
+         if (theta_s == 0._RD) then
+            z_s = z_s_0
+         else
+            call solve_root(surf_func_, z_m, z_s_0, 0._RD, num_par_t(), z_s, status)
+         end if
+
+         ! Calculate the discriminant
+
+         D = x_m - z_m/z_s
+
+         ! Update the bracket
+
+         if (D*D_a <= 0._RD) then
+            z_m_b = z_m
+            D_b = D
+         elseif (D*D_b <= 0._RD) then
+            z_m_a = z_m
+            D_a = D
+         else
+            @:ABORT('root is no longer bracketed')
+         end if
+
+         ! Check for convergence
+
+         tol = 4._RD*EPSILON(0._RD)*abs(z_m)
+
+         if (ABS(z_m_b - z_m_a) < tol) exit refine_loop
+
+      end do refine_loop
 
       ! Set up mass values
 
@@ -259,7 +310,7 @@ contains
 
    contains
 
-      subroutine eval_func_(z, func, status)
+      subroutine surf_func_(z, func, status)
 
          real(RD), intent(in)  :: z
          real(RD), intent(out) :: func
@@ -272,7 +323,7 @@ contains
 
          return
 
-      end subroutine eval_func_
+      end subroutine surf_func_
 
    end subroutine solve_struct_
 

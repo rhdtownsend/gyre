@@ -42,7 +42,7 @@ module model_par_m
       real(RD)                :: s = 1._RD
       real(RD)                :: beta_m = 1._RD
       real(RD)                :: beta_p = 1._RD
-      real(RD)                :: z_match = 3.0_RD
+      real(RD)                :: x_match = 0.5_RD
       character(256)          :: model_type = 'HOM'
       character(256)          :: grid_type = 'UNI'
       character(256)          :: file_format = ''
@@ -83,7 +83,7 @@ contains
       real(RD)                         :: s
       real(RD)                         :: beta_m
       real(RD)                         :: beta_p
-      real(RD)                         :: z_match
+      real(RD)                         :: x_match
       character(LEN(ml_p%model_type))  :: model_type
       character(LEN(ml_p%grid_type))   :: grid_type
       character(LEN(ml_p%file_format)) :: file_format
@@ -99,7 +99,7 @@ contains
       logical                          :: resolve_match
 
       namelist /model/ theta_s, Gamma_1, dx_snap, x_i, x_o, s&
-         &, beta_m, beta_p, z_match, model_type, grid_type, file_format,&
+         &, beta_m, beta_p, x_match, model_type, grid_type, file_format,&
          & data_format, interp_type, deriv_type, file, n, add_center, &
          & repair_As, constrain_derivs, force_linear, resolve_match
 
@@ -134,7 +134,7 @@ contains
       s = ml_p%s
       beta_m = ml_p%beta_m
       beta_p = ml_p%beta_p
-      z_match = ml_p%z_match
+      x_match = ml_p%x_match
       model_type = ml_p%model_type
       grid_type = ml_p%grid_type
       file_format = ml_p%file_format
@@ -163,7 +163,7 @@ contains
       ml_p%s = s
       ml_p%beta_m = beta_m
       ml_p%beta_p = beta_p
-      ml_p%z_match = z_match
+      ml_p%x_match = x_match
       ml_p%model_type = model_type
       ml_p%grid_type = grid_type
       ml_p%file_format = file_format

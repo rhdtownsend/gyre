@@ -4,7 +4,8 @@
 &model
   model_type = 'ANAPOLY_5_1'
   n = 1000
-  z_match = 3.5
+  x_match = 0.7
+  theta_s = 1e-3
 /
 
 &mode
@@ -49,7 +50,7 @@
   grid_type = 'LINEAR'
   freq_min = 1.0
   freq_max = 13.0
-  n_freq = 30
+  n_freq = 60
   tag_list = 'l=1'
 /
 
