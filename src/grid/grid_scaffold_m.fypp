@@ -65,18 +65,9 @@ contains
 
          gr = grid_t(ml%grid(), gr_p%x_i, gr_p%x_o)
 
-         if (check_log_level('INFO')) then
-            write(OUTPUT_UNIT, 110) 'Scaffold grid from model'
-110         format(3X,A)
-         end if
-
       case ('FILE')
 
          gr = grid_from_file_(gr_p%file, gr_p%file_format, ml%grid(), gr_p%x_i, gr_p%x_o)
-
-         if (check_log_level('INFO')) then
-            write(OUTPUT_UNIT, 110) 'Scaffold grid from file '//TRIM(gr_p%file)
-         end if
 
       case default
 

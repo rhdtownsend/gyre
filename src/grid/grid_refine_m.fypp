@@ -104,6 +104,18 @@ contains
 100      format(A)
       endif
 
+      select case (gr_p%scaffold_src)
+      case ('MODEL')
+         if (check_log_level('INFO')) then
+            write(OUTPUT_UNIT, 110) 'Scaffold grid from model'
+110         format(3X,A)
+         end if
+      case ('FILE')
+         if (check_log_level('INFO')) then
+            write(OUTPUT_UNIT, 110) 'Scaffold grid from file '//TRIM(gr_p%file)
+         end if
+      end select
+
       ! Check that the grid_specs are all associated with the same model
 
       @:ASSERT_DEBUG(ASSOCIATED(gs(1)%cx), 'null pointer')
