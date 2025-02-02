@@ -48,7 +48,7 @@ follows:
   First adiabatic exponent (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`)
 
 :nml_n:`theta_s` (default :nml_n:`0`)
-  Surface value of polytropic dependent variable (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY_*'`)
+  Surface value of polytropic dependent variable (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY_0'`\ \|\ :nml_v:`'ANAPOLY_1'`\ \|\ :nml_v:`'ANAPOLY_5'`) 
 
 :nml_n:`x_match` (default :nml_n:`0.5`)
   Radial coordinate of match point between inner and outer regions (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY_5_1'`)

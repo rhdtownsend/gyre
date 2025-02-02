@@ -4,8 +4,7 @@
 &model
   model_type = 'ANAPOLY_5_1'
   n = 1000
-  x_match = 0.7
-  theta_s = 1e-3
+  x_match = 0.6
 /
 
 &mode

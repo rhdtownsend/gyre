@@ -12,12 +12,13 @@ structure of these model can be computed analytically, there is no
 need to read from an external file. The :nml_v:`'ANAPOLY_5_1'` option
 is a special case, constructed by matching an inner :math:`\npoly=5`
 region to an outer :math:`\npoly=1` region; the location of the
-matching point is set by the :nml_n:`x_match` parameter.
+matching point is set by the :nml_n:`x_match` parameter (see
+:ads_citealp:`eggleton:1998` for details).
 
 The :nml_n:`Gamma_1` parameter controls the first adiabatic index of
 the model, while the :nml_n:`n`, :nml_n:`s` and :nml_n:`grid_type`
 parameters control the model grid. See the :ref:`model-params` section
-for further details.
+for further information.
 
 It's possible to create truncated polytropic models, with a finite
 surface pressure and density, by setting the :nml_n:`theta_s` to a

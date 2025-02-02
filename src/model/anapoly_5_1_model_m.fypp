@@ -48,6 +48,7 @@ module anapoly_5_1_model_m
    type, extends(model_t) :: anapoly_5_1_model_t
       private
       type(grid_t) :: gr
+      real(RD)     :: theta_m
       real(RD)     :: C(2)
       real(RD)     :: B_e
       real(RD)     :: z_m
@@ -55,7 +56,6 @@ module anapoly_5_1_model_m
       real(RD)     :: v_c
       real(RD)     :: v_e
       real(RD)     :: mu_s
-      real(RD)     :: theta_s
       real(RD)     :: Gamma_1
       real(RD)     :: Omega_rot
       integer      :: s_i
@@ -132,11 +132,9 @@ contains
 
       ! Solve for the polytrope structure
 
-      call solve_struct_(ml_p%theta_s, ml_p%x_match, ml%C, ml%B_e, ml%z_m, ml%z_s, ml%v_c, ml%v_e, ml%mu_s)
+      call solve_struct_(ml_p%x_match, ml%theta_m, ml%C, ml%B_e, ml%z_m, ml%z_s, ml%v_c, ml%v_e, ml%mu_s)
 
       ! Store other data
-
-      ml%theta_s = ml_p%theta_s
 
       ml%Gamma_1 = ml_p%Gamma_1
 
@@ -174,10 +172,10 @@ contains
 
    !****
 
-   subroutine solve_struct_(theta_s, x_m, C, B_e, z_m, z_s, v_c, v_e, mu_s)
+   subroutine solve_struct_(x_m, theta_m, C, B_e, z_m, z_s, v_c, v_e, mu_s)
 
-      real(RD), intent(in)  :: theta_s
       real(RD), intent(in)  :: x_m
+      real(RD), intent(out) :: theta_m
       real(RD), intent(out) :: C(:)
       real(RD), intent(out) :: B_e
       real(RD), intent(out) :: z_m
@@ -192,55 +190,44 @@ contains
       real(RD) :: D_b
       real(RD) :: D
       real(RD) :: tol
-      real(RD) :: theta_c
-      real(RD) :: theta_e
-      real(RD) :: dtheta_c
-      real(RD) :: dtheta_e
+      real(RD) :: dtheta_m
       real(RD) :: alpha
       real(RD) :: A(2,2)
-      real(RD) :: z_s_0
       real(RD) :: dtheta_s
       integer  :: status
 
       @:CHECK_BOUNDS(SIZE(C), 2)
 
-      @:ASSERT((theta_s == 0._RD .OR. theta_s >= EPSILON(0._RD)) .AND. theta_s < 1._RD, 'invalid theta_s')
-      @:ASSERT(x_m > 0._RD .AND. x_m < 1._RD, 'invalid x_m')
+      @:ASSERT(x_m > 0._RD .AND. x_m < 2._RD/3._RD, 'invalid x_m')
 
-      ! Given x_m and theta_s, solve for the mixed polytrope structure
+      ! Given x_m, solve for the mixed polytrope structure
 
       ! First, initialize brackets on z_m
 
       z_m_a = 0._RD
-      if (theta_s > 0._RD) then
-         z_m_b = sqrt(3._RD*(theta_s**(-2._RD/5._RD) - 1._RD))
-      else
-         z_m_b = sqrt(3._RD*(EPSILON(0._RD)**(-2._RD/5._RD) - 1._RD))
-      end if
+      z_m_b = 1/sqrt(EPSILON(0._RD))
 
       D_a = x_m
-      D_b = x_m - 1._RD
+      D_b = x_m - 2._RD/3._RD
 
       ! Now refine brackets until convergence
 
       refine_loop : do
 
-         ! Calculate the midpoint
+         ! Try a new matching point at the midpoint between z_m_a and
+         ! z_m_b
 
          z_m = 0.5_RD*(z_m_a + z_m_b)
 
-         ! Evaluate quantities on either side of the matching point
+         ! Evaluate quantities at this matching point
 
-         theta_c = 1._RD/sqrt(1._RD + z_m**2/3._RD)
-         dtheta_c = -z_m/(3._RD*sqrt(1._RD + z_m**2/3._RD)**3)
+         theta_m = 1._RD/sqrt(1._RD + z_m**2/3._RD)
+         dtheta_m = -z_m/(3._RD*sqrt(1._RD + z_m**2/3._RD)**3)
 
-         B_e = 3._RD*theta_c**4
-
-         theta_e = theta_c**5
-         dtheta_e = 3._RD*theta_c**4*dtheta_c
+         B_e = 3._RD*theta_m**4
 
          ! Solve for coefficients in the outer (n_poly=1) region by
-         ! matching theta_o and dtheta_o
+         ! ensuring continuity in theta and (n+1) theta'
 
          alpha = sqrt(B_e)
 
@@ -250,25 +237,19 @@ contains
          A(2,1) = cos(alpha*z_m)/z_m - sin(alpha*z_m)/(alpha*z_m**2)
          A(2,2) = -sin(alpha*z_m)/z_m - cos(alpha*z_m)/(alpha*z_m**2)
 
-         C(1) = theta_e
-         C(2) = dtheta_e
+         C(1) = theta_m
+         C(2) = 3._RD*dtheta_m
 
          call LA_GESV(A, C)
 
-         ! Determine the surface point, where theta drops to theta_s
+         ! Determine the surface point, where theta drops to zero
 
-         z_s_0 = atan2(-C(2), C(1))/alpha
+         z_s = atan(-C(2)/C(1))/alpha
 
          do
-            if (z_s_0 > z_m) exit
-            z_s_0 = z_s_0 + PI/alpha
+            if (z_s > z_m) exit
+            z_s = z_s + PI/alpha
          end do
-
-         if (theta_s == 0._RD) then
-            z_s = z_s_0
-         else
-            call solve_root(surf_func_, z_m, z_s_0, 0._RD, num_par_t(), z_s, status)
-         end if
 
          ! Calculate the discriminant
 
@@ -296,34 +277,15 @@ contains
 
       ! Set up mass values
 
-      v_c = z_m**2*dtheta_c
-      v_e = z_m**2*dtheta_e
+      v_c = z_m**2*dtheta_m
+      v_e = 3._RD*z_m**2*dtheta_m
 
       dtheta_s = C(1)*( cos(alpha*z_s)/z_s - sin(alpha*z_s)/(alpha*z_s**2)) + &
                  C(2)*(-sin(alpha*z_s)/z_s - cos(alpha*z_s)/(alpha*z_s**2))
 
-      mu_s = - v_c - (z_s**2*dtheta_s - v_e)/B_e
+      mu_s = - v_c - (z_s**2*dtheta_s - v_e)*theta_m**4/B_e
 
       ! Finish
-
-      return
-
-   contains
-
-      subroutine surf_func_(z, func, status)
-
-         real(RD), intent(in)  :: z
-         real(RD), intent(out) :: func
-         integer, intent(out)  :: status
-
-         func = C(1)*sin(alpha*z)/(alpha*z) + &
-                C(2)*cos(alpha*z)/(alpha*z) - theta_s
-
-         status = STATUS_OK
-
-         return
-
-      end subroutine surf_func_
 
    end subroutine solve_struct_
 
@@ -344,7 +306,7 @@ contains
 
       if (z == this%z_s) then
 
-         theta = this%theta_s
+         theta = 0._RD
 
       else
 
@@ -578,7 +540,7 @@ contains
 
          else
 
-            coeff = z**3*theta/this%mu_(pt)
+            coeff = z**3*this%theta_m**4*theta/this%mu_(pt)
 
          end if
 
@@ -636,19 +598,27 @@ contains
 
       ! Evaluate the U_D = U*dlnrho/dlnr coefficient
 
-      z = pt%x*this%z_s
+      if (pt%x /= 0._RD) then
 
-      theta = this%theta_(pt)
-      dtheta = this%dtheta_(pt)
+         z = pt%x*this%z_s
 
-      if ((this%resolve_m .AND. pt%s == this%s_i) .OR. &
-          (.NOT. this%resolve_m .AND. z < this%z_m)) then
+         theta = this%theta_(pt)
+         dtheta = this%dtheta_(pt)
 
-         coeff = z**4*theta**4*dtheta/this%mu_(pt)
+         if ((this%resolve_m .AND. pt%s == this%s_i) .OR. &
+             (.NOT. this%resolve_m .AND. z < this%z_m)) then
+
+            coeff = z**4*theta**4*dtheta/this%mu_(pt)
+
+         else
+
+            coeff = z**4*this%theta_m**4*dtheta/this%mu_(pt)
+
+         end if
 
       else
 
-         coeff = z**4*dtheta/this%mu_(pt)
+         coeff = 0._RD
 
       end if
 
@@ -897,7 +867,7 @@ contains
 
       else
 
-         mu = - this%v_c - (z**2*dtheta - this%v_e)/this%B_e
+         mu = - this%v_c - (z**2*dtheta - this%v_e)*this%theta_m**4/this%B_e
 
       end if
 
