@@ -486,6 +486,10 @@ Stellar Structure
      - :math:`c_{1}`
      - real(:nml_v:`n`)
      - structure coefficient; defined in :ref:`osc-struct-coeffs` section
+   * - :nml_v:`U_D` [#only-P]_
+     - :math:`UD`
+     - real(:nml_v:`n`)
+     - structure coefficient; :math:`UD = U \sderiv{\ln\rho}{\ln r}`
    * - :nml_v:`Gamma_1`
      - :math:`\Gammi`
      - real(:nml_v:`n`)
@@ -657,4 +661,6 @@ Note that these items are available only when using :program:`gyre_tides`.
 
 .. [#only-D] This option is available only for stellar models with :ref:`D capability <model-caps>`
 
+.. [#only-P] This option is available only for polytrope models (`'HOM'`, `'POLY'`, `'ANAPOLY_*'`)
+	     
 		
