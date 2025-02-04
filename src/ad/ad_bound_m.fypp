@@ -656,7 +656,7 @@ contains
 
          ! Evaluate the eigenvalue for the wave we want to keep
 
-         chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, lambda)
+         chi = atmos_chi(V, As, c_1, Gamma_1, alpha_omg, omega_c, lambda)
 
          ! Evaluate selected elements of the left eigenvectors
 
@@ -746,7 +746,7 @@ contains
          lambda = this%cx%lambda(Omega_rot, st)
          l_e = this%cx%l_e(Omega_rot, st)
 
-         chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, lambda)
+         chi = atmos_chi(V, As, c_1, Gamma_1, alpha_omg, omega_c, lambda)
 
          b_11 = V/Gamma_1 - 3._RD
          b_12 = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1

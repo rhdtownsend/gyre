@@ -496,7 +496,7 @@ contains
 
          ! Evaluate the eigenvalue for the wave we want to keep
 
-         chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, 0._RD)
+         chi = atmos_chi(V, As, c_1, Gamma_1, alpha_omg, omega_c, 0._RD)
 
          ! Set up the boundary conditions
 
@@ -541,11 +541,12 @@ contains
          V => this%coeff(2,J_V), &
          As => this%coeff(2,J_AS), &
          c_1 => this%coeff(2,J_C_1), &
-         Gamma_1 => this%coeff(2,J_GAMMA_1))
+         Gamma_1 => this%coeff(2,J_GAMMA_1), &
+         alpha_omg => this%alpha_omg)
 
          omega_c = omega
 
-         chi = atmos_chi(V, As, c_1, Gamma_1, omega_c, 0._RD)
+         chi = atmos_chi(V, As, c_1, Gamma_1, alpha_omg, omega_c, 0._RD)
 
          b_11 = V/Gamma_1 - 3._RD
          b_12 = -V/Gamma_1

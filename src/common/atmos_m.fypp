@@ -1,7 +1,7 @@
 ! Module  : atmos_m
 ! Purpose : atmosphere utility routines
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2024 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -56,12 +56,13 @@ module atmos_m
 
 contains
 
-   function atmos_chi_r_(V, As, c_1, Gamma_1, omega, lambda) result(chi)
+   function atmos_chi_r_(V, As, c_1, Gamma_1, alpha_omg, omega, lambda) result(chi)
 
       real(RD), intent(in) :: V
       real(RD), intent(in) :: As
       real(RD), intent(in) :: c_1
       real(RD), intent(in) :: Gamma_1
+      real(RD), intent(in) :: alpha_omg
       real(RD), intent(in) :: omega
       real(RD), intent(in) :: lambda
       real(RD)             :: chi
@@ -78,8 +79,8 @@ contains
       ! Calculate the atmospheric radial wavenumber (real frequencies)
 
       a_11 = V/Gamma_1 - 3._RD
-      a_12 = lambda/(c_1*omega**2) - V/Gamma_1
-      a_21 = c_1*omega**2 - As
+      a_12 = lambda/(c_1*alpha_omg*omega**2) - V/Gamma_1
+      a_21 = c_1*alpha_omg*omega**2 - As
       a_22 = As + 1._RD
 
       b = -(a_11 + a_22)
@@ -114,12 +115,13 @@ contains
 
    !****
 
-   function atmos_chi_c_(V, As, c_1, Gamma_1, omega, lambda, branch) result(chi)
+   function atmos_chi_c_(V, As, c_1, Gamma_1, alpha_omg, omega, lambda, branch) result(chi)
 
       real(RD), intent(in)     :: V
       real(RD), intent(in)     :: As
       real(RD), intent(in)     :: c_1
       real(RD), intent(in)     :: Gamma_1
+      real(RD), intent(in)     :: alpha_omg
       complex(RD), intent(in)  :: omega
       complex(RD), intent(in)  :: lambda
       character(*), intent(in) :: branch
@@ -137,8 +139,8 @@ contains
       ! Calculate the atmospheric radial wavenumber (complex frequencies)
 
       a_11 = V/Gamma_1 - 3._RD
-      a_12 = lambda/(c_1*omega**2) - V/Gamma_1
-      a_21 = c_1*omega**2 - As
+      a_12 = lambda/(c_1*alpha_omg*omega**2) - V/Gamma_1
+      a_21 = c_1*alpha_omg*omega**2 - As
       a_22 = As + 1._RD
 
       b = -(a_11 + a_22)
