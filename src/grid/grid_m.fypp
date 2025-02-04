@@ -55,7 +55,7 @@ module grid_m
    interface grid_t
       module procedure grid_t_x_
       module procedure grid_t_nest_
-      module procedure grid_t_refine_
+      module procedure grid_t_split_
    end interface grid_t
 
    ! Access specifiers
@@ -166,10 +166,10 @@ contains
 
    !****
 
-   function grid_t_refine_(gr_base, refine) result(gr)
+   function grid_t_split_(gr_base, split) result(gr)
 
       type(grid_t), intent(in) :: gr_base
-      logical, intent(in)      :: refine(:)
+      logical, intent(in)      :: split(:)
       type(grid_t)             :: gr
 
       integer  :: n_base
@@ -177,13 +177,13 @@ contains
       integer  :: j_base
       integer  :: j
 
-      @:CHECK_BOUNDS(SIZE(refine), gr_base%n-1)
+      @:CHECK_BOUNDS(SIZE(split), gr_base%n-1)
 
-      ! Construct a grid_t by refining gr_base, with additional points
-      ! added to the middle of subintervals where refine == .TRUE.
+      ! Construct a grid_t by splitting those subintervals of gr_base
+      ! where split == .TRUE.
 
       n_base = gr_base%n
-      n = n_base + COUNT(refine)
+      n = n_base + COUNT(split)
 
       allocate(gr%pt(n))
 
@@ -198,7 +198,7 @@ contains
 
             j = j + 1
 
-            if (refine(j_base)) then
+            if (split(j_base)) then
 
                @:ASSERT(pt_a%s == pt_b%s, 'attempt to add points at segment boundary')
 
@@ -221,7 +221,7 @@ contains
 
       return
 
-   end function grid_t_refine_
+   end function grid_t_split_
 
    !****
 

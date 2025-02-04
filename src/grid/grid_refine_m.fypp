@@ -171,20 +171,20 @@ contains
 
       integer              :: n
       integer              :: i_iter
-      logical, allocatable :: refine(:)
+      logical, allocatable :: split(:)
       integer              :: j
       integer              :: i
       real(RD)             :: dx
-      logical, allocatable :: refine_new(:)
+      logical, allocatable :: split_new(:)
       integer              :: j_new
 
       ! Add points globally
 
-      ! Initialize the refine array
+      ! Initialize the split array
 
       n = gr%n
 
-      refine = gr%pt(2:)%s == gr%pt(:n-1)%s
+      split = gr%pt(2:)%s == gr%pt(:n-1)%s
 
       ! Iterate until no more points need be added
 
@@ -195,9 +195,9 @@ contains
          !$OMP PARALLEL DO PRIVATE (dx, i) SCHEDULE (DYNAMIC)
          sub_loop : do j = 1, n-1
 
-            ! Check/update if the subinterval should be considered for refinement
+            ! Check/update if the subinterval should be considered for splitting
 
-            if (refine(j)) then
+            if (split(j)) then
 
                associate (pt_a => gr%pt(j), &
                   pt_b => gr%pt(j+1))
@@ -213,27 +213,27 @@ contains
 
                            if (pt_a%x /= 0._RD) then
 
-                              refine(j) = refine_mech_(cx, pt_a, pt_b, omega, gr_p, os_p) .OR. &
-                                 refine_therm_(cx, pt_a, pt_b, omega, gr_p) .OR. &
-                                 refine_struct_(cx, pt_a, pt_b, gr_p) .OR. &
+                              split(j) = split_mech_(cx, pt_a, pt_b, omega, gr_p, os_p) .OR. &
+                                 split_therm_(cx, pt_a, pt_b, omega, gr_p) .OR. &
+                                 split_struct_(cx, pt_a, pt_b, gr_p) .OR. &
                                  dx > gr_p%dx_max
 
                            else
 
-                              refine(j) = refine_center_(cx, pt_a, pt_b, omega, gr_p) .OR. &
+                              split(j) = split_center_(cx, pt_a, pt_b, omega, gr_p) .OR. &
                                  dx > gr_p%dx_max
 
                            end if
 
                         end associate
 
-                        if (refine(j)) exit spec_loop
+                        if (split(j)) exit spec_loop
 
                      end do spec_loop
 
                   else
 
-                     refine(j) = .FALSE.
+                     split(j) = .FALSE.
 
                   endif
 
@@ -244,41 +244,41 @@ contains
          end do sub_loop
 
          if (check_log_level('INFO')) then
-            write(OUTPUT_UNIT, 100) 'Refined', COUNT(refine), 'subinterval(s) in iteration', i_iter
+            write(OUTPUT_UNIT, 100) 'Split', COUNT(split), 'subinterval(s) in iteration', i_iter
 100         format(3X,A,1X,I0,1X,A,1X,I0)
          endif
 
          ! Check for completion
 
-         if (COUNT(refine) == 0) exit iter_loop
+         if (COUNT(split) == 0) exit iter_loop
 
-         ! Perform refinement
+         ! Perform splitting
 
-         gr = grid_t(gr, refine)
+         gr = grid_t(gr, split)
 
-         ! Update the refine array
+         ! Update the split array
 
-         allocate(refine_new(n + COUNT(refine) - 1))
+         allocate(split_new(n + COUNT(split) - 1))
 
          j_new = 1
 
          do j = 1, n-1
 
-            refine_new(j_new) = refine(j)
+            split_new(j_new) = split(j)
             j_new = j_new + 1
 
-            if (refine(j)) then
+            if (split(j)) then
 
-               refine_new(j_new) = refine(j)
+               split_new(j_new) = split(j)
                j_new = j_new + 1
 
             endif
 
          end do
 
-         n = n + COUNT(refine)
+         n = n + COUNT(split)
 
-         call MOVE_ALLOC(refine_new, refine)
+         call MOVE_ALLOC(split_new, split)
 
       end do iter_loop
 
@@ -290,7 +290,7 @@ contains
 
    !****
 
-   function refine_mech_(cx, pt_a, pt_b, omega, gr_p, os_p) result(refine)
+   function split_mech_(cx, pt_a, pt_b, omega, gr_p, os_p) result(split)
 
       type(context_t), intent(in)  :: cx
       type(point_t), intent(in)    :: pt_a
@@ -298,7 +298,7 @@ contains
       real(RD), intent(in)         :: omega(:)
       type(grid_par_t), intent(in) :: gr_p
       type(osc_par_t), intent(in)  :: os_p
-      logical                      :: refine
+      logical                      :: split
 
       type(point_t)  :: pt
       real(RD)       :: dlnx
@@ -324,14 +324,14 @@ contains
       real(RD)       :: chi_i
 
       ! Determine whether the subinterval [pt_a,pt_b] warrants
-      ! refinement, via a local analysis of the mechanical parts of the
+      ! splitting, via a local analysis of the mechanical parts of the
       ! oscillation equations
 
       if (gr_p%w_osc == 0._RD .AND. gr_p%w_exp == 0._RD) then
 
-         ! No refinement necessary
+         ! No splitting necessary
 
-         refine = .FALSE.
+         split = .FALSE.
 
       else
 
@@ -355,9 +355,9 @@ contains
          Omega_rot = cx%Omega_rot(pt)
          Omega_rot_i = cx%Omega_rot(cx%point_i())
 
-         ! Loop over omega, updating refine
+         ! Loop over omega, updating split
 
-         refine = .FALSE.
+         split = .FALSE.
 
          omega_loop : do i = 1, SIZE(omega)
 
@@ -404,13 +404,13 @@ contains
 
             endif
 
-            ! Update refine
+            ! Update split
 
-            refine = refine .OR. &
+            split = split .OR. &
                dlnx*gr_p%w_exp*abs(chi_r) > TWOPI .OR. &
                dlnx*gr_p%w_osc*abs(chi_i) > TWOPI
 
-            if (refine) exit omega_loop
+            if (split) exit omega_loop
 
          end do omega_loop
 
@@ -420,18 +420,18 @@ contains
 
       return
 
-   end function refine_mech_
+   end function split_mech_
 
    !****
 
-   function refine_therm_(cx, pt_a, pt_b, omega, gr_p) result(refine)
+   function split_therm_(cx, pt_a, pt_b, omega, gr_p) result(split)
 
       type(context_t), intent(in)  :: cx
       type(point_t), intent(in)    :: pt_a
       type(point_t), intent(in)    :: pt_b
       real(RD), intent(in)         :: omega(:)
       type(grid_par_t), intent(in) :: gr_p
-      logical                      :: refine
+      logical                      :: split
 
       type(point_t)  :: pt
       real(RD)       :: V
@@ -446,14 +446,14 @@ contains
       real(RD)       :: dlnx
 
       ! Determine whether the subinterval [pt_a,pt_b] warrants
-      ! refinement, via a local analysis of the thermal parts of the
+      ! splitting, via a local analysis of the thermal parts of the
       ! oscillation equations
 
       if (gr_p%w_thm == 0._RD) then
 
-         ! No refinement necessary
+         ! No splitting necessary
 
-         refine = .FALSE.
+         split = .FALSE.
 
       else
 
@@ -476,9 +476,9 @@ contains
 
          Omega_rot = cx%Omega_rot(pt)
 
-         ! Loop over omega, updating refine
+         ! Loop over omega, updating split
 
-         refine = .FALSE.
+         split = .FALSE.
 
          omega_loop : do i = 1, SIZE(omega)
 
@@ -490,12 +490,12 @@ contains
 
             tau = sqrt(abs(V*nabla*omega_c*c_thk/c_rad))
 
-            ! Update refine
+            ! Update split
 
-            refine = refine .OR. &
+            split = split .OR. &
                dlnx*gr_p%w_thm*abs(tau) > TWOPI
 
-            if (refine) exit omega_loop
+            if (split) exit omega_loop
 
          end do omega_loop
 
@@ -505,17 +505,17 @@ contains
 
       return
 
-   end function refine_therm_
+   end function split_therm_
 
    !****
 
-   function refine_struct_(cx, pt_a, pt_b, gr_p) result(refine)
+   function split_struct_(cx, pt_a, pt_b, gr_p) result(split)
 
       type(context_t), intent(in)  :: cx
       type(point_t), intent(in)    :: pt_a
       type(point_t), intent(in)    :: pt_b
       type(grid_par_t), intent(in) :: gr_p
-      logical                      :: refine
+      logical                      :: split
 
       type(point_t) :: pt
       real(RD)      :: dV_2
@@ -526,13 +526,13 @@ contains
       real(RD)      :: dlnx
 
       ! Determine whether the subinterval [pt_a,pt_b] warrants
-      ! refinement, via a local structure gradient analysis
+      ! splitting, via a local structure gradient analysis
 
       if (gr_p%w_str == 0._RD) then
 
-         ! No refinement necessary
+         ! No splitting necessary
 
-         refine = .FALSE.
+         split = .FALSE.
 
       else
 
@@ -553,11 +553,11 @@ contains
 
          end associate
 
-         ! Decide on refinement
+         ! Decide whether to split
 
          if (pt_a%x /= 0._RD) then
 
-            refine = dlnx*gr_p%w_str*abs(dV_2) > 1._RD .OR. &
+            split = dlnx*gr_p%w_str*abs(dV_2) > 1._RD .OR. &
                dlnx*gr_p%w_str*abs(dAs) > 1._RD .OR. &
                dlnx*gr_p%w_str*abs(dU) > 1._RD .OR. &
                dlnx*gr_p%w_str*abs(dc_1) > 1._RD .OR. &
@@ -571,18 +571,18 @@ contains
 
       return
 
-   end function refine_struct_
+   end function split_struct_
 
    !****
 
-   function refine_center_(cx, pt_a, pt_b, omega, gr_p) result(refine)
+   function split_center_(cx, pt_a, pt_b, omega, gr_p) result(split)
 
       type(context_t), intent(in)  :: cx
       type(point_t), intent(in)    :: pt_a
       type(point_t), intent(in)    :: pt_b
       real(RD), intent(in)         :: omega(:)
       type(grid_par_t), intent(in) :: gr_p
-      logical                      :: refine
+      logical                      :: split
 
       type(point_t)  :: pt
       real(RD)       :: V
@@ -605,14 +605,14 @@ contains
       real(RD)       :: chi_i
 
       ! Determine whether the (center) subinterval [pt_a,pt_b] warrants
-      ! refinement, via a local analysis of the mechanical parts of the
+      ! splitting, via a local analysis of the mechanical parts of the
       ! oscillation equations
 
       if (.NOT. gr_p%resolve_ctr .OR. gr_p%w_ctr == 0._RD) then
 
-         ! No refinement necessary
+         ! No splitting necessary
 
-         refine = .FALSE.
+         split = .FALSE.
 
       else
 
@@ -634,9 +634,9 @@ contains
          Omega_rot = cx%Omega_rot(pt)
          Omega_rot_i = cx%Omega_rot(cx%point_i())
 
-         ! Loop over omega, updating refine
+         ! Loop over omega, updating split
 
-         refine = .FALSE.
+         split = .FALSE.
 
          omega_loop : do i = 1, SIZE(omega)
 
@@ -680,13 +680,13 @@ contains
 
             endif
 
-            ! Update refine
+            ! Update split
 
-            refine = refine .OR. &
+            split = split .OR. &
                chi_i /= 0._RD .OR. &
                gr_p%w_ctr*abs(chi_r) > 1._RD
 
-            if (refine) exit omega_loop
+            if (split) exit omega_loop
 
          end do omega_loop
 
@@ -696,6 +696,6 @@ contains
 
       return
 
-   end function refine_center_
+   end function split_center_
 
 end module grid_refine_m
