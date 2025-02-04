@@ -325,7 +325,7 @@ contains
          theta = this%theta_(z)
          dtheta = this%dtheta_(z)
 
-         coeff = -z*theta**5._RD/dtheta
+         coeff = -z*theta**5/dtheta
 
       else
 
@@ -388,7 +388,7 @@ contains
       z = pt%x*this%z_s
 
       theta = this%theta_(z)
-      coeff = -5._RD*z**2*theta**4._RD
+      coeff = -5._RD*z**2*theta**4
 
       ! Finish
 
