@@ -94,9 +94,9 @@ follows:
   Flag to repair inaccuracies in the dimensionless Brunt-Väisälä
   frequency at density discontinuities
 
-:nml_n:`constrain_derivs` (default :nml_v:`.FALSE.`)
+:nml_n:`constrain_derivs` (default :nml_v:`.TRUE.`)
   Flag to constrain first derivatives of :math:`V_2`, :math:`U` and
   :math:`c_1` structure coefficients, in accordance with equations
   (20) and (21) of :ads_citet:`takata:2006a` and the hydrostatic
-  equilibrium equation
+  equilibrium equation (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`)
   
