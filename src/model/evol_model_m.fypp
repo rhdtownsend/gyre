@@ -473,7 +473,7 @@ contains
          s => pt%s)
 
          if (this%constrain_derivs .AND. &
-            (i == I_V_2 .OR. i == I_U .OR. i == I_AS)) then
+            (i == I_V_2 .OR. i == I_U .OR. i == I_C_1)) then
 
             select case(i)
 
