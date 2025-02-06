@@ -324,7 +324,7 @@ contains
          coeff = -2._RD*z*dtheta/theta * &
             (1._RD/2._RD - 1._RD/this%Gamma_1)
       else
-         coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
+         coeff = IEEE_VALUE(coeff, IEEE_NEGATIVE_INF)
       endif
 
       ! Finish

@@ -504,7 +504,7 @@ contains
 
       else
 
-         coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
+         coeff = IEEE_VALUE(coeff, IEEE_NEGATIVE_INF)
 
       endif
 
