@@ -91,7 +91,7 @@ test build_ref build_ref_arch :
 ifeq ($(FORUM),yes)
 
    install-forum : | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
-	@$(MAKE) -C $(SRC_DIR)/forum install
+	@$(MAKE) -C $(SRC_DIR)/forum
 
    clean-forum :
 	@$(MAKE) -C $(SRC_DIR)/forum clean
