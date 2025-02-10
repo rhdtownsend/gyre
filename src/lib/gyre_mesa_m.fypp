@@ -1,7 +1,7 @@
 ! Module  : gyre_mesa_m
 ! Purpose : library interface for GYRE in MESA
 !
-! Copyright 2013-2024 Rich Townsend & The GYRE Team
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -300,18 +300,22 @@ contains
          call select_par(gr_p_m, md_p_m(i)%tag, gr_p_sel)
          call select_par(sc_p_m, md_p_m(i)%tag, sc_p_sel)
 
+         ! Create the scaffold grid
+
+         gr = grid_t(ml_m, gr_p_sel)
+
          ! Set up the context
 
-         cx = context_t(ml_m, gr_p_sel, md_p_m(i), os_p_sel, rt_p_sel)
+         cx = context_t(ml_m, gr, md_p_m(i), os_p_sel, rt_p_sel)
 
          ! Set up the frequency array
 
          call build_scan(cx, md_p_m(i), os_p_sel, sc_p_sel, 'REAL', omega_re)
          call build_scan(cx, md_p_m(i), os_p_sel, sc_p_sel, 'IMAG', omega_im)
 
-         ! Create the grid
+         ! Refine the grid
 
-         gr = grid_t(cx, omega_re, gr_p_sel, os_p_sel)
+         call refine_grid(gr, cx, omega_re, gr_p_sel, os_p_sel)
 
          ! Set frequency bounds and perform checks
 
