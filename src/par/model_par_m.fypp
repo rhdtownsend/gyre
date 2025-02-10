@@ -56,6 +56,7 @@ module model_par_m
       logical                 :: constrain_derivs = .TRUE.
       logical                 :: force_linear = .FALSE.
       logical                 :: resolve_match = .TRUE.
+      logical                 :: use_nabla_rad = .FALSE.
    end type model_par_t
 
    ! Access specifiers
@@ -97,11 +98,13 @@ contains
       logical                          :: constrain_derivs
       logical                          :: force_linear
       logical                          :: resolve_match
+      logical                          :: use_nabla_rad
 
       namelist /model/ theta_s, Gamma_1, dx_snap, x_i, x_o, s&
          &, beta_m, beta_p, x_match, model_type, grid_type, file_format,&
          & data_format, interp_type, deriv_type, file, n, add_center, &
-         & repair_As, constrain_derivs, force_linear, resolve_match
+         & repair_As, constrain_derivs, force_linear, resolve_match, &
+         & use_nabla_rad
 
       ! Count the number of model namelists
 
@@ -148,6 +151,7 @@ contains
       constrain_derivs = ml_p%constrain_derivs
       force_linear = ml_p%force_linear
       resolve_match = ml_p%resolve_match
+      use_nabla_rad = ml_p%use_nabla_rad
 
       ! Read the namelist
 
@@ -177,6 +181,7 @@ contains
       ml_p%constrain_derivs = constrain_derivs
       ml_p%force_linear = force_linear
       ml_p%resolve_match = resolve_match
+      ml_p%use_nabla_rad = use_nabla_rad
 
       ! Finish
 

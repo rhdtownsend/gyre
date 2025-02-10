@@ -76,6 +76,7 @@ contains
       real(RD), allocatable       :: ups_T(:)
       real(RD), allocatable       :: As(:)
       real(RD), allocatable       :: nabla(:)
+      real(RD), allocatable       :: nabla_rad(:)
       real(RD), allocatable       :: kap(:)
       real(RD), allocatable       :: kap_rho(:)
       real(RD), allocatable       :: kap_T(:)
@@ -172,6 +173,7 @@ contains
       As = point_data(15,:)
 
       nabla = point_data(6,:)
+      nabla_rad = point_data(22,:)
 
       kap = point_data(8,:)
       kap_rho = point_data(18,:)
@@ -212,7 +214,12 @@ contains
 
       c_P = P*ups_T/(rho*T*nabla_ad)
 
-      c_rad = 16._RD*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._RD*kap*rho*L_star)
+      if (ml_p%use_nabla_rad) then
+         c_rad = 16._RD*PI*A_RADIATION*C_LIGHT*T**4*R_star*MAX(nabla, nabla_rad)*V_2/(3._RD*kap*rho*L_star)
+      else
+         c_rad = 16._RD*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._RD*kap*rho*L_star)
+      end if
+      
       c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
       c_thk = 4._RD*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
       c_eps = 4._RD*PI*rho*eps*R_star**3/L_star

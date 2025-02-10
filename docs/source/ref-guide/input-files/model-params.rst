@@ -99,4 +99,8 @@ follows:
   :math:`c_1` structure coefficients, in accordance with equations
   (20) and (21) of :ads_citet:`takata:2006a` and the hydrostatic
   equilibrium equation (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`)
+
+:nml_n:`use_nabla_rad` (default :nml_v:`.FALSE.`)
+  Use :math:`\nabrad` to calculate the radiative luminosity
+  (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'` \& :nml_n:`file_format`\ =\ :nml_v:`'OSC'`)
   

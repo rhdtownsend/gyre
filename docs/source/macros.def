@@ -104,6 +104,7 @@ wctr	w_{\rm ctr}
 As	A^{*}
 upsT	\upsilon_{T}
 nabad	\nabla_{\rm ad}
+nabrad	\nabla_{\rm rad}
 dnabad	\partial\nabad
 cP	c_{P}
 cV	c_{V}
