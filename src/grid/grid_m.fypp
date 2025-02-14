@@ -1,5 +1,5 @@
 ! Module  : grid_m
-! Purpose : definition of grid_t type, for representing segmented grids
+! Purpose : definition of grid_t type, representing segmented grids
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
