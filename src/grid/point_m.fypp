@@ -1,5 +1,5 @@
 ! Module  : point_m
-! Purpose : segmented grid point
+! Purpose : definition of point_t type, representing a segmented grid point
 !
 ! Copyright 2013-2020 Rich Townsend & The GYRE Team
 !

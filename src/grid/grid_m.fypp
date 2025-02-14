@@ -1,7 +1,7 @@
 ! Module  : grid_m
-! Purpose : segmented grids
+! Purpose : definition of grid_t type, for representing segmented grids
 !
-! Copyright 2013-2022 Rich Townsend & The GYRE Team
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -191,7 +191,8 @@ contains
 
       sub_loop : do j_base = 1, n_base-1
 
-         associate (pt_a => gr_base%pt(j_base), &
+         associate ( &
+            pt_a => gr_base%pt(j_base), &
             pt_b => gr_base%pt(j_base+1))
 
             gr%pt(j) = pt_a
