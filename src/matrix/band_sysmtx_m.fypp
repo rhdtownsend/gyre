@@ -79,7 +79,7 @@ module band_sysmtx_m
    ! Default access
 
    private
-      
+
 contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)

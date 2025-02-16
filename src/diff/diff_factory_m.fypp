@@ -20,7 +20,7 @@
 module diff_factory_m
 
    ! Uses
-   
+
    use forum_m, only: RD
 
    use colloc_diff_m
@@ -55,7 +55,7 @@ module diff_factory_m
    ! Default access
 
    private
-      
+
 contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)

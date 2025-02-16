@@ -20,7 +20,7 @@
 module magnus_diff_m
 
    ! Uses
-   
+
    use forum_m, only: RD
 
    use blas_lapack_m
@@ -87,7 +87,7 @@ module magnus_diff_m
    ! Default access
 
    private
-      
+
 contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)

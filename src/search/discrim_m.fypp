@@ -52,7 +52,7 @@ module discrim_m
 contains
 
    #:for S in DTYPE_SUFFIXES
-   
+
       subroutine eval_discrim_${S}$_(bp, st, discrim)
 
          class(bvp_${S}$), intent(inout) :: bp

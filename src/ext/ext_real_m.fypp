@@ -39,8 +39,8 @@ module ext_real_m
 
    type ext_rt
       private
-      real(RD) :: f ! Fractional part
-      integer  :: e ! Exponent
+      real(RD) :: f  ! Fractional part
+      integer  :: e  ! Exponent
    contains
       private
       procedure       :: op_minus_rx_

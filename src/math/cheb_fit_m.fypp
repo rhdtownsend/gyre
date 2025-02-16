@@ -40,7 +40,7 @@ module cheb_fit_m
       real(RD)              :: x_a
       real(RD)              :: x_b
       integer               :: n
-   contains 
+   contains
       private
       #:for S in FLOAT_SUFFIXES
          procedure    :: eval_${S}$_
@@ -300,7 +300,7 @@ contains
    !****
 
    #:for T, S in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
-   
+
       function eval_${S}$_(this, x) result(f)
 
          class(cheb_fit_t), intent(in) :: this

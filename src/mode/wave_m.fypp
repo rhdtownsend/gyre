@@ -20,7 +20,7 @@
 module wave_m
 
    ! Uses
-   
+
    use forum_m, only: RD
 
    use anapoly_0_model_m
@@ -584,7 +584,7 @@ contains
       complex(RD) :: y_3
       complex(RD) :: y_4
       real(RD)    :: U
-      real(RD)    :: c_1 
+      real(RD)    :: c_1
       real(RD)    :: Omega_rot
       complex(RD) :: omega_c
       complex(RD) :: lambda
@@ -1569,7 +1569,7 @@ contains
       complex(RD) :: y_1
       complex(RD) :: y_2
 
-      ! Evaluate the Takata Y_2 function. This expression is equivalent to 
+      ! Evaluate the Takata Y_2 function. This expression is equivalent to
       ! eqn. (70) of [Takata:2006b], divided by V
 
       y_1 = this%y_i(1, j)

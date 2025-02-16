@@ -16,7 +16,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #:include 'gyre.inc'
-  
+
 module summary_m
 
    ! Uses
@@ -373,7 +373,7 @@ contains
             case ('${N}$')
                call sc%append(${E}$)
          #:endfor
-                  
+
       case default
 
          select type (wv)
@@ -423,7 +423,7 @@ contains
             case ('${N}$')
                call sc%append(${E}$)
          #:endfor
-            
+
       case default
 
          cached = .FALSE.
@@ -468,7 +468,7 @@ contains
             case ('${N}$')
                call sc%append(${E}$)
          #:endfor
-               
+
       case default
 
          cached = .FALSE.

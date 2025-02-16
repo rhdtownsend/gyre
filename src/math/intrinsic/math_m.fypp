@@ -147,7 +147,7 @@ contains
       #:endfor
 
       !****
-         
+
       elemental function cospi_${S_X}$_(x) result(cospi_x)
 
          ${T_X}$, intent(in) :: x
@@ -191,7 +191,7 @@ contains
       end function acospi_${S_X}$_
 
       !****
-   
+
       elemental function asinpi_${S_X}$_(x) result(asinpi_x)
 
          ${T_X}$, intent(in) :: x
@@ -213,5 +213,5 @@ contains
       end function atanpi_${S_X}$_
 
    #:endfor
-   
+
 end module math_m

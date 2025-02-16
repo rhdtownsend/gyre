@@ -523,17 +523,17 @@ contains
 
             ua = PI*(2*j-1.5_RD)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
-            Ma = Ea - e*sin(Ea)  
+            Ma = Ea - e*sin(Ea)
             S = S + f(ua, Ma, e)
 
             ua = PI*(2*j-1.0_RD)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
-            Ma = Ea - e*sin(Ea)  
+            Ma = Ea - e*sin(Ea)
             S = S + f(ua, Ma, e)
 
             ua = PI*(2*j-0.5_RD)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
-            Ma = Ea - e*sin(Ea)  
+            Ma = Ea - e*sin(Ea)
             S = S + f(ua, Ma, e)
 
          end do update_loop

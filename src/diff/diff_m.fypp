@@ -20,13 +20,13 @@
 module diff_m
 
    ! No implicit typing
-   
+
    implicit none
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
       ! Derived-type definitions
-   
+
       type, abstract :: diff_${S}$
          integer :: n_e
       contains
@@ -60,5 +60,5 @@ module diff_m
    ! Default access
 
    private
-      
+
 end module diff_m

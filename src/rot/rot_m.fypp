@@ -20,7 +20,7 @@
 module rot_m
 
    ! No implicit typing
-   
+
    implicit none
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
@@ -66,5 +66,5 @@ module rot_m
    ! Default access
 
    private
-      
+
 end module rot_m

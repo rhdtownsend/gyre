@@ -29,9 +29,9 @@ module sysmtx_m
 
       type, abstract :: sysmtx_${S}$
          integer :: n   ! Number of equation blocks
-         integer :: n_e ! Number of equations per block
-         integer :: n_i ! Number of inner boundary conditions
-         integer :: n_o ! Number of outer boundary conditions
+         integer :: n_e  ! Number of equations per block
+         integer :: n_i  ! Number of inner boundary conditions
+         integer :: n_o  ! Number of outer boundary conditions
       contains
          procedure(set_B_${S}$_), deferred          :: set_B_i
          procedure(set_B_${S}$_), deferred          :: set_B_o
@@ -137,5 +137,5 @@ module sysmtx_m
    ! Default access
 
    private
-      
+
 end module sysmtx_m

@@ -213,7 +213,7 @@ contains
       else
 
          @:CHECK_BOUNDS(SIZE(coeff), this%gr%n)
-         
+
          this%coeffs(:,i) = coeff
 
       endif
