@@ -16,15 +16,15 @@ The first line of version-1.00 MESA-format files is a header with the following 
      - integer
      - number of grid points
    * - 2
-     - :math:`M`
+     - :math:`\Mstar`
      - real
      - stellar mass [:math:`\gram`]
    * - 3
-     - :math:`R`
+     - :math:`\Rstar`
      - real
      - photospheric radius [:math:`\cm`]
    * - 4
-     - :math:`L`
+     - :math:`\Lstar`
      - real
      - photospheric luminosity [:math:`\erg\,\second^{-1}`]
    * - 5

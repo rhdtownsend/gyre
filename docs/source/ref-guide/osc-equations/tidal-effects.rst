@@ -30,9 +30,9 @@ of partial tidal potentials defined by
 
   \PhiTlmk \equiv
   - \epsT \,
-  \frac{GM}{R} \,
+  \frac{G\Mstar}{\Rstar} \,
   \cbar_{\ell,m,k}
-  \left( \frac{r}{R} \right)^{\ell} Y^{m}_{\ell}(\theta, \phi) \,
+  \left( \frac{r}{\Rstar} \right)^{\ell} Y^{m}_{\ell}(\theta, \phi) \,
   \exp(- \ii k \Oorb t).
 
 (the summation over :math:`\ell` and :math:`m` comes from a multipolar
@@ -41,7 +41,7 @@ from a Fourier time expansion). Here,
    
 .. math::
 
-   \epsT = \left( \frac{R}{a} \right)^{3} q = \frac{\Oorb^{2} R^{3}}{GM} \frac{q}{1+q}
+   \epsT = \left( \frac{\Rstar}{a} \right)^{3} q = \frac{\Oorb^{2} \Rstar^{3}}{G\Mstar} \frac{q}{1+q}
 
 quantifies the overall strength of the tidal forcing, in terms of the
 companion's mass :math:`q M`, semi-major axis :math:`a` and orbital
@@ -86,7 +86,7 @@ The latter change means that the dimensionless frequency (:eq:`e:omega`) becomes
 
 .. math::
 
-   \omega = \alphafrq \, k \Oorb \sqrt{\frac{R^{3}}{GM}},
+   \omega = \alphafrq \, k \Oorb \sqrt{\frac{\Rstar^{3}}{G\Mstar}},
 
 where :math:`\alphafrq` is an additional term introduced to allow
 tuning of the tidal forcing frequency (see the :nml_n:`alpha_frq` parameter
@@ -110,8 +110,8 @@ where
    :label: e:tidal-part-pot
    
    \tPhiTlmk \equiv - \epsT \,
-   \frac{GM}{R} \,
+   \frac{G\Mstar}{\Rstar} \,
    \cbar_{\ell,m,k}
-   \left( \frac{r}{R} \right)^{\ell}.
+   \left( \frac{r}{\Rstar} \right)^{\ell}.
 
 describes the radial dependence of the partial tidal potential.

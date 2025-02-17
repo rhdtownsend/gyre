@@ -156,23 +156,27 @@ Perturbations
    * - :nml_v:`xi_r_ref`
      - :math:`\txi_{r,{\rm ref}}`
      - complex(:nml_v:`n_row`)
-     - radial displacement perturbation at reference location [:math:`R`]
+     - radial displacement perturbation at reference location [:math:`\Rstar`]
+   * - :nml_v:`xi_h_ref`
+     - :math:`\txi_{h,{\rm ref}}`
+     - complex(:nml_v:`n_row`)
+     - radial displacement perturbation at reference location [:math:`\Rstar`]
    * - :nml_v:`eul_Phi_ref`
      - :math:`\tPhi'_{\rm ref}`
      - complex(:nml_v:`n_row`)
-     - Eulerian potential perturbation at reference location [:math:`GM/R`]
+     - Eulerian potential perturbation at reference location [:math:`G\Mstar/\Rstar`]
    * - :nml_v:`deul_Phi_ref`
      - :math:`(\sderiv{\tPhi'}{x})_{\rm ref}`
      - complex(:nml_v:`n_row`)
-     - Eulerian potential gradient perturbation at reference location [:math:`GM/R^{2}`]
+     - Eulerian potential gradient perturbation at reference location [:math:`G\Mstar/\Rstar^{2}`]
    * - :nml_v:`lag_S_ref`
      - :math:`\delta\tS_{\rm ref}`
      - complex(:nml_v:`n_row`)
-     - Lagrangian specific entropy perturbation at reference location [:math:`R`]
+     - Lagrangian specific entropy perturbation at reference location [:math:`\cP`]
    * - :nml_v:`lag_L_ref`
      - :math:`\delta\tL_{\rm R,ref}`
      - complex(:nml_v:`n_row`)
-     - Lagrangian radiative luminosity perturbation at reference location [:math:`L`]
+     - Lagrangian radiative luminosity perturbation at reference location [:math:`\Lstar`]
 
 Energetics & Transport
 ----------------------
@@ -193,18 +197,18 @@ Energetics & Transport
    * - :nml_v:`E`
      - :math:`E`
      - real(:nml_v:`n_row`)
-     - mode inertia [:math:`M R^{2}`]; evaluated by integrating
+     - mode inertia [:math:`\Mstar\Rstar^{2}`]; evaluated by integrating
        :math:`\sderiv{E}{x}`
    * - :nml_v:`E_p`
      - :math:`E_{\rm p}`
      - real(:nml_v:`n_row`)
-     - acoustic mode inertia [:math:`M R^{2}`]; evaluated by
+     - acoustic mode inertia [:math:`\Mstar\Rstar^{2}`]; evaluated by
        integrating :math:`\sderiv{E}{x}` where
        :math:`\varpi=1`
    * - :nml_v:`E_g`
      - :math:`E_{\rm g}`
      - real(:nml_v:`n_row`)
-     - gravity mode inertia [:math:`M R^{2}`]; evaluated by
+     - gravity mode inertia [:math:`\Mstar\Rstar^{2}`]; evaluated by
        integrating :math:`\sderiv{E}{x}` in regions where
        :math:`\varpi=-1`
    * - :nml_v:`E_norm`
@@ -219,27 +223,27 @@ Energetics & Transport
    * - :nml_v:`H`
      - :math:`H`
      - real(:nml_v:`n_row`)
-     - mode energy [:math:`G M^{2}/R`]; evaluated as
+     - mode energy [:math:`G\Mstar^{2}/\Rstar`]; evaluated as
        :math:`\frac{1}{2} \omega^{2} E`
    * - :nml_v:`W`\ [#only-N]_
      - :math:`W`
      - real(:nml_v:`n_row`)
-     - mode work [:math:`G M^{2}/R`]; evaluated by
+     - mode work [:math:`G\Mstar^{2}/\Rstar`]; evaluated by
        integrating :math:`\sderiv{W}{x}`
    * - :nml_v:`W_eps`\ [#only-N]_
      - :math:`W_{\epsilon}`
      - real(:nml_v:`n_row`)
-     - mode work [:math:`G M^{2}/R`]; evaluated by
+     - mode work [:math:`G\Mstar^{2}/\Rstar`]; evaluated by
        integrating :math:`\sderiv{W_{\epsilon}}{x}`
    * - :nml_v:`tau_ss`
      - :math:`\tau_{\rm ss}`
      - real(:nml_v:`n_row`)
-     - steady-state torque [:math:`G M^{2}/R`]; evaluated by
+     - steady-state torque [:math:`G\Mstar^{2}/\Rstar`]; evaluated by
        integrating :math:`\sderiv{\tau_{\rm ss}}{x}`
    * - :nml_v:`tau_tr`
      - :math:`\tau_{\rm tr}`
      - real(:nml_v:`n_row`)
-     - steady-state torque [:math:`G M^{2}/R`]; evaluated by
+     - steady-state torque [:math:`G\Mstar^{2}/\Rstar`]; evaluated by
        integrating :math:`\sderiv{\tau_{\rm tr}}{x}`
 
 Rotation
@@ -256,7 +260,7 @@ Rotation
    * - :nml_v:`Omega_rot_ref`
      - :math:`\Omega_{\rm rot,ref}`
      - real(:nml_v:`n_row`)
-     - rotation angular frequency at reference location[:math:`\sqrt{GM/R^{3}}`]
+     - rotation angular frequency at reference location[:math:`\sqrt{G\Mstar/\Rstar^{3}}`]
    * - :nml_v:`domega_rot`
      - :math:`\Delta \omega`
      - real(:nml_v:`n_row`)
@@ -284,25 +288,25 @@ Stellar Structure
      - Datatype
      - Description
    * - :nml_v:`M_star`\ [#only-D]_
-     - :math:`M`
+     - :math:`\Mstar`
      - real(:nml_v:`n_row`)
      - stellar mass [:math:`\gram`]
    * - :nml_v:`R_star`\ [#only-D]_
-     - :math:`R`
+     - :math:`\Rstar`
      - real(:nml_v:`n_row`)
      - stellar radius [:math:`\cm`]
    * - :nml_v:`L_star`\ [#only-D]_
-     - :math:`L`
+     - :math:`\Lstar`
      - real(:nml_v:`n_row`)
      - stellar luminosity [:math:`\erg\,\second^{-1}`]
    * - :nml_v:`Delta_p`
      - :math:`\Delta \nu`
      - real(:nml_v:`n_row`)
-     - asymptotic p-mode large frequency separation [:math:`\sqrt{GM/R^{3}}`]
+     - asymptotic p-mode large frequency separation [:math:`\sqrt{G\Mstar/\Rstar^{3}}`]
    * - :nml_v:`Delta_g`
      - :math:`(\Delta P)^{-1}`
      - real(:nml_v:`n_row`)
-     - asymptotic g-mode inverse period separation [:math:`\sqrt{GM/R^{3}}`]
+     - asymptotic g-mode inverse period separation [:math:`\sqrt{G\Mstar/\Rstar^{3}}`]
 
 Tidal Response
 --------------
@@ -324,11 +328,11 @@ Note that these items are available only when using :program:`gyre_tides`.
    * - :nml_v:`eul_Psi_ref`
      - :math:`\tPsi'_{\rm ref}`
      - complex(:nml_v:`n_row`)
-     - Eulerian total potential perturbation at reference location [:math:`GM/R`]
+     - Eulerian total potential perturbation at reference location [:math:`G\Mstar/\Rstar`]
    * - :nml_v:`Phi_T_ref`
      - :math:`\tPhi_{\rm T, ref}`
      - real(:nml_v:`n_row`)
-     - tidal potential at reference location [:math:`GM/R`]
+     - tidal potential at reference location [:math:`G\Mstar/\Rstar`]
    * - :nml_v:`Omega_orb`
      - :math:`\Oorb`
      - real(:nml_v:`n_row`)

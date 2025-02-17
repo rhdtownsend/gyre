@@ -16,15 +16,15 @@ The first line of version-0.19 MESA-format files is a header with the following 
      - integer
      - number of grid points
    * - 2
-     - :math:`M`
+     - :math:`\Mstar`
      - real
      - stellar mass [:math:`\gram`]
    * - 3
-     - :math:`R`
+     - :math:`\Rstar`
      - real
      - photospheric radius [:math:`\cm`]
    * - 4
-     - :math:`L`
+     - :math:`\Lstar`
      - real
      - photospheric luminosity [:math:`\erg\,\second^{-1}`]
    * - 5
@@ -53,7 +53,7 @@ following columns:
      - real
      - radial coordinate [:math:`\cm`]
    * - 3
-     - :math:`\frac{M_{r}}{M-M_{r}}`
+     - :math:`\frac{M_{r}}{\Mstar-M_{r}}`
      - real
      - transformed interior mass
    * - 4

@@ -13,8 +13,8 @@ traces its roots back to :ads_citet:`dziembowski:1971`.
 Variables
 ---------
 
-The independent variable is the fractional radius :math:`x \equiv r/R`
-(with :math:`R` the stellar radius), and the dependent variables
+The independent variable is the fractional radius :math:`x \equiv r/\Rstar`
+(with :math:`\Rstar` the stellar radius), and the dependent variables
 :math:`\{y_{1},y_{2},\ldots,y_{6}\}` are
 
 .. math::
@@ -25,10 +25,12 @@ The independent variable is the fractional radius :math:`x \equiv r/R`
    y_{2} &= x^{2-\ell}\, \frac{\tP'}{\rho g r}, \\
    y_{3} &= x^{2-\ell}\, \frac{\tPhi'}{gr}, \\
    y_{4} &= x^{2-\ell}\, \frac{1}{g} \deriv{\tPhi'}{r}, \\
-   y_{5} &= x^{2-\ell}\, \frac{\delta \tS}{c_{p}}, \\
-   y_{6} &= x^{-1-\ell}\, \frac{\delta \tLrad}{L}.
+   y_{5} &= x^{2-\ell}\, \frac{\delta \tS}{\cP}, \\
+   y_{6} &= x^{-1-\ell}\, \frac{\delta \tLrad}{\Lstar}
    \end{aligned}
 
+(with :math:`\Lstar` the stellar luminosity).
+   
 .. _osc-dimless-eqns:
 
 Oscillation Equations
@@ -90,9 +92,9 @@ where the dimensionless oscillation frequency is introduced as
 .. math::
    :label: e:omega
 
-   \omega \equiv \sqrt{\frac{R^{3}}{GM}}\sigma ,
+   \omega \equiv \sqrt{\frac{\Rstar^{3}}{G\Mstar}}\sigma
 
-(with :math:`M` the stellar mass). These differential equations are
+(with :math:`\Mstar` the stellar mass). These differential equations are
 derived from the separated equations, with the insertion of 'switch'
 terms (denoted :math:`\alpha`) that allow certain pieces of physics to
 be altered. See the :ref:`osc-physics-switches` section for more
@@ -234,7 +236,7 @@ defined as follows:
    \As = \frac{1}{\Gamma_{1}} \deriv{\ln P}{\ln r} - \deriv{\ln \rho}{\ln r} \qquad
    U = \deriv{\ln M_{r}}{\ln r} \\
    %
-   c_1 = \frac{r^{3}}{R^{3}} \frac{M}{M_{r}} \qquad
+   c_1 = \frac{r^{3}}{\Rstar^{3}} \frac{\Mstar}{M_{r}} \qquad
    \fpigam =
    \begin{cases}
    \alphapi & \As > 0, x < x_{\rm atm} \\
@@ -243,8 +245,8 @@ defined as follows:
    \end{cases}\\
    %
    \nabla = \deriv{\ln T}{\ln P} \qquad
-   \clum = x^{-3} \frac{\Lrad+\Lcon}{L} \qquad
-   \crad = x^{-3} \frac{\Lrad}{L} \qquad
+   \clum = x^{-3} \frac{\Lrad+\Lcon}{\Lstar} \qquad
+   \crad = x^{-3} \frac{\Lrad}{\Lstar} \qquad
    \dcrad = \deriv{\ln \crad}{\ln r} \\
    %
    \frht = 1 - \alpharht \frac{\ii \omega \cthn}{4} \qquad
@@ -253,17 +255,17 @@ defined as follows:
    \ckapad = \frac{\alphakar \kaprho}{\Gamma_{1}} + \nabad \alphakat \kapT \qquad
    \ckapS = - \upsT \alphakar \kaprho + \alphakat \kapT \\
    %
-   \ceps = x^{-3} \frac{4\pi r^{3} \rho \epsnuc}{L} \qquad
+   \ceps = x^{-3} \frac{4\pi r^{3} \rho \epsnuc}{\Lstar} \qquad
    \cepsad = \ceps \epsnucad \qquad
    \cepsS = \ceps \epsnucS \\
    %
    \cdif = - 4 \nabad V \nabla + \nabad \left(V + \deriv{\ln \nabad}{\ln x} \right) \\
    %
-   \cthn = \frac{\cP}{a c \kappa T^{3}} \sqrt{\frac{GM}{R^{3}}} \qquad
+   \cthn = \frac{\cP}{a c \kappa T^{3}} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \qquad
    \dcthn = \deriv{\ln \cthn}{\ln r} \\
    %
-   \cthk = x^{-3} \frac{4\pi r^{3} \cP T \rho}{L} \sqrt{\frac{GM}{R^{3}}} \qquad
-   \cegv = x^{-3} \frac{4\pi r^{3} \rho \epsgrav}{L}
+   \cthk = x^{-3} \frac{4\pi r^{3} \cP T \rho}{\Lstar} \sqrt{\frac{G\Mstar}{\Rstar^{3}}} \qquad
+   \cegv = x^{-3} \frac{4\pi r^{3} \rho \epsgrav}{\Lstar}
    \end{gathered}
 
 .. _osc-physics-switches:

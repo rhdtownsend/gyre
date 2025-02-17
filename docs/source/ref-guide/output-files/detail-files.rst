@@ -41,7 +41,7 @@ Solution Data
    * - :nml_v:`x`
      - :math:`x`
      - real(:nml_n:`n`)
-     - independent variable :math:`x = r/R`
+     - independent variable :math:`x = r/\Rstar`
    * - :nml_v:`dx_min`
      - :math:`\Delta x_{\rm min}`
      - real
@@ -225,43 +225,43 @@ Perturbations
    * - :nml_v:`xi_r_ref`
      - :math:`\txi_{r,{\rm ref}}`
      - complex
-     - radial displacement perturbation at reference location [:math:`R`]
+     - radial displacement perturbation at reference location [:math:`\Rstar`]
    * - :nml_v:`xi_h_ref`
      - :math:`\txi_{\rm h,ref}`
      - complex
-     - radial displacement perturbation at reference location [:math:`R`]
+     - horizontal displacement perturbation at reference location [:math:`\Rstar`]
    * - :nml_v:`eul_Phi_ref`
      - :math:`\tPhi'_{\rm ref}`
      - complex
-     - Eulerian potential perturbation at reference location [:math:`GM/R`]
+     - Eulerian potential perturbation at reference location [:math:`G\Mstar/\Rstar`]
    * - :nml_v:`deul_Phi_ref`
      - :math:`(\sderiv{\tPhi'}{x})_{\rm ref}`
      - complex
-     - Eulerian potential gradient perturbation at reference location [:math:`GM/R^{2}`]
+     - Eulerian potential gradient perturbation at reference location [:math:`G\Mstar/\Rstar^{2}`]
    * - :nml_v:`lag_S_ref`
      - :math:`\delta\tS_{\rm ref}`
      - complex
-     - Lagrangian specific entropy perturbation at reference location [:math:`R`]
+     - Lagrangian specific entropy perturbation at reference location [:math:`\cP`]
    * - :nml_v:`lag_L_ref`
      - :math:`\delta\tL_{\rm R,ref}`
      - complex
-     - Lagrangian radiative luminosity perturbation at reference location [:math:`L`]
+     - Lagrangian radiative luminosity perturbation at reference location [:math:`\Lstar`]
    * - :nml_v:`xi_r`
      - :math:`\txir`
      - complex(:nml_v:`n`)
-     - radial displacement perturbation [:math:`R`]
+     - radial displacement perturbation [:math:`\Rstar`]
    * - :nml_v:`xi_h`
      - :math:`\txih`
      - complex(:nml_v:`n`)
-     - radial displacement perturbation [:math:`R`]
+     - horizontal displacement perturbation [:math:`\Rstar`]
    * - :nml_v:`eul_Phi`
      - :math:`\tPhi'`
      - complex(:nml_v:`n`)
-     - Eulerian potential perturbation [:math:`GM/R`]
+     - Eulerian potential perturbation [:math:`G\Mstar/\Rstar`]
    * - :nml_v:`deul_Phi`
      - :math:`\sderiv{\tPhi'}{x}`
      - complex(:nml_v:`n`)
-     - Eulerian potential gradient perturbation [:math:`GM/R^{2}`]
+     - Eulerian potential gradient perturbation [:math:`G\Mstar/\Rstar^{2}`]
    * - :nml_v:`lag_S`
      - :math:`\delta\tS`
      - complex(:nml_v:`n`)
@@ -269,7 +269,7 @@ Perturbations
    * - :nml_v:`lag_L`
      - :math:`\delta\tLrad`
      - complex(:nml_v:`n`)
-     - Lagrangian radiative luminosity perturbation [:math:`L`]
+     - Lagrangian radiative luminosity perturbation [:math:`\Lstar`]
    * - :nml_v:`eul_P`
      - :math:`\tP'`
      - complex(:nml_v:`n`)
@@ -314,18 +314,18 @@ Energetics & Transport
    * - :nml_v:`E`
      - :math:`E`
      - real
-     - mode inertia [:math:`M R^{2}`]; evaluated by integrating
+     - mode inertia [:math:`\Mstar\Rstar^{2}`]; evaluated by integrating
        :math:`\sderiv{E}{x}`
    * - :nml_v:`E_p`
      - :math:`E_{\rm p}`
      - real
-     - acoustic mode inertia [:math:`M R^{2}`]; evaluated by
+     - acoustic mode inertia [:math:`\Mstar\Rstar^{2}`]; evaluated by
        integrating :math:`\sderiv{E}{x}` where
        :math:`\varpi=1`
    * - :nml_v:`E_g`
      - :math:`E_{\rm g}`
      - real
-     - gravity mode inertia [:math:`M R^{2}`]; evaluated by
+     - gravity mode inertia [:math:`\Mstar\Rstar^{2}`]; evaluated by
        integrating :math:`\sderiv{E}{x}` in regions where
        :math:`\varpi=-1`
    * - :nml_v:`E_norm`
@@ -340,51 +340,51 @@ Energetics & Transport
    * - :nml_v:`H`
      - :math:`H`
      - real
-     - mode energy [:math:`G M^{2}/R`]; evaluated as
+     - mode energy [:math:`G\Mstar^{2}/\Rstar`]; evaluated as
        :math:`\frac{1}{2} \omega^{2} E`
    * - :nml_v:`W`
      - :math:`W`
      - real
-     - mode work [:math:`G M^{2}/R`]; evaluated by
+     - mode work [:math:`G\Mstar^{2}/\Rstar`]; evaluated by
        integrating :math:`\sderiv{W}{x}`
    * - :nml_v:`W_eps`
      - :math:`W_{\epsilon}`
      - real
-     - mode work [:math:`G M^{2}/R`]; evaluated by
+     - mode work [:math:`G\Mstar^{2}/\Rstar`]; evaluated by
        integrating :math:`\sderiv{W_{\epsilon}}{x}`
    * - :nml_v:`tau_ss`
      - :math:`\tau_{\rm ss}`
      - real
-     - steady-state torque [:math:`G M^{2}/R`]; evaluated by
+     - steady-state torque [:math:`G\Mstar^{2}/\Rstar`]; evaluated by
        integrating :math:`\sderiv{\tau_{\rm ss}}{x}`
    * - :nml_v:`tau_tr`
      - :math:`\tau_{\rm tr}`
      - real
-     - steady-state torque [:math:`G M^{2}/R`]; evaluated by
+     - steady-state torque [:math:`G\Mstar^{2}/\Rstar`]; evaluated by
        integrating :math:`\sderiv{\tau_{\rm tr}}{x}`
    * - :nml_v:`dE_dx`
      - :math:`\sderiv{E}{x}`
      - real(:nml_v:`n`)
-     - differential inertia [:math:`M R^{2}`]; evaluated using eqn. 3.139 of
+     - differential inertia [:math:`\Mstar \Rstar^{2}`]; evaluated using eqn. 3.139 of
        :ads_citet:`aerts:2010`
    * - :nml_v:`dW_dx`\ [#only-N]_
      - :math:`\sderiv{W}{x}`
      - real(:nml_v:`n`)
-     - differential work [:math:`GM^{2}/R`]; evaluated using eqn. 25.9
+     - differential work [:math:`G\Mstar^{2}/\Rstar`]; evaluated using eqn. 25.9
        of :ads_citet:`unno:1989`
    * - :nml_v:`dW_eps_dx`\ [#only-N]_
      - :math:`\sderiv{W_{\epsilon}}{x}`
      - real(:nml_v:`n`)
-     - differential nuclear work [:math:`GM^{2}/R`]; evaluated using
+     - differential nuclear work [:math:`G\Mstar^{2}/\Rstar`]; evaluated using
        eqn. 25.9 of :ads_citet:`unno:1989`
    * - :nml_v:`dtau_ss_dx`
      - :math:`\sderiv{\tau_{\rm ss}}{x}`
      - real(:nml_v:`n`)
-     - steady-state differential torque [`G M^{2}/R`]
+     - steady-state differential torque [:math:`G\Mstar^{2}/\Rstar`]
    * - :nml_v:`dtau_tr_dx`
      - :math:`\sderiv{\tau_{\rm tr}}{x}`
      - real(:nml_v:`n`)
-     - transient differential torque [`G M^{2}/R`]
+     - transient differential torque [:math:`G\Mstar^{2}/\Rstar`]
    * - :nml_v:`alpha_0`
      - :math:`\alpha_{0}`
      - real(:nml_v:`n`)
@@ -410,11 +410,11 @@ Rotation
    * - :nml_v:`Omega_rot_ref`
      - :math:`\Omega_{\rm rot,ref}`
      - real
-     - rotation angular frequency at reference location[:math:`\sqrt{GM/R^{3}}`]
+     - rotation angular frequency at reference location[:math:`\sqrt{G\Mstar/\Rstar^{3}}`]
    * - :nml_v:`Omega_rot`
      - :math:`\Orot`
      - real(:nml_v:`n`)
-     - rotation angular frequency [:math:`\sqrt{GM/R^{3}}`]
+     - rotation angular frequency [:math:`\sqrt{G\Mstar/\Rstar^{3}}`]
    * - :nml_v:`domega_rot`
      - :math:`\Delta \omega`
      - real
@@ -451,25 +451,25 @@ Stellar Structure
      - Datatype
      - Description
    * - :nml_v:`M_star`\ [#only-D]_
-     - :math:`M`
+     - :math:`\Mstar`
      - real
      - stellar mass [:math:`\gram`]
    * - :nml_v:`R_star`\ [#only-D]_
-     - :math:`R`
+     - :math:`\Rstar`
      - real
      - stellar radius [:math:`\cm`]
    * - :nml_v:`L_star`\ [#only-D]_
-     - :math:`L`
+     - :math:`\Lstar`
      - real
      - stellar luminosity [:math:`\erg\,\second^{-1}`]
    * - :nml_v:`Delta_p`
      - :math:`\Delta \nu`
      - real
-     - asymptotic p-mode large frequency separation [:math:`\sqrt{GM/R^{3}}`]
+     - asymptotic p-mode large frequency separation [:math:`\sqrt{G\Mstar/\Rstar^{3}}`]
    * - :nml_v:`Delta_g`
      - :math:`(\Delta P)^{-1}`
      - real
-     - asymptotic g-mode inverse period separation [:math:`\sqrt{GM/R^{3}}`]
+     - asymptotic g-mode inverse period separation [:math:`\sqrt{G\Mstar/\Rstar^{3}}`]
    * - :nml_v:`V_2`
      - :math:`V_2`
      - real(:nml_v:`n`)
@@ -604,19 +604,19 @@ Note that these items are available only when using :program:`gyre_tides`.
    * - :nml_v:`eul_Psi_ref`
      - :math:`\tPsi'_{\rm ref}`
      - complex
-     - Eulerian total potential perturbation at reference location [:math:`GM/R`]
+     - Eulerian total potential perturbation at reference location [:math:`G\Mstar/\Rstar`]
    * - :nml_v:`Phi_T_ref`
      - :math:`\tPhi_{\rm T, ref}`
      - real
-     - tidal potential at reference location [:math:`GM/R`]
+     - tidal potential at reference location [:math:`G\Mstar/\Rstar`]
    * - :nml_v:`eul_Psi`
      - :math:`\tPsi'`
      - complex(:nml_v:`n`)
-     - Eulerian total potential perturbation [:math:`GM/R`]
+     - Eulerian total potential perturbation [:math:`G\Mstar/\Rstar`]
    * - :nml_v:`Phi_T`
      - :math:`\tPhi_{{\rm T}}`
      - real(:nml_v:`n`)
-     - tidal potential [:math:`GM/R`]
+     - tidal potential [:math:`G\Mstar/\Rstar`]
    * - :nml_v:`Omega_orb`
      - :math:`\Oorb`
      - real

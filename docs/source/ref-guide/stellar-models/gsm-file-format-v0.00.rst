@@ -18,17 +18,17 @@ Data items in the root HDF5 group of version-0.00 GSM-format files are as follow
      - integer
      - number of grid points
    * - :code:`M_star`
-     - :math:`M`
+     - :math:`\Mstar`
      - attribute
      - real
      - stellar mass [:math:`\gram`]
    * - :code:`R_star`
-     - :math:`R`
+     - :math:`\Rstar`
      - attribute
      - real
      - photospheric radius [:math:`\cm`]
    * - :code:`L_star`
-     - :math:`L`
+     - :math:`\Lstar`
      - attribute
      - real
      - photospheric luminosity [:math:`\erg\,\second^{-1}`]
@@ -38,7 +38,7 @@ Data items in the root HDF5 group of version-0.00 GSM-format files are as follow
      - real (:code:`n`)
      - radial coordinate [:math:`\cm`]
    * - :code:`w`
-     - :math:`\frac{M_{r}}{M-M_{r}}`
+     - :math:`\frac{M_{r}}{\Mstar-M_{r}}`
      - dataset
      - real (:code:`n`)
      - transformed interior mass

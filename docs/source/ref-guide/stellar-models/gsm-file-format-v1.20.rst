@@ -23,17 +23,17 @@ Data items in the root HDF5 group of version-1.20 GSM-format files are as follow
      - integer
      - 120
    * - :code:`M_star`
-     - :math:`M`
+     - :math:`\Mstar`
      - attribute
      - real
      - stellar mass [:math:`\gram`]
    * - :code:`R_star`
-     - :math:`R`
+     - :math:`\Rstar`
      - attribute
      - real
      - photospheric radius [:math:`\cm`]
    * - :code:`L_star`
-     - :math:`L`
+     - :math:`\Lstar`
      - attribute
      - real
      - photospheric luminosity [:math:`\erg\,\second^{-1}`]

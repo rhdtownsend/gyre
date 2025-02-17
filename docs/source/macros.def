@@ -1,6 +1,9 @@
 Msun	{\rm M}_{\odot}
 Rsun	{\rm R}_{\odot}
 Lsun	{\rm L}_{\odot}
+Mstar	M_{\ast}
+Rstar	R_{\ast}
+Lstar	L_{\ast}
 deriv	\frac{{\rm d}#1}{{\rm d}#2}
 sderiv	{\rm d}#1/{\rm d}#2
 nderiv	\frac{{\rm d}^{#3}#1}{{\rm d}#2^{#3}}

@@ -36,7 +36,7 @@ frequency :math:`\omega` with the dimensionless co-rotating frequency
 
 .. math::
 
-   \omegac \equiv \omega - m \Orot \sqrt{\frac{R^{3}}{GM}}.
+   \omegac \equiv \omega - m \Orot \sqrt{\frac{\Rstar^{3}}{G\Mstar}}.
 
 .. _osc-rot-coriolis-p:
 
@@ -51,7 +51,7 @@ frequency of a mode is shifted by the amount
 
 .. math::
 
-   \Delta \sigma = m \int_{0}^{R} \Orot \, \deriv{\beta}{r} \diff{r},
+   \Delta \sigma = m \int_{0}^{\Rstar} \Orot \, \deriv{\beta}{r} \diff{r},
 
 where the rotation splitting kernel is
 
@@ -59,7 +59,7 @@ where the rotation splitting kernel is
 
    \deriv{\beta}{r} =
    \frac{\left\{ \txir^{2} + [\ell(\ell+1) - 1] \txih^{2} - 2 \txir \txih \right\} \rho r^{2}}
-   {\int_{0}^{R} \left\{ \txir^{2} + \ell(\ell+1) \txih^{2} \right\} \rho r^{2} \diff{r}}
+   {\int_{0}^{\Rstar} \left\{ \txir^{2} + \ell(\ell+1) \txih^{2} \right\} \rho r^{2} \diff{r}}
 
 In this latter expression, the eigenfunctions :math:`\txir` and
 :math:`\txih` are evaluated from solutions to the oscillation
