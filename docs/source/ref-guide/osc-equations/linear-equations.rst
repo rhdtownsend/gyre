@@ -56,9 +56,10 @@ opacity can be expressed as
 
 .. math::
 
-   \frac{\delta \epsnuc}{\epsnuc} = \epsnucad \frac{\delta P}{P} + \epsnucS \frac{\delta S}{\cP},
-   \qquad
-   \frac{\delta \kappa}{\kappa} = \kapad \frac{\delta P}{P} + \kapS \frac{\delta S}{\cP}.
+   \begin{gathered}
+   \frac{\delta \epsnuc}{\epsnuc} = \epsnucrho \frac{\delta \rho}{\rho} + \epsnucT \frac{\delta T}{T} = \epsnucad \frac{\delta P}{P} + \epsnucS \frac{\delta S}{\cP},\\
+   \frac{\delta \kappa}{\kappa} = \kaprho \frac{\delta \rho}{\rho} + \kapT \frac{\delta T}{T} = \kapad \frac{\delta P}{P} + \kapS \frac{\delta S}{\cP}.
+   \end{gathered}
 
 In these expressions, Eulerian and Lagrangian perturbations to any
 scalar quantity :math:`f` are related via
@@ -81,21 +82,26 @@ and the nuclear and opacity partials are
 
 .. math::
 
+   \begin{gathered}
+   \epsnucrho = \left( \pderiv{\ln \epsnuc}{\ln \rho} \right)_{T}, \quad
+   \epsnucT = \left( \pderiv{\ln \epsnuc}{\ln T} \right)_{\rho}, \quad
    \epsnucad = \left( \pderiv{\ln \epsnuc}{\ln P} \right)_{\rm ad}, \quad
-   \epsnucS = \cP \left( \pderiv{\ln \epsnuc}{S} \right)_{P}, \quad
+   \epsnucS = \cP \left( \pderiv{\ln \epsnuc}{S} \right)_{P}, \\
+   \kaprho = \left( \pderiv{\ln \kappa}{\ln \rho} \right)_{T}, \quad
+   \kapT = \left( \pderiv{\ln \kappa}{\ln T} \right)_{\rho}, \qquad
    \kapad = \left( \pderiv{\ln \kappa}{\ln P} \right)_{\rm ad}, \quad
    \kapS = \cP \left( \pderiv{\ln \kappa}{S} \right)_{P}.
+   \end{gathered}
 
-The latter can be calculated from corresponding density and
-temperature partials via
+The :math:`(\rho,T)` and :math:`(P,S)` pairs of partials are related by
 
 .. math::
 
    \begin{gathered}
-   \kapad = \frac{\kaprho}{\Gammi} + \nabad \kapT, \qquad
-   \kapS = -\upsT \kaprho + \kapT, \\
    \epsnucad = \frac{\epsnucrho}{\Gammi} + \nabad \epsnucT, \qquad
-   \epsnucS = -\upsT \epsnucrho + \epsnucT.
+   \epsnucS = -\upsT \epsnucrho + \epsnucT, \\
+   \kapad = \frac{\kaprho}{\Gammi} + \nabad \kapT, \qquad
+   \kapS = -\upsT \kaprho + \kapT.
    \end{gathered}
 
 .. rubric:: Footnotes
