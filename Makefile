@@ -96,6 +96,8 @@ ifeq ($(FORUM),yes)
    clean-forum :
 	@$(MAKE) -C $(SRC_DIR)/forum clean
 
+   install-forum : TESTS = no
+
 else
 
    install-forum : ;

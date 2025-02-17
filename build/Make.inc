@@ -68,8 +68,8 @@ build : $(BIN_FILES) $(LIB_FILES)
 	@:
 
 clean :
-	@rm -rf $(BIN_FILES) $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) \
-                $(INC_FILES) $(DEPEND_DIR) *.f90 *.mod *.smod *.o
+	@rm -f $(BIN_FILES) $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) \
+               $(INC_FILES) $(DEPEND_DIR) *.f90 *.mod *.smod *.o
 
 $(BIN_DIR)/% : %
 	@echo CP $* $@
@@ -105,8 +105,10 @@ vpath %.inc $(SRC_DIRS)
 
 FPP = PYTHONPATH=$(MESASDK_ROOT)/lib/python ./fypp_deps
 
+FPPOPTS = DEBUG OMP FPE IEEE
+
 FPPFLAGS += --line-numbering $(addprefix -I,$(SRC_DIRS)) \
-            $(foreach opt,DEBUG OMP FPE IEEE,$(if $(filter yes,$($(opt))),-D$(opt)=1,-D$(opt)=0))
+            $(foreach opt,$(FPPOPTS),$(if $(filter yes,$($(opt))),-D$(opt)=1,-D$(opt)=0))
 
 ifeq ($(DEBUG),yes)
    FPPFLAGS += -DLOG_LEVEL=\'DEBUG\'
