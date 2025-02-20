@@ -48,14 +48,14 @@ module interp_m
             class(interp_${S}$), intent(in) :: this
             real(RD), intent(out)           :: x_min
          end subroutine get_x_min_${S}$_
-         
+
          subroutine get_x_max_${S}$_(this, x_max)
             use forum_m, only: RD
             import interp_${S}$
             class(interp_${S}$), intent(in) :: this
             real(RD), intent(out)           :: x_max
          end subroutine get_x_max_${S}$_
-         
+
          subroutine eval_f_${S}$_(this, x, f)
             use forum_m, only: RD
             import interp_${S}$
@@ -63,7 +63,7 @@ module interp_m
             real(RD), intent(in)            :: x
             ${T}$, intent(out)              :: f
          end subroutine eval_f_${S}$_
-         
+
          subroutine eval_df_dx_${S}$_(this, x, df_dx)
             use forum_m, only: RD
             import interp_${S}$
@@ -71,7 +71,7 @@ module interp_m
             real(RD), intent(in)            :: x
             ${T}$, intent(out)              :: df_dx
          end subroutine eval_df_dx_${S}$_
-         
+
       end interface
 
       ! Access specifiers

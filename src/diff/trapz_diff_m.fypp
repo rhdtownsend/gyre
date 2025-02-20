@@ -20,7 +20,7 @@
 module trapz_diff_m
 
    ! Uses
-   
+
    use forum_m, only: RD
 
    use diff_m

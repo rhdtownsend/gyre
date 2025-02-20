@@ -108,7 +108,7 @@ contains
 
       ! Initialize the bvp_t
 
-      bp%bvp_ct = bvp_ct(bd, df, nm_p) 
+      bp%bvp_ct = bvp_ct(bd, df, nm_p)
 
       ! Other initializations
 

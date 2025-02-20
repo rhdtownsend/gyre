@@ -121,7 +121,7 @@ contains
 
       ! Initialize the bvp_t
 
-      bp%bvp_rt = bvp_rt(bd, df, nm_p) 
+      bp%bvp_rt = bvp_rt(bd, df, nm_p)
 
       ! Other initializations
 

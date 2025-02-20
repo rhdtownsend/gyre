@@ -20,7 +20,7 @@
 program poly_to_txt
 
    ! Uses
-   
+
    use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
 
    use gyre_m
@@ -108,4 +108,4 @@ program poly_to_txt
 
    ! Finish
 
-end program
+end program poly_to_txt

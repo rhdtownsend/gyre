@@ -60,7 +60,7 @@ module tnad_eqns_m
       type(point_t), allocatable :: pt(:)
       type(nad_trans_t)          :: tr
       real(RD), allocatable      :: coeff(:,:)
-      real(RD)                   :: alpha_omg 
+      real(RD)                   :: alpha_omg
       real(RD)                   :: alpha_trb
    contains
       private
@@ -101,7 +101,7 @@ contains
       eq%cx => cx
 
       os_p_eq = os_p
-      os_p_eq%variables_set = 'GYRE' 
+      os_p_eq%variables_set = 'GYRE'
 
       eq%eq = nad_eqns_t(cx, md_p, os_p_eq)
 
@@ -367,7 +367,7 @@ contains
 
             l_i = this%cx%l_e(Omega_rot_i, st)
 
-            H_r = MIN(1._RD/V, 1._RD) ! = H_P/r
+            H_r = MIN(1._RD/V, 1._RD)  ! = H_P/r
             tau_conv = SQRT(-c_1/As)
 
             nu_trb = c_1*(H_r*alpha_trb)**2/(tau_conv*(1._RD + tau_conv*ABS(omega_c_r)/TWOPI))

@@ -46,7 +46,7 @@ module math_m
             module procedure pow_${S_X}$_${S_Y}$_
          end interface pow
       #:endfor
-   #:endfor   
+   #:endfor
 
    ! Access specifiers
 
@@ -149,5 +149,5 @@ contains
 
       #:endfor
    #:endfor
-         
+
 end module math_m

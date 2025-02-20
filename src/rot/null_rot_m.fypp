@@ -20,7 +20,7 @@
 module null_rot_m
 
    ! Uses
-   
+
    use forum_m, only: RD
 
    use mode_par_m
@@ -57,10 +57,10 @@ module null_rot_m
 
    #:endfor
 
-   ! Default access      
+   ! Default access
 
    private
-      
+
 contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)

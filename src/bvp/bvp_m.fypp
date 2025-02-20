@@ -52,7 +52,7 @@ module bvp_m
          integer, public                  :: n_i
          integer, public                  :: n_o
          logical                          :: factored
-      contains 
+      contains
          private
          procedure, public :: build => build_${S}$_
          procedure, public :: factor => factor_${S}$_
@@ -82,7 +82,7 @@ module bvp_m
 contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
-   
+
       function bvp_${S}$_(bd, df, nm_p) result(bp)
 
          class(diff_${S}$), intent(in)  :: df(:)

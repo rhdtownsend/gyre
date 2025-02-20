@@ -33,7 +33,7 @@ module integ_m
 
    ! Interfaces
 
-   #:for T, S in zip(FLOAT_TYPES, FLOAT_SUFFIXES)   
+   #:for T, S in zip(FLOAT_TYPES, FLOAT_SUFFIXES)
 
       interface integrate
          module procedure integrate_${S}$_
@@ -75,7 +75,7 @@ contains
 
          ! Integrate y(x) using trapezoidal quadrature, applying the
          ! optional mask
-         
+
          n = SIZE(x)
 
          if (PRESENT(mask)) then

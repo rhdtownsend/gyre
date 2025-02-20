@@ -125,7 +125,7 @@ program gyre_map
 
      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
 120  format(A,1X,I0)
-     
+
      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
 
      write(OUTPUT_UNIT, *)
@@ -178,7 +178,7 @@ program gyre_map
   call select_par(gr_p, md_p(1)%tag, gr_p_sel)
   call select_par(sc_p_re, md_p(1)%tag, sc_p_re_sel)
   call select_par(sc_p_im, md_p(1)%tag, sc_p_im_sel)
-  
+
   ! Create the context
 
   allocate(cx, SOURCE=context_t(ml, gr_p_sel, md_p(1), os_p_sel))
@@ -345,7 +345,7 @@ contains
        freq_min = 1._RD
        freq_max = 10._RD
        n_freq = 10
-          
+
        freq_min_units = 'NONE'
        freq_max_units = 'NONE'
        freq_frame = 'INERTIAL'
@@ -400,9 +400,9 @@ contains
     read(unit, NML=output)
 
     ! Finish
-    
+
     return
 
   end subroutine read_out_par
-          
+
 end program gyre_map

@@ -24,7 +24,7 @@ module bound_m
    implicit none
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
-   
+
       ! Derived-type definitions
 
       type, abstract :: bound_${S}$
@@ -58,8 +58,8 @@ module bound_m
 
    #:endfor
 
-   ! Default access    
+   ! Default access
 
    private
-      
+
 end module bound_m

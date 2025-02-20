@@ -258,7 +258,7 @@ contains
       end subroutine eval_f_${S}$_
 
       !****
-         
+
       subroutine eval_df_dx_${S}$_(this, x, df_dx)
 
          class(cubic_interp_${S}$), intent(in) :: this
@@ -291,7 +291,7 @@ contains
             this%f(j+1)*dphi_dt_(w, 1)/h + &
             this%df_dx(j)*dpsi_dt_(1._RD-w, 1) + &
             this%df_dx(j+1)*dpsi_dt_(w, 1)
-         
+
          ! Finish
 
          return
@@ -301,7 +301,7 @@ contains
    #:endfor
 
    !****
-      
+
    function dphi_dt_(t, n) result(dphi_dt)
 
       real(RD), intent(in) :: t

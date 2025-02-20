@@ -69,8 +69,8 @@ contains
       real(RD), allocatable       :: m(:)
       real(RD), allocatable       :: L_r(:)
       real(RD), allocatable       :: p(:)
-      real(RD), allocatable       :: rho(:) 
-      real(RD), allocatable       :: T(:) 
+      real(RD), allocatable       :: rho(:)
+      real(RD), allocatable       :: T(:)
       real(RD), allocatable       :: Gamma_1(:)
       real(RD), allocatable       :: nabla_ad(:)
       real(RD), allocatable       :: ups_T(:)
@@ -219,7 +219,7 @@ contains
       else
          c_rad = 16._RD*PI*A_RADIATION*C_LIGHT*T**4*R_star*nabla*V_2/(3._RD*kap*rho*L_star)
       end if
-      
+
       c_thn = c_P*sqrt(G_GRAVITY*M_star/R_star**3)/(A_RADIATION*C_LIGHT*kap*T**3)
       c_thk = 4._RD*PI*rho*T*c_P*sqrt(G_GRAVITY*M_star/R_star**3)*R_star**3/L_star
       c_eps = 4._RD*PI*rho*eps*R_star**3/L_star

@@ -47,7 +47,7 @@ module mode_m
   ! Derived-type definitions
 
   type, extends(wave_t) :: mode_t
-     integer :: n_pg 
+     integer :: n_pg
      integer :: n_p
      integer :: n_g
    contains
@@ -132,7 +132,7 @@ contains
     if (this%l == 0) then
 
        ! Radial modes
-       
+
        ! Look for the first monotonic segment in y_1 (this is to deal with
        ! noisy near-zero solutions at the origin)
 
@@ -198,7 +198,7 @@ contains
        else
           j_o = this%n
        endif
-       
+
        call count_windings_(y_1(j_i:j_o), y_2(j_i:j_o), n_c, n_a)
 
        ! Classify

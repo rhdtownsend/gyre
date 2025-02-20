@@ -82,7 +82,7 @@ program eval_love
    nm_p = num_par_t()
    gr_p = grid_par_t(w_osc=10._RD, w_exp=2._RD, w_ctr=10._RD)
    md_p = mode_par_t(l=l)
-   
+
    ! Initialize the model
 
    ml => model_t(ml_p)
@@ -124,5 +124,5 @@ program eval_love
    print *, k_l
 
    ! Finish
-   
+
 end program eval_love

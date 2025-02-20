@@ -20,7 +20,7 @@
 module sysmtx_factory_m
 
    ! Uses
-   
+
    use forum_m, only: RD
 
    use sysmtx_m

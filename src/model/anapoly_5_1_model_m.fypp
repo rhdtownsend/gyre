@@ -368,7 +368,7 @@ contains
          dtheta = 0._RD
 
       end if
-            
+
       ! Finish
 
       return
@@ -441,7 +441,7 @@ contains
 
             if ((this%resolve_m .AND. pt%s == this%s_i) .OR. &
                 (.NOT. this%resolve_m .AND. z < this%z_m)) then
-         
+
                coeff = -6._RD*this%z_s**2*dtheta/(theta*z)
 
             else
@@ -491,7 +491,7 @@ contains
 
          if ((this%resolve_m .AND. pt%s == this%s_i) .OR. &
              (.NOT. this%resolve_m .AND. z < this%z_m)) then
-         
+
             coeff = -6._RD*z*dtheta/theta * &
                (5._RD/6._RD - 1._RD/this%Gamma_1)
 
