@@ -68,8 +68,8 @@ build : $(BIN_FILES) $(LIB_FILES)
 	@:
 
 clean :
-	@rm -f $(BIN_FILES) $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) \
-               $(INC_FILES) $(DEPEND_DIR) *.f90 *.mod *.smod *.o
+	@rm -rf $(BIN_FILES) $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) \
+                $(INC_FILES) $(DEPEND_DIR) *.f90 *.mod *.smod *.o
 
 $(BIN_DIR)/% : %
 	@echo CP $* $@
