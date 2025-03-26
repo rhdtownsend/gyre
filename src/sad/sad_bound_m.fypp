@@ -59,7 +59,7 @@ module sad_bound_m
       integer                  :: type_i
       integer                  :: type_o
       integer                  :: l
-   contains 
+   contains
       private
       procedure         :: stencil_
       procedure, public :: build_i

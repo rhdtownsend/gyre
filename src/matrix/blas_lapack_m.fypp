@@ -100,7 +100,7 @@ module blas_lapack_m
          complex(RD), intent(in) :: AB(LDAB,*)
       end subroutine ZGBTRF
    end interface XGBTRF
-   
+
    interface XGBTRS
       subroutine DGBTRS(TRANS, N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO)
          use forum_m, only: RD
@@ -207,7 +207,7 @@ module blas_lapack_m
    end interface XLASWP_inplace
 
    ! BLAS routines
-      
+
    interface XGEMM_inplace
       subroutine DGEMM(TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, &
          BETA, C, LDC)

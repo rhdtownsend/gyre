@@ -411,7 +411,7 @@ contains
    end function rjust
 
    !****
-      
+
    function elem_group_name(prefix, indices) result(group_name)
 
       character(*), intent(in)  :: prefix

@@ -81,7 +81,7 @@ module nad_eqns_m
       real(RD)                   :: alpha_grv
       real(RD)                   :: alpha_thm
       real(RD)                   :: alpha_hfl
-      real(RD)                   :: alpha_omg 
+      real(RD)                   :: alpha_omg
       real(RD)                   :: alpha_gam
       real(RD)                   :: alpha_pi
       real(RD)                   :: alpha_kar

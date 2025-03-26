@@ -28,7 +28,7 @@ module grid_weights_m
    use num_par_m
    use root_m
    use status_m
-   
+
    ! No implicit typing
 
    implicit none

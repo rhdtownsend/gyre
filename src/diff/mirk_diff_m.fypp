@@ -43,7 +43,7 @@ module mirk_diff_m
    #:for S in DTYPE_SUFFIXES
 
       ! Derived-type definitions
-   
+
       type, extends(diff_${S}$) :: mirk_diff_${S}$
          private
          class(eqns_${S}$), allocatable :: eq
@@ -69,7 +69,7 @@ module mirk_diff_m
    ! Default access
 
    private
-      
+
 contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)

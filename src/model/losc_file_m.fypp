@@ -63,10 +63,10 @@ contains
     real(RD)                    :: R_star
     real(RD), allocatable       :: x(:)
     real(RD), allocatable       :: V_2(:)
-    real(RD), allocatable       :: As(:) 
+    real(RD), allocatable       :: As(:)
     real(RD), allocatable       :: U(:)
     real(RD), allocatable       :: c_1(:)
-    real(RD), allocatable       :: Gamma_1(:) 
+    real(RD), allocatable       :: Gamma_1(:)
     real(RD), allocatable       :: Omega_rot(:)
     type(evol_model_t), pointer :: em
 
@@ -78,7 +78,7 @@ contains
        write(OUTPUT_UNIT, 110) 'File name', TRIM(ml_p%file)
 110    format(3X,A,1X,A)
     endif
-          
+
     open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
 
     ! Read the header
@@ -111,7 +111,7 @@ contains
        write(OUTPUT_UNIT, 120) 'Read', n, 'points'
 120    format(3X,A,1X,I0,1X,A)
     endif
-    
+
     ! Extract structure data
 
     M_star = glob(2)
@@ -130,7 +130,7 @@ contains
     elsewhere
        V_2 = 4._RD*PI*G_GRAVITY*var(4,:)**2*R_star**2/(3._RD*var(3,:))
     endwhere
-       
+
     As = -var(6,:)*var(1,:)**2
     U = 4._RD*PI*var(4,:)/var(2,:)
     c_1 = M_star/(R_star**3*var(2,:))

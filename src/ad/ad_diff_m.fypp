@@ -86,7 +86,7 @@ contains
        ! Regular subinterval; use difference equations
 
        eq = ad_eqns_t(cx, md_p, os_p)
-       
+
        allocate(df%df, SOURCE=diff_rt(eq, pt_a, pt_b, nm_p))
 
     else

@@ -32,7 +32,7 @@ module rad_eqns_m
   use point_m
   use rad_trans_m
   use state_m
-  
+
   use ISO_FORTRAN_ENV
 
   ! No implicit typing
@@ -129,14 +129,14 @@ contains
     call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
 
     n_s = SIZE(pt)
-      
+
     if (ALLOCATED(this%coeff)) deallocate(this%coeff)
     allocate(this%coeff(n_s,J_LAST))
 
     do i = 1, n_s
 
        @:ASSERT(.NOT. ml%is_vacuum(pt(i)), 'Attempt to stencil at vacuum point')
-       
+
        this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
        this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
        this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
@@ -167,7 +167,7 @@ contains
     integer, intent(in)           :: i
     class(state_rt), intent(in)   :: st
     real(RD)                      :: A(this%n_e,this%n_e)
-    
+
     ! Evaluate the RHS matrix
 
     A = this%xA(i, st)/this%pt(i)%x
@@ -188,7 +188,7 @@ contains
     real(RD)                      :: xA(this%n_e,this%n_e)
 
     real(RD) :: omega_c
-    
+
     ! Evaluate the log(x)-space RHS matrix
 
     associate ( &
@@ -206,7 +206,7 @@ contains
 
       xA(1,1) = V/Gamma_1 - 1._RD
       xA(1,2) = -V/Gamma_1
-      
+
       xA(2,1) = c_1*alpha_omg*omega_c**2 + U - As
       xA(2,2) = As - U + 3._RD
 

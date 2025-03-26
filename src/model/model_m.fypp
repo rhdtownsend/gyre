@@ -35,7 +35,7 @@ module model_m
    #:for I, N in enumerate(COEFF_IDX_NAMES)
        integer, parameter :: ${N}$ = ${I+1}$
    #:endfor
-       
+
    integer, parameter :: I_LAST = ${len(COEFF_IDX_NAMES)}$
 
    ! Derived-type definitions

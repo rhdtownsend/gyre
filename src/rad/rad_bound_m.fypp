@@ -68,7 +68,7 @@ module rad_bound_m
       real(RD)                 :: alpha_omg
       integer                  :: type_i
       integer                  :: type_o
-   contains 
+   contains
       private
       procedure         :: stencil_
       procedure, public :: build_i

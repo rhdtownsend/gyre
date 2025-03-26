@@ -38,7 +38,7 @@ module tar_eigen_m
    implicit none
 
    ! Parameter definitions
- 
+
    integer, parameter :: RQ = SELECTED_REAL_KIND(32)
 
    ! Access specifiers

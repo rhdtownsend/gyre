@@ -20,7 +20,7 @@
 module tar_rot_m
 
    ! Uses
-   
+
    use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO
 
    use constants_m
@@ -67,7 +67,7 @@ module tar_rot_m
    ! Default access
 
    private
-      
+
 contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
