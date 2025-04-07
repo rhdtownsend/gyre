@@ -188,3 +188,4 @@ math_eqref_format = '{number}'
                        
 # Spelling
 spelling_word_list_filename='spelling_wordlist.txt'
+spelling_filters=['sphinxcontrib.spelling.filters.ContractionFilter']

@@ -1,5 +1,6 @@
 asteroseismic
 cgs
+coeff
 crlibm
 Dalsgaard
 eqn
@@ -15,6 +16,7 @@ Pesnell
 polytrope
 polytropes
 polytropic
+fgong
 Scuflaire
 shellular
 th
@@ -22,5 +24,3 @@ Unno
 Väisälä
 wavefunctions
 wavenumbers
-
-
