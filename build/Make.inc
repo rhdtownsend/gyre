@@ -139,7 +139,7 @@ FC = gfortran
 
 MAKEDEP = awk -f makedepf08.awk
 
-FFLAGS += -std=f2018 -finit-real=snan -fbacktrace -fmax-errors=25 -fPIC
+FFLAGS += -std=f2018 -finit-real=snan -fmax-errors=25 -fPIC
 
 ifeq ($(FPE),yes)
    FFLAGS += -ffpe-trap=invalid,overflow,zero
@@ -148,9 +148,9 @@ endif
 ifeq ($(DEBUG),yes)
    FFLAGS += -Og -ggdb -fcheck=all \
              -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
-             -finline-limit=0
+             -finline-limit=0 -fbacktrace
 else
-   FFLAGS += -O2
+   FFLAGS += -O2 -fno-backtrace
 endif
 
 ifeq ($(OMP),yes)
