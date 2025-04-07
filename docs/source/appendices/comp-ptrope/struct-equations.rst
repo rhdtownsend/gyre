@@ -73,7 +73,7 @@ Continuity Relations
 --------------------
 
 At the boundary between adjacent regions, the pressure :math:`P` and
-potentiual gradient :math:`\sderiv{\Phi}{r}` must be continuous. If
+potential gradient :math:`\sderiv{\Phi}{r}` must be continuous. If
 :math:`z_{i+1/2}` denotes the coordinate of the boundary between the
 :math:`i` and :math:`i+1` regions, then these continuity relations are
 expressed as

@@ -32,3 +32,4 @@ The following tools convert models between the various
    :maxdepth: 2
 
    support-tools/poly-to-fgong.rst
+   support-tools/poly-to-txt.rst
