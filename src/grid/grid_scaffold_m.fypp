@@ -87,7 +87,7 @@ contains
 
       character(*), intent(in) :: file
       character(*), intent(in) :: file_format
-      type(grid_t)             :: gr_ml
+      type(grid_t), intent(in) :: gr_ml
       real(RD), intent(in)     :: x_i
       real(RD), intent(in)     :: x_o
       type(grid_t)             :: gr

@@ -320,12 +320,12 @@ contains
 
     subroutine find_turn_parfait_(ml, gr, omega, l, j_i, x_i)
 
-      class(parfait_model_t), pointer :: ml
-      type(grid_t), intent(in)        :: gr
-      real(RD), intent(in)            :: omega
-      integer, intent(in)             :: l
-      integer, intent(out)            :: j_i
-      real(RD), intent(out)           :: x_i
+      class(parfait_model_t), intent(in) :: ml
+      type(grid_t), intent(in)           :: gr
+      real(RD), intent(in)               :: omega
+      integer, intent(in)                :: l
+      integer, intent(out)               :: j_i
+      real(RD), intent(out)              :: x_i
 
       integer :: j
 

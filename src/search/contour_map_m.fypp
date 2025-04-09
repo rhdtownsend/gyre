@@ -67,10 +67,10 @@ contains
 
    function contour_map_t_(z_re, z_im, f, process_isect) result(cm)
 
-      real(RD), intent(in) :: z_re(:)
-      real(RD), intent(in) :: z_im(:)
-      type(ext_ct)         :: f(:,:)
-      type(contour_map_t)  :: cm
+      real(RD), intent(in)     :: z_re(:)
+      real(RD), intent(in)     :: z_im(:)
+      type(ext_ct), intent(in) :: f(:,:)
+      type(contour_map_t)      :: cm
       interface
          subroutine process_isect (omega_a_re, omega_b_re, omega_a_im, omega_b_im)
             use forum_m, only: RD

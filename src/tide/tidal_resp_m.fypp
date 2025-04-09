@@ -254,7 +254,7 @@ contains
       type(rot_par_t), intent(in)                :: rt_p
       type(tide_par_t), intent(in)               :: td_p
       real(RD), allocatable, intent(out)         :: omega(:)
-      type(grid_t)                               :: gr
+      type(grid_t), intent(out)                  :: gr
       type(context_t), pointer, intent(out)      :: cx(:,:)
       type(mode_par_t), allocatable, intent(out) :: md_p(:,:)
       real(RD), allocatable, intent(out)         :: y_T(:,:,:)
