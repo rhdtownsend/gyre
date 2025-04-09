@@ -418,7 +418,7 @@ contains
             case (FILE_DEPS_SOURCE)
 
                call this%ci_${N}$%get_x_min(omega_min)
-               call this%ci_${N}$%get_x_min(omega_max) ! Note that this is a bug
+               call this%ci_${N}$%get_x_max(omega_max)
 
                #:if T == 'real(RD)'
                   omega = MIN(MAX(st%omega, omega_min), omega_max)
