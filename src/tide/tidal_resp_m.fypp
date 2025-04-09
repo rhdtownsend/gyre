@@ -85,6 +85,7 @@ contains
       interface
          subroutine process_resp (rs)
             use resp_m
+            implicit none
             type(resp_t), intent(in) :: rs
          end subroutine process_resp
       end interface

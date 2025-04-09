@@ -74,6 +74,7 @@ contains
       interface
          subroutine process_isect (omega_a_re, omega_b_re, omega_a_im, omega_b_im)
             use forum_m, only: RD
+            implicit none
             complex(RD), intent(in) :: omega_a_re
             complex(RD), intent(in) :: omega_b_re
             complex(RD), intent(in) :: omega_a_im
@@ -110,6 +111,7 @@ contains
       interface
          subroutine process_isect (z_a_re, z_b_re, z_a_im, z_b_im)
             use forum_m, only: RD
+            implicit none
             complex(RD), intent(in) :: z_a_re
             complex(RD), intent(in) :: z_b_re
             complex(RD), intent(in) :: z_a_im
@@ -713,6 +715,7 @@ contains
       interface
          subroutine process_isect (z_a_re, z_b_re, z_a_im, z_b_im)
             use forum_m, only: RD
+            implicit none
             complex(RD), intent(in) :: z_a_re
             complex(RD), intent(in) :: z_b_re
             complex(RD), intent(in) :: z_a_im

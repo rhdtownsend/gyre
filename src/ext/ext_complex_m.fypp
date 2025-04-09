@@ -135,6 +135,7 @@ module ext_complex_m
       subroutine eval_(this, cx, f_cx, status)
          import ext_ct
          import func_ext_ct
+         implicit none
          class(func_ext_ct), intent(inout) :: this
          type(ext_ct), intent(in)          :: cx
          type(ext_ct), intent(out)         :: f_cx

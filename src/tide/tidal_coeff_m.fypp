@@ -469,6 +469,7 @@ contains
       interface
          function f (ua, Ma, e)
             use forum_m, only: RD
+            implicit none
             real(RD), intent(in) :: ua
             real(RD), intent(in) :: Ma
             real(RD), intent(in) :: e
@@ -569,6 +570,7 @@ contains
 
       interface
          function f (ua, Ma, e)
+            implicit none
             integer, parameter   :: RQ = SELECTED_REAL_KIND(32)
             real(RQ), intent(in) :: ua
             real(RQ), intent(in) :: Ma

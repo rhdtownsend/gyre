@@ -84,6 +84,7 @@ contains
       interface
          function func (x)
             use forum_m, only: RD
+            implicit none
             real(RD), intent(in) :: x
             real(RD)             :: func
          end function func
@@ -125,6 +126,7 @@ contains
       interface
          function func (x)
             use forum_m, only: RD
+            implicit none
             real(RD), intent(in) :: x
             real(RD)             :: func
          end function func

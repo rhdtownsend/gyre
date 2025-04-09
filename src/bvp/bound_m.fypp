@@ -1,7 +1,7 @@
 ! Module  : bound_m
 ! Purpose : boundary conditions
 !
-! Copyright 2013-2023 Rich Townsend
+! Copyright 2013-2025 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -44,6 +44,7 @@ module bound_m
             use forum_m, only: RD
             use state_m
             import bound_${S}$
+            implicit none
             class(bound_${S}$), intent(in) :: this
             class(state_${S}$), intent(in) :: st
             ${T}$, intent(out)             :: B(:,:)

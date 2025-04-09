@@ -73,6 +73,7 @@ contains
             subroutine eval_func(x, func, status)
                use forum_m, only: RD
                use ext_m
+               implicit none
                ${T}$, intent(in)    :: x
                ${T}$, intent(out)   :: func
                integer, intent(out) :: status
@@ -139,6 +140,7 @@ contains
             subroutine eval_func(x, func, status)
                use forum_m, only: RD
                use ext_m
+               implicit none
                ${T}$, intent(in)  :: x
                ${T}$, intent(out) :: func
                integer, intent(out)  :: status
@@ -205,7 +207,8 @@ contains
             subroutine eval_func (x, func, status)
                use forum_m, only: RD
                use ext_m
-               ${T}$, intent(in)    :: x
+               implicit none 
+              ${T}$, intent(in)    :: x
                ${T}$, intent(out)   :: func
                integer, intent(out) :: status
             end subroutine eval_func
@@ -245,6 +248,7 @@ contains
             subroutine eval_func(x, func, status)
                use forum_m, only: RD
                use ext_m
+               implicit none
                ${T}$, intent(in)  :: x
                ${T}$, intent(out) :: func
                integer, intent(out)  :: status
@@ -462,6 +466,7 @@ contains
             subroutine eval_func(x, func, status)
                use forum_m, only: RD
                use ext_m
+               implicit none
                ${T}$, intent(in)  :: x
                ${T}$, intent(out) :: func
                integer, intent(out)  :: status
@@ -563,6 +568,7 @@ contains
             subroutine eval_func (z, func, status)
                use forum_m, only: RD
                use ext_m
+               implicit none
                ${T}$, intent(in)  :: z
                ${T}$, intent(out) :: func
                integer, intent(out)    :: status
@@ -607,6 +613,7 @@ contains
             subroutine eval_func(z, func, status)
                use forum_m, only: RD
                use ext_m
+               implicit none
                ${T}$, intent(in)    :: z
                ${T}$, intent(out)   :: func
                integer, intent(out) :: status
@@ -750,6 +757,7 @@ contains
             subroutine eval_func (z, func, status)
                use forum_m, only: RD
                use ext_m
+               implicit none
                ${T}$, intent(in)    :: z
                ${T}$, intent(out)   :: func
                integer, intent(out) :: status
@@ -919,6 +927,7 @@ contains
             subroutine eval_func(z, func, status)
                use forum_m, only: RD
                use ext_m
+               implicit none
                ${T}$, intent(in)  :: z
                ${T}$, intent(out) :: func
                integer, intent(out)    :: status

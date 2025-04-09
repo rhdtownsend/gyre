@@ -65,7 +65,8 @@ contains
       interface
          subroutine process_mode (md, n_iter, chi)
             use ext_m
-            use mode_m
+            use mode_m 
+            implicit none
             type(mode_t), intent(in) :: md
             integer, intent(in)      :: n_iter
             type(ext_rt), intent(in) :: chi

@@ -42,6 +42,7 @@ module diff_m
             use ext_m
             use state_m
             import diff_${S}$
+            implicit none
             class(diff_${S}$), intent(in)  :: this
             class(state_${S}$), intent(in) :: st
             ${T}$, intent(out)             :: E_l(:,:)

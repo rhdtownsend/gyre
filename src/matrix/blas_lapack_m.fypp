@@ -1,7 +1,7 @@
 ! Module  : blas_lapack_m
 ! Purpose : explict interfaces for BLAS & LAPACK routines
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -34,12 +34,14 @@ module blas_lapack_m
    interface XGTSV
       subroutine DGTSV(N, NRHS, DL, D, DU, B, LDB, INFO)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)     :: NRHS, N, LDB
          integer, intent(out)    :: INFO
          real(RD), intent(inout) :: DL(*), D(*), DU(*), B(LDB,*)
       end subroutine DGTSV
       subroutine ZGTSV(N, NRHS, DL, D, DU, B, LDB, INFO)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)        :: NRHS, N, LDB
          integer, intent(out)       :: INFO
          complex(RD), intent(inout) :: DL(*), D(*), DU(*), B(LDB,*)
@@ -49,6 +51,7 @@ module blas_lapack_m
    interface XGETRF
       subroutine DGETRF(M, N, A, LDA, IPIV, INFO)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)     :: LDA, M, N
          integer, intent(out)    :: INFO
          integer, intent(out)    :: IPIV(*)
@@ -56,6 +59,7 @@ module blas_lapack_m
       end subroutine DGETRF
       subroutine ZGETRF (M, N, A, LDA, IPIV, INFO)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)        :: LDA, M, N
          integer, intent(out)       :: INFO
          integer, intent(out)       :: IPIV(*)
@@ -66,6 +70,7 @@ module blas_lapack_m
    interface XGETRS
       subroutine DGETRS(TRANS, N, NRHS, A, LDA, IPIV, B, LDB, INFO)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in) :: TRANS
          integer, intent(in)      :: LDA, LDB, N, NRHS
          integer, intent(out)     :: INFO
@@ -75,6 +80,7 @@ module blas_lapack_m
       end subroutine DGETRS
       subroutine ZGETRS(TRANS, N, NRHS, A, LDA, IPIV, B, LDB, INFO)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in)   :: TRANS
          integer, intent(in)        :: LDA, LDB, N, NRHS
          integer, intent(out)       :: INFO
@@ -87,6 +93,7 @@ module blas_lapack_m
    interface XGBTRF
       subroutine DGBTRF(M, N, KL, KU, AB, LDAB, IPIV, INFO)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)  :: M, N, KL, KU, LDAB
          integer, intent(out) :: INFO
          integer, intent(out) :: IPIV(*)
@@ -94,6 +101,7 @@ module blas_lapack_m
       end subroutine DGBTRF
       subroutine ZGBTRF(M, N, KL, KU, AB, LDAB, IPIV, INFO)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)     :: M, N, KL, KU, LDAB
          integer, intent(out)    :: INFO
          integer, intent(out)    :: IPIV(*)
@@ -104,6 +112,7 @@ module blas_lapack_m
    interface XGBTRS
       subroutine DGBTRS(TRANS, N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in) :: TRANS
          integer, intent(in)      :: N, KL, KU, NRHS, LDAB, LDB
          integer, intent(out)     :: INFO
@@ -113,6 +122,7 @@ module blas_lapack_m
       end subroutine DGBTRS
       subroutine ZGBTRS(TRANS, N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in)   :: TRANS
          integer, intent(in)        :: N, KL, KU, NRHS, LDAB, LDB
          integer, intent(out)       :: INFO
@@ -127,6 +137,7 @@ module blas_lapack_m
          EQUED, R, C, B, LDB, X, LDX, RCOND, FERR, BERR, &
          WORK, IWORK, INFO)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in)    :: FACT, TRANS
          character(1), intent(inout) :: EQUED
          integer, intent(in)         :: LDA, LDAF, LDB, LDX, N, NRHS
@@ -139,6 +150,7 @@ module blas_lapack_m
          EQUED, R, C, B, LDB, X, LDX, RCOND, FERR, BERR, &
          WORK, RWORK, INFO)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in)    :: FACT, TRANS
          character(1), intent(inout) :: EQUED
          integer, intent(in)         :: LDA, LDAF, LDB, LDX, N, NRHS
@@ -153,6 +165,7 @@ module blas_lapack_m
    interface XGEEV
       subroutine DGEEV(JOBVL, JOBVR, N, A, LDA, WR, WI, VL, LDVL, VR, LDVR, WORK, LWORK, INFO)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in) :: JOBVL, JOBVR
          integer, intent(in)      :: N, LDA, LDVL, LDVR, LWORK
          integer, intent(out)     :: INFO
@@ -161,6 +174,7 @@ module blas_lapack_m
       end subroutine DGEEV
       subroutine ZGEEV(JOBVL, JOBVR, N, A, LDA, W, VL, LDVL, VR, LDVR, WORK, LWORK, RWORK, INFO)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in)   :: JOBVL, JOBVR
          integer, intent(in)        :: N, LDA, LDVL, LDVR, LWORK
          integer, intent(out)       :: INFO
@@ -173,6 +187,7 @@ module blas_lapack_m
    interface XGESVD
       subroutine DGESVD(JOBU, JOBVT, M, N, A, LDA, S, U, LDU, VT, LDVT, WORK, LWORK, INFO)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in) :: JOBU, JOBVT
          integer, intent(in)      :: M, N, LDA, LDU, LDVT, LWORK
          integer, intent(out)     :: INFO
@@ -182,6 +197,7 @@ module blas_lapack_m
       end subroutine DGESVD
       subroutine ZGESVD(JOBU, JOBVT, M, N, A, LDA, S, U, LDU, VT, LDVT, WORK, LWORK, RWORK, INFO)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in)   :: JOBU, JOBVT
          integer, intent(in)        :: M, N, LDA, LDU, LDVT, LWORK
          integer, intent(out)       :: INFO
@@ -194,12 +210,14 @@ module blas_lapack_m
    interface XLASWP_inplace
       subroutine DLASWP(N, A, LDA, K1, K2, IPIV, INCX)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)     :: N, LDA, K1, K2, INCX
          integer, intent(in)     :: IPIV(*)
          real(RD), intent(inout) :: A
       end subroutine DLASWP
       subroutine ZLASWP(N, A, LDA, K1, K2, IPIV, INCX)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)        :: N, LDA, K1, K2, INCX
          integer, intent(in)        :: IPIV(*)
          complex(RD), intent(inout) :: A
@@ -212,6 +230,7 @@ module blas_lapack_m
       subroutine DGEMM(TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, &
          BETA, C, LDC)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in) :: TRANSA, TRANSB
          integer, intent(in)      :: M, N, K, LDA, LDB, LDC
          real(RD), intent(in)     :: ALPHA, BETA
@@ -221,6 +240,7 @@ module blas_lapack_m
       subroutine ZGEMM(TRANSA, TRANSB, M, N, K, ALPHA, A, LDA, B, LDB, &
          BETA, C, LDC)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in)   :: TRANSA, TRANSB
          integer, intent(in)        :: M, N, K, LDA, LDB, LDC
          complex(RD), intent(in)    :: ALPHA, BETA
@@ -232,6 +252,7 @@ module blas_lapack_m
    interface XGEMV_inplace
       subroutine DGEMV(TRANS, M, N, ALPHA, A, LDA, X, INCX, BETA, Y, INCY)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in) :: TRANS
          integer, intent(in)      :: M, N, LDA, INCX, INCY
          real(RD), intent(in)     :: ALPHA, BETA
@@ -240,6 +261,7 @@ module blas_lapack_m
       end subroutine DGEMV
       subroutine ZGEMV(TRANS, M, N, ALPHA, A, LDA, X, INCX, BETA, Y, INCY)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in)   :: TRANS
          integer, intent(in)        :: M, N, LDA, INCX, INCY
          complex(RD), intent(in)    :: ALPHA, BETA
@@ -251,16 +273,18 @@ module blas_lapack_m
    interface XTRSM_inplace
       subroutine DTRSM(SIDE, UPLO, TRANSA, DIAG, M, N, ALPHA, A, LDA, B, LDB)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in) :: DIAG, SIDE, TRANSA, UPLO
-         integer, intent(in)      :: LDA, LDB
+         integer, intent(in)      :: M, N, LDA, LDB
          real(RD), intent(in)     :: ALPHA
          real(RD), intent(in)     :: A
          real(RD), intent(inout)  :: B
       end subroutine DTRSM
       subroutine ZTRSM(SIDE, UPLO, TRANSA, DIAG, M, N, ALPHA, A, LDA, B, LDB)
          use forum_m, only: RD
+         implicit none
          character(1), intent(in)   :: DIAG, SIDE, TRANSA, UPLO
-         integer, intent(in)        :: LDA, LDB
+         integer, intent(in)        :: M, N, LDA, LDB
          complex(RD), intent(in)    :: ALPHA
          complex(RD), intent(in)    :: A
          complex(RD), intent(inout) :: B
@@ -270,12 +294,14 @@ module blas_lapack_m
    interface XSCAL_inplace
       subroutine DSCAL(N, DA, DX, INCX)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)     :: N, INCX
          real(RD), intent(in)    :: DA
          real(RD), intent(inout) :: DX
       end subroutine DSCAL
       subroutine ZSCAL(N, DA, DX, INCX)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)        :: N, INCX
          complex(RD), intent(in)    :: DA
          complex(RD), intent(inout) :: DX
@@ -285,12 +311,14 @@ module blas_lapack_m
    interface XCOPY_inplace
       subroutine DCOPY(N, DX, INCX, DY, INCY)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)   :: N, INCX, INCY
          real(RD), intent(in)  :: DX
          real(RD), intent(out) :: DY
       end subroutine DCOPY
       subroutine ZCOPY(N, DX, INCX, DY, INCY)
          use forum_m, only: RD
+         implicit none
          integer, intent(in)      :: N, INCX, INCY
          complex(RD), intent(in)  :: DX
          complex(RD), intent(out) :: DY
