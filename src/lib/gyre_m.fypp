@@ -84,6 +84,10 @@ module gyre_m
    use util_m
    use version_m
 
+   ! No implicit typing
+
+   implicit none
+
    ! Access specifiers
 
    public

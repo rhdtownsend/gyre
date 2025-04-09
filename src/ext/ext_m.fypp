@@ -24,4 +24,8 @@ module ext_m
    use ext_real_m
    use ext_complex_m
 
+   ! No implicit typing
+
+   implicit none
+
 end module ext_m

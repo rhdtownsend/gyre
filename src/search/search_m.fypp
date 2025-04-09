@@ -24,4 +24,8 @@ module search_m
    use minmod_search_m
    use contour_search_m
 
+   ! No implicit typing
+
+   implicit none
+
 end module search_m
