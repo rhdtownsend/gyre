@@ -20,7 +20,7 @@
 module linalg_m
 
    ! Uses
-   
+
    use forum_m, only: RD, sort_indices
 
    use blas_lapack_m
@@ -375,7 +375,7 @@ contains
          #:else
             #:stop f'invalid type {T}'
          #:endif
-         
+
          lambda(1) = q
          lambda(2) = c/q
 
@@ -697,7 +697,7 @@ contains
       end subroutine partition_${S}$_
 
    #:endfor
-      
+
    !****
 
    subroutine sing_decompose_r_(A, sigma, U, V_H)

@@ -60,7 +60,7 @@ module tnad_eqns_m
       type(point_t), allocatable :: pt(:)
       type(nad_trans_t)          :: tr
       real(RD), allocatable      :: coeff(:,:)
-      real(RD)                   :: alpha_omg 
+      real(RD)                   :: alpha_omg
       real(RD)                   :: alpha_trb
    contains
       private
@@ -101,7 +101,7 @@ contains
       eq%cx => cx
 
       os_p_eq = os_p
-      os_p_eq%variables_set = 'GYRE' 
+      os_p_eq%variables_set = 'GYRE'
 
       eq%eq = nad_eqns_t(cx, md_p, os_p_eq)
 

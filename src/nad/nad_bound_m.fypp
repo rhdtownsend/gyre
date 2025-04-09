@@ -78,7 +78,7 @@ module nad_bound_m
       integer                   :: type_i
       integer                   :: type_o
       character(:), allocatable :: branch_o
-   contains 
+   contains
       private
       procedure         :: stencil_
       procedure, public :: build_i

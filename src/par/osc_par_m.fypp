@@ -97,7 +97,7 @@ contains
       character(LEN(os_p%variables_set))    :: variables_set
       character(LEN(os_p%inner_bound))      :: inner_bound
       character(LEN(os_p%outer_bound))      :: outer_bound
-      character(LEN(os_p%outer_bound))      :: outer_bound_cutoff 
+      character(LEN(os_p%outer_bound))      :: outer_bound_cutoff
       character(LEN(os_p%outer_bound))      :: outer_bound_branch
       character(LEN(os_p%inertia_norm))     :: inertia_norm
       character(LEN(os_p%time_factor))      :: time_factor

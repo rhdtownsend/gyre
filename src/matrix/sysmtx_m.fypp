@@ -137,5 +137,5 @@ module sysmtx_m
    ! Default access
 
    private
-      
+
 end module sysmtx_m

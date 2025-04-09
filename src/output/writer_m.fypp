@@ -66,10 +66,10 @@ module writer_m
                character(*), intent(in)       :: name
                ${T}$, intent(in)              :: data${ARRAY_SPEC(R)}$
             end subroutine write_${S}$_${R}$_
-            
+
          #:endfor
       #:endfor
-            
+
    end interface
 
    ! Access specifiers

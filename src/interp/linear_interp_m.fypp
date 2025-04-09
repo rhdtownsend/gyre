@@ -147,7 +147,7 @@ contains
 
          call hi%write_dset('x', li%x)
          call hi%write_dset('f', li%f)
-         
+
          ! Finish
 
          return
@@ -226,7 +226,7 @@ contains
       end subroutine eval_f_${S}$_
 
       !****
-         
+
       subroutine eval_df_dx_${S}$_(this, x, df_dx)
 
          class(linear_interp_${S}$), intent(in) :: this

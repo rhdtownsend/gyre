@@ -83,7 +83,7 @@ module block_sysmtx_m
 contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
-   
+
       function block_sysmtx_${S}$_(n, n_e, n_i, n_o) result(sm)
 
          integer, intent(in)      :: n
@@ -477,7 +477,7 @@ contains
 
                call XTRSM_inplace('L', 'U', 'N', 'N', i_s-1, 1, &
                   ONE, M(1,1), 2*n_e, u_bound(1), 2*n_e)
-               
+
                u_bound(i_s) = 1._RD
                u_bound(i_s+1:) = 0._RD
 

@@ -221,7 +221,7 @@ contains
 
          y(2,n) = f*t_t*y(2,n-1)
 
-         ! Update B 
+         ! Update B
 
          B = f*t_t**2*B
 
