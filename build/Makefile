@@ -117,3 +117,10 @@ LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB
 # Include standard rules
 
 include Make.inc
+
+# Target for linting
+
+lint :
+	fortitude check --ignore M011,S001,E001,T041 --file-extensions=f90
+
+.PHONY: lint
