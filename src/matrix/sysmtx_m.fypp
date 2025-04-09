@@ -98,7 +98,7 @@ module sysmtx_m
             use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
-            implicit none 
+            implicit none
            class(sysmtx_${S}$), intent(in) :: this
             ${T}$, intent(in)               :: v_i(:)
             ${T}$, intent(in)               :: v_o(:)
@@ -108,7 +108,7 @@ module sysmtx_m
          function resd_vec_hom_${S}$_(this, u) result(dv)
             use forum_m, only: RD
             use ext_m
-            import sysmtx_${S}$ 
+            import sysmtx_${S}$
             implicit none
             class(sysmtx_${S}$), intent(in) :: this
             ${T}$, intent(in)               :: u(:)
@@ -130,7 +130,7 @@ module sysmtx_m
          subroutine dump_${S}$_(this, hi)
             use forum_m, only: hdf5io_t
             import sysmtx_${S}$
-            implicit none 
+            implicit none
             class(sysmtx_${S}$), intent(in) :: this
             type(hdf5io_t), intent(inout)   :: hi
          end subroutine dump_${S}$_
