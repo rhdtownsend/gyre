@@ -814,8 +814,8 @@ contains
          B(1,4) = 0._RD
 
          B(2,1) = 0._RD
-         B(2,2) = 1._RD !lambda/(c_1*alpha_omg*omega_c**2) !- V/Gamma_1 * alpha_gamma
-         B(2,3) = alpha_grv * 1._RD !alpha_grv*lambda/(c_1*alpha_omg*omega_c**2)
+         B(2,2) = 1._RD
+         B(2,3) = alpha_grv * 1._RD
          B(2,4) = 0._RD
 
          scl = 1._RD

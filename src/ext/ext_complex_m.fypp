@@ -40,8 +40,8 @@ module ext_complex_m
 
    type ext_ct
       private
-      complex(RD) :: f ! Fractional part
-      integer     :: e ! Exponent
+      complex(RD) :: f  ! Fractional part
+      integer     :: e  ! Exponent
    contains
       procedure       :: op_minus_cx_
       generic, public :: operator(-) => op_minus_cx_

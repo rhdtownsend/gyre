@@ -41,13 +41,13 @@ module block_sysmtx_m
 
       type, extends(sysmtx_${S}$) :: block_sysmtx_${S}$
          private
-         ${T}$, allocatable           :: B_i(:,:)   ! Inner boundary conditions
-         ${T}$, allocatable           :: B_o(:,:)   ! Outer boundary conditions
-         ${T}$, allocatable           :: E_l(:,:,:) ! Left equation blocks
-         ${T}$, allocatable           :: E_r(:,:,:) ! Right equation blocks
-         ${T}$, allocatable           :: scl_i(:)   ! Inner boundary scales
-         ${T}$, allocatable           :: scl_o(:)   ! Outer boundary scales
-         type(ext_${S}$), allocatable :: scl(:)     ! Block scales
+         ${T}$, allocatable           :: B_i(:,:)    ! Inner boundary conditions
+         ${T}$, allocatable           :: B_o(:,:)    ! Outer boundary conditions
+         ${T}$, allocatable           :: E_l(:,:,:)  ! Left equation blocks
+         ${T}$, allocatable           :: E_r(:,:,:)  ! Right equation blocks
+         ${T}$, allocatable           :: scl_i(:)    ! Inner boundary scales
+         ${T}$, allocatable           :: scl_o(:)    ! Outer boundary scales
+         type(ext_${S}$), allocatable :: scl(:)      ! Block scales
       contains
          private
          procedure, public :: set_B_i => set_B_i_${S}$_
