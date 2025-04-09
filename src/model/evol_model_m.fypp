@@ -690,7 +690,7 @@ contains
 
          cell_loop : do j = j_i, j_o-1
 
-            pt%x = 0.5*(gr%pt(j)%x + gr%pt(j+1)%x)
+            pt%x = 0.5_RD*(gr%pt(j)%x + gr%pt(j+1)%x)
 
             V_2 = this%coeff(I_V_2, pt)
             c_1 = this%coeff(I_C_1, pt)
@@ -751,7 +751,7 @@ contains
 
          cell_loop : do j = j_i, j_o-1
 
-            pt%x = 0.5*(gr%pt(j)%x + gr%pt(j+1)%x)
+            pt%x = 0.5_RD*(gr%pt(j)%x + gr%pt(j+1)%x)
 
             As = this%coeff(I_AS, pt)
             c_1 = this%coeff(I_C_1, pt)

@@ -108,7 +108,7 @@ contains
          df%dx = pt_b%x - pt_a%x
 
          pt_m%s = pt_a%s
-         pt_m%x = pt_a%x + 0.5*df%dx
+         pt_m%x = pt_a%x + 0.5_RD*df%dx
 
          df%eq = eq
 

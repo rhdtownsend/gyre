@@ -279,7 +279,7 @@ contains
       ! Evaluate the logarithmic derivative of the V_2 coefficient
 
       if (1._RD - pt%x**2 /= 0._RD) then
-         dcoeff = 2.*RD*pt%x**2/(1._RD - pt%x**2)
+         dcoeff = 2._RD*pt%x**2/(1._RD - pt%x**2)
       else
          dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
       end if
