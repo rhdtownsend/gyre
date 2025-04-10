@@ -175,13 +175,14 @@ Classification & Validation
    * - :nml_v:`omega_int`
      - :math:`\omega_{\rm int}`
      - complex
-     - dimensionless eigenfrequency based on integral expression; evaluated using eqn. A8 of :ads_citet:`townsend:2025`
+     - dimensionless eigenfrequency based on integral expression;
+       evaluated using eqn. A8 of Townsend et al. (2025)
    * - :nml_v:`dzeta_dx`
      - :math:`\sderiv{\zeta}{x}`
      - complex(:nml_v:`n`)
      - frequency weight function :math:`[G\Mstar^{2}/\Rstar]`;
        evaluated from the integrand in eqn. A5 of
-       :ads_citet:`townsend:2025` with :math:`n'=n`
+       Townsend et al. (2025) with :math:`n'=n`
        
    * - :nml_v:`zeta`
      - :math:`\zeta`

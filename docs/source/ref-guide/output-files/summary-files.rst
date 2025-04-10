@@ -132,7 +132,7 @@ Classification & Validation
    * - :nml_v:`omega_int`
      - :math:`\omega_{\rm int}`
      - complex(:nml_v:`n_row`)
-     - dimensionless eigenfrequency based on integral expression; evaluated using eqn. A8 of :ads_citet:`townsend:2025`
+     - dimensionless eigenfrequency based on integral expression; evaluated using eqn. A8 of Townsend et al. (2025)
    * - :nml_v:`zeta`
      - :math:`\zeta`
      - complex(:nml_v:`n_row`)
