@@ -120,7 +120,12 @@ include Make.inc
 
 # Target for linting
 
-lint :
-	fortitude check --ignore M011,S001,E001,T041 --file-extensions=f90
+linter :
+	fortitude check \
+            --ignore M011 \
+            --ignore S001 \
+            --ignore E001 \
+            --ignore T041 \
+            --file-extensions=f90
 
-.PHONY: lint
+.PHONY: linter
