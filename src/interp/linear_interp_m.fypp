@@ -37,10 +37,10 @@ module linear_interp_m
 
       type, extends(interp_${S}$) :: linear_interp_${S}$
          private
-         real(RD), allocatable :: x(:)     ! Abscissa
-         ${T}$, allocatable    :: f(:)     ! Ordinate
-         ${T}$, allocatable    :: df_dx(:) ! First derivatives
-         integer               :: n        ! Number of points
+         real(RD), allocatable :: x(:)      ! Abscissa
+         ${T}$, allocatable    :: f(:)      ! Ordinate
+         ${T}$, allocatable    :: df_dx(:)  ! First derivatives
+         integer               :: n         ! Number of points
       contains
          private
          procedure, public :: get_x_min => get_x_min_${S}$_
@@ -147,7 +147,7 @@ contains
 
          call hi%write_dset('x', li%x)
          call hi%write_dset('f', li%f)
-         
+
          ! Finish
 
          return
@@ -226,7 +226,7 @@ contains
       end subroutine eval_f_${S}$_
 
       !****
-         
+
       subroutine eval_df_dx_${S}$_(this, x, df_dx)
 
          class(linear_interp_${S}$), intent(in) :: this

@@ -131,7 +131,7 @@ contains
 
       call add_points_(gs, gr_p, os_p, gr)
 
-      ! Report 
+      ! Report
 
       if (check_log_level('INFO')) then
 

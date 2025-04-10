@@ -23,7 +23,7 @@ Parameters
 
 .. option:: out_filename
 
-   File name of output FGONG file
+   File name of output text file
 
 .. option:: drop_outer
 

@@ -469,6 +469,7 @@ contains
       interface
          function f (ua, Ma, e)
             use forum_m, only: RD
+            implicit none
             real(RD), intent(in) :: ua
             real(RD), intent(in) :: Ma
             real(RD), intent(in) :: e
@@ -523,17 +524,17 @@ contains
 
             ua = PI*(2*j-1.5_RD)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
-            Ma = Ea - e*sin(Ea)  
+            Ma = Ea - e*sin(Ea)
             S = S + f(ua, Ma, e)
 
             ua = PI*(2*j-1.0_RD)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
-            Ma = Ea - e*sin(Ea)  
+            Ma = Ea - e*sin(Ea)
             S = S + f(ua, Ma, e)
 
             ua = PI*(2*j-0.5_RD)/(2*N)
             Ea = atan2(e_fac*sin(ua), e + cos(ua))
-            Ma = Ea - e*sin(Ea)  
+            Ma = Ea - e*sin(Ea)
             S = S + f(ua, Ma, e)
 
          end do update_loop
@@ -569,6 +570,7 @@ contains
 
       interface
          function f (ua, Ma, e)
+            implicit none
             integer, parameter   :: RQ = SELECTED_REAL_KIND(32)
             real(RQ), intent(in) :: ua
             real(RQ), intent(in) :: Ma

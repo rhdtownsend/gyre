@@ -45,7 +45,7 @@ module gyre_m
    use model_factory_m
 
    ! Calculation parameters
-   
+
    use grid_par_m
    use mode_par_m
    use model_par_m
@@ -62,14 +62,14 @@ module gyre_m
    use mode_m
    use resp_m
    use wave_m
-   
+
    ! Output
 
    use detail_m
    use summary_m
 
    ! Misc
-   
+
    use constants_m
    use context_m
    use ext_m
@@ -83,6 +83,10 @@ module gyre_m
    use tidal_resp_m
    use util_m
    use version_m
+
+   ! No implicit typing
+
+   implicit none
 
    ! Access specifiers
 

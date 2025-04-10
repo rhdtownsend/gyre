@@ -40,8 +40,8 @@ module ext_complex_m
 
    type ext_ct
       private
-      complex(RD) :: f ! Fractional part
-      integer     :: e ! Exponent
+      complex(RD) :: f  ! Fractional part
+      integer     :: e  ! Exponent
    contains
       procedure       :: op_minus_cx_
       generic, public :: operator(-) => op_minus_cx_
@@ -135,6 +135,7 @@ module ext_complex_m
       subroutine eval_(this, cx, f_cx, status)
          import ext_ct
          import func_ext_ct
+         implicit none
          class(func_ext_ct), intent(inout) :: this
          type(ext_ct), intent(in)          :: cx
          type(ext_ct), intent(out)         :: f_cx

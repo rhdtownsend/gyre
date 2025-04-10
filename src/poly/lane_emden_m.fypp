@@ -221,7 +221,7 @@ contains
 
          y(2,n) = f*t_t*y(2,n-1)
 
-         ! Update B 
+         ! Update B
 
          B = f*t_t**2*B
 
@@ -306,8 +306,8 @@ contains
 
          ! Calculate the constraint function
 
-         gout(1) = x - x_bdy      ! Region boundary
-         gout(2) = y(1) - theta_s ! Surface
+         gout(1) = x - x_bdy       ! Region boundary
+         gout(2) = y(1) - theta_s  ! Surface
 
          ! Finish
 

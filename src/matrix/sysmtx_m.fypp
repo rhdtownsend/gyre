@@ -28,10 +28,10 @@ module sysmtx_m
       ! Derived-type definitions
 
       type, abstract :: sysmtx_${S}$
-         integer :: n   ! Number of equation blocks
-         integer :: n_e ! Number of equations per block
-         integer :: n_i ! Number of inner boundary conditions
-         integer :: n_o ! Number of outer boundary conditions
+         integer :: n    ! Number of equation blocks
+         integer :: n_e  ! Number of equations per block
+         integer :: n_i  ! Number of inner boundary conditions
+         integer :: n_o  ! Number of outer boundary conditions
       contains
          procedure(set_B_${S}$_), deferred          :: set_B_i
          procedure(set_B_${S}$_), deferred          :: set_B_o
@@ -53,6 +53,7 @@ module sysmtx_m
             use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
+            implicit none
             class(sysmtx_${S}$), intent(inout) :: this
             ${T}$, intent(in)                  :: B(:,:)
             ${T}$, intent(in)                  :: scl(:)
@@ -62,6 +63,7 @@ module sysmtx_m
             use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
+            implicit none
             class(sysmtx_${S}$), intent(inout) :: this
             integer, intent(in)                :: k
             ${T}$, intent(in)                  :: E_l(:,:)
@@ -72,12 +74,14 @@ module sysmtx_m
          function det_${S}$_(this) result(det)
             use ext_m
             import sysmtx_${S}$
+            implicit none
             class(sysmtx_${S}$), intent(in) :: this
             type(ext_${S}$)                 :: det
          end function det_${S}$_
 
          subroutine factor_${S}$_(this)
             import sysmtx_${S}$
+            implicit none
             class(sysmtx_${S}$), intent(inout) :: this
          end subroutine factor_${S}$_
 
@@ -85,6 +89,7 @@ module sysmtx_m
             use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
+            implicit none
             class(sysmtx_${S}$), intent(in) :: this
             ${T}$                           :: u(this%n_e*(this%n+1))
          end function soln_vec_hom_${S}$_
@@ -93,7 +98,8 @@ module sysmtx_m
             use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
-            class(sysmtx_${S}$), intent(in) :: this
+            implicit none
+           class(sysmtx_${S}$), intent(in) :: this
             ${T}$, intent(in)               :: v_i(:)
             ${T}$, intent(in)               :: v_o(:)
             ${T}$                           :: u(this%n_e*(this%n+1))
@@ -103,6 +109,7 @@ module sysmtx_m
             use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
+            implicit none
             class(sysmtx_${S}$), intent(in) :: this
             ${T}$, intent(in)               :: u(:)
             ${T}$                           :: dv(this%n_e*(this%n+1))
@@ -112,6 +119,7 @@ module sysmtx_m
             use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
+            implicit none
             class(sysmtx_${S}$), intent(in) :: this
             ${T}$, intent(in)               :: u(:)
             ${T}$, intent(in)               :: v_i(:)
@@ -122,6 +130,7 @@ module sysmtx_m
          subroutine dump_${S}$_(this, hi)
             use forum_m, only: hdf5io_t
             import sysmtx_${S}$
+            implicit none
             class(sysmtx_${S}$), intent(in) :: this
             type(hdf5io_t), intent(inout)   :: hi
          end subroutine dump_${S}$_
@@ -137,5 +146,5 @@ module sysmtx_m
    ! Default access
 
    private
-      
+
 end module sysmtx_m

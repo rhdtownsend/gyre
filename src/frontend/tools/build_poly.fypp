@@ -78,8 +78,8 @@ program build_poly
 
    n_poly(1) = 0._RD
 
-   dz = 0.01
-   toler = 1E-10
+   dz = 0.01_RD
+   toler = 1E-10_RD
 
    ! Read parameters
 

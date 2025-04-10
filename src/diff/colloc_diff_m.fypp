@@ -20,7 +20,7 @@
 module colloc_diff_m
 
    ! Uses
-   
+
    use forum_m, only: RD
 
    use diff_m
@@ -97,7 +97,7 @@ module colloc_diff_m
          procedure         :: build_GL6_${S}$_
          procedure         :: build_irk_${S}$_
       end type colloc_diff_${S}$
-      
+
       ! Interfaces
 
       interface colloc_diff_${S}$

@@ -39,8 +39,8 @@ How Do I...
   Send an email to `Rich Townsend <mailto:townsend@astro.wisc.edu>`__.
 
 ...access the documentation for older releases?
-  Click on the 'v:...'  dropdown menu at the bottom of the left-hand
-  panel. Note that this menu is only available when viewing the
+  Click on the 'v:...'  dropdown menu in the bottom-right. Note that this
+  menu is only available when viewing the
   `documentation <https://gyre.readthedocs.io/en/stable/>`__ on `Read
   the Docs <https://readthedocs.org/>`__; it isn't available in a
   local build within the :file:`{$GYRE_DIR}/docs` directory.

@@ -35,7 +35,7 @@ module model_m
    #:for I, N in enumerate(COEFF_IDX_NAMES)
        integer, parameter :: ${N}$ = ${I+1}$
    #:endfor
-       
+
    integer, parameter :: I_LAST = ${len(COEFF_IDX_NAMES)}$
 
    ! Derived-type definitions
@@ -59,6 +59,7 @@ module model_m
          use forum_m, only: RD
          use point_m
          import model_t
+         implicit none
          class(model_t), intent(in) :: this
          integer, intent(in)        :: i
          type(point_t), intent(in)  :: pt
@@ -69,6 +70,7 @@ module model_m
          use forum_m, only: RD
          use point_m
          import model_t
+         implicit none
          class(model_t), intent(in) :: this
          integer, intent(in)        :: i
          type(point_t), intent(in)  :: pt
@@ -77,6 +79,7 @@ module model_m
 
       function is_defined_(this, i) result(is_defined)
          import model_t
+         implicit none
          class(model_t), intent(in) :: this
          integer, intent(in)        :: i
          logical                    :: is_defined
@@ -85,6 +88,7 @@ module model_m
       function is_vacuum_(this, pt) result(is_vacuum)
          use point_m
          import model_t
+         implicit none
          class(model_t), intent(in) :: this
          type(point_t), intent(in)  :: pt
          logical                    :: is_vacuum
@@ -93,6 +97,7 @@ module model_m
       function Delta_p_(this, x_i, x_o) result(Delta_p)
          use forum_m, only: RD
          import model_t
+         implicit none
          class(model_t), intent(in) :: this
          real(RD), intent(in)       :: x_i
          real(RD), intent(in)       :: x_o
@@ -102,6 +107,7 @@ module model_m
       function Delta_g_(this, x_i, x_o, lambda) result(Delta_g)
          use forum_m, only: RD
          import model_t
+         implicit none
          class(model_t), intent(in) :: this
          real(RD), intent(in)       :: x_i
          real(RD), intent(in)       :: x_o
@@ -112,6 +118,7 @@ module model_m
       function grid_(this) result(grid)
          use grid_m
          import model_t
+         implicit none
          class(model_t), intent(in) :: this
          type(grid_t)               :: grid
       end function grid_

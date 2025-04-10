@@ -39,8 +39,8 @@ module ext_real_m
 
    type ext_rt
       private
-      real(RD) :: f ! Fractional part
-      integer  :: e ! Exponent
+      real(RD) :: f  ! Fractional part
+      integer  :: e  ! Exponent
    contains
       private
       procedure       :: op_minus_rx_
@@ -114,6 +114,7 @@ module ext_real_m
       subroutine eval_(this, rx, f_rx, status)
          import ext_rt
          import func_ext_rt
+         implicit none
          class(func_ext_rt), intent(inout) :: this
          type(ext_rt), intent(in)          :: rx
          type(ext_rt), intent(out)         :: f_rx

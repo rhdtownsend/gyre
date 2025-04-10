@@ -38,10 +38,10 @@ module cubic_interp_m
 
       type, extends(interp_${S}$) :: cubic_interp_${S}$
          private
-         real(RD), allocatable :: x(:)     ! Abscissa
-         ${T}$, allocatable    :: f(:)     ! Ordinate
-         ${T}$, allocatable    :: df_dx(:) ! First derivatives
-         integer               :: n        ! Number of points
+         real(RD), allocatable :: x(:)      ! Abscissa
+         ${T}$, allocatable    :: f(:)      ! Ordinate
+         ${T}$, allocatable    :: df_dx(:)  ! First derivatives
+         integer               :: n         ! Number of points
       contains
          private
          procedure, public :: get_x_min => get_x_min_${S}$_
@@ -258,7 +258,7 @@ contains
       end subroutine eval_f_${S}$_
 
       !****
-         
+
       subroutine eval_df_dx_${S}$_(this, x, df_dx)
 
          class(cubic_interp_${S}$), intent(in) :: this
@@ -291,7 +291,7 @@ contains
             this%f(j+1)*dphi_dt_(w, 1)/h + &
             this%df_dx(j)*dpsi_dt_(1._RD-w, 1) + &
             this%df_dx(j+1)*dpsi_dt_(w, 1)
-         
+
          ! Finish
 
          return
@@ -301,7 +301,7 @@ contains
    #:endfor
 
    !****
-      
+
    function dphi_dt_(t, n) result(dphi_dt)
 
       real(RD), intent(in) :: t

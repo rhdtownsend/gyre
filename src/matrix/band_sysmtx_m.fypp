@@ -41,12 +41,12 @@ module band_sysmtx_m
 
       type, extends(sysmtx_${S}$) :: band_sysmtx_${S}$
          private
-         ${T}$, allocatable           :: A_b(:,:) ! Banded matrix
-         integer, allocatable         :: ipiv(:)  ! Pivot indices
-         ${T}$, allocatable           :: scl_i(:) ! Inner boundary scales
-         ${T}$, allocatable           :: scl_o(:) ! Outer boundary scales
-         type(ext_${S}$), allocatable :: scl(:)   ! Block scales
-         integer                      :: n_ul     ! Number of sub-/super-diagonals
+         ${T}$, allocatable           :: A_b(:,:)  ! Banded matrix
+         integer, allocatable         :: ipiv(:)   ! Pivot indices
+         ${T}$, allocatable           :: scl_i(:)  ! Inner boundary scales
+         ${T}$, allocatable           :: scl_o(:)  ! Outer boundary scales
+         type(ext_${S}$), allocatable :: scl(:)    ! Block scales
+         integer                      :: n_ul      ! Number of sub-/super-diagonals
       contains
          private
          procedure, public :: set_B_i => set_B_i_${S}$_
@@ -79,7 +79,7 @@ module band_sysmtx_m
    ! Default access
 
    private
-      
+
 contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)

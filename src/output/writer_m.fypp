@@ -47,11 +47,13 @@ module writer_m
 
       subroutine final (this)
          import writer_t
+         implicit none
          class(writer_t), intent(inout) :: this
       end subroutine final
 
       function count (this)
          import writer_t
+         implicit none
          class(writer_t), intent(in) :: this
          integer                     :: count
       end function count
@@ -62,14 +64,15 @@ module writer_m
             subroutine write_${S}$_${R}$_(this, name, data)
                use forum_m, only: RD
                import writer_t
+               implicit none
                class(writer_t), intent(inout) :: this
                character(*), intent(in)       :: name
                ${T}$, intent(in)              :: data${ARRAY_SPEC(R)}$
             end subroutine write_${S}$_${R}$_
-            
+
          #:endfor
       #:endfor
-            
+
    end interface
 
    ! Access specifiers
