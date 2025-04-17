@@ -59,7 +59,7 @@ contains
       real(RD)                    :: Gamma_1
       real(RD), allocatable       :: z(:)
       real(RD), allocatable       :: theta(:)
-      real(RD), allocatable       :: dtheta(:)
+      real(RD), allocatable       :: theta_pri(:)
       real(RD)                    :: Omega_rot
       type(poly_model_t), pointer :: pm
 
@@ -84,7 +84,7 @@ contains
 
       call hi%alloc_read_dset('z', z)
       call hi%alloc_read_dset('theta', theta)
-      call hi%alloc_read_dset('dtheta', dtheta)
+      call hi%alloc_read_dset('dtheta', theta_pri)
 
       call hi%final()
 
@@ -99,7 +99,8 @@ contains
 
       ! Initialize the poly_model_t
 
-      allocate(pm, SOURCE=poly_model_t(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot, ml_p%interp_type))
+      allocate(pm, SOURCE=poly_model_t(z, theta, theta_pri, n_poly, Delta_b, Gamma_1, Omega_rot, &
+               ml_p%interp_type, ml_p%constrain_derivs))
 
       ! Return a pointer
 

@@ -98,7 +98,7 @@ follows:
   Flag to constrain first derivatives of :math:`V_2`, :math:`U` and
   :math:`c_1` structure coefficients, in accordance with equations
   (20) and (21) of :ads_citet:`takata:2006a` and the hydrostatic
-  equilibrium equation (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`)
+  equilibrium equation (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`\ \|\ :nml_v:`'POLY'` )
 
 :nml_n:`use_nabla_rad` (default :nml_v:`.FALSE.`)
   Use :math:`\nabrad` to calculate the radiative luminosity

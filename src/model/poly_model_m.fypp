@@ -1,7 +1,7 @@
 ! Module  : poly_model_m
 ! Purpose : stellar polytropic model
 !
-! Copyright 2013-2020 Rich Townsend & The GYRE Team
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -45,7 +45,7 @@ module poly_model_m
       private
       type(grid_t)                  :: gr
       class(interp_rt), allocatable :: in_theta(:)
-      class(interp_rt), allocatable :: in_dtheta(:)
+      class(interp_rt), allocatable :: in_theta_pri(:)
       real(RD), allocatable         :: n_poly(:)
       real(RD), allocatable         :: mu_i(:)
       real(RD), allocatable         :: v_i(:)
@@ -55,10 +55,16 @@ module poly_model_m
       real(RD)                      :: z_s
       real(RD)                      :: Gamma_1
       real(RD)                      :: Omega_rot
+      logical                       :: constrain_derivs
       integer                       :: s_i
       integer                       :: s_o
    contains
-      private
+      procedure         :: theta_
+      procedure         :: theta_pri_
+      procedure         :: dtheta_dx_
+      procedure         :: dtheta_pri_dx_
+      procedure         :: mu_
+      procedure         :: dmu_
       procedure, public :: coeff
       procedure         :: coeff_V_2_
       procedure         :: coeff_As_
@@ -70,7 +76,6 @@ module poly_model_m
       procedure         :: dcoeff_As_
       procedure         :: dcoeff_U_
       procedure         :: dcoeff_c_1_
-      procedure         :: mu_
       procedure, public :: is_defined
       procedure, public :: is_vacuum
       procedure, public :: Delta_p
@@ -94,16 +99,17 @@ module poly_model_m
 
 contains
 
-   function poly_model_t_(z, theta, dtheta, n_poly, Delta_b, Gamma_1, Omega_rot, interp_type) result(ml)
+   function poly_model_t_(z, theta, theta_pri, n_poly, Delta_b, Gamma_1, Omega_rot, interp_type, constrain_derivs) result(ml)
 
       real(RD), intent(in)     :: z(:)
       real(RD), intent(in)     :: theta(:)
-      real(RD), intent(in)     :: dtheta(:)
+      real(RD), intent(in)     :: theta_pri(:)
       real(RD), intent(in)     :: n_poly(:)
       real(RD), intent(in)     :: Delta_b(:)
       real(RD), intent(in)     :: Gamma_1
       real(RD), intent(in)     :: Omega_rot
       character(*), intent(in) :: interp_type
+      logical, intent(in)      :: constrain_derivs
       type(poly_model_t)       :: ml
 
       integer  :: n_p
@@ -115,16 +121,17 @@ contains
       integer  :: s
       integer  :: i
       real(RD) :: v_o_prev
-      real(RD) :: d2theta(SIZE(z))
+      real(RD) :: dtheta_pri_dz(SIZE(z))
 
       @:CHECK_BOUNDS(SIZE(theta), SIZE(z))
-      @:CHECK_BOUNDS(SIZE(dtheta), SIZE(z))
+      @:CHECK_BOUNDS(SIZE(theta_pri), SIZE(z))
 
       @:CHECK_BOUNDS(SIZE(Delta_b), SIZE(n_poly)-1)
 
-      ! Construct the poly_model_t from the Lane-Emden solutions theta,
-      ! dtheta/dz. Per-segment polytropic indices are supplied in n_poly,
-      ! and segment-boundary density jumps in Delta_b
+      ! Construct the poly_model_t from the Lane-Emden solutions
+      ! theta, theta' = dtheta/dz. Per-segment polytropic indices are
+      ! supplied in n_poly, and segment-boundary density jumps in
+      ! Delta_b
 
       ! Create the grid
 
@@ -146,10 +153,10 @@ contains
       select case(interp_type)
       case('LINEAR')
          allocate(linear_interp_rt::ml%in_theta(ml%s_i:ml%s_o))
-         allocate(linear_interp_rt::ml%in_dtheta(ml%s_i:ml%s_o))
+         allocate(linear_interp_rt::ml%in_theta_pri(ml%s_i:ml%s_o))
       case('CUBIC')
          allocate(cubic_interp_rt::ml%in_theta(ml%s_i:ml%s_o))
-         allocate(cubic_interp_rt::ml%in_dtheta(ml%s_i:ml%s_o))
+         allocate(cubic_interp_rt::ml%in_theta_pri(ml%s_i:ml%s_o))
       case default
          @:ABORT('invalid interp_type')
       end select
@@ -182,19 +189,19 @@ contains
 
          i = s - ml%s_i + 1
 
-         v_o_prev = z(j_o_prev)**2*dtheta(j_o_prev)
+         v_o_prev = z(j_o_prev)**2*theta_pri(j_o_prev)
 
          ml%mu_i(s) = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
          ml%t(s) = ml%t(s-1)*exp(ml%n_poly(s-1)*log(theta(j_o_prev)) + Delta_b(i-1))
 
-         ml%v_i(s) = z(j_i)**2*dtheta(j_i)
+         ml%v_i(s) = z(j_i)**2*theta_pri(j_i)
 
-         ml%B(s) = (dtheta(j_i)/dtheta(j_o_prev))*(ml%t(s)/ml%t(s-1))*ml%B(s-1)
+         ml%B(s) = (theta_pri(j_i)/theta_pri(j_o_prev))*(ml%t(s)/ml%t(s-1))*ml%B(s-1)
 
       end do seg_data_loop
 
-      v_o_prev = z(j_o)**2*dtheta(j_o)
+      v_o_prev = z(j_o)**2*theta_pri(j_o)
 
       ml%mu_s = ml%mu_i(s-1) - (v_o_prev - ml%v_i(s-1))*ml%t(s-1)/ml%B(s-1)
 
@@ -209,28 +216,30 @@ contains
          type is (linear_interp_rt)
             in = linear_interp_rt(x(j_i:j_o), theta(j_i:j_o))
          type is (cubic_interp_rt)
-            in = cubic_interp_rt(x(j_i:j_o), theta(j_i:j_o), dtheta(j_i:j_o)*ml%z_s)
+            in = cubic_interp_rt(x(j_i:j_o), theta(j_i:j_o), theta_pri(j_i:j_o)*ml%z_s)
          end select
 
-         select type(in => ml%in_dtheta(s))
+         select type(in => ml%in_theta_pri(s))
          type is (linear_interp_rt)
-            in = linear_interp_rt(x(j_i:j_o), dtheta(j_i:j_o))
+            in = linear_interp_rt(x(j_i:j_o), theta_pri(j_i:j_o))
          type is (cubic_interp_rt)
             if (ml%n_poly(s) /= 0._RD) then
                where (z(j_i:j_o) /= 0._RD)
-                  d2theta(j_i:j_o) = -2._RD*dtheta(j_i:j_o)/z(j_i:j_o) - ml%B(s)*pow(theta(j_i:j_o), ml%n_poly(s))
+                  dtheta_pri_dz(j_i:j_o) = -2._RD*theta_pri(j_i:j_o)/z(j_i:j_o) - ml%B(s)*pow(theta(j_i:j_o), ml%n_poly(s))
                elsewhere
-                  d2theta(j_i:j_o) = -1._RD/3._RD
+                  dtheta_pri_dz(j_i:j_o) = -1._RD/3._RD
                end where
             else
-               d2theta(j_i:j_o) = -1._RD/3._RD
+               dtheta_pri_dz(j_i:j_o) = -1._RD/3._RD
             end if
-            in = cubic_interp_rt(x(j_i:j_o), dtheta(j_i:j_o), d2theta(j_i:j_o)*ml%z_s)
+            in = cubic_interp_rt(x(j_i:j_o), theta_pri(j_i:j_o), dtheta_pri_dz(j_i:j_o)*ml%z_s)
          end select
 
       end do seg_spline_loop
 
       ! Other initializations
+
+      ml%constrain_derivs = constrain_derivs
 
       ml%Gamma_1 = Gamma_1
       ml%Omega_rot = Omega_rot
@@ -243,7 +252,153 @@ contains
 
    !****
 
-   function coeff (this, i, pt)
+   function theta_(this, pt) result(theta)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: theta
+
+      ! Evaluate the Lane-Emden variable theta
+
+      call this%in_theta(pt%s)%eval_f(pt%x, theta)
+
+      ! Finish
+
+      return
+
+   end function theta_
+
+   !****
+
+   function theta_pri_(this, pt) result(theta_pri)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: theta_pri
+
+      ! Evaluate the Lane-Emden variable theta'
+
+      call this%in_theta_pri(pt%s)%eval_f(pt%x, theta_pri)
+
+      ! Finish
+
+      return
+
+   end function theta_pri_
+
+   !****
+
+   function dtheta_dx_(this, pt) result(dtheta_dx)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: dtheta_dx
+
+      ! Evaluate the derivative of the Lane-Emden variable theta
+
+      call this%in_theta(pt%s)%eval_df_dx(pt%x, dtheta_dx)
+
+      ! Finish
+
+      return
+
+   end function dtheta_dx_
+
+   !****
+
+   function dtheta_pri_dx_(this, pt) result(dtheta_pri_dx)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: dtheta_pri_dx
+
+      ! Evaluate the derivative of the Lane-Emden variable theta'
+
+      call this%in_theta_pri(pt%s)%eval_df_dx(pt%x, dtheta_pri_dx)
+
+      ! Finish
+
+      return
+
+   end function dtheta_pri_dx_
+
+   !****
+
+   function mu_(this, pt) result(mu)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: mu
+
+      real(RD) :: theta_pri
+      real(RD) :: v
+
+      ! Evaluate the mass coordinate mu
+
+      theta_pri = this%theta_pri_(pt)
+
+      v = (this%z_s*pt%x)**2*theta_pri
+
+      mu = this%mu_i(pt%s) - (v - this%v_i(pt%s))*this%t(pt%s)/this%B(pt%s)
+
+      ! Finish
+
+      return
+
+   end function mu_
+
+   !****
+
+   function dmu_(this, pt) result(dmu)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: dmu
+
+      real(RD) :: z
+      real(RD) :: theta
+      real(RD) :: theta_pri
+      real(RD) :: dtheta_pri_dx
+      real(RD) :: dv_dx
+
+      ! Evaluate the logarithmic derivative of the mass coordinate mu
+
+      if (pt%x /= 0._RD) then
+
+         z = this%z_s*pt%x
+
+         if (this%constrain_derivs) then
+
+            theta = this%theta_(pt)
+
+            dv_dx = -z**2*this%z_s*this%B(pt%s)*pow(theta, this%n_poly(pt%s))
+
+         else
+
+            theta_pri = this%theta_pri_(pt)
+            dtheta_pri_dx = this%dtheta_pri_dx_(pt)
+
+            dv_dx = 2._RD*z*this%z_s*theta_pri + z**2*dtheta_pri_dx
+
+         end if
+
+         dmu = pt%x*(-dv_dx*this%t(pt%s)/this%B(pt%s))/this%mu_(pt)
+
+      else
+
+         dmu = 3._RD
+
+      end if
+
+      ! Finish
+
+      return
+
+   end function dmu_
+
+   !****
+
+   function coeff(this, i, pt)
 
       class(poly_model_t), intent(in) :: this
       integer, intent(in)             :: i
@@ -292,7 +447,7 @@ contains
 
       real(RD) :: z
       real(RD) :: theta
-      real(RD) :: dtheta
+      real(RD) :: theta_pri
 
       ! Evaluate the V_2 coefficient
 
@@ -300,11 +455,11 @@ contains
 
          z = pt%x*this%z_s
 
-         call this%in_theta(pt%s)%eval_f(pt%x, theta)
-         call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
+         theta = this%theta_(pt)
+         theta_pri = this%theta_pri_(pt)
 
          if (theta /= 0._RD) then
-            coeff = -(this%n_poly(pt%s) + 1._RD)*this%z_s**2*dtheta/(theta*z)
+            coeff = -(this%n_poly(pt%s) + 1._RD)*this%z_s**2*theta_pri/(theta*z)
          else
             coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
          endif
@@ -331,17 +486,17 @@ contains
 
       real(RD) :: z
       real(RD) :: theta
-      real(RD) :: dtheta
+      real(RD) :: theta_pri
 
       ! Evaluate the As coefficient
 
       z = pt%x*this%z_s
 
-      call this%in_theta(pt%s)%eval_f(pt%x, theta)
-      call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
+      theta = this%theta_(pt)
+      theta_pri = this%theta_pri_(pt)
 
       if (theta /= 0._RD) then
-         coeff = -(this%n_poly(pt%s) + 1._RD)*z*dtheta/theta * &
+         coeff = -(this%n_poly(pt%s) + 1._RD)*z*theta_pri/theta * &
             (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/this%Gamma_1)
       else
          coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
@@ -370,7 +525,7 @@ contains
 
          z = pt%x*this%z_s
 
-         call this%in_theta(pt%s)%eval_f(pt%x, theta)
+         theta = this%theta_(pt)
 
          if (this%n_poly(pt%s) /= 0._RD) then
             coeff = z**3*this%t(pt%s)*pow(theta, this%n_poly(pt%s))/this%mu_(pt)
@@ -426,7 +581,7 @@ contains
 
       real(RD) :: z
       real(RD) :: theta
-      real(RD) :: dtheta
+      real(RD) :: theta_pri
 
       ! Evaluate the U_D = U*dlnrho/dlnr coefficient
 
@@ -434,8 +589,8 @@ contains
 
          z = pt%x*this%z_s
 
-         call this%in_theta(pt%s)%eval_f(pt%x, theta)
-         call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
+         theta = this%theta_(pt)
+         theta_pri = this%theta_pri_(pt)
 
          if (this%n_poly(pt%s) == 0._RD) then
 
@@ -444,12 +599,12 @@ contains
          elseif(this%n_poly(pt%s) == 1._RD) then
 
             coeff = this%n_poly(pt%s)*this%t(pt%s)*z**4 * &
-               dtheta/this%mu_(pt)
+               theta_pri/this%mu_(pt)
 
          else
 
             coeff = this%n_poly(pt%s)*this%t(pt%s)*z**4 * &
-               pow(theta, this%n_poly(pt%s)-1._RD)*dtheta/this%mu_(pt)
+               pow(theta, this%n_poly(pt%s)-1._RD)*theta_pri/this%mu_(pt)
 
          end if
 
@@ -467,7 +622,7 @@ contains
 
    !****
 
-   function dcoeff (this, i, pt)
+   function dcoeff(this, i, pt)
 
       class(poly_model_t), intent(in) :: this
       integer, intent(in)             :: i
@@ -516,7 +671,9 @@ contains
 
       real(RD) :: z
       real(RD) :: theta
-      real(RD) :: dtheta
+      real(RD) :: theta_pri
+      real(RD) :: dtheta_dx
+      real(RD) :: dtheta_pri_dx
 
       ! Evaluate the logarithmic derivative of the V_2 coefficient
 
@@ -524,28 +681,46 @@ contains
 
          z = pt%x*this%z_s
 
-         call this%in_theta(pt%s)%eval_f(pt%x, theta)
-         call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
+         if (this%constrain_derivs) then
 
-         if (this%n_poly(pt%s) /= 0._RD) then
-            if (theta /= 0._RD) then
-               dcoeff = -3._RD - z*dtheta/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/dtheta
+            theta = this%theta_(pt)
+            theta_pri = this%theta_pri_(pt)
+
+            if (this%n_poly(pt%s) /= 0._RD) then
+               if (theta /= 0._RD) then
+                  dcoeff = -3._RD - z*theta_pri/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/theta_pri
+               else
+                  dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
+               end if
             else
-               dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
-            end if
+               if (theta /= 0._RD) then
+                  dcoeff = -3._RD - z*theta_pri/theta - this%B(pt%s)*z/theta_pri
+               else
+                  dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
+               end if
+            endif
+
          else
+
+            theta = this%theta_(pt)
+            theta_pri = this%theta_pri_(pt)
+
+            dtheta_dx = this%dtheta_dx_(pt)
+            dtheta_pri_dx = this%dtheta_pri_dx_(pt)
+
             if (theta /= 0._RD) then
-               dcoeff = -3._RD - z*dtheta/theta - this%B(pt%s)*z/dtheta
+               dcoeff = dtheta_pri_dx*pt%x/theta_pri - dtheta_dx*pt%x/theta - 1._RD
             else
                dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
             end if
-         endif
+
+         end if
 
       else
 
          dcoeff = 0._RD
 
-      endif
+      end if
 
       ! Finish
 
@@ -582,7 +757,8 @@ contains
 
       real(RD) :: z
       real(RD) :: theta
-      real(RD) :: dtheta
+      real(RD) :: theta_pri
+      real(RD) :: dtheta_dx
 
       ! Evaluate the logarithmic derivative of the U coefficient
 
@@ -590,13 +766,28 @@ contains
 
          z = pt%x*this%z_s
 
-         call this%in_theta(pt%s)%eval_f(pt%x, theta)
-         call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
+         if (this%constrain_derivs) then
 
-         if (theta /= 0._RD) then
-            dcoeff = 3._RD + this%n_poly(pt%s)*z*dtheta/theta - this%coeff_U_(pt)
+            theta = this%theta_(pt)
+            theta_pri = this%theta_pri_(pt)
+
+            if (theta /= 0._RD) then
+               dcoeff = 3._RD + this%n_poly(pt%s)*z*theta_pri/theta - this%coeff_U_(pt)
+            else
+               dcoeff = IEEE_VALUE(dcoeff, IEEE_NEGATIVE_INF)
+            end if
+
          else
-            dcoeff = IEEE_VALUE(dcoeff, IEEE_NEGATIVE_INF)
+
+            theta = this%theta_(pt)
+            dtheta_dx = this%dtheta_dx_(pt)
+
+            if (theta /= 0._RD) then
+               dcoeff = 3._RD + this%n_poly(pt%s)*pt%x*dtheta_dx/theta - this%dmu_(pt)
+            else
+               dcoeff = IEEE_VALUE(dcoeff, IEEE_NEGATIVE_INF)
+            end if
+
          end if
 
       else
@@ -621,7 +812,15 @@ contains
 
       ! Evaluate the logarithmic derivative of the c_1 coefficient
 
-      dcoeff = 3._RD - this%coeff_U_(pt)
+      if (this%constrain_derivs) then
+
+         dcoeff = 3._RD - this%coeff_U_(pt)
+
+      else
+
+         dcoeff = 3._RD - this%dmu_(pt)
+
+      end if
 
       ! Finish
 
@@ -631,32 +830,7 @@ contains
 
    !****
 
-   function mu_(this, pt) result(mu)
-
-      class(poly_model_t), intent(in) :: this
-      type(point_t), intent(in)       :: pt
-      real(RD)                        :: mu
-
-      real(RD) :: dtheta
-      real(RD) :: v
-
-      ! Evaluate the mass coordinate mu
-
-      call this%in_dtheta(pt%s)%eval_f(pt%x, dtheta)
-
-      v = (this%z_s*pt%x)**2*dtheta
-
-      mu = this%mu_i(pt%s) - (v - this%v_i(pt%s))*this%t(pt%s)/this%B(pt%s)
-
-      ! Finish
-
-      return
-
-   end function mu_
-
-   !****
-
-   function is_defined (this, i)
+   function is_defined(this, i)
 
       class(poly_model_t), intent(in) :: this
       integer, intent(in)             :: i
@@ -681,7 +855,7 @@ contains
 
    !****
 
-   function is_vacuum (this, pt)
+   function is_vacuum(this, pt)
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
@@ -693,7 +867,7 @@ contains
 
       ! Return whether the point is a vacuum
 
-      call this%in_theta(pt%s)%eval_f(pt%x, theta)
+      theta = this%theta_(pt)
 
       is_vacuum = theta == 0._RD
 
@@ -705,7 +879,7 @@ contains
 
    !****
 
-   function Delta_p (this, x_i, x_o)
+   function Delta_p(this, x_i, x_o)
 
       class(poly_model_t), intent(in) :: this
       real(RD), intent(in)            :: x_i
@@ -766,7 +940,7 @@ contains
 
    !****
 
-   function Delta_g (this, x_i, x_o, lambda)
+   function Delta_g(this, x_i, x_o, lambda)
 
       class(poly_model_t), intent(in) :: this
       real(RD), intent(in)            :: x_i
