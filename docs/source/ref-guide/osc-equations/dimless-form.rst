@@ -184,7 +184,9 @@ above is replaced by the :ads_citet:`dziembowski:1971` outer boundary condition,
 .. math::
 
    \left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} - 4 - c_{1} \omega^{2} \right] \right\} y_{1} -
-   y_{2} = 0.
+   y_{2} +
+   V^{-1} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} - l - 1 \right] y_{3}
+   = 0.
    
 When :nml_n:`outer_bound`\ =\ :nml_v:`'UNNO'` or :nml_v:`'JCD'`, the
 first condition is replaced by the (possibly-leaky) outer boundary
