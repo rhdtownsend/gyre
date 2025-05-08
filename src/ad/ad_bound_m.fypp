@@ -695,7 +695,7 @@ contains
          ! notes
 
          H = ((a_11 - chi)*(a_13 - a_14*(1._RD-l)) + a_12*(a_23 - a_24*(1._RD-l))) / &
-            (chi + l - a_11 - a_12)
+            (chi + l - a_11 - a_22)
 
          ! Finish
 
