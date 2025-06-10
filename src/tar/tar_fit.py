@@ -3,7 +3,7 @@
 import numpy as np
 import h5py
 
-import gyre_cheb_fit
+import cheb_fit
 
 class TarFit:
 
@@ -24,7 +24,7 @@ class TarFit:
             k = f[group].attrs['k']
             q_0 = f[group].attrs['q_0']
 
-            cf = gyre_cheb_fit.ChebFit.load(filename, 'cf')
+            cf = cheb_fit.ChebFit.load(filename, 'cf')
 
         return cls(m, k, q_0, cf)
 

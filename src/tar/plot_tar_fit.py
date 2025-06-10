@@ -1,13 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
-# Plot trad_fit data
+# Plot tar_fit data
 
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-import gyre_tar_fit
-import gyre_cheb_fit
+import tar_fit
+import cheb_fit
 
 # Arguments
 
@@ -37,7 +37,7 @@ for infile in infiles:
 
     # Load the file
 
-    tf = gyre_tar_fit.TarFit.load(infile)
+    tf = tar_fit.TarFit.load(infile)
 
     # Calculate data
 

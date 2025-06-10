@@ -1,8 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Generate tar_fit files for the data/tar directory
 
 import os
+
+GYRE_DIR = os.environ['GYRE_DIR']
 
 # Parameters
 
@@ -27,4 +29,4 @@ for k in range(K_MIN, K_MAX+1):
 
         # Run build_tar_fit
 
-        os.system('./build_tar_fit {:d} {:d} {:e} ../../data/tar/tar_fit.{:s}.h5'.format(m, k, TOLER, infix))
+        os.system(f'{GYRE_DIR}/bin/build_tar_fit {m} {k} {TOLER} {GYRE_DIR}/data/tar/tar_fit.{infix}.h5')
