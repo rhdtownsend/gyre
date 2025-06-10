@@ -1,7 +1,7 @@
 ! Module  : tar_eigen_m
 ! Purpose : traditional approximation of rotation (TAR) eigenvalue calculation
 !
-! Copyright 2016-2020 Rich Townsend & The GYRE Team
+! Copyright 2016-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -333,7 +333,7 @@ contains
 
          if (j_inf /= 0) then
 
-            print *,q,m,k,j_inf
+            print *, q, m, k, j_inf
 
             @:ABORT('pure Rossby mode encountered')
 
@@ -536,7 +536,7 @@ contains
             elseif (P_m == P_b) then
                lambda_b = lambda_m
             else
-               print *,P_a, P_b, P_m
+               print *, P_a, P_b, P_m
                @:ABORT('P_m not equal to P_a or P_b')
             endif
 
@@ -662,8 +662,8 @@ contains
          real(RQ) :: alpha
 
          ! Calculate the (m, s) gravity-wave Hough eigenvalue lambda,
-         ! using the third-order perturbation expansion by Townsend (in
-         ! prep)
+         ! using the third-order perturbation expansion by Townsend
+         ! (2020, MNRAS, 497, 2670)
 
          w = 1._RQ/REAL(q, RQ)
 
@@ -697,8 +697,9 @@ contains
          real(RQ) :: alpha_1
          real(RQ) :: alpha
 
-         ! Calculate the (m) Kelvin-wave Hough eigenvalue lambda, using
-         ! the first-order perturbation expansion by Townsend (in prep)
+         ! Calculate the (m) Kelvin-wave Hough eigenvalue lambda,
+         ! using the first-order perturbation expansion by Townsend
+         ! (2020, MNRAS, 497, 2670)
 
          w = 1._RQ/REAL(q, RQ)
 
@@ -728,8 +729,8 @@ contains
          real(RQ) :: alpha
 
          ! Calculate the (m, s) Rossby-wave Hough eigenvalue lambda,
-         ! using the first-order perturbation expansion by Townsend (in
-         ! prep)
+         ! using the first-order perturbation expansion by Townsend
+         ! (2020, MNRAS, 497, 2670)
 
          w = 1._RQ/REAL(q, RQ)
 
@@ -769,6 +770,8 @@ contains
          ${T}$, intent(out)   :: A_D(:)
          ${T}$, intent(out)   :: A_E(:)
 
+         integer, parameter :: K = KIND(A_1)
+
          ${T}$   :: q_
          integer :: j
          integer :: l_j
@@ -796,7 +799,7 @@ contains
          !
          ! A_E(n) is unused
 
-         q_ = REAL(q, KIND(${T}$))
+         q_ = REAL(q, K)
 
          if (parity) then
             l_j = abs(m)
@@ -807,22 +810,22 @@ contains
          do j = 1, n
 
             if (l_j == abs(m)) then
-               A_1(j) = 1 + SIGN(1, m)*q_/(l_j+1)
+               A_1(j) = 1 + SIGN(1, m)*q_/REAL(l_j+1, K)
                A_2n(j) = 0
             else
-               A_1(j) = 1 + m*q_/(l_j*(l_j+1))
-               A_2n(j) = -q_**2*(l_j-1)**2*(l_j+1)*J_lm_${S}$_(l_j, m)**2/l_j
+               A_1(j) = 1 + m*q_/(REAL(l_j, K)*REAL(l_j+1, K))
+               A_2n(j) = -q_**2*REAL(l_j-1, K)**2*REAL(l_j+1, K)*J_lm_${S}$_(l_j, m)**2/REAL(l_j, K)
             endif
 
-            A_2d(j) = (l_j-1)*l_j + m*q_
+            A_2d(j) = REAL(l_j-1, K)*REAL(l_j, K) + m*q_
 
-            A_3n(j) = -q_**2*l_j*(l_j+2)**2*J_lm_${S}$_(l_j+1, m)**2/(l_j+1)
-            A_3d(j) = (l_j+1)*(l_j+2) + m*q_
+            A_3n(j) = -q_**2*REAL(l_j, K)*REAL(l_j+2, K)**2*J_lm_${S}$_(l_j+1, m)**2/REAL(l_j+1, K)
+            A_3d(j) = REAL(l_j+1, K)*REAL(l_j+2, K) + m*q_
 
             A_4n(j) = -q_**2*J_lm_${S}$_(l_j+1, m)*J_lm_${S}$_(l_j+2, m)
             A_4d(j) = A_3d(j)
 
-            A_5(j) = l_j*(l_j+1)
+            A_5(j) = REAL(l_j, K)*REAL(l_j+1, K)
 
             l_j = l_j + 2
 
@@ -887,6 +890,8 @@ contains
          integer, intent(in) :: m
          ${T}$               :: J_lm
 
+         integer, parameter :: K = KIND(J_lm)
+
          ! Calculate the J_lm function, being the integral of Y_lm Y_{l+1}m
          ! cos(theta) over all solid angles
 
@@ -896,7 +901,7 @@ contains
 
          else
 
-            J_lm = sqrt(REAL((l-m)*(l+m), KIND(J_lm))/REAL((2*l-1)*(2*l+1), KIND=KIND(J_lm)))
+            J_lm = sqrt(REAL(l-m, K)*REAL(l+m, K) / (REAL(2*l-1, K)*REAL(2*l+1, K)))
 
          endif
 
