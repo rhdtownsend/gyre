@@ -101,6 +101,7 @@ contains
 
       u = u_ext_(n)
 
+      !$OMP PARALLEL DO PRIVATE(x) SCHEDULE(DYNAMIC)
       do j = 1, n+1
 
          x = 0.5_RD*((1._RD+u(j))*x_a + (1._RD-u(j))*x_b)
