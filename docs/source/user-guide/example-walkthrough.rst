@@ -42,10 +42,11 @@ SPB star into your work directory:
 Assembling a Namelist File
 ==========================
 
-Now comes the fun part: assembling an input file containing the various
-parameters which control a :program:`gyre` run. Using a text editor, create the
-file :file:`gyre.in` in your work directory with the following
-content cut-and-pasted in:
+Now comes the fun part: assembling an input file containing the
+various parameters which control a :program:`gyre` run. Using a text
+editor, create the file :file:`gyre.in` in your work directory with
+the following content copy-and-pasted in (use the copy button that
+appears when you hover over the top-right corner of the box):
 
 .. literalinclude:: example-walkthrough/gyre.in
 
