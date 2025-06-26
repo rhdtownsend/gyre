@@ -118,7 +118,7 @@ contains
 
 100   continue
 
-      @:ASSERT(n_ot_p == 1, 'input file should contain exactly one &<stage>_output namelist')
+      @:ASSERT(n_ot_p == 1, 'input file should contain exactly one &'//stage//'_output namelist')
 
       ! Read output parameters
 
