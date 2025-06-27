@@ -44,7 +44,7 @@ directory <walkthrough-work>` and fire up your preferred interactive
 Python environment (e.g., `Jupyter <https://jupyter.org/>`__). Import
 PyGYRE and the other modules needed for plotting:
 
-.. code::
+.. code-block:: python
 
   # Import modules
 
@@ -55,7 +55,7 @@ PyGYRE and the other modules needed for plotting:
 (you may want to directly cut and paste this code). Next, read the
 summary file into the variable `s`:
 
-.. code::
+.. code-block:: python
 
    # Read data from a gyre summary file
 
@@ -66,7 +66,7 @@ files in both :ref:`TXT and HDF formats <file-formats>`, returning the data in a
 :external:py:class:`astropy.table.Table` object. To inspect the data
 on-screen, simply evaluate the table:
 
-.. code::
+.. code-block:: python
 
    # Inspect the data
 
@@ -78,7 +78,7 @@ frequency ``freq`` of each mode found during the GYRE run.
 
 Next, plot the frequencies against radial orders via
 
-.. code::
+.. code-block:: python
 
    # Plot the data
 
@@ -106,7 +106,7 @@ The straight line connecting the two curves occurs because we are
 plotting both the dipole and quadrupole modes together. To separate
 them, the table rows can be grouped by harmonic degree:
 
-.. code::
+.. code-block:: python
 
    # Plot the data, grouped by harmonic degree
 
@@ -142,7 +142,7 @@ Now let's take a look at one of the detail files, for the mode with
 :external:py:func:`pygyre.read_output` can be used to read the file
 data into an :external:py:class:`astropy.table.Table` object:
 
-.. code::
+.. code-block:: python
    
    # Read data from a GYRE detail file
 
@@ -150,7 +150,7 @@ data into an :external:py:class:`astropy.table.Table` object:
 
 Inspecting the data using
 
-.. code::
+.. code-block:: python
 
    # Inspect the data
 
@@ -162,7 +162,7 @@ eigenfunction ``xi_h``, and 4 further columns storing structure
 coefficients (see the :ref:`detail-files` section for descriptions of
 these data). Plot the two eigenfunctions using the code
 
-.. code::
+.. code-block:: python
 
    # Plot displacement eigenfunctions
 
@@ -192,7 +192,7 @@ become very short around a fractional radius :math:`x \approx
 0.125`. To figure out why this is, we can take a look at the star's
 propagation diagram:
 
-.. code::
+.. code-block:: python
 
    # Evaluate dimensionless characteristic frequencies
 
