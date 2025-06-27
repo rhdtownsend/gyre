@@ -72,22 +72,22 @@ Observables
      - :math:`f_{T}`
      - real(:nml_v:`n_row`)
      - Effective temperature perturbation amplitude; evaluated using
-       eqn. 5 of :ads_citet:`dupret:2003`
+       eqn. (5) of :ads_citet:`dupret:2003`
    * - :nml_v:`f_g`
      - :math:`f_{\rm g}`
      - real(:nml_v:`n_row`)
      - Effective gravity perturbation amplitude; evaluated using
-       eqn. 6 of :ads_citet:`dupret:2003`
+       eqn. (6) of :ads_citet:`dupret:2003`
    * - :nml_v:`psi_T`
      - :math:`\psi_{T}`
      - real(:nml_v:`n_row`)
      - Effective temperature perturbation phase; evaluated using
-       eqn. 5 of :ads_citet:`dupret:2003`
+       eqn. (5) of :ads_citet:`dupret:2003`
    * - :nml_v:`psi_g`
      - :math:`\psi_{\rm g}`
      - real(:nml_v:`n_row`)
      - Effective gravity perturbation phase; evaluated using
-       eqn. 6 of :ads_citet:`dupret:2003`
+       eqn. (6) of :ads_citet:`dupret:2003`
 
 Classification & Validation
 ---------------------------
@@ -132,7 +132,7 @@ Classification & Validation
    * - :nml_v:`omega_int`
      - :math:`\omega_{\rm int}`
      - complex(:nml_v:`n_row`)
-     - dimensionless eigenfrequency based on integral expression; evaluated using eqn. A8 of :ads_citet:`townsend:2025`
+     - dimensionless eigenfrequency based on integral expression; evaluated using eqn. (A8) of :ads_citet:`townsend:2025`
    * - :nml_v:`zeta`
      - :math:`\zeta`
      - complex(:nml_v:`n_row`)
@@ -264,7 +264,7 @@ Rotation
    * - :nml_v:`domega_rot`
      - :math:`\Delta \omega`
      - real(:nml_v:`n_row`)
-     - dimensionless first-order rotational splitting; evaluated using eqn. 3.355 of :ads_citet:`aerts:2010`
+     - dimensionless first-order rotational splitting; evaluated using eqn. (3.355) of :ads_citet:`aerts:2010`
    * - :nml_v:`dfreq_rot`
      - ---
      - real(:nml_v:`n_row`)
@@ -353,7 +353,7 @@ Note that these items are available only when using :program:`gyre_tides`.
    * - :nml_v:`cbar`
      - :math:`\cbar_{\ell,m,k}`
      - real(:nml_v:`n_row`)
-     - tidal expansion coefficient; see eqn. A1 of :ads_citet:`sun:2023`
+     - tidal expansion coefficient; see eqn. (A1) of :ads_citet:`sun:2023`
    * - :nml_v:`Gbar_1`
      - :math:`\Gbar^{(1)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)

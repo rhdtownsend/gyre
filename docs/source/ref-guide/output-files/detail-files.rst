@@ -115,22 +115,22 @@ Observables
      - :math:`f_{T}`
      - real
      - Effective temperature perturbation amplitude; evaluated using
-       eqn. 5 of :ads_citet:`dupret:2003`
+       eqn. (5) of :ads_citet:`dupret:2003`
    * - :nml_v:`f_g`
      - :math:`f_{\rm g}`
      - real
      - Effective gravity perturbation amplitude; evaluated using
-       eqn. 6 of :ads_citet:`dupret:2003`
+       eqn. (6) of :ads_citet:`dupret:2003`
    * - :nml_v:`\psi_T`
      - :math:`\psi_{T}`
      - real
      - Effective temperature perturbation phase; evaluated using
-       eqn. 5 of :ads_citet:`dupret:2003`
+       eqn. (5) of :ads_citet:`dupret:2003`
    * - :nml_v:`f_g`
      - :math:`\psi_{\rm g}`
      - real
      - Effective gravity perturbation phase; evaluated using
-       eqn. 6 of :ads_citet:`dupret:2003`
+       eqn. (6) of :ads_citet:`dupret:2003`
 
 Classification & Validation
 ---------------------------
@@ -175,12 +175,12 @@ Classification & Validation
    * - :nml_v:`omega_int`
      - :math:`\omega_{\rm int}`
      - complex
-     - dimensionless eigenfrequency based on integral expression; evaluated using eqn. A8 of :ads_citet:`townsend:2025`
+     - dimensionless eigenfrequency based on integral expression; evaluated using eqn. (A8) of :ads_citet:`townsend:2025`
    * - :nml_v:`dzeta_dx`
      - :math:`\sderiv{\zeta}{x}`
      - complex(:nml_v:`n`)
      - frequency weight function :math:`[G\Mstar^{2}/\Rstar]`;
-       evaluated from the integrand in eqn. A5 of
+       evaluated from the integrand in eqn. (A5) of
        :ads_citet:`townsend:2025` with :math:`n'=n`
        
    * - :nml_v:`zeta`
@@ -191,22 +191,22 @@ Classification & Validation
      - :math:`\mathcal{Y}_{1}`
      - complex(:nml_v:`n`)
      - primary eigenfunction for Takata classification; evaluated
-       using a rescaled eqn. 69 of :ads_citet:`takata:2006b`
+       using a rescaled eqn. (69) of :ads_citet:`takata:2006b`
    * - :nml_v:`Yt_2`
      - :math:`\mathcal{Y}_{2}`
      - complex(:nml_v:`n`)
      - secondary eigenfunction for Takata classification; evaluated
-       using a rescaled eqn. 70 of :ads_citet:`takata:2006b`
+       using a rescaled eqn. (70) of :ads_citet:`takata:2006b`
    * - :nml_v:`I_0`
      - :math:`I_{0}`
      - complex(:nml_v:`n`)
      - first integral for radial modes; evaluated using
-       eqn. 42 of :ads_citet:`takata:2006a`
+       eqn. (42) of :ads_citet:`takata:2006a`
    * - :nml_v:`I_1`
      - :math:`I_{1}`
      - complex(:nml_v:`n`)
      - first integral for dipole modes; evaluated using
-       eqn. 43 of :ads_citet:`takata:2006a`
+       eqn. (43) of :ads_citet:`takata:2006a`
    * - :nml_v:`prop_type`
      - :math:`\varpi`
      - integer(:nml_v:`n`)
@@ -368,18 +368,18 @@ Energetics & Transport
    * - :nml_v:`dE_dx`
      - :math:`\sderiv{E}{x}`
      - real(:nml_v:`n`)
-     - differential inertia :math:`[\Mstar \Rstar^{2}]`; evaluated using eqn. 3.139 of
+     - differential inertia :math:`[\Mstar \Rstar^{2}]`; evaluated using eqn. (3.139) of
        :ads_citet:`aerts:2010`
    * - :nml_v:`dW_dx`\ [#only-N]_
      - :math:`\sderiv{W}{x}`
      - real(:nml_v:`n`)
-     - differential work :math:`[G\Mstar^{2}/\Rstar]`; evaluated using eqn. 25.9
+     - differential work :math:`[G\Mstar^{2}/\Rstar]`; evaluated using eqn. (25.9)
        of :ads_citet:`unno:1989`
    * - :nml_v:`dW_eps_dx`\ [#only-N]_
      - :math:`\sderiv{W_{\epsilon}}{x}`
      - real(:nml_v:`n`)
      - differential nuclear work :math:`[G\Mstar^{2}/\Rstar]`; evaluated using
-       eqn. 25.9 of :ads_citet:`unno:1989`
+       eqn. (25.9) of :ads_citet:`unno:1989`
    * - :nml_v:`dtau_ss_dx`
      - :math:`\sderiv{\tau_{\rm ss}}{x}`
      - real(:nml_v:`n`)
@@ -391,12 +391,12 @@ Energetics & Transport
    * - :nml_v:`alpha_0`
      - :math:`\alpha_{0}`
      - real(:nml_v:`n`)
-     - excitation coefficient; evaluated using eqn. 26.10 of
+     - excitation coefficient; evaluated using eqn. (26.10) of
        :ads_citet:`unno:1989`
    * - :nml_v:`alpha_1`
      - :math:`\alpha_{1}`
      - real(:nml_v:`n`)
-     - excitation coefficient; evaluated using eqn. 26.12 of
+     - excitation coefficient; evaluated using eqn. (26.12) of
        :ads_citet:`unno:1989`
 
 Rotation
@@ -421,7 +421,7 @@ Rotation
    * - :nml_v:`domega_rot`
      - :math:`\Delta \omega`
      - real
-     - dimensionless first-order rotational splitting; evaluated using eqn. 3.355 of :ads_citet:`aerts:2010`
+     - dimensionless first-order rotational splitting; evaluated using eqn. (3.355) of :ads_citet:`aerts:2010`
    * - :nml_v:`dfreq_rot`
      - ---
      - real
@@ -436,7 +436,7 @@ Rotation
      - :math:`\sderiv{\beta}{x}`
      - complex(:nml_v:`n`)
      - unnormalized rotation splitting kernel; evaluated using
-       eqn. 3.357 of :ads_citet:`aerts:2010`
+       eqn. (3.357) of :ads_citet:`aerts:2010`
    * - :nml_v:`lambda`
      - :math:`\lambda`
      - complex(:nml_v:`n`)
@@ -640,7 +640,7 @@ Note that these items are available only when using :program:`gyre_tides`.
    * - :nml_v:`cbar`
      - :math:`\cbar_{\ell,m,k}`
      - real
-     - tidal expansion coefficient; see eqn. A1 of :ads_citet:`sun:2023`
+     - tidal expansion coefficient; see eqn. (A1) of :ads_citet:`sun:2023`
    * - :nml_v:`Gbar_1`
      - :math:`\Gbar^{(1)}_{\ell,m,k}`
      - real

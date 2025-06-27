@@ -271,7 +271,7 @@ much more efficient. For the brackets plotted in
 :numref:`fig-discrim-brackets`, :numref:`numerical-eigenfreqs` compares
 the eigenfrequencies found using Python's
 :external:py:func:`scipy.optimize.brentq` function, against the analytic values
-predicted by eqn. (:eq:`analytic-eigenfreqs`).
+predicted by equation (:eq:`analytic-eigenfreqs`).
 
 .. _numerical-eigenfreqs:
 
@@ -317,5 +317,5 @@ grid point:
 :numref:`fig-eigenfuncs` plots the eigenfunctions found in this way
 for the first three modes (:math:`n=1,2,3`) given in
 :numref:`numerical-eigenfreqs`. Also shown are the corresponding
-analytic solutions given by eqn. (:eq:`analytic-eigenfuncs`). The
+analytic solutions given by equation (:eq:`analytic-eigenfuncs`). The
 agreement between the two is good.
