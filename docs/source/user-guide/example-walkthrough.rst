@@ -196,6 +196,6 @@ output files are written:
   :file:`detail.l{L}.n{N}.h5`, where :file:`{L}` and :file:`{N}` are
   the harmonic degree and radial order of the mode, respectively.
 
-The :ref:`output-files` chapter discusses how to read and analyze
+The :ref:`interpreting-output` chapter discusses how to read and analyze
 these files.
   
