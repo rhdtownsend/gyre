@@ -23,7 +23,7 @@ form
   \xir(r,\theta,\phi;t) = \operatorname{Re} \left[ \sqrt{4\pi} \, \txir(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t) \right]
 
 (this is taken from the :ref:`osc-sep-eqns` section). In addition to
-the same sinusoidal time dependence as in eqn. (:eq:`var-separation`), a
+the same sinusoidal time dependence as in equation (:eq:`var-separation`), a
 spherical harmonic term :math:`Y^{m}_{\ell}` appears because we are
 separating in three (spherical) spatial coordinates rather than one.
 

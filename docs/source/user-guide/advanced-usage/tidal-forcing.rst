@@ -22,7 +22,7 @@ response of the star to each term in the superposition.
 Truncating the Sums
 -------------------
 
-Although the sums appearing in eqn. (:eq:`e:tidal-pot`) are formally
+Although the sums appearing in equation (:eq:`e:tidal-pot`) are formally
 infinite, the terms with large harmonic degree :math:`\ell` and/or
 orbital harmonic :math:`k` typically produce a negligible
 response. :program:`gyre_tides` offers a couple of approaches for
@@ -94,8 +94,8 @@ response belongs to.
 The following Python code demonstrates how the summary data might be
 used to evaluate the secular rates-of-change of orbital semi-major
 axis, eccentricity, and argument of periastron, and the stellar
-torque. The expression for :code:`e_dot` mirrors eqn. (23) of
-:ads_citet:`sun:2023`, and for :code:`J_dot` eqn. (25) `ibid.`
+torque. The expression for :code:`e_dot` mirrors equation (23) of
+:ads_citet:`sun:2023`, and for :code:`J_dot` equation (25) `ibid.`
 
 .. literalinclude:: secular-rates.py
 		    

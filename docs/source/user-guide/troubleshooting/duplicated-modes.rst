@@ -18,8 +18,8 @@ also be spotted because their radial order is very different from the
 adjacent-in-frequency modes.
 
 Bogus modes arise because the input stellar model doesn't conserve
-mass. GYRE` assumes that the density :math:`\rho` and interior mass
-:math:`M_{r}` are related by equation :eq:`mass-eq`. Given that there
+mass. GYRE assumes that the density :math:`\rho` and interior mass
+:math:`M_{r}` are related by equation (:eq:`mass-eq`). Given that there
 are many different ways to discretize this equation, there is a
 certain amount of numerical 'slop' that arises when going from
 discrete form assumed in the stellar evolution code that generated the

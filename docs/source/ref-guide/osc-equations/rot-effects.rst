@@ -84,7 +84,7 @@ and has since been used extensively within the pulsation community
 :ads_citealp:`townsend:2020`).
 
 Within the TAR, the solution forms given in
-eqn. (:eq:`e:osc-sol-forms`) are replaced by
+equation (:eq:`e:osc-sol-forms`) are replaced by
 
 .. math::
    :label: e:osc-sol-forms-hough
@@ -132,7 +132,7 @@ behavior of the eigenfunctions and eigenvalue in the limit :math:`\Orot
 
 and :math:`\lambda \rightarrow \ell(\ell+1)`. With these expressions,
 the solution forms (:eq:`e:osc-sol-forms-hough`) reduce to those given
-in eqn. (:eq:`e:osc-sol-forms`).
+in equation (:eq:`e:osc-sol-forms`).
 
 Conversely, for the Rossby family
 
