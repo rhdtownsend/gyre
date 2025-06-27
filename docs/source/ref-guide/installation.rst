@@ -40,19 +40,19 @@ Download
 Download the `GYRE source code <tarball_url_>`__, and unpack it
 from the command line using the :command:`tar` utility:
 
-.. prompt:: bash
+.. code-block:: console
    :substitutions:
 
-   tar xf |tarball|
+   $ tar xf |tarball|
 
 Set the :envvar:`GYRE_DIR` environment variable with the path to the
 newly created source directory; this can be achieved, e.g., using the
 :command:`realpath` command\ [#realpath]_:
 
-.. prompt:: bash
+.. code-block:: console
    :substitutions:
 
-   export GYRE_DIR=$(realpath |dist_dir|)
+   $ export GYRE_DIR=$(realpath |dist_dir|)
 
 .. _install-compile:
 
@@ -61,9 +61,9 @@ Compile
 
 Compile and install GYRE using the :command:`make` utility:
 
-.. prompt:: bash
+.. code-block:: console
 
-   make -j -C $GYRE_DIR
+   $ make -j -C $GYRE_DIR
 
 (the :command:`-j` flags tells :command:`make` to use multiple cores, speeding up the build).
 
@@ -73,9 +73,9 @@ Test
 To check that GYRE has compiled correctly and gives reasonable
 results, you can run the calculation test suite via the command
 
-.. prompt:: bash
+.. code-block:: console
 
-   make -C $GYRE_DIR test
+   $ make -C $GYRE_DIR test
 
 The initial output from the tests should look something like this:
 
@@ -141,9 +141,9 @@ yet made it into a formal release. In such cases, you can check out
 GYRE directly from the :git:`rhdtownsend/gyre <rhdtownsend/gyre>` git
 repository on :git:`GitHub <>`:
 
-.. prompt:: bash
+.. code-block:: console
 
-   git clone --recurse-submodules https://github.com/rhdtownsend/gyre.git
+   $ git clone --recurse-submodules https://github.com/rhdtownsend/gyre.git
 
 However, a word of caution: GYRE is under constant development, and
 features in the main (``master``) branch can change without warning.

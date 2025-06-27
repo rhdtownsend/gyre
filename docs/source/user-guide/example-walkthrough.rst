@@ -22,10 +22,10 @@ operates on. These commands will make a new directory beneath your
 home directory with the name :file:`work`, and then set this directory
 as the current working directory:
 
-.. prompt:: bash
+.. code-block:: console
 
-   mkdir ~/work
-   cd ~/work
+   $ mkdir ~/work
+   $ cd ~/work
 
 Grabbing a Stellar Model
 ========================
@@ -35,9 +35,9 @@ example models provided in the :file:`${GYRE_DIR}/models` directory;
 the following commands will copy a MESA model for a :math:`5\,\Msun`
 SPB star into your work directory:
 
-.. prompt:: bash
+.. code-block:: console
 
-   cp $GYRE_DIR/models/mesa/spb/spb.mesa .
+   $ cp $GYRE_DIR/models/mesa/spb/spb.mesa .
 
 Assembling a Namelist File
 ==========================
@@ -82,9 +82,9 @@ Running gyre
 
 With the hard work done, it's now trivial to run :program:`gyre`:
 
-.. prompt:: bash
+.. code-block:: console
 			 
-   $GYRE_DIR/bin/gyre gyre.in
+   $ $GYRE_DIR/bin/gyre gyre.in
 
 As the frontend runs (on multiple cores, if you have a multi-core machine;
 see the :ref:`FAQ <faq-multicore>` for more details), it will print lots of data

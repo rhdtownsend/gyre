@@ -36,9 +36,9 @@ Running build_poly
 
 To run :program:`build_poly`, use the command
 
-.. prompt:: bash
+.. code-block:: console
 			 
-   $GYRE_DIR/bin/build_poly build_poly.simple.in
+   $ $GYRE_DIR/bin/build_poly build_poly.simple.in
 
 There is no screen output produced during the run, but at the end the
 :file:`poly.simple.h5` will be written to disk. This file, which is in

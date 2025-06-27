@@ -24,16 +24,16 @@ As a preliminary step, you'll need to install PyGYRE from the `Python
 Package Index (PyPI) <https://pypi.org/>`__. This can be done using
 the :command:`pip` command,
 
-.. prompt:: bash
+.. code-block:: console
 
-   pip install pygyre
+   $ pip install pygyre
 
 If PyGYRE is already installed, you can upgrade to a more-recent
 version via
 
-.. prompt:: bash
+.. code-block:: console
 
-   pip install --upgrade pygyre
+   $ pip install --upgrade pygyre
 
 Analyzing a Summary File
 ========================
