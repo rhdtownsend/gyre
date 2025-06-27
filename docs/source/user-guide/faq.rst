@@ -36,7 +36,7 @@ How Do I...
   Post a message to one of the `GYRE discussion forums <gyre-forums_>`__.
 
 ...contact the GYRE team?
-  Send an email to `Rich Townsend <mailto:townsend@astro.wisc.edu>`__.
+  Send an email to `Rich Townsend <mailto:rhtownsend@wisc.edu>`__.
 
 ...access the documentation for older releases?
   Click on the 'v:...'  dropdown menu in the bottom-right. Note that this
