@@ -20,7 +20,7 @@
 module losc_file_m
 
    ! Uses
-   
+
    use forum_m, only: RD
 
    use constants_m

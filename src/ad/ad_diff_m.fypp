@@ -20,7 +20,7 @@
 module ad_diff_m
 
    ! Uses
-   
+
    use forum_m, only: RD
 
    use ad_eqns_m

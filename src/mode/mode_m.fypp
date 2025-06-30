@@ -20,7 +20,7 @@
 module mode_m
 
    ! Uses
-   
+
    use forum_m, only: RD
 
    use context_m
