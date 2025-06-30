@@ -1,6 +1,11 @@
 # File     : Makefile
 # Purpose  : makefile for build subdir
 
+# Default rule in case make is invoked in current dir
+
+all:
+	make -C ..
+
 # Targets
 
 LIB_TARGETS = libgyre
@@ -127,4 +132,4 @@ include Make.inc
 linter :
 	fortitude check --file-extensions=f90
 
-.PHONY: linter
+.PHONY: all linter
