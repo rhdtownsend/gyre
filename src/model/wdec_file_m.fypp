@@ -43,6 +43,8 @@ module wdec_file_m
 
    ! Default access
 
+   private
+
 contains
 
    subroutine read_wdec_model(ml_p, ml)

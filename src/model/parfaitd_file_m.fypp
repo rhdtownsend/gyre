@@ -41,6 +41,8 @@ module parfaitd_file_m
 
    ! Default access
 
+   private
+
 contains
 
    subroutine read_parfaitd_model(ml_p, ml)

@@ -28,4 +28,8 @@ module search_m
 
    implicit none
 
+   ! Default access
+
+   public
+
 end module search_m

@@ -28,4 +28,8 @@ module ext_m
 
    implicit none
 
+   ! Default access
+
+   public
+
 end module ext_m

@@ -39,6 +39,8 @@ module lane_emden_m
 
    ! Default access
 
+   private
+
 contains
 
    subroutine solve_lane_emden(n_poly, z_b, Delta_b, theta_s, dz, tol, z, theta, dtheta, n_r_out)

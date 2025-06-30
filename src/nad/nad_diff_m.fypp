@@ -70,6 +70,8 @@ module nad_diff_m
 
    ! Default access
 
+   private
+
 contains
 
    function nad_diff_t_(cx, pt_a, pt_b, md_p, nm_p, os_p) result(df)

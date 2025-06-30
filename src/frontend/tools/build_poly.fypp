@@ -21,7 +21,7 @@ program build_poly
 
    ! Uses
 
-   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
+   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE, reallocate
 
    use gyre_m
 
