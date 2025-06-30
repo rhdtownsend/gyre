@@ -19,161 +19,161 @@
 
 module losc_file_m
 
-  ! Uses
+   ! Uses
+   
+   use forum_m, only: RD
 
-  use forum_m, only: RD
+   use constants_m
+   use evol_model_m
+   use math_m
+   use model_m
+   use model_par_m
+   use model_util_m
+   use util_m
 
-  use constants_m
-  use evol_model_m
-  use math_m
-  use model_m
-  use model_par_m
-  use model_util_m
-  use util_m
+   use ISO_FORTRAN_ENV
 
-  use ISO_FORTRAN_ENV
+   ! No implicit typing
 
-  ! No implicit typing
+   implicit none (type, external)
 
-  implicit none (type, external)
+   ! Access specifiers
 
-  ! Access specifiers
+   public :: read_losc_model
 
-  public :: read_losc_model
+   ! Default access
 
-  ! Default access
-
-  private
+   private
 
 contains
 
-  subroutine read_losc_model (ml_p, ml)
+   subroutine read_losc_model (ml_p, ml)
 
-    type(model_par_t), intent(in)        :: ml_p
-    class(model_t), pointer, intent(out) :: ml
+      type(model_par_t), intent(in)        :: ml_p
+      class(model_t), pointer, intent(out) :: ml
 
-    integer                     :: unit
-    character(256)              :: line
-    integer                     :: n
-    real(RD)                    :: glob(3)
-    real(RD), allocatable       :: var(:,:)
-    integer                     :: i
-    integer                     :: k
-    real(RD)                    :: M_star
-    real(RD)                    :: R_star
-    real(RD), allocatable       :: x(:)
-    real(RD), allocatable       :: V_2(:)
-    real(RD), allocatable       :: As(:)
-    real(RD), allocatable       :: U(:)
-    real(RD), allocatable       :: c_1(:)
-    real(RD), allocatable       :: Gamma_1(:)
-    real(RD), allocatable       :: Omega_rot(:)
-    type(evol_model_t), pointer :: em
+      integer                     :: unit
+      character(256)              :: line
+      integer                     :: n
+      real(RD)                    :: glob(3)
+      real(RD), allocatable       :: var(:,:)
+      integer                     :: i
+      integer                     :: k
+      real(RD)                    :: M_star
+      real(RD)                    :: R_star
+      real(RD), allocatable       :: x(:)
+      real(RD), allocatable       :: V_2(:)
+      real(RD), allocatable       :: As(:)
+      real(RD), allocatable       :: U(:)
+      real(RD), allocatable       :: c_1(:)
+      real(RD), allocatable       :: Gamma_1(:)
+      real(RD), allocatable       :: Omega_rot(:)
+      type(evol_model_t), pointer :: em
 
-    ! Open the LOSC-format file
+      ! Open the LOSC-format file
 
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 100) 'Reading from LOSC file'
-100    format(A)
-       write(OUTPUT_UNIT, 110) 'File name', TRIM(ml_p%file)
-110    format(3X,A,1X,A)
-    endif
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Reading from LOSC file'
+100      format(A)
+         write(OUTPUT_UNIT, 110) 'File name', TRIM(ml_p%file)
+110      format(3X,A,1X,A)
+      endif
 
-    open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
+      open(NEWUNIT=unit, FILE=ml_p%file, STATUS='OLD')
 
-    ! Read the header
+      ! Read the header
 
-    header_loop : do
+      header_loop : do
 
-       read(unit, *) line
+         read(unit, *) line
 
-       if (line == '%%beginoscdata') exit header_loop
+         if (line == '%%beginoscdata') exit header_loop
 
-    end do header_loop
+      end do header_loop
 
-    read(unit, *) glob
+      read(unit, *) glob
 
-    read(unit, *)
-    read(unit, *)
-    read(unit, *) n
+      read(unit, *)
+      read(unit, *)
+      read(unit, *) n
 
-    ! Read the data
+      ! Read the data
 
-    allocate(var(6,n))
+      allocate(var(6,n))
 
-    read_loop : do i = 1,n
-       read(unit, *) k, var(:,i)
-    end do read_loop
+      read_loop : do i = 1,n
+         read(unit, *) k, var(:,i)
+      end do read_loop
 
-    close(unit)
+      close(unit)
 
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, 120) 'Read', n, 'points'
-120    format(3X,A,1X,I0,1X,A)
-    endif
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 120) 'Read', n, 'points'
+120      format(3X,A,1X,I0,1X,A)
+      endif
 
-    ! Extract structure data
+      ! Extract structure data
 
-    M_star = glob(2)
-    R_star = glob(1)
+      M_star = glob(2)
+      R_star = glob(1)
 
-    if (glob(3) /= G_GRAVITY) then
-       @:WARN('gravitational constant in LOSC file does not match value specified in &constants')
-    endif
+      if (glob(3) /= G_GRAVITY) then
+         @:WARN('gravitational constant in LOSC file does not match value specified in &constants')
+      endif
 
-    x = var(1,:)/R_star
+      x = var(1,:)/R_star
 
-    allocate(V_2(n))
+      allocate(V_2(n))
 
-    where (x /= 0._RD)
-       V_2 = G_GRAVITY*var(4,:)*var(2,:)*R_star**2/var(3,:)
-    elsewhere
-       V_2 = 4._RD*PI*G_GRAVITY*var(4,:)**2*R_star**2/(3._RD*var(3,:))
-    endwhere
+      where (x /= 0._RD)
+         V_2 = G_GRAVITY*var(4,:)*var(2,:)*R_star**2/var(3,:)
+      elsewhere
+         V_2 = 4._RD*PI*G_GRAVITY*var(4,:)**2*R_star**2/(3._RD*var(3,:))
+      endwhere
 
-    As = -var(6,:)*var(1,:)**2
-    U = 4._RD*PI*var(4,:)/var(2,:)
-    c_1 = M_star/(R_star**3*var(2,:))
+      As = -var(6,:)*var(1,:)**2
+      U = 4._RD*PI*var(4,:)/var(2,:)
+      c_1 = M_star/(R_star**3*var(2,:))
 
-    Gamma_1 = var(5,:)
+      Gamma_1 = var(5,:)
 
-    ! Snap grid points
+      ! Snap grid points
 
-    call snap_points(MAX(ml_p%dx_snap, EPSILON(0._RD)), x)
+      call snap_points(MAX(ml_p%dx_snap, EPSILON(0._RD)), x)
 
-    ! Calculate dimensionless structure data
+      ! Calculate dimensionless structure data
 
-    allocate(Omega_rot(n))
+      allocate(Omega_rot(n))
 
-    Omega_rot = 0._RD
+      Omega_rot = 0._RD
 
-    ! Initialize the evol_model_t
+      ! Initialize the evol_model_t
 
-    allocate(em, SOURCE=evol_model_t(x, M_star, R_star, 0._RD, ml_p))
+      allocate(em, SOURCE=evol_model_t(x, M_star, R_star, 0._RD, ml_p))
 
-    call em%define(I_V_2, V_2)
-    call em%define(I_AS, As)
-    call em%define(I_U, U)
-    call em%define(I_C_1, c_1)
+      call em%define(I_V_2, V_2)
+      call em%define(I_AS, As)
+      call em%define(I_U, U)
+      call em%define(I_C_1, c_1)
 
-    call em%define(I_GAMMA_1, Gamma_1)
+      call em%define(I_GAMMA_1, Gamma_1)
 
-    call em%define(I_OMEGA_ROT, Omega_rot)
+      call em%define(I_OMEGA_ROT, Omega_rot)
 
-    call em%commit()
+      call em%commit()
 
-    ! Return a pointer
+      ! Return a pointer
 
-    ml => em
+      ml => em
 
-    if (check_log_level('INFO')) then
-       write(OUTPUT_UNIT, *)
-    endif
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, *)
+      endif
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end subroutine read_losc_model
+   end subroutine read_losc_model
 
 end module losc_file_m

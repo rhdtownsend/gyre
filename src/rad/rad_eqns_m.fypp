@@ -19,179 +19,179 @@
 
 module rad_eqns_m
 
-  ! Uses
+   ! Uses
 
-  use forum_m, only: RD
+   use forum_m, only: RD
 
-  use context_m
-  use eqns_m
-  use model_m
-  use model_util_m
-  use mode_par_m
-  use osc_par_m
-  use point_m
-  use rad_trans_m
-  use state_m
+   use context_m
+   use eqns_m
+   use model_m
+   use model_util_m
+   use mode_par_m
+   use osc_par_m
+   use point_m
+   use rad_trans_m
+   use state_m
 
-  use ISO_FORTRAN_ENV
+   use ISO_FORTRAN_ENV
 
-  ! No implicit typing
+   ! No implicit typing
 
-  implicit none (type, external)
+   implicit none (type, external)
 
-  ! Parameter definitions
+   ! Parameter definitions
 
-  integer, parameter :: J_V = 1
-  integer, parameter :: J_AS = 2
-  integer, parameter :: J_U = 3
-  integer, parameter :: J_C_1 = 4
-  integer, parameter :: J_GAMMA_1 = 5
+   integer, parameter :: J_V = 1
+   integer, parameter :: J_AS = 2
+   integer, parameter :: J_U = 3
+   integer, parameter :: J_C_1 = 4
+   integer, parameter :: J_GAMMA_1 = 5
 
-  integer, parameter :: J_LAST = J_GAMMA_1
+   integer, parameter :: J_LAST = J_GAMMA_1
 
-  ! Derived-type definitions
+   ! Derived-type definitions
 
-  type, extends (eqns_rt) :: rad_eqns_t
-     private
-     type(context_t), pointer   :: cx => null()
-     type(point_t), allocatable :: pt(:)
-     type(rad_trans_t)          :: tr
-     real(RD), allocatable      :: coeff(:,:)
-     real(RD)                   :: alpha_omg
+   type, extends (eqns_rt) :: rad_eqns_t
+      private
+      type(context_t), pointer   :: cx => null()
+      type(point_t), allocatable :: pt(:)
+      type(rad_trans_t)          :: tr
+      real(RD), allocatable      :: coeff(:,:)
+      real(RD)                   :: alpha_omg
    contains
-     private
-     procedure, public :: stencil
-     procedure, public :: A
-     procedure, public :: xA
-  end type rad_eqns_t
+      private
+      procedure, public :: stencil
+      procedure, public :: A
+      procedure, public :: xA
+   end type rad_eqns_t
 
-  ! Interfaces
+   ! Interfaces
 
-  interface rad_eqns_t
-     module procedure rad_eqns_t_
-  end interface rad_eqns_t
+   interface rad_eqns_t
+      module procedure rad_eqns_t_
+   end interface rad_eqns_t
 
-  ! Access specifiers
+   ! Access specifiers
 
-  public :: rad_eqns_t
+   public :: rad_eqns_t
 
-  ! Default access
+   ! Default access
 
-  private
+   private
 
 contains
 
-  function rad_eqns_t_(cx, md_p, os_p) result(eq)
+   function rad_eqns_t_(cx, md_p, os_p) result(eq)
 
-    class(context_t), pointer, intent(in) :: cx
-    type(mode_par_t), intent(in)          :: md_p
-    type(osc_par_t), intent(in)           :: os_p
-    type(rad_eqns_t)                      :: eq
+      class(context_t), pointer, intent(in) :: cx
+      type(mode_par_t), intent(in)          :: md_p
+      type(osc_par_t), intent(in)           :: os_p
+      type(rad_eqns_t)                      :: eq
 
-    ! Construct the rad_eqns_t
+      ! Construct the rad_eqns_t
 
-    eq%cx => cx
+      eq%cx => cx
 
-    eq%tr = rad_trans_t(cx, md_p, os_p)
+      eq%tr = rad_trans_t(cx, md_p, os_p)
 
-    select case (os_p%time_factor)
-    case ('OSC')
-       eq%alpha_omg = 1._RD
-    case ('EXP')
-       eq%alpha_omg = -1._RD
-    case default
-       @:ABORT('invalid time_factor')
-    end select
+      select case (os_p%time_factor)
+      case ('OSC')
+         eq%alpha_omg = 1._RD
+      case ('EXP')
+         eq%alpha_omg = -1._RD
+      case default
+         @:ABORT('invalid time_factor')
+      end select
 
-    eq%n_e = 2
+      eq%n_e = 2
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function rad_eqns_t_
+   end function rad_eqns_t_
 
-  !****
+   !****
 
-  subroutine stencil (this, pt)
+   subroutine stencil (this, pt)
 
-    class(rad_eqns_t), intent(inout) :: this
-    type(point_t), intent(in)        :: pt(:)
+      class(rad_eqns_t), intent(inout) :: this
+      type(point_t), intent(in)        :: pt(:)
 
-    class(model_t), pointer :: ml
-    integer :: n_s
-    integer :: i
+      class(model_t), pointer :: ml
+      integer :: n_s
+      integer :: i
 
-    ! Calculate coefficients at the stencil points
+      ! Calculate coefficients at the stencil points
 
-    ml => this%cx%model()
+      ml => this%cx%model()
 
-    call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
+      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
 
-    n_s = SIZE(pt)
+      n_s = SIZE(pt)
 
-    if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-    allocate(this%coeff(n_s,J_LAST))
+      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
+      allocate(this%coeff(n_s,J_LAST))
 
-    do i = 1, n_s
+      do i = 1, n_s
 
-       @:ASSERT(.NOT. ml%is_vacuum(pt(i)), 'Attempt to stencil at vacuum point')
+         @:ASSERT(.NOT. ml%is_vacuum(pt(i)), 'Attempt to stencil at vacuum point')
 
-       this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
-       this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
-       this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
-       this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
-       this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
+         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
+         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
+         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
+         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
+         this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
 
-    end do
+      end do
 
-    ! Set up stencil for the tr component
+      ! Set up stencil for the tr component
 
-    call this%tr%stencil(pt)
+      call this%tr%stencil(pt)
 
-    ! Store the stencil points for on-the-fly evaluations
+      ! Store the stencil points for on-the-fly evaluations
 
-    this%pt = pt
+      this%pt = pt
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end subroutine stencil
+   end subroutine stencil
 
-  !****
+   !****
 
-  function A(this, i, st)
+   function A(this, i, st)
 
-    class(rad_eqns_t), intent(in) :: this
-    integer, intent(in)           :: i
-    class(state_rt), intent(in)   :: st
-    real(RD)                      :: A(this%n_e,this%n_e)
+      class(rad_eqns_t), intent(in) :: this
+      integer, intent(in)           :: i
+      class(state_rt), intent(in)   :: st
+      real(RD)                      :: A(this%n_e,this%n_e)
 
-    ! Evaluate the RHS matrix
+      ! Evaluate the RHS matrix
 
-    A = this%xA(i, st)/this%pt(i)%x
+      A = this%xA(i, st)/this%pt(i)%x
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function A
+   end function A
 
-  !****
+   !****
 
-  function xA(this, i, st)
+   function xA(this, i, st)
 
-    class(rad_eqns_t), intent(in) :: this
-    integer, intent(in)           :: i
-    class(state_rt), intent(in)   :: st
-    real(RD)                      :: xA(this%n_e,this%n_e)
+      class(rad_eqns_t), intent(in) :: this
+      integer, intent(in)           :: i
+      class(state_rt), intent(in)   :: st
+      real(RD)                      :: xA(this%n_e,this%n_e)
 
-    real(RD) :: omega_c
+      real(RD) :: omega_c
 
-    ! Evaluate the log(x)-space RHS matrix
+      ! Evaluate the log(x)-space RHS matrix
 
-    associate ( &
+      associate ( &
          omega => st%omega, &
          V => this%coeff(i,J_V), &
          As => this%coeff(i,J_AS), &
@@ -200,26 +200,26 @@ contains
          Gamma_1 => this%coeff(i,J_GAMMA_1), &
          alpha_omg => this%alpha_omg)
 
-      omega_c = omega
+         omega_c = omega
 
-      ! Set up the matrix
+         ! Set up the matrix
 
-      xA(1,1) = V/Gamma_1 - 1._RD
-      xA(1,2) = -V/Gamma_1
+         xA(1,1) = V/Gamma_1 - 1._RD
+         xA(1,2) = -V/Gamma_1
 
-      xA(2,1) = c_1*alpha_omg*omega_c**2 + U - As
-      xA(2,2) = As - U + 3._RD
+         xA(2,1) = c_1*alpha_omg*omega_c**2 + U - As
+         xA(2,2) = As - U + 3._RD
 
-    end associate
+      end associate
 
-    ! Apply the variables transformation
+      ! Apply the variables transformation
 
-    call this%tr%trans_eqns(xA, i, st)
+      call this%tr%trans_eqns(xA, i, st)
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function xA
+   end function xA
 
 end module rad_eqns_m

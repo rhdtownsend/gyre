@@ -19,116 +19,116 @@
 
 module ad_diff_m
 
-  ! Uses
+   ! Uses
+   
+   use forum_m, only: RD
 
-  use forum_m, only: RD
+   use ad_eqns_m
+   use ad_match_m
+   use context_m
+   use diff_m
+   use diff_factory_m
+   use ext_m
+   use mode_par_m
+   use num_par_m
+   use osc_par_m
+   use point_m
+   use state_m
 
-  use ad_eqns_m
-  use ad_match_m
-  use context_m
-  use diff_m
-  use diff_factory_m
-  use ext_m
-  use mode_par_m
-  use num_par_m
-  use osc_par_m
-  use point_m
-  use state_m
+   use ISO_FORTRAN_ENV
 
-  use ISO_FORTRAN_ENV
+   ! No implicit typing
 
-  ! No implicit typing
+   implicit none (type, external)
 
-  implicit none (type, external)
+   ! Derived-type definitions
 
-  ! Derived-type definitions
-
-  type, extends(diff_rt) :: ad_diff_t
-     private
-     class(diff_rt), allocatable :: df
+   type, extends(diff_rt) :: ad_diff_t
+      private
+      class(diff_rt), allocatable :: df
    contains
-     private
-     procedure, public :: build
-  end type ad_diff_t
+      private
+      procedure, public :: build
+   end type ad_diff_t
 
-  ! Interfaces
+   ! Interfaces
 
-  interface ad_diff_t
-     module procedure ad_diff_t_
-  end interface ad_diff_t
+   interface ad_diff_t
+      module procedure ad_diff_t_
+   end interface ad_diff_t
 
-  ! Access specifiers
+   ! Access specifiers
 
-  public :: ad_diff_t
+   public :: ad_diff_t
 
-  ! Default access
+   ! Default access
 
-  private
+   private
 
 contains
 
-  function ad_diff_t_(cx, pt_a, pt_b, md_p, nm_p, os_p) result(df)
+   function ad_diff_t_(cx, pt_a, pt_b, md_p, nm_p, os_p) result(df)
 
-    type(context_t), pointer, intent(in) :: cx
-    type(point_t), intent(in)            :: pt_a
-    type(point_t), intent(in)            :: pt_b
-    type(mode_par_t), intent(in)         :: md_p
-    type(num_par_t), intent(in)          :: nm_p
-    type(osc_par_t), intent(in)          :: os_p
-    type(ad_diff_t)                      :: df
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt_a
+      type(point_t), intent(in)            :: pt_b
+      type(mode_par_t), intent(in)         :: md_p
+      type(num_par_t), intent(in)          :: nm_p
+      type(osc_par_t), intent(in)          :: os_p
+      type(ad_diff_t)                      :: df
 
-    type(ad_eqns_t) :: eq
+      type(ad_eqns_t) :: eq
 
-    ! Construct the ad_diff type
+      ! Construct the ad_diff type
 
-    if (pt_a%s == pt_b%s) then
+      if (pt_a%s == pt_b%s) then
 
-       ! Regular subinterval; use difference equations
+         ! Regular subinterval; use difference equations
 
-       eq = ad_eqns_t(cx, md_p, os_p)
+         eq = ad_eqns_t(cx, md_p, os_p)
 
-       allocate(df%df, SOURCE=diff_rt(eq, pt_a, pt_b, nm_p))
+         allocate(df%df, SOURCE=diff_rt(eq, pt_a, pt_b, nm_p))
 
-    else
+      else
 
-       ! Segment boundary; use match conditions
+         ! Segment boundary; use match conditions
 
-       allocate(df%df, SOURCE=ad_match_t(cx, pt_a, pt_b, md_p, os_p))
+         allocate(df%df, SOURCE=ad_match_t(cx, pt_a, pt_b, md_p, os_p))
 
-    endif
+      endif
 
-    df%n_e = df%df%n_e
+      df%n_e = df%df%n_e
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end function ad_diff_t_
+   end function ad_diff_t_
 
-  !****
+   !****
 
-  subroutine build (this, st, E_l, E_r, scl)
+   subroutine build (this, st, E_l, E_r, scl)
 
-    class(ad_diff_t), intent(in) :: this
-    class(state_rt), intent(in)  :: st
-    real(RD), intent(out)        :: E_l(:,:)
-    real(RD), intent(out)        :: E_r(:,:)
-    type(ext_rt), intent(out)    :: scl
+      class(ad_diff_t), intent(in) :: this
+      class(state_rt), intent(in)  :: st
+      real(RD), intent(out)        :: E_l(:,:)
+      real(RD), intent(out)        :: E_r(:,:)
+      type(ext_rt), intent(out)    :: scl
 
-    @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
-    @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
+      @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
 
-    @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
-    @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
+      @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
 
-    ! Build the difference equations
+      ! Build the difference equations
 
-    call this%df%build(st, E_l, E_r, scl)
+      call this%df%build(st, E_l, E_r, scl)
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end subroutine build
+   end subroutine build
 
 end module ad_diff_m
