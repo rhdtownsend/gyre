@@ -30,7 +30,7 @@ program poly_to_txt
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Variables
 

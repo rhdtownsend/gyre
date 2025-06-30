@@ -29,7 +29,7 @@ module ext_real_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Parameter definitions
 
@@ -114,7 +114,7 @@ module ext_real_m
       subroutine eval_(this, rx, f_rx, status)
          import ext_rt
          import func_ext_rt
-         implicit none
+         implicit none (type, external)
          class(func_ext_rt), intent(inout) :: this
          type(ext_rt), intent(in)          :: rx
          type(ext_rt), intent(out)         :: f_rx

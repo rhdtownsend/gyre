@@ -4,8 +4,7 @@
 [check]
 ignore = [
  "C121", # only clause with use
- "E001", # syntax errors
- "C003"  # (external) clause with implicit none
+ "E001"  # syntax errors
 ]
 respect-gitignore = false
 line-length = 132

@@ -32,7 +32,7 @@ program gyre_tides
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Variables
 

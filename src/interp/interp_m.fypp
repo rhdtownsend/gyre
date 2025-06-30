@@ -23,7 +23,7 @@ module interp_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
@@ -45,7 +45,7 @@ module interp_m
          subroutine get_x_min_${S}$_(this, x_min)
             use forum_m, only: RD
             import interp_${S}$
-            implicit none
+            implicit none (type, external)
             class(interp_${S}$), intent(in) :: this
             real(RD), intent(out)           :: x_min
          end subroutine get_x_min_${S}$_
@@ -53,7 +53,7 @@ module interp_m
          subroutine get_x_max_${S}$_(this, x_max)
             use forum_m, only: RD
             import interp_${S}$
-            implicit none
+            implicit none (type, external)
             class(interp_${S}$), intent(in) :: this
             real(RD), intent(out)           :: x_max
          end subroutine get_x_max_${S}$_
@@ -61,7 +61,7 @@ module interp_m
          subroutine eval_f_${S}$_(this, x, f)
             use forum_m, only: RD
             import interp_${S}$
-            implicit none
+            implicit none (type, external)
             class(interp_${S}$), intent(in) :: this
             real(RD), intent(in)            :: x
             ${T}$, intent(out)              :: f
@@ -70,7 +70,7 @@ module interp_m
          subroutine eval_df_dx_${S}$_(this, x, df_dx)
             use forum_m, only: RD
             import interp_${S}$
-            implicit none
+            implicit none (type, external)
             class(interp_${S}$), intent(in) :: this
             real(RD), intent(in)            :: x
             ${T}$, intent(out)              :: df_dx

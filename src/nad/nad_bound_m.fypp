@@ -40,7 +40,7 @@ module nad_bound_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Parameter definitions
 

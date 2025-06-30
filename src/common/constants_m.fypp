@@ -35,7 +35,7 @@ module constants_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Module variables
 

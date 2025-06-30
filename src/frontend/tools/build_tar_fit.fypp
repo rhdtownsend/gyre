@@ -28,7 +28,7 @@ program build_tar_fit
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Variables
 

@@ -21,7 +21,7 @@ module rot_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
@@ -40,7 +40,7 @@ module rot_m
          function l_e_${S}$_(this, Omega_rot, omega) result(l_e)
             use forum_m, only: RD
             import rot_${S}$
-            implicit none
+            implicit none (type, external)
             class(rot_${S}$), intent(in) :: this
             real(RD), intent(in)         :: Omega_rot
             ${T}$, intent(in)            :: omega
@@ -50,7 +50,7 @@ module rot_m
          function lambda_${S}$_(this, Omega_rot, omega) result(lambda)
             use forum_m, only: RD
             import rot_${S}$
-            implicit none
+            implicit none (type, external)
             class(rot_${S}$), intent(in) :: this
             real(RD), intent(in)         :: Omega_rot
             ${T}$, intent(in)            :: omega

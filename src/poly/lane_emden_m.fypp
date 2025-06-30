@@ -31,7 +31,7 @@ module lane_emden_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Access specifiers
 

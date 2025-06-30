@@ -29,7 +29,7 @@ program eval_tidal_coeff
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Variables
 

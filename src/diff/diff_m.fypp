@@ -21,7 +21,7 @@ module diff_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
@@ -42,7 +42,7 @@ module diff_m
             use ext_m
             use state_m
             import diff_${S}$
-            implicit none
+            implicit none (type, external)
             class(diff_${S}$), intent(in)  :: this
             class(state_${S}$), intent(in) :: st
             ${T}$, intent(out)             :: E_l(:,:)

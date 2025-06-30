@@ -33,7 +33,7 @@ module freq_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Interfaces
 

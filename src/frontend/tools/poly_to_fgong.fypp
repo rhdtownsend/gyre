@@ -30,7 +30,7 @@ program poly_to_fgong
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Parameters
 

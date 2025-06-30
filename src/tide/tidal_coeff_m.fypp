@@ -36,7 +36,7 @@ module tidal_coeff_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Parameter definitions
 
@@ -469,7 +469,7 @@ contains
       interface
          function f (ua, Ma, e)
             use forum_m, only: RD
-            implicit none
+            implicit none (type, external)
             real(RD), intent(in) :: ua
             real(RD), intent(in) :: Ma
             real(RD), intent(in) :: e
@@ -570,7 +570,7 @@ contains
 
       interface
          function f (ua, Ma, e)
-            implicit none
+            implicit none (type, external)
             integer, parameter   :: RQ = SELECTED_REAL_KIND(32)
             real(RQ), intent(in) :: ua
             real(RQ), intent(in) :: Ma

@@ -21,7 +21,7 @@ module eqns_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
@@ -42,7 +42,7 @@ module eqns_m
          subroutine stencil_${S}$_(this, pt)
             use point_m
             import eqns_${S}$
-            implicit none
+            implicit none (type, external)
             class(eqns_${S}$), intent(inout) :: this
             type(point_t), intent(in)        :: pt(:)
          end subroutine stencil_${S}$_
@@ -51,7 +51,7 @@ module eqns_m
             use forum_m, only: RD
             use state_m
             import eqns_${S}$
-            implicit none
+            implicit none (type, external)
             class(eqns_${S}$), intent(in)  :: this
             integer, intent(in)            :: i
             class(state_${S}$), intent(in) :: st
@@ -62,7 +62,7 @@ module eqns_m
             use forum_m, only: RD
             use state_m
             import eqns_${S}$
-            implicit none
+            implicit none (type, external)
             class(eqns_${S}$), intent(in)  :: this
             integer, intent(in)            :: i
             class(state_${S}$), intent(in) :: st

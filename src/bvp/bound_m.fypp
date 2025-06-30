@@ -21,7 +21,7 @@ module bound_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
@@ -44,7 +44,7 @@ module bound_m
             use forum_m, only: RD
             use state_m
             import bound_${S}$
-            implicit none
+            implicit none (type, external)
             class(bound_${S}$), intent(in) :: this
             class(state_${S}$), intent(in) :: st
             ${T}$, intent(out)             :: B(:,:)

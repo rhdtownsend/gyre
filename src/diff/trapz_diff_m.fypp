@@ -34,7 +34,7 @@ module trapz_diff_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    #:for S in DTYPE_SUFFIXES
 

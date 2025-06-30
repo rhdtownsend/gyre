@@ -56,7 +56,7 @@ module tidal_resp_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Parameter definitions
 
@@ -85,7 +85,7 @@ contains
       interface
          subroutine process_resp (rs)
             use resp_m
-            implicit none
+            implicit none (type, external)
             type(resp_t), intent(in) :: rs
          end subroutine process_resp
       end interface

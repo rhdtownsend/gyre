@@ -54,7 +54,7 @@ program gyre_map
 
   ! No implicit typing
 
-  implicit none
+  implicit none (type, external)
 
   ! Variables
 

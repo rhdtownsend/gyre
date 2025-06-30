@@ -35,7 +35,7 @@ module colloc_diff_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Parameter definitions
 

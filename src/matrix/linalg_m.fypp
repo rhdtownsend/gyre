@@ -30,7 +30,7 @@ module linalg_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    #:for S in FLOAT_SUFFIXES
 
