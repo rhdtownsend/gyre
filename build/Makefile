@@ -12,7 +12,7 @@ ifeq ($(FRONTENDS),yes)
 endif
 
 ifeq ($(TOOLS),yes)
-   BIN_TARGETS += eval_lambda eval_tidal_coeff eval_love build_poly poly_to_fgong poly_to_txt
+   BIN_TARGETS += eval_lambda eval_tidal_coeff eval_love build_poly poly_to_fgong poly_to_txt build_tar_fit
 endif
 
 ifeq ($(IFACES),yes)
@@ -54,6 +54,10 @@ poly_to_fgong_LIBS = libgyre
 poly_to_txt_SRCS = poly_to_txt.fypp
 poly_to_txt_USES = $(libgyre_SRCS)
 poly_to_txt_LIBS = libgyre
+
+build_tar_fit_SRCS = build_tar_fit.fypp
+build_tar_fit_USES = $(libgyre_SRCS)
+build_tar_fit_LIBS = libgyre
 
 eval_love_SRCS = eval_love.fypp
 eval_love_USES = $(libgyre_SRCS)
@@ -121,11 +125,6 @@ include Make.inc
 # Target for linting
 
 linter :
-	fortitude check \
-            --ignore M011 \
-            --ignore S001 \
-            --ignore E001 \
-            --ignore T041 \
-            --file-extensions=f90
+	fortitude check --file-extensions=f90
 
 .PHONY: linter

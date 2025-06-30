@@ -1,0 +1,14 @@
+# fortitude.toml -- config file for fortitude-lint
+# tested with 0.7.3
+
+[check]
+ignore = [
+ "C121", # only clause with use
+ "E001", # syntax errors
+ "C003"  # (external) clause with implicit none
+]
+respect-gitignore = false
+line-length = 132
+
+[check.per-file-ignores]
+"blas_lapack_m.f90" = ["C071"] # assumed-size arrays
