@@ -132,4 +132,11 @@ include Make.inc
 linter :
 	fortitude check --file-extensions=f90
 
-.PHONY: all linter
+# Targets for source checking
+
+check_src:
+	@for src in $(ALL_SRCS); do find $(SRC_DIRS) -path '*/forum/*' -prune -or -name $$src -print | grep -q  . || echo $$src MISSING; done
+
+check_src : SRC_DIRS ?= ../src
+
+.PHONY: all linter check_src

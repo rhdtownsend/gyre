@@ -45,26 +45,23 @@ IEEE ?= yes
 
 # General make settings
 
-export
-
 SH = /bin/bash
 MAKEFLAGS += --no-print-directory
 
 # Paths
 
-BIN_DIR ?= $(CURDIR)/bin
-LIB_DIR ?= $(CURDIR)/lib
-INC_DIR ?= $(CURDIR)/include
+export BIN_DIR ?= $(CURDIR)/bin
+export LIB_DIR ?= $(CURDIR)/lib
+export INC_DIR ?= $(CURDIR)/include
 
-SRC_DIR = $(CURDIR)/src
-SRC_DIRS = $(addprefix $(SRC_DIR)/,ad bvp cad common context diff ext	\
-   extern frontend/gyre frontend/tools grid include interp lib math	\
-   matrix mode model nad output par poly rad rot sad search tar tide	\
-   tnad)
+export SRC_DIR := $(CURDIR)/src
+export SRC_DIRS := $(addprefix $(SRC_DIR)/,ad bvp common context diff ext	\
+   frontend/gyre frontend/tools grid include interp lib math matrix mode model  \
+   nad output par poly rad rot sad search tar tide tnad)
 
 ifeq ($(FORUM),yes)
-   FORUM_LIB_DIR = $(LIB_DIR)
-   FORUM_INC_DIR = $(INC_DIR)
+   export FORUM_LIB_DIR = $(LIB_DIR)
+   export FORUM_INC_DIR = $(INC_DIR)
 endif
 
 ifeq ($(CRMATH),yes)
@@ -88,6 +85,9 @@ clean : clean-forum
 test build_ref build_ref_arch :
 	@$(MAKE) --no-print-directory -C test $@
 
+check_src :
+	@$(MAKE) -C build $@
+
 ifeq ($(FORUM),yes)
 
    install-forum : | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
@@ -105,7 +105,7 @@ else
 
 endif
 
-.PHONY: install build clean test build_ref build_ref_arch install-forum clean-forum
+.PHONY: install build clean test check_src build_ref build_ref_arch install-forum clean-forum
 
 $(BIN_DIR) $(LIB_DIR) $(INC_DIR) :
 	@mkdir -p $@

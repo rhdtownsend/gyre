@@ -5,11 +5,11 @@
 # Checks
 #########
 
-MINIMUM_VERSION = 21.4.1
+MINIMUM_VERSION := 21.4.1
 
 ifneq ($(MAKECMDGOALS),clean)
 
-   VERSION_CHECK = $(shell ./check_sdk_version $(MINIMUM_VERSION))
+   VERSION_CHECK := $(shell ./check_sdk_version $(MINIMUM_VERSION))
 
    ifneq ($(VERSION_CHECK),passed)
       ifeq ($(VERSION_CHECK),SDK too old)
@@ -28,32 +28,32 @@ endif
 ############
 
 ifeq ($(shell uname -s),Darwin)
-   STATIC_LIB_SUFFIX = .a
-   SHARED_LIB_SUFFIX = .dylib
+   STATIC_LIB_SUFFIX := .a
+   SHARED_LIB_SUFFIX := .dylib
 else
-   STATIC_LIB_SUFFIX = .a
-   SHARED_LIB_SUFFIX = .so
+   STATIC_LIB_SUFFIX := .a
+   SHARED_LIB_SUFFIX := .so
 endif
 
 DEPEND_DIR = .depend
 
 BIN_FILES = $(BIN_TARGETS)
 
-STATIC_LIB_FILES = $(addsuffix $(STATIC_LIB_SUFFIX),$(LIB_TARGETS))
-SHARED_LIB_FILES = $(addsuffix $(SHARED_LIB_SUFFIX),$(LIB_TARGETS))
+STATIC_LIB_FILES := $(addsuffix $(STATIC_LIB_SUFFIX),$(LIB_TARGETS))
+SHARED_LIB_FILES := $(addsuffix $(SHARED_LIB_SUFFIX),$(LIB_TARGETS))
 
 ifeq ($(SHARED),yes)
-   LIB_FILES = $(STATIC_LIB_FILES) $(SHARED_LIB_FILES)
-   LIB_SUFFIX = $(SHARED_LIB_SUFFIX)
+   LIB_FILES := $(STATIC_LIB_FILES) $(SHARED_LIB_FILES)
+   LIB_SUFFIX := $(SHARED_LIB_SUFFIX)
 else
-   LIB_FILES = $(STATIC_LIB_FILES)
-   LIB_SUFFIX = $(STATIC_LIB_SUFFIX)
+   LIB_FILES := $(STATIC_LIB_FILES)
+   LIB_SUFFIX := $(STATIC_LIB_SUFFIX)
 endif
 
-ALL_SRCS = $(foreach target,$(BIN_TARGETS) $(LIB_TARGETS),$($(target)_SRCS) $($(target)_USES))
+ALL_SRCS := $(sort $(foreach target,$(BIN_TARGETS) $(LIB_TARGETS),$($(target)_SRCS) $($(target)_USES)))
 
-ALL_DPPS = $(addprefix $(DEPEND_DIR)/,$(ALL_SRCS:%.fypp=%.dpp))
-ALL_DEPS = $(addprefix $(DEPEND_DIR)/,$(BIN_TARGETS:%=%.dep) $(LIB_TARGETS:%=%.dep))
+ALL_DPPS := $(addprefix $(DEPEND_DIR)/,$(ALL_SRCS:%.fypp=%.dpp))
+ALL_DEPS := $(addprefix $(DEPEND_DIR)/,$(BIN_TARGETS:%=%.dep) $(LIB_TARGETS:%=%.dep))
 
 ##########
 # Targets
@@ -103,18 +103,20 @@ vpath %.inc $(SRC_DIRS)
 
 # Flags
 
-FPP = PYTHONPATH=$(MESASDK_ROOT)/lib/python ./fypp_deps
+FPP := PYTHONPATH=$(MESASDK_ROOT)/lib/python ./fypp_deps
 
-FPPOPTS = DEBUG OMP FPE IEEE
+FPPOPTS := DEBUG OMP FPE IEEE
 
 FPPFLAGS += --line-numbering $(addprefix -I,$(SRC_DIRS)) \
-            $(foreach opt,$(FPPOPTS),$(if $(filter yes,$($(opt))),-D$(opt)=1,-D$(opt)=0))
+            $(foreach opt,$(FPPOPTS),$(if $(filter yes,$($(opt))),-D$(opt)=1,))
 
 ifeq ($(DEBUG),yes)
    FPPFLAGS += -DLOG_LEVEL=\'DEBUG\'
 else
    FPPFLAGS += -DLOG_LEVEL=\'INFO\'
 endif
+
+FPPFLAGS += -DGFORTRAN_PR121204=1 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=121204
 
 # Rules
 
@@ -133,11 +135,11 @@ endif
 # Compiling
 ############
 
-# Flags
+# Fortran flags
 
-FC = gfortran
+FC := gfortran
 
-MAKEDEP = awk -f makedepf08.awk
+MAKEDEP := awk -f makedepf08.awk
 
 FFLAGS += -std=f2018 -finit-real=snan -fmax-errors=25 -fPIC
 
@@ -187,12 +189,12 @@ endif
 # Linking
 ##########
 
-AR = ar
+AR := ar
 
 ifeq ($(shell uname -s),Darwin)
    SHARED_LIB_LDFLAGS = -shared -install_name $(LIB_DIR)/$@
    BIN_LDFLAGS =
-   ARFLAGS = -cr
+   ARFLAGS := -cr
 else			   
    SHARED_LIB_LDFLAGS = -shared -Wl,-rpath -Wl,$(LIB_DIR)
    ifeq ($(SHARED),yes)
@@ -200,7 +202,7 @@ else
    else
       BIN_LDFLAGS =
    endif
-   ARFLAGS = cr
+   ARFLAGS := cr
 endif
 
 ifeq ($(CRMATH),yes)
@@ -209,6 +211,10 @@ ifeq ($(CRMATH),yes)
 else
    export MESASDK_MATH_SLOT=default
    LDFLAGS += `crmath_link`
+endif
+
+ifeq ($(shell uname -s),Linux)
+  LDFLAGS += -Wl,--no-warn-execstack
 endif
 
 # Rules
