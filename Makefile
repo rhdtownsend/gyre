@@ -57,14 +57,6 @@ export CRMATH
 export PORTABLE
 export IEEE
 
-# Enable portable math (for bit-for-bit reproducibility; setting to
-# no may give a performance boost)
-PORTABLE ?= yes
-
-# Use IEEE fortran features
-export IEEE ?= yes
-
-
 # General make settings
 
 SH = /bin/bash
