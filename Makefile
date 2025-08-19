@@ -30,7 +30,7 @@ OMP ?= yes
 FPE ?= yes
 
 # Enable correctly rounded math functions
-CRMATH?=yes
+CRMATH ?= yes
 
 # Enable portable math (for bit-for-bit reproducibility; setting to
 # no may give a performance boost)
@@ -42,6 +42,28 @@ IEEE ?= yes
 ############ DO NOT EDIT BELOW THIS LINE ############
 ### (unless you think you know what you're doing) ###
 #####################################################
+
+# Export options
+
+export FRONTENDS
+export TOOLS
+export IFACES
+export FORUM
+export DEBUG
+export SHARED
+export OMP
+export FPE
+export CRMATH
+export PORTABLE
+export IEEE
+
+# Enable portable math (for bit-for-bit reproducibility; setting to
+# no may give a performance boost)
+PORTABLE ?= yes
+
+# Use IEEE fortran features
+export IEEE ?= yes
+
 
 # General make settings
 
