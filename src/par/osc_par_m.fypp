@@ -35,6 +35,7 @@ module osc_par_m
       real(RD)                :: x_ref = 1._RD
       real(RD)                :: x_atm = -1._RD
       real(RD)                :: alpha_grv = 1._RD
+      real(RD)                :: alpha_gbc = 1._RD
       real(RD)                :: alpha_thm = 1._RD
       real(RD)                :: alpha_hfl = 1._RD
       real(RD)                :: alpha_gam = 1._RD
@@ -85,6 +86,7 @@ contains
       real(RD)                              :: x_ref
       real(RD)                              :: x_atm
       real(RD)                              :: alpha_grv
+      real(RD)                              :: alpha_gbc
       real(RD)                              :: alpha_thm
       real(RD)                              :: alpha_hfl
       real(RD)                              :: alpha_gam
@@ -111,7 +113,7 @@ contains
       logical                               :: quasiad_eigfuncs
       logical                               :: reduce_order
 
-      namelist /osc/ x_ref, x_atm, alpha_grv, alpha_thm, alpha_hfl, &
+      namelist /osc/ x_ref, x_atm, alpha_grv, alpha_gbc, alpha_thm, alpha_hfl, &
          alpha_gam, alpha_pi, alpha_kar, alpha_kat, alpha_rht, alpha_trb, alpha_egv, &
          inner_bound, outer_bound, outer_bound_cutoff, outer_bound_branch, &
          variables_set, inertia_norm, time_factor, &
@@ -147,6 +149,7 @@ contains
          x_ref = os_p(i)%x_ref
          x_atm = os_p(i)%x_atm
          alpha_grv = os_p(i)%alpha_grv
+         alpha_gbc = os_p(i)%alpha_gbc
          alpha_thm = os_p(i)%alpha_thm
          alpha_hfl = os_p(i)%alpha_hfl
          alpha_gam = os_p(i)%alpha_gam
@@ -182,6 +185,7 @@ contains
          os_p(i)%x_ref = x_ref
          os_p(i)%x_atm = x_atm
          os_p(i)%alpha_grv = alpha_grv
+         os_p(i)%alpha_gbc = alpha_gbc
          os_p(i)%alpha_thm = alpha_thm
          os_p(i)%alpha_hfl = alpha_hfl
          os_p(i)%alpha_gam = alpha_gam

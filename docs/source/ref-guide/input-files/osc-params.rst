@@ -51,6 +51,10 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
   Scaling factor for gravitational potential perturbations (see the :math:`\alphagrv`
   entry in the :ref:`osc-physics-switches` section)
 
+:nml_n:`alpha_gbc` (default :nml_v:`1.`)
+  Scaling factor for the displacement term in the outer gravitational potential boundary
+  condition (see the :math:`\alphagbc` entry in the :ref:`osc-physics-switches` section)
+
 :nml_n:`alpha_thm` (default :nml_v:`1.`)
   Scaling factor for the thermal timescale (see the :math:`\alphathm` entry
   in the :ref:`osc-physics-switches` section)

@@ -168,10 +168,11 @@ When :nml_n:`outer_bound`\ =\ :nml_v:`'VACUUM'`, GYRE applies the
 outer boundary conditions
 
 .. math::
+   :label: e:outer-bc
 
    \begin{aligned}
    y_{1} - y_{2} &= 0 \\
-   \alphagrv U y_{1} + (\alphagrv \ell + 1) y_{3} + \alphagrv y_{4} &= 0 \\
+   \alphagrv \alphagbc U y_{1} + (\alphagrv \ell + 1) y_{3} + \alphagrv y_{4} &= 0 \\
    (2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} + 4 \frht y_{5} - y_{6} &= 0
    \end{aligned}
 
@@ -293,6 +294,12 @@ the expressions above, and the corresponding namelist parameters.
      - Scaling factor for gravitational potential perturbations. Set to 1
        for normal behavior, and to 0 for the :ads_citet:`cowling:1941`
        approximation
+   * - :math:`\alphagbc`
+     - :nml_n:`alpha_gbc`
+     - Scaling factor for the :math:`y_1` term in the outer
+       gravitational potential boundary condition (the second line of
+       eqn. :math:numref:`e:outer-bc`). Set to 1 for normal behavior,
+       and to 0 to suppress this term
    * - :math:`\alphathm`
      - :nml_n:`alpha_thm`
      - Scaling factor for local thermal timescale. Set to 1 for normal

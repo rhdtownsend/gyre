@@ -33,18 +33,19 @@ Outer Boundary
 --------------
 
 The outer boundary typically corresponds to the stellar surface. Under
-the assumption that the density vanishes on and above this surface, the
+the assumption that the density vanishes beyond this surface, the
 gravitational potential must match onto a solution to Laplace's
 equation that remains finite at infinity, leading to the potential
 boundary condition
 
 .. math::
 
-   (\ell + 1) \tPhi' + r \deriv{\tPhi'}{r} = 0.
+   (\ell + 1) \tPhi' + r \deriv{\tPhi'}{r} = 4 \pi G \rho \txir
 
-Likewise, the assumption that there is no external pressure acting on
-the star (consistent with the vanishing surface density) gives the
-momentum boundary condition
+(see, e.g., equation 21 of :ads_citealp:`pekeris:1938`). Likewise, the
+assumption that there is no external pressure acting on the star
+(consistent with the vanishing surface density) gives the momentum
+boundary condition
 
 .. math::
 

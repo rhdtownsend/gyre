@@ -90,6 +90,7 @@ xin	\subin{x}
 xout	\subout{x}
 alphathm	\alpha_{\rm thm}
 alphagrv	\alpha_{\rm grv}
+alphagbc	\alpha_{\rm gbc}
 alphahfl	\alpha_{\rm hfl}
 alpharht	\alpha_{\rm rht}
 alphagam	\alpha_{\gamma}

@@ -73,6 +73,7 @@ module nad_bound_m
       type(nad_trans_t)         :: tr
       real(RD), allocatable     :: coeff(:,:)
       real(RD)                  :: alpha_grv
+      real(RD)                  :: alpha_gbc
       real(RD)                  :: alpha_rht
       real(RD)                  :: alpha_omg
       integer                   :: type_i
@@ -175,6 +176,7 @@ contains
       end select
 
       bd%alpha_grv = os_p%alpha_grv
+      bd%alpha_gbc = os_p%alpha_gbc
       bd%alpha_rht = os_p%alpha_rht
 
       select case (os_p%time_factor)
@@ -541,6 +543,7 @@ contains
          c_thn => this%coeff(2,J_C_THN), &
          pt => this%pt(2), &
          alpha_grv => this%alpha_grv, &
+         alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg)
 
@@ -562,7 +565,7 @@ contains
          B(1,5) = 0._RD
          B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(U)
+         B(2,1) = alpha_grv*alpha_gbc*(U)
          B(2,2) = alpha_grv*(0._RD)
          B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
          B(2,4) = alpha_grv*(1._RD)
@@ -617,6 +620,7 @@ contains
          c_thn => this%coeff(2,J_C_THN), &
          pt => this%pt(2), &
          alpha_grv => this%alpha_grv, &
+         alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg)
 
@@ -639,7 +643,7 @@ contains
          B(1,5) = 0._RD
          B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(U)
+         B(2,1) = alpha_grv*alpha_gbc*(U)
          B(2,2) = alpha_grv*(0._RD)
          B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
          B(2,4) = alpha_grv*(1._RD)
@@ -708,6 +712,7 @@ contains
          c_thn => this%coeff(2,J_C_THN), &
          pt => this%pt(2), &
          alpha_grv => this%alpha_grv, &
+         alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg, &
          branch => this%branch_o)
@@ -752,7 +757,7 @@ contains
          B(1,5) = 0._RD
          B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(U)
+         B(2,1) = alpha_grv*alpha_gbc*(U)
          B(2,2) = alpha_grv*(0._RD)
          B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
          B(2,4) = alpha_grv*(1._RD)
@@ -832,6 +837,7 @@ contains
          c_thn => this%coeff(2,J_C_THN), &
          pt => this%pt(2), &
          alpha_grv => this%alpha_grv, &
+         alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg, &
          branch => this%branch_o)
@@ -860,7 +866,7 @@ contains
          B(1,5) = 0._RD
          B(1,6) = 0._RD
 
-         B(2,1) = alpha_grv*(U)
+         B(2,1) = alpha_grv*alpha_gbc*(U)
          B(2,2) = alpha_grv*(0._RD)
          B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
          B(2,4) = alpha_grv*(1._RD)
