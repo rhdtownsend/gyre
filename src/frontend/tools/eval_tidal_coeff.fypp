@@ -49,7 +49,7 @@ program eval_tidal_coeff
 
    ! Get arguments
 
-   @:ASSERT(n_arg() == 6, 'Syntax: eval_tidal_coeff [cbar|Gbar_{1..4}|X|X_quad|Y|Y*] R_a e [n|l] m k')
+   @:ASSERT(n_arg() == 6, 'Syntax: eval_tidal_coeff [cbar|Gbar_{1..5}|X|X_quad|Y|Y*] R_a e [n|l] m k')
 
    call get_arg(1, coeff)
    call get_arg(2, R_a)
@@ -86,6 +86,8 @@ program eval_tidal_coeff
       f = tidal_Gbar_3(ml, or_p, l, m, k)
    case ('Gbar_4')
       f = tidal_Gbar_4(ml, or_p, l, m, k)
+   case ('Gbar_5')
+      f = tidal_Gbar_5(ml, or_p, l, m, k)
    case ('X')
       f = hansen_X(or_p, l, m, k)
    case ('X_quad')

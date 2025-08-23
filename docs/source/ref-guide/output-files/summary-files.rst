@@ -370,6 +370,10 @@ Note that these items are available only when using :program:`gyre_tides`.
      - :math:`\Gbar^{(4)}_{\ell,m,k}`
      - real(:nml_v:`n_row`)
      - secular orbital evolution coefficient; equivalent to :math:`G^{(4)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+   * - :nml_v:`Gbar_5`
+     - :math:`\Gbar^{(5)}_{\ell,m,k}`
+     - real(:nml_v:`n_row`)
+     - secular orbital evolution coefficient; derived from :math:`\Gbar^{(4)}_{\ell,m,k}` by replacing the :math:`m` term with :math:`k \Oorb`
 
 .. rubric:: Footnotes
 

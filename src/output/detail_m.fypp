@@ -426,7 +426,8 @@ contains
             ('Gbar_1', ' rs%Gbar_1()'), &
             ('Gbar_2', ' rs%Gbar_2()'), &
             ('Gbar_3', ' rs%Gbar_3()'), &
-            ('Gbar_4', ' rs%Gbar_4()'))
+            ('Gbar_4', ' rs%Gbar_4()'), &
+            ('Gbar_5', ' rs%Gbar_5()'))
             case ('${N}$')
                call wr%write('${N}$', ${E}$)
          #:endfor

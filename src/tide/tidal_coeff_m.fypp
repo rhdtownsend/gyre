@@ -55,6 +55,7 @@ module tidal_coeff_m
    public :: tidal_Gbar_2
    public :: tidal_Gbar_3
    public :: tidal_Gbar_4
+   public :: tidal_Gbar_5
    public :: hansen_X
    public :: hansen_X_RQ
 
@@ -343,6 +344,34 @@ contains
       return
 
    end function tidal_Gbar_4
+
+   !****
+
+   function tidal_Gbar_5(ml, or_p, l, m, k) result(Gbar_5)
+
+      class(model_t), intent(in)    :: ml
+      type(orbit_par_t), intent(in) :: or_p
+      integer, intent(in)           :: l
+      integer, intent(in)           :: m
+      integer, intent(in)           :: k
+      real(RD)                      :: Gbar_5
+
+      real(RD) :: cbar
+      real(RD) :: R_a
+
+      ! Evaluate the secular evolution coefficient Gbar^(5)_lmk
+
+      cbar = tidal_cbar(ml, or_p, l, m, k)
+
+      R_a = tidal_R_a(ml, or_p)
+
+      Gbar_5 = k*or_p%Omega_orb**(2*l+1)/(4._RD*PI)*R_a**(2-l)*cbar**2
+
+      ! Finish
+
+      return
+
+   end function tidal_Gbar_5
 
    !****
 
