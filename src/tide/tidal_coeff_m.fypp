@@ -393,7 +393,8 @@ contains
 
             S = MAX((1._RD - e)**(-n-2), (1._RD + e)**(-n-2))
 
-            X = (1._RD - e**2)**(n+1.5_RD)/TWOPI*S*orbit_quad(hansen_X_f_, e, TOL)
+            X = (1._RD - e**2)**(n+1.5_RD)/TWOPI*S* &
+               orbit_quad(hansen_X_f_, e, TOL, 2*ABS(k))
 
          else
 
@@ -452,7 +453,8 @@ contains
 
             S = MAX((1._RD - e)**(-n-2), (1._RD + e)**(-n-2))
 
-            X = (1._RD - e**2)**(n+1.5_RD)/TWOPI*REAL(orbit_quad_RQ(hansen_X_f_, REAL(e, RQ), REAL(TOL, RQ)), RD)
+            X = (1._RD - e**2)**(n+1.5_RD)/TWOPI*S* &
+               REAL(orbit_quad_RQ(hansen_X_f_, REAL(e, RQ), REAL(TOL, RQ), 2*ABS(k)), RD)
 
          else
 
@@ -493,7 +495,7 @@ contains
 
    !****
 
-   function orbit_quad(f, e, tol) result(I)
+   function orbit_quad(f, e, tol, N_min) result(I)
 
       interface
          function f (ua, Ma, e)
@@ -505,9 +507,10 @@ contains
             real(RD)             :: f
          end function f
       end interface
-      real(RD), intent(in) :: e
-      real(RD), intent(in) :: tol
-      real(RD)             :: I
+      real(RD), intent(in)          :: e
+      real(RD), intent(in)          :: tol
+      integer, intent(in), optional :: N_min
+      real(RD)                      :: I
 
       integer, parameter :: N_MAX = 2**24
 
@@ -579,7 +582,13 @@ contains
 
          dI_conv = MAX(tol, 2._RD*EPSILON(0._RD))
 
-         if (abs(dI) < dI_conv) exit refine_loop
+         if (abs(dI) < dI_conv) then
+            if (PRESENT(N_min)) then
+               if (N >= N_min) exit refine_loop
+            else
+               exit refine_loop
+            end if
+         end if
 
       end do refine_loop
 
@@ -595,7 +604,7 @@ contains
 
    !****
 
-   function orbit_quad_RQ(f, e, tol) result(I)
+   function orbit_quad_RQ(f, e, tol, N_min) result(I)
 
       interface
          function f (ua, Ma, e)
@@ -607,9 +616,10 @@ contains
             real(RQ)             :: f
          end function f
       end interface
-      real(RQ), intent(in) :: e
-      real(RQ), intent(in) :: tol
-      real(RQ)             :: I
+      real(RQ), intent(in)          :: e
+      real(RQ), intent(in)          :: tol
+      integer, intent(in), optional :: N_min
+      real(RQ)                      :: I
 
       integer, parameter :: N_MAX = 2**24
       real(RQ), parameter :: PI = ACOS(-1._RQ)
@@ -681,7 +691,13 @@ contains
 
          dI_conv = MAX(tol, 2._RQ*EPSILON(0._RQ))
 
-         if (abs(dI) < dI_conv) exit refine_loop
+         if (abs(dI) < dI_conv) then
+            if (PRESENT(N_min)) then
+               if (N >= N_min) exit refine_loop
+            else
+               exit refine_loop
+            end if
+         end if
 
       end do refine_loop
 
