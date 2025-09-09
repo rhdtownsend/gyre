@@ -23,8 +23,8 @@ module txt_writer_m
 
    use forum_m, only: RD, reallocate
 
+   use string_m
    use writer_m
-   use util_m
 
    use ISO_FORTRAN_ENV
 

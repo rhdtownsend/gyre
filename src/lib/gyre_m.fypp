@@ -77,6 +77,8 @@ module gyre_m
    use search_m
    use special_m
    use state_m
+   use status_m
+   use string_m
    use tar_eigen_m
    use tar_fit_m
    use tidal_coeff_m

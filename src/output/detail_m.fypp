@@ -43,8 +43,8 @@ module detail_m
    use parfaitd_model_m
    use resp_m
    use state_m
+   use string_m
    use txt_writer_m
-   use util_m
    use wave_m
    use writer_m
 

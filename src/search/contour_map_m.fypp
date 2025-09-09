@@ -26,6 +26,7 @@ module contour_map_m
    use contour_path_m
    use ext_m
    use num_par_m
+   use string_m
    use util_m
 
    use ISO_FORTRAN_ENV

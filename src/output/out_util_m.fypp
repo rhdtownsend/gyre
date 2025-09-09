@@ -23,7 +23,7 @@ module out_util_m
 
    use forum_m, only: RD
 
-   use util_m
+   use string_m
    use wave_m
 
    use ISO_FORTRAN_ENV

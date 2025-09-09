@@ -21,7 +21,7 @@ module util_m
 
    ! Uses
 
-   use forum_m, only: RD, replace, unique_indices, reallocate
+   use forum_m, only: RD, reallocate
 
    use constants_m
    use grid_par_m
@@ -32,6 +32,7 @@ module util_m
    use osc_par_m
    use rot_par_m
    use scan_par_m
+   use string_m
 
    use ISO_FORTRAN_ENV
 
@@ -60,11 +61,6 @@ module util_m
    public :: set_log_level
    public :: check_log_level
    public :: select_par
-   public :: split_list
-   public :: join_fmts
-   public :: sprint
-   public :: subst
-   public :: rjust
    public :: elem_group_name
 
    ! Default access
@@ -217,198 +213,6 @@ contains
       end subroutine select_par_${S}$_v_
 
    #:endfor
-
-   !****
-
-   function split_list(list, delim, unique) result(elems)
-
-      character(*), intent(in)          :: list
-      character(1), intent(in)          :: delim
-      logical, intent(in), optional     :: unique
-      character(LEN(list)), allocatable :: elems(:)
-
-      character(LEN(list)) :: list_
-      integer              :: d
-      integer              :: n
-      integer              :: j
-
-      ! Split the delimited list into an array of elements
-
-      d = 16
-
-      allocate(elems(d))
-
-      n = 0
-
-      ! Repeatedly split on delimiters
-
-      list_ = list
-
-      split_loop : do
-
-         if(list_ == '') exit split_loop
-
-         j = INDEX(list_, delim)
-
-         if(j <= 0) then
-            n = n + 1
-            elems(n) = ADJUSTL(list_)
-            exit split_loop
-         endif
-
-         n = n + 1
-
-         ! Chop out the element
-
-         elems(n) = ADJUSTL(list_(:j-1))
-         list_ = list_(j+1:)
-
-         ! If necessary, expand the array
-
-         if(n >= d) then
-            d = 2*d
-            call reallocate(elems, [d])
-         end if
-
-      end do split_loop
-
-      ! Reallocate elems to the correct length
-
-      call reallocate(elems, [n])
-
-      ! If necessary, subset to unique items
-
-      if (PRESENT(unique)) then
-         if (unique) then
-            elems = elems(unique_indices(elems))
-         end if
-      end if
-
-      ! Finish
-
-      return
-
-   end function split_list
-
-   !****
-
-   function join_fmts(fmts, n) result(fmt)
-
-      character(*), intent(in)  :: fmts(:)
-      integer, intent(in)       :: n(:)
-      character(:), allocatable :: fmt
-
-      integer :: i
-
-      @:CHECK_BOUNDS(SIZE(n), SIZE(fmts))
-
-      ! Join format strings with the appropriate repeat counts
-
-      if(SUM(n) > 0) then
-
-         do i = 1, SIZE(fmts)
-
-            if(ALLOCATED(fmt)) then
-               fmt = fmt//','//sprint(n(i))//fmts(i)
-            else
-               fmt = sprint(n(i))//fmts(i)
-            endif
-
-         end do
-
-      else
-
-         fmt = ''
-
-      endif
-
-      ! Add wrap-around parens
-
-      fmt = '('//fmt//')'
-
-      ! Finish
-
-      return
-
-   end function join_fmts
-
-   !****
-
-   function sprint(i) result(a)
-
-      integer, intent(in)       :: i
-      character(:), allocatable :: a
-
-      integer :: n
-
-      ! Print an integer into a character
-
-      ! First, determine the length
-
-      if(i > 0) then
-         n = FLOOR(log10(REAL(i))) + 1
-      elseif(i < 0) then
-         n = FLOOR(log10(REAL(abs(i)))) + 2
-      else
-         n = 1
-      endif
-
-      allocate(character(n)::a)
-
-      ! Do the conversion
-
-      write(a, 100) i
-100   format(I0)
-
-      ! Finish
-
-      return
-
-   end function sprint
-
-   !****
-
-   function subst(string, pattern, i, format) result(new_string)
-
-      character(*), intent(in)  :: string
-      character(*), intent(in)  :: pattern
-      integer, intent(in)       :: i
-      character(*), intent(in)  :: format
-      character(:), allocatable :: new_string
-
-      character(64) :: substring
-
-      ! Write i into the substring buffer
-
-      write(substring, format) i
-
-      ! Do the replacement
-
-      new_string = replace(string, pattern, TRIM(substring), every=.TRUE.)
-
-      ! Finish
-
-      return
-
-   end function subst
-
-   !****
-
-   function rjust(a, n) result(a_just)
-
-      character(*), intent(in) :: a
-      integer, intent(in)      :: n
-      character(n)             :: a_just
-
-      ! Right-justify a in a field width of n
-
-      a_just = REPEAT(' ', MAX(n-LEN_TRIM(a), 0))//a
-
-      ! Finish
-
-      return
-
-   end function rjust
 
    !****
 
