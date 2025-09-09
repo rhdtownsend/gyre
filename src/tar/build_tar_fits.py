@@ -29,4 +29,4 @@ for k in range(K_MIN, K_MAX+1):
 
         # Run build_tar_fit
 
-        os.system(f'./build_tar_fit {m} {k} {TOLER} data/tar/tar_fit.{infix}.h5')
+        os.system(f'./build_tar_fit --m={m} --k={k} --tol={TOLER} data/tar/tar_fit.{infix}.h5')

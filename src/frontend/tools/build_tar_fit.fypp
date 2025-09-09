@@ -32,22 +32,39 @@ program build_tar_fit
 
    ! Variables
 
-   integer                   :: m
-   integer                   :: k
-   real(RD)                  :: cheb_tol
-   character(:), allocatable :: filename
+   character(:), allocatable :: file_name
+   integer, allocatable      :: m
+   integer, allocatable      :: k
+   real(RD), allocatable     :: tol
 
-   type(tar_fit_t) :: tf
-   type(hdf5io_t)  :: hi
+   type(arg_parser_t) :: arg_parser
+   type(tar_fit_t)    :: tf
+   type(hdf5io_t)     :: hi
 
-   ! Read parameters
+   ! Parse command-line arguments
 
-   @:ASSERT(n_arg() == 4, 'Syntax: build_tar_fit m k cheb_tol filename')
+   tol = 1E-10_RD
 
-   call get_arg(1, m)
-   call get_arg(2, k)
-   call get_arg(3, cheb_tol)
-   call get_arg(4, filename)
+   arg_parser = arg_parser_t('build_tar_fit FILE', auto_help=.TRUE.)
+
+   call arg_parser%define_option('m', OPT_REQUIRED_ARG, 'm', &
+      usage='--m=M', description='azimuthal order')
+   call arg_parser%define_option('k', OPT_REQUIRED_ARG, 'k', &
+      usage='--k=K', description='polar index')
+   call arg_parser%define_option('tol', OPT_REQUIRED_ARG, &
+      usage='--tol=TOL', description='chebyshev fit toerance')
+
+   call arg_parser%parse(arg_proc, opt_proc)
+
+   if (.NOT. ALLOCATED(file_name)) call print_summary()
+
+   if (.NOT. ALLOCATED(m)) then
+      @:STOP('-m must be specified')
+   end if
+
+   if (.NOT. ALLOCATED(k)) then
+      @:STOP('-k must be specified')
+   end if
 
    ! Initialize
 
@@ -55,14 +72,69 @@ program build_tar_fit
 
    ! Construct the tar_fit_t
 
-   tf = tar_fit_t(m, k, cheb_tol)
+   tf = tar_fit_t(m, k, tol)
 
    ! Write it out
 
-   hi = hdf5io_t(filename, CREATE_FILE)
+   hi = hdf5io_t(file_name, CREATE_FILE)
    call write(hi, tf)
    call hi%final()
 
    ! Finish
+
+contains
+
+   subroutine arg_proc(a, value)
+
+      integer, intent(in)      :: a
+      character(*), intent(in) :: value
+
+      select case(a)
+      case(1)
+         file_name = value
+      case default
+         call print_summary()
+      end select
+
+   end subroutine arg_proc
+
+   !****
+
+   subroutine opt_proc(name, value)
+
+      character(*), intent(in) :: name
+      character(*), intent(in) :: value
+
+      integer :: stat
+
+      stat = STAT_OK
+
+      select case(name)
+      case('m')
+         call parse_value(value, m, stat)
+      case('k')
+         call parse_value(value, k, stat)
+      case('tol')
+         call parse_value(value, tol, stat)
+      case('help')
+         call print_summary()
+      case default
+         @:ABORT('invalid option name')
+      end select
+
+      if (stat /= STAT_OK) then
+         @:STOP('invalid --'//name)
+      end if
+
+   end subroutine opt_proc
+
+   !****
+
+   subroutine print_summary()
+
+      call arg_parser%print_summary()
+      @:STOP()
+
+   end subroutine print_summary
 
 end program build_tar_fit
