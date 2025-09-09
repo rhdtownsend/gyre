@@ -1,7 +1,7 @@
 ! Module  : status_m
-! Purpose : status codes for numerical algorithms
+! Purpose : status codes
 !
-! Copyright 2015 Rich Townsend
+! Copyright 2015-2025 Rich Townsend
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -23,16 +23,18 @@ module status_m
 
    ! Parameter definitions
 
-   integer, parameter :: STATUS_OK = 0
-   integer, parameter :: STATUS_OMEGA_DOMAIN = 1
-   integer, parameter :: STATUS_ITER_MAX = 2
+   integer, parameter :: STAT_OK = 0
+   integer, parameter :: STAT_INVALID_ARGUMENT = 1
+   integer, parameter :: STAT_OMEGA_DOMAIN = 2
+   integer, parameter :: STAT_ITER_MAX = 3
 
    ! Access specifiers
 
-   public :: STATUS_OK
-   public :: STATUS_OMEGA_DOMAIN
-   public :: STATUS_ITER_MAX
-   public :: status_str
+   public :: STAT_OK
+   public :: STAT_INVALID_ARGUMENT
+   public :: STAT_OMEGA_DOMAIN
+   public :: STAT_ITER_MAX
+   public :: stat_str
 
    ! Default access
 
@@ -40,28 +42,30 @@ module status_m
 
 contains
 
-   function status_str(status)
+   function stat_str(stat)
 
-      integer, intent(in)       :: status
-      character(:), allocatable :: status_str
+      integer, intent(in)       :: stat
+      character(:), allocatable :: stat_str
 
       ! Return a string representation of the status
 
-      select case (status)
-      case (STATUS_OK)
-         status_str = 'OK'
-      case (STATUS_OMEGA_DOMAIN)
-         status_str = 'out-of-domain frequency'
-      case (STATUS_ITER_MAX)
-         status_str = 'maximum iterations exceeded'
+      select case (stat)
+      case (STAT_OK)
+         stat_str = 'OK'
+      case (STAT_INVALID_ARGUMENT)
+         stat_str = 'invalid argument'
+      case (STAT_OMEGA_DOMAIN)
+         stat_str = 'out-of-domain frequency'
+      case (STAT_ITER_MAX)
+         stat_str = 'maximum iterations exceeded'
       case default
-         status_str = 'unrecognized status'
+         stat_str = 'unrecognized stat'
       end select
 
       ! Finish
 
       return
 
-   end function status_str
+   end function stat_str
 
 end module status_m

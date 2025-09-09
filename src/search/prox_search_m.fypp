@@ -149,7 +149,7 @@ contains
       type(ext_ct)             :: f_z_a
       type(ext_ct)             :: f_z_b
       logical                  :: apply_deflate
-      integer                  :: status
+      integer                  :: stat
       type(ext_ct)             :: z_root
       type(wave_t)             :: wv
       type(mode_t)             :: md
@@ -201,9 +201,9 @@ contains
             apply_deflate = .TRUE.
 
             call narrow_bracket(eval_discrim_z_, z_a, z_b, ext_rt(0._RD), nm_p, &
-               status, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
-            if (status /= STATUS_OK) then
-               call report_status_(status, 'deflate narrow')
+               stat, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
+            if (stat /= STAT_OK) then
+               call report_stat_(stat, 'deflate narrow')
                cycle in_loop
             endif
 
@@ -215,9 +215,9 @@ contains
             endif
 
             call expand_bracket(eval_discrim_z_, z_a, z_b, ext_rt(0._RD), &
-               status, f_z_a=f_z_a, f_z_b=f_z_b)
-            if (status /= STATUS_OK) then
-               call report_status_(status, 'deflate re-expand')
+               stat, f_z_a=f_z_a, f_z_b=f_z_b)
+            if (stat /= STAT_OK) then
+               call report_stat_(stat, 'deflate re-expand')
                cycle in_loop
             endif
 
@@ -232,10 +232,10 @@ contains
          apply_deflate = .FALSE.
 
          call solve_root(eval_discrim_z_, z_a, z_b, ext_rt(0._RD), nm_p, &
-            z_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
+            z_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
             f_z_a=f_z_a, f_z_b=f_z_b)
-         if (status /= STATUS_OK) then
-            call report_status_(status, 'solve')
+         if (stat /= STAT_OK) then
+            call report_stat_(stat, 'solve')
             cycle in_loop
          endif
 
@@ -277,11 +277,11 @@ contains
 
    contains
 
-      subroutine eval_discrim_z_(z, discrim, status)
+      subroutine eval_discrim_z_(z, discrim, stat)
 
          type(ext_ct), intent(in)  :: z
          type(ext_ct), intent(out) :: discrim
-         integer, intent(out)      :: status
+         integer, intent(out)      :: stat
 
          complex(RD) :: omega
 
@@ -299,11 +299,11 @@ contains
                discrim = discrim*PRODUCT(omega/(omega - omega_def))
             end if
 
-            status = STATUS_OK
+            stat = STAT_OK
 
          else
 
-            status = STATUS_OMEGA_DOMAIN
+            stat = STAT_OMEGA_DOMAIN
 
          endif
 
@@ -315,16 +315,16 @@ contains
 
       !****
 
-      subroutine report_status_(status, stage_str)
+      subroutine report_stat_(stat, stage_str)
 
-         integer, intent(in)      :: status
+         integer, intent(in)      :: stat
          character(*), intent(in) :: stage_str
 
          ! Report the status
 
          if (check_log_level('WARN')) then
 
-            write(OUTPUT_UNIT, 100) 'Failed during ', stage_str, ' : ', status_str(status)
+            write(OUTPUT_UNIT, 100) 'Failed during ', stage_str, ' : ', stat_str(stat)
 100         format(4A)
 
          endif
@@ -345,7 +345,7 @@ contains
 
          return
 
-      end subroutine report_status_
+      end subroutine report_stat_
 
    end subroutine prox_search_2_
 

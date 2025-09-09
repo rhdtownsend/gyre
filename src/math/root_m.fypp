@@ -66,17 +66,17 @@ contains
 
    #:for T, S in zip(REAL_TYPES+EXT_REAL_TYPES, REAL_SUFFIXES+EXT_REAL_SUFFIXES)
 
-      subroutine solve_root_${S}$_(eval_func, x_a, x_b, x_tol, nm_p, x_root, status, &
+      subroutine solve_root_${S}$_(eval_func, x_a, x_b, x_tol, nm_p, x_root, stat, &
          n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
 
          interface
-            subroutine eval_func(x, func, status)
+            subroutine eval_func(x, func, stat)
                use forum_m, only: RD
                use ext_m
                implicit none (type, external)
                ${T}$, intent(in)    :: x
                ${T}$, intent(out)   :: func
-               integer, intent(out) :: status
+               integer, intent(out) :: stat
             end subroutine eval_func
          end interface
          ${T}$, intent(in)              :: x_a
@@ -84,7 +84,7 @@ contains
          ${T}$, intent(in)              :: x_tol
          class(num_par_t), intent(in)   :: nm_p
          ${T}$, intent(out)             :: x_root
-         integer, intent(out)           :: status
+         integer, intent(out)           :: stat
          integer, optional, intent(out) :: n_iter
          integer, optional, intent(in)  :: n_iter_max
          logical, optional, intent(in)  :: relative_tol
@@ -105,18 +105,18 @@ contains
          if (PRESENT(f_x_a)) then
             f_a = f_x_a
          else
-            call eval_func(a, f_a, status)
-            if (status /= STATUS_OK) return
+            call eval_func(a, f_a, stat)
+            if (stat /= STAT_OK) return
          endif
 
          if (PRESENT(f_x_b)) then
             f_b = f_x_b
          else
-            call eval_func(b, f_b, status)
-            if (status /= STATUS_OK) return
+            call eval_func(b, f_b, stat)
+            if (stat /= STAT_OK) return
          endif
 
-         call narrow_bracket_${S}$_(eval_func, a, b, x_tol, nm_p, status, &
+         call narrow_bracket_${S}$_(eval_func, a, b, x_tol, nm_p, stat, &
             n_iter, n_iter_max, relative_tol, f_a, f_b)
 
          x_root = b
@@ -133,17 +133,17 @@ contains
 
    #:for T, T_R, S in zip(COMPLEX_TYPES+EXT_COMPLEX_TYPES, REAL_TYPES+EXT_REAL_TYPES, COMPLEX_SUFFIXES+EXT_COMPLEX_SUFFIXES)
 
-      subroutine solve_root_${S}$_(eval_func, z_a, z_b, z_tol, nm_p, z_root, status, &
+      subroutine solve_root_${S}$_(eval_func, z_a, z_b, z_tol, nm_p, z_root, stat, &
          n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
 
          interface
-            subroutine eval_func(x, func, status)
+            subroutine eval_func(x, func, stat)
                use forum_m, only: RD
                use ext_m
                implicit none (type, external)
                ${T}$, intent(in)  :: x
                ${T}$, intent(out) :: func
-               integer, intent(out)  :: status
+               integer, intent(out)  :: stat
             end subroutine eval_func
          end interface
          ${T}$, intent(in)              :: z_a
@@ -151,7 +151,7 @@ contains
          ${T_R}$, intent(in)            :: z_tol
          class(num_par_t), intent(in)   :: nm_p
          ${T}$, intent(out)             :: z_root
-         integer, intent(out)           :: status
+         integer, intent(out)           :: stat
          integer, optional, intent(out) :: n_iter
          integer, optional, intent(in)  :: n_iter_max
          logical, optional, intent(in)  :: relative_tol
@@ -172,18 +172,18 @@ contains
          if (PRESENT(f_z_a)) then
             f_a = f_z_a
          else
-            call eval_func(a, f_a, status)
-            if (status /= STATUS_OK) return
+            call eval_func(a, f_a, stat)
+            if (stat /= STAT_OK) return
          endif
 
          if (PRESENT(f_z_b)) then
             f_b = f_z_b
          else
-            call eval_func(b, f_b, status)
-            if (status /= STATUS_OK) return
+            call eval_func(b, f_b, stat)
+            if (stat /= STAT_OK) return
          endif
 
-         call narrow_bracket_${S}$_(eval_func, a, b, z_tol, nm_p, status, &
+         call narrow_bracket_${S}$_(eval_func, a, b, z_tol, nm_p, stat, &
             n_iter, n_iter_max, relative_tol, f_a, f_b)
 
          z_root = b
@@ -200,24 +200,24 @@ contains
 
    #:for T, S in zip(REAL_TYPES+EXT_REAL_TYPES, REAL_SUFFIXES+EXT_REAL_SUFFIXES)
 
-      subroutine narrow_bracket_${S}$_(eval_func, x_a, x_b, x_tol, nm_p, status, &
+      subroutine narrow_bracket_${S}$_(eval_func, x_a, x_b, x_tol, nm_p, stat, &
          n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
 
          interface
-            subroutine eval_func (x, func, status)
+            subroutine eval_func (x, func, stat)
                use forum_m, only: RD
                use ext_m
                implicit none (type, external)
               ${T}$, intent(in)    :: x
                ${T}$, intent(out)   :: func
-               integer, intent(out) :: status
+               integer, intent(out) :: stat
             end subroutine eval_func
          end interface
          ${T}$, intent(inout)           :: x_a
          ${T}$, intent(inout)           :: x_b
          ${T}$, intent(in)              :: x_tol
          class(num_par_t), intent(in)   :: nm_p
-         integer, intent(out)           :: status
+         integer, intent(out)           :: stat
          integer, optional, intent(out) :: n_iter
          integer, optional, intent(in)  :: n_iter_max
          logical, optional, intent(in)  :: relative_tol
@@ -228,7 +228,7 @@ contains
 
          select case (nm_p%r_root_solver)
          case ('BRENT')
-            call narrow_brent_${S}$_(eval_func, x_a, x_b, x_tol, status, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
+            call narrow_brent_${S}$_(eval_func, x_a, x_b, x_tol, stat, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
          case default
             @:ABORT('invalid r_root_solver')
          end select
@@ -241,23 +241,23 @@ contains
 
       !****
 
-      subroutine narrow_brent_${S}$_(eval_func, x_a, x_b, x_tol, status, &
+      subroutine narrow_brent_${S}$_(eval_func, x_a, x_b, x_tol, stat, &
          n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
 
          interface
-            subroutine eval_func(x, func, status)
+            subroutine eval_func(x, func, stat)
                use forum_m, only: RD
                use ext_m
                implicit none (type, external)
                ${T}$, intent(in)  :: x
                ${T}$, intent(out) :: func
-               integer, intent(out)  :: status
+               integer, intent(out)  :: stat
             end subroutine eval_func
          end interface
          ${T}$, intent(inout)           :: x_a
          ${T}$, intent(inout)           :: x_b
          ${T}$, intent(in)              :: x_tol
-         integer, intent(out)           :: status
+         integer, intent(out)           :: stat
          integer, optional, intent(out) :: n_iter
          integer, optional, intent(in)  :: n_iter_max
          logical, optional, intent(in)  :: relative_tol
@@ -299,15 +299,15 @@ contains
          if (PRESENT(f_x_a)) then
             f_a = f_x_a
          else
-            call eval_func(a, f_a, status)
-            if (status /= STATUS_OK) return
+            call eval_func(a, f_a, stat)
+            if (stat /= STAT_OK) return
          endif
 
          if (PRESENT(f_x_b)) then
             f_b = f_x_b
          else
-            call eval_func(b, f_b, status)
-            if (status /= STATUS_OK) return
+            call eval_func(b, f_b, stat)
+            if (stat /= STAT_OK) return
          endif
 
          c = b
@@ -322,7 +322,7 @@ contains
 
          i_iter = 0
 
-         status = STATUS_OK
+         stat = STAT_OK
 
          iterate_loop : do
 
@@ -330,7 +330,7 @@ contains
 
             if (PRESENT(n_iter_max)) then
                if (i_iter > n_iter_max) then
-                  status = STATUS_ITER_MAX
+                  stat = STAT_ITER_MAX
                   exit iterate_loop
                endif
             endif
@@ -435,8 +435,8 @@ contains
                endif
             endif
 
-            call eval_func(b, f_b, status)
-            if (status /= STATUS_OK) exit iterate_loop
+            call eval_func(b, f_b, stat)
+            if (stat /= STAT_OK) exit iterate_loop
 
          end do iterate_loop
 
@@ -460,21 +460,21 @@ contains
 
       !****
 
-      subroutine expand_bracket_${S}$_(eval_func, x_a, x_b, status, clamp_a, clamp_b, f_x_a, f_x_b)
+      subroutine expand_bracket_${S}$_(eval_func, x_a, x_b, stat, clamp_a, clamp_b, f_x_a, f_x_b)
 
          interface
-            subroutine eval_func(x, func, status)
+            subroutine eval_func(x, func, stat)
                use forum_m, only: RD
                use ext_m
                implicit none (type, external)
                ${T}$, intent(in)  :: x
                ${T}$, intent(out) :: func
-               integer, intent(out)  :: status
+               integer, intent(out)  :: stat
             end subroutine eval_func
          end interface
          ${T}$, intent(inout)          :: x_a
          ${T}$, intent(inout)          :: x_b
-         integer, intent(out)          :: status
+         integer, intent(out)          :: stat
          logical, optional, intent(in) :: clamp_a
          logical, optional, intent(in) :: clamp_b
          ${T}$, optional, intent(out)  :: f_x_a
@@ -505,13 +505,13 @@ contains
          ! Expand the bracket [x_a,x_b] until it contains a root of the
          ! function
 
-         call eval_func(x_a, f_a, status)
-         if (status /= STATUS_OK) return
+         call eval_func(x_a, f_a, stat)
+         if (stat /= STAT_OK) return
 
-         call eval_func(x_b, f_b, status)
-         if (status /= STATUS_OK) return
+         call eval_func(x_b, f_b, stat)
+         if (stat /= STAT_OK) return
 
-         status = STATUS_OK
+         stat = STAT_OK
 
          expand_loop : do
 
@@ -530,15 +530,15 @@ contains
 
                x_a = x_a + GOLDEN_R*(x_a - x_b)
 
-               call eval_func(x_a, f_a, status)
-               if (status /= STATUS_OK) exit expand_loop
+               call eval_func(x_a, f_a, stat)
+               if (stat /= STAT_OK) exit expand_loop
 
             else
 
                x_b = x_b + GOLDEN_R*(x_b - x_a)
 
-               call eval_func(x_b, f_b, status)
-               if (status /= STATUS_OK) exit expand_loop
+               call eval_func(x_b, f_b, stat)
+               if (stat /= STAT_OK) exit expand_loop
 
             endif
 
@@ -561,24 +561,24 @@ contains
 
    #:for T, T_R, S in zip(COMPLEX_TYPES+EXT_COMPLEX_TYPES, REAL_TYPES+EXT_REAL_TYPES, COMPLEX_SUFFIXES+EXT_COMPLEX_SUFFIXES)
 
-      subroutine narrow_bracket_${S}$_(eval_func, z_a, z_b, z_tol, nm_p, status, &
+      subroutine narrow_bracket_${S}$_(eval_func, z_a, z_b, z_tol, nm_p, stat, &
          n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
 
          interface
-            subroutine eval_func (z, func, status)
+            subroutine eval_func (z, func, stat)
                use forum_m, only: RD
                use ext_m
                implicit none (type, external)
                ${T}$, intent(in)  :: z
                ${T}$, intent(out) :: func
-               integer, intent(out)    :: status
+               integer, intent(out)    :: stat
             end subroutine eval_func
          end interface
          ${T}$, intent(inout)           :: z_a
          ${T}$, intent(inout)           :: z_b
          ${T_R}$, intent(in)            :: z_tol
          class(num_par_t), intent(in)   :: nm_p
-         integer, intent(out)           :: status
+         integer, intent(out)           :: stat
          integer, optional, intent(out) :: n_iter
          integer, optional, intent(in)  :: n_iter_max
          logical, optional, intent(in)  :: relative_tol
@@ -589,10 +589,10 @@ contains
 
          select case (nm_p%c_root_solver)
          case ('SECANT')
-            call narrow_secant_${S}$_(eval_func, z_a, z_b, z_tol, status, &
+            call narrow_secant_${S}$_(eval_func, z_a, z_b, z_tol, stat, &
                n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
          case ('RIDDERS')
-            call narrow_ridders_${S}$_(eval_func, z_a, z_b, z_tol, status, &
+            call narrow_ridders_${S}$_(eval_func, z_a, z_b, z_tol, stat, &
                n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
          case default
             @:ABORT('invalid c_root_solver')
@@ -606,23 +606,23 @@ contains
 
       !****
 
-      subroutine narrow_secant_${S}$_(eval_func, z_a, z_b, z_tol, status, &
+      subroutine narrow_secant_${S}$_(eval_func, z_a, z_b, z_tol, stat, &
          n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
 
          interface
-            subroutine eval_func(z, func, status)
+            subroutine eval_func(z, func, stat)
                use forum_m, only: RD
                use ext_m
                implicit none (type, external)
                ${T}$, intent(in)    :: z
                ${T}$, intent(out)   :: func
-               integer, intent(out) :: status
+               integer, intent(out) :: stat
             end subroutine eval_func
          end interface
          ${T}$, intent(inout)           :: z_a
          ${T}$, intent(inout)           :: z_b
          ${T_R}$, intent(in)            :: z_tol
-         integer, intent(out)           :: status
+         integer, intent(out)           :: stat
          integer, optional, intent(out) :: n_iter
          integer, optional, intent(in)  :: n_iter_max
          logical, optional, intent(in)  :: relative_tol
@@ -658,15 +658,15 @@ contains
          if (PRESENT(f_z_a)) then
             f_a = f_z_a
          else
-            call eval_func(a, f_a, status)
-            if (status /= STATUS_OK) return
+            call eval_func(a, f_a, stat)
+            if (stat /= STAT_OK) return
          endif
 
          if (PRESENT(f_z_b)) then
             f_b = f_z_b
          else
-            call eval_func(b, f_b, status)
-            if (status /= STATUS_OK) return
+            call eval_func(b, f_b, stat)
+            if (stat /= STAT_OK) return
          endif
 
          if (abs(f_a) < abs(f_b)) then
@@ -686,7 +686,7 @@ contains
 
          i_iter = 0
 
-         status = STATUS_OK
+         stat = STAT_OK
 
          iterate_loop : do
 
@@ -696,7 +696,7 @@ contains
 
             if (PRESENT(n_iter_max)) then
                if (i_iter > n_iter_max) then
-                  status = STATUS_ITER_MAX
+                  stat = STAT_ITER_MAX
                   exit iterate_loop
                endif
             endif
@@ -719,8 +719,8 @@ contains
             f_a = f_b
 
             b = b - f_dz/rho
-            call eval_func(b, f_b, status)
-            if (status /= STATUS_OK) exit iterate_loop
+            call eval_func(b, f_b, stat)
+            if (stat /= STAT_OK) exit iterate_loop
 
             ! Check for convergence
 
@@ -750,23 +750,23 @@ contains
 
       !****
 
-      subroutine narrow_ridders_${S}$_(eval_func, z_a, z_b, z_tol, status, &
+      subroutine narrow_ridders_${S}$_(eval_func, z_a, z_b, z_tol, stat, &
          n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
 
          interface
-            subroutine eval_func (z, func, status)
+            subroutine eval_func (z, func, stat)
                use forum_m, only: RD
                use ext_m
                implicit none (type, external)
                ${T}$, intent(in)    :: z
                ${T}$, intent(out)   :: func
-               integer, intent(out) :: status
+               integer, intent(out) :: stat
             end subroutine eval_func
          end interface
          ${T}$, intent(inout)           :: z_a
          ${T}$, intent(inout)           :: z_b
          ${T_R}$, intent(in)            :: z_tol
-         integer, intent(out)           :: status
+         integer, intent(out)           :: stat
          integer, optional, intent(out) :: n_iter
          integer, optional, intent(in)  :: n_iter_max
          logical, optional, intent(in)  :: relative_tol
@@ -808,15 +808,15 @@ contains
          if (PRESENT(f_z_a)) then
             f_a = f_z_a
          else
-            call eval_func(a, f_a, status)
-            if (status /= STATUS_OK) return
+            call eval_func(a, f_a, stat)
+            if (stat /= STAT_OK) return
          endif
 
          if (PRESENT(f_z_b)) then
             f_b = f_z_b
          else
-            call eval_func(b, f_b, status)
-            if (status /= STATUS_OK) return
+            call eval_func(b, f_b, stat)
+            if (stat /= STAT_OK) return
          endif
 
          if (abs(f_a) < abs(f_b)) then
@@ -836,7 +836,7 @@ contains
 
          i_iter = 0
 
-         status = STATUS_OK
+         stat = STAT_OK
 
          iterate_loop : do
 
@@ -846,7 +846,7 @@ contains
 
             if (PRESENT(n_iter_max)) then
                if (i_iter > n_iter_max) then
-                  status = STATUS_ITER_MAX
+                  stat = STAT_ITER_MAX
                   exit iterate_loop
                end if
             endif
@@ -855,8 +855,8 @@ contains
 
             c =  0.5_RD*(a + b)
 
-            call eval_func(c, f_c, status)
-            if (status /= STATUS_OK) exit iterate_loop
+            call eval_func(c, f_c, stat)
+            if (stat /= STAT_OK) exit iterate_loop
 
             ! Solve for the re-scaling exponential
 
@@ -887,8 +887,8 @@ contains
             f_a = f_b
 
             b = b - f_dz/rho
-            call eval_func(b, f_b, status)
-            if (status /= STATUS_OK) exit iterate_loop
+            call eval_func(b, f_b, stat)
+            if (stat /= STAT_OK) exit iterate_loop
 
             ! Check for convergence
 
@@ -920,23 +920,23 @@ contains
 
       !****
 
-      subroutine expand_bracket_${S}$_(eval_func, z_a, z_b, f_z_tol, status, &
+      subroutine expand_bracket_${S}$_(eval_func, z_a, z_b, f_z_tol, stat, &
          clamp_a, clamp_b, relative_tol, f_z_a, f_z_b)
 
          interface
-            subroutine eval_func(z, func, status)
+            subroutine eval_func(z, func, stat)
                use forum_m, only: RD
                use ext_m
                implicit none (type, external)
                ${T}$, intent(in)  :: z
                ${T}$, intent(out) :: func
-               integer, intent(out)    :: status
+               integer, intent(out)    :: stat
             end subroutine eval_func
          end interface
          ${T}$, intent(inout)          :: z_a
          ${T}$, intent(inout)          :: z_b
          ${T_R}$, intent(in)           :: f_z_tol
-         integer, intent(out)          :: status
+         integer, intent(out)          :: stat
          ${T}$, optional, intent(out)  :: f_z_a
          ${T}$, optional, intent(out)  :: f_z_b
          logical, optional, intent(in) :: clamp_a
@@ -976,13 +976,13 @@ contains
          ! Expand the bracket [z_a,z_b] until the difference between f(z_a)
          ! and f(z_b) exceeds the tolerance
 
-         call eval_func(z_a, f_a, status)
-         if (status /= STATUS_OK) return
+         call eval_func(z_a, f_a, stat)
+         if (stat /= STAT_OK) return
 
-         call eval_func(z_b, f_b, status)
-         if (status /= STATUS_OK) return
+         call eval_func(z_b, f_b, stat)
+         if (stat /= STAT_OK) return
 
-         status = STATUS_OK
+         stat = STAT_OK
 
          expand_loop : do
 
@@ -1004,12 +1004,12 @@ contains
 
             if (move_a) then
                z_a = z_a + GOLDEN_R*(z_a - z_b)
-               call eval_func(z_a, f_a, status)
-               if (status /= STATUS_OK) exit expand_loop
+               call eval_func(z_a, f_a, stat)
+               if (stat /= STAT_OK) exit expand_loop
             else
                z_b = z_b + GOLDEN_R*(z_b - z_a)
-               call eval_func(z_b, f_b, status)
-               if (status /= STATUS_OK) exit expand_loop
+               call eval_func(z_b, f_b, stat)
+               if (stat /= STAT_OK) exit expand_loop
             endif
 
          end do expand_loop

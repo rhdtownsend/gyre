@@ -88,7 +88,7 @@ contains
       type(ext_rt)              :: f_x_a
       type(ext_rt)              :: f_x_b
       type(ext_rt)              :: x_root
-      integer                   :: status
+      integer                   :: stat
       type(wave_t)              :: wv
       type(mode_t)              :: md
       type(ext_rt)              :: chi
@@ -123,10 +123,10 @@ contains
          f_x_b = discrim_b(i)
 
          call solve_root(eval_discrim_x_, x_a, x_b, ext_rt(0._RD), nm_p, &
-            x_root, status, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
+            x_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
             f_x_a=f_x_a, f_x_b=f_x_b)
-         if (status /= STATUS_OK) then
-            call report_status_(status, 'solve')
+         if (stat /= STAT_OK) then
+            call report_stat_(stat, 'solve')
             cycle mode_loop
          endif
 
@@ -166,11 +166,11 @@ contains
 
    contains
 
-      subroutine eval_discrim_x_(x, discrim, status)
+      subroutine eval_discrim_x_(x, discrim, stat)
 
          type(ext_rt), intent(in)  :: x
          type(ext_rt), intent(out) :: discrim
-         integer, intent(out)       :: status
+         integer, intent(out)      :: stat
 
          real(RD) :: omega
 
@@ -184,11 +184,11 @@ contains
 
             call eval_discrim(bp, state_rt(omega), discrim)
 
-            status = STATUS_OK
+            stat = STAT_OK
 
          else
 
-            status = STATUS_OMEGA_DOMAIN
+            stat = STAT_OMEGA_DOMAIN
 
          end if
 
@@ -200,16 +200,16 @@ contains
 
       !****
 
-      subroutine report_status_(status, stage_str)
+      subroutine report_stat_(stat, stage_str)
 
-         integer, intent(in)      :: status
+         integer, intent(in)      :: stat
          character(*), intent(in) :: stage_str
 
          ! Report the status
 
          if (check_log_level('WARN')) then
 
-            write(OUTPUT_UNIT, 100) 'Failed during ', stage_str, ' : ', status_str(status)
+            write(OUTPUT_UNIT, 100) 'Failed during ', stage_str, ' : ', stat_str(stat)
 100         format(4A)
 
          endif
@@ -229,7 +229,7 @@ contains
 
          return
 
-      end subroutine report_status_
+      end subroutine report_stat_
 
    end subroutine bracket_search
 

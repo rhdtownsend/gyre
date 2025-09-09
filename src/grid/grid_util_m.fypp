@@ -65,7 +65,7 @@ contains
       integer       :: j
       type(point_t) :: pt_a
       type(point_t) :: pt_b
-      integer       :: status
+      integer       :: stat
 
       @:ASSERT_DEBUG(cx%point_i() == gr%pt_i(), 'context and grid are not conformable')
       @:ASSERT_DEBUG(cx%point_o() == gr%pt_o(), 'context and grid are not conformable')
@@ -116,7 +116,7 @@ contains
 
                   else
 
-                     call solve_root(eval_gamma_, pt_a%x, pt_b%x, 0._RD, nm_p, x_turn, status)
+                     call solve_root(eval_gamma_, pt_a%x, pt_b%x, 0._RD, nm_p, x_turn, stat)
 
                   endif
 
@@ -140,17 +140,17 @@ contains
 
    contains
 
-      subroutine eval_gamma_(x, gamma, status)
+      subroutine eval_gamma_(x, gamma, stat)
 
          real(RD), intent(in)  :: x
          real(RD), intent(out) :: gamma
-         integer, intent(out)  :: status
+         integer, intent(out)  :: stat
 
          ! Evaluate gamma
 
          gamma = gamma_(cx, point_t(pt_a%s, x), st, os_p%alpha_gam, os_p%alpha_pi)
 
-         status = STATUS_OK
+         stat = STAT_OK
 
          ! Finish
 

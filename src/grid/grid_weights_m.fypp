@@ -104,7 +104,7 @@ contains
       real(RD)           :: g_a
       real(RD)           :: g_b
       real(RD)           :: g
-      integer            :: status
+      integer            :: stat
       real(RD)           :: dw
       integer            :: k
 
@@ -125,7 +125,7 @@ contains
          g_a = EPSILON(0._RD)
          g_b = (s*(n-1)-2*m-1)/m
 
-         call solve_root(geom_func_, g_a, g_b, 0._RD, num_par_t(), g, status)
+         call solve_root(geom_func_, g_a, g_b, 0._RD, num_par_t(), g, stat)
 
          ! Set up weights for the inner part of the interval
 
@@ -153,7 +153,7 @@ contains
          g_a = EPSILON(0._RD)
          g_b = (s*(n-1)-2*m)/(m*(m-1))
 
-         call solve_root(geom_func_, g_a, g_b, 0._RD, num_par_t(), g, status)
+         call solve_root(geom_func_, g_a, g_b, 0._RD, num_par_t(), g, stat)
 
          ! Set up the inner part of the interval
 
@@ -179,11 +179,11 @@ contains
 
    contains
 
-      subroutine geom_func_(g, f, status)
+      subroutine geom_func_(g, f, stat)
 
          real(RD), intent(in)  :: g
          real(RD), intent(out) :: f
-         integer, intent(out)  :: status
+         integer, intent(out)  :: stat
 
          ! Calcuate the discriminant for the geometric growth factor
 
@@ -207,7 +207,7 @@ contains
 
          ! Finish
 
-         status = STATUS_OK
+         stat = STAT_OK
 
          return
 
