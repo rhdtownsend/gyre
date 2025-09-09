@@ -29,7 +29,7 @@ module tar_eigen_m
 
    use ISO_FORTRAN_ENV
 
-   #:if IEEE
+   #:if defined('IEEE')
       use IEEE_ARITHMETIC
    #:endif
 
@@ -201,7 +201,7 @@ contains
       integer, intent(in)  :: n
       real(RD)             :: lambda
 
-      #:if IEEE
+      #:if defined('IEEE')
       logical  :: h_over
       logical  :: h_zero
       logical  :: h_inval
@@ -225,7 +225,7 @@ contains
       ! Calculate the index-k eigenvalue of the A-matrix with fixed
       ! dimension n, using LAPACK routines at working-precision
 
-      #:if IEEE
+      #:if defined('IEEE')
       call save_ieee_state_(h_over, h_zero, h_inval)
       #:endif
 
@@ -271,7 +271,7 @@ contains
 
          else
 
-            #:if IEEE
+            #:if defined('IEEE')
                lambda = IEEE_VALUE(0._RD, IEEE_POSITIVE_INF)
             #:else
                lambda = HUGE(0._RD)
@@ -290,7 +290,7 @@ contains
 
          else
 
-            #:if IEEE
+            #:if defined('IEEE')
             lambda = IEEE_VALUE(0._RD, IEEE_NEGATIVE_INF)
             #:else
             lambda = -HUGE(0._RD)
@@ -309,7 +309,7 @@ contains
 
          else
 
-            #:if IEEE
+            #:if defined('IEEE')
             lambda = IEEE_VALUE(0._RD, IEEE_NEGATIVE_INF)
             #:else
             lambda = -HUGE(0._RD)
@@ -346,7 +346,7 @@ contains
 
       endif
 
-      #:if IEEE
+      #:if defined('IEEE')
       call restore_ieee_state_(h_over, h_zero, h_inval)
       #:endif
 
@@ -368,7 +368,7 @@ contains
 
       real(RD), parameter :: Q_TRANS = 1E4_RD
 
-      #:if IEEE
+      #:if defined('IEEE')
       logical  :: h_over
       logical  :: h_zero
       logical  :: h_inval
@@ -389,7 +389,7 @@ contains
       ! Calculate the index-k eigenvalue of the A-matrix with fixed
       ! dimension n, using bisection routines at quad-precision
 
-      #:if IEEE
+      #:if defined('IEEE')
       call save_ieee_state_(h_over, h_zero, h_inval)
       #:endif
 
@@ -955,7 +955,7 @@ contains
 
    !****
 
-   #:if IEEE
+   #:if defined('IEEE')
 
       subroutine save_ieee_state_(h_over, h_zero, h_inval)
 
