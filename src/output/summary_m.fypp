@@ -465,7 +465,7 @@ contains
             ('Gbar_2', 'rs%Gbar_2()'), &
             ('Gbar_3', 'rs%Gbar_3()'), &
             ('Gbar_4', 'rs%Gbar_4()'), &
-            ('Gbar_5', 'rs%Gbar_5()'))
+            ('Gbar_E', 'rs%Gbar_E()'))
             case ('${N}$')
                call sc%append(${E}$)
          #:endfor

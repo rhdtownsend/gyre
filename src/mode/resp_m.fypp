@@ -59,7 +59,7 @@ module resp_m
       procedure, public :: Gbar_2
       procedure, public :: Gbar_3
       procedure, public :: Gbar_4
-      procedure, public :: Gbar_5
+      procedure, public :: Gbar_E
    end type resp_t
 
    ! Interfaces
@@ -405,26 +405,26 @@ contains
 
    !****
 
-   function Gbar_5(this)
+   function Gbar_E(this)
 
       class(resp_t), intent(in) :: this
-      real(RD)                  :: Gbar_5
+      real(RD)                  :: Gbar_E
 
       type(context_t) :: cx
 
-      ! Evaluate the secular evolution coefficient Gbar^(5)_lmk
+      ! Evaluate the secular evolution coefficient Gbar^(E)_lmk
 
       cx = this%context()
 
       associate (ml => cx%model())
-         Gbar_5 = tidal_Gbar_5(ml, this%or_p, this%l, this%m, this%k)
+         Gbar_E = tidal_Gbar_E(ml, this%or_p, this%l, this%m, this%k)
       end associate
 
       ! Finish
 
       return
 
-   end function Gbar_5
+   end function Gbar_E
 
    !****
 
