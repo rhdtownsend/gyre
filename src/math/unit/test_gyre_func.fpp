@@ -1,7 +1,7 @@
 ! Module   : test_gyre_func
 ! Purpose  : unit tests for gyre_func
 !
-! Copyright 2019 The GYRE Team
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General

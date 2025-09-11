@@ -1,7 +1,7 @@
 #! Include : model
 #! Purpose : model-related macros
 #!
-#! Copyright 2025 Rich Townsend
+#! Copyright 2013-2025 Rich Townsend & The GYRE Team
 #!
 #! This file is part of GYRE. GYRE is free software: you can
 #! redistribute it and/or modify it under the terms of the GNU General

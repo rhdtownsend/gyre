@@ -1,7 +1,7 @@
 ! Module  : poly_file_m
 ! Purpose : read POLY files
 !
-! Copyright 2013-2022 Rich Townsend & The MESA Team
+! Copyright 2013-2025 Rich Townsend & The MESA Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
