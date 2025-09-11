@@ -25,7 +25,7 @@ module version_m
 
    ! Parameter definitions
 
-   character(*), parameter :: VERSION = 'dev'
+   character(*), parameter :: VERSION = '8.1'
 
    ! Access specifiers
 
