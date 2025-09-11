@@ -5,55 +5,20 @@ eval_lambda
 
 .. program:: eval_lambda
 
+Synopsis
+--------
+
+.. code-block:: text
+
+   eval_lambda OUTPUT_FILE [options]
+
+Description
+-----------
+	     
 The :program:`eval_lambda` tool evaluates the eigenvalue
 :math:`\lambda` appearing in Laplace's tidal equations (see the
 :ref:`osc-rot` section), over a grid :math:`\{q\}` of spin parameter
-values.
-
-Syntax
-------
-
-:program:`eval_lambda` :option:`l` :option:`m` :option:`q_min` :option:`q_max` :option:`n_q` :option:`log_q` :option:`rossby` :option:`filename`
-
-Parameters
-----------
-
-.. option:: l
-
-   Harmonic degree :math:`\ell`
-
-.. option:: m
-
-   Azimuthal order :math:`m`.
-
-.. option:: q_min
-
-   Start value in spin parameter grid
-
-.. option:: q_max
-
-   End value in spin parameter grid
-
-.. option:: n_q
-
-   Number of points in spin parameter grid
-
-.. option:: log_q
-
-   Flag to use logarithmic spacing in spin parameter grid
-
-.. option:: rossby
-
-   Flag to consider the Rossby-mode branch of Laplace's tidal equations
-
-.. option:: filename
-
-   Name of output file (see below)
-
-Output
-------
-
-The output file created by :program:`eval_lambda` is in GYRE's
+values. These data are written to an output file in GYRE's
 :ref:`hdf-format`, with the following data items in the root group:
 
 .. list-table::
@@ -88,10 +53,46 @@ The output file created by :program:`eval_lambda` is in GYRE's
    * - :code:`q`
      - :math:`q`
      - dataset
-     - real (:option:`n_q`)
+     - real (:math:`n`)
      - spin parameter
    * - :code:`lambda`
      - :math:`\lambda`
      - dataset
-     - real (:option:`n_q`)
+     - real (:math:`n`)
      - eigenvalue of Laplace's tidal equation
+
+
+Options
+-------
+
+.. option:: -h, --help
+
+   Print a summary of options.
+
+.. option:: -l, --l=L
+
+   Harmonic degree :math:`\ell`.
+
+.. option:: -m, --m=M
+
+   Azimuthal order :math:`m`.
+
+.. option:: --q-min=MIN
+
+   Minimum :math:`q` in grid.
+
+.. option:: --q-max=MAX
+
+   Maximum :math:`q` in grid.
+
+.. option:: --n=N
+
+   Number of points in grid.
+   
+.. option:: --log
+
+   Use logarithmic grid spacing.
+
+.. option:: --rossby
+
+   Consider Rossby modes.

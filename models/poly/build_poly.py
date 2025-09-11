@@ -2,54 +2,26 @@
 #
 # Build polytrope files
 
-import os
-import tempfile as tf
+import subprocess
 
 # Build a polytrope file
 
-def build_poly (n_poly, Delta_b, z_b, Gamma_1, dz, toler, filename):
+def build_poly(n_poly, Delta_b, z_b, Gamma_1, dz, toler, filename):
 
-    n_poly_str = ','.join('{0:24.16e}'.format(n) for n in n_poly)
-    Delta_b_str = ','.join('{0:24.16e}'.format(d) for d in Delta_b)
-    z_b_str = ','.join('{0:24.16e}'.format(x) for x in z_b)
+    args = ['./build_poly',
+            filename,
+            '--n_poly='+','.join('{0:.16e}'.format(n) for n in n_poly),
+            f'--Gamma_1={Gamma_1:.16e}',
+            f'--dz={dz:.16e}',
+            f'--toler={toler:.16e}']
 
-    # Create an input file
+    if len(z_b) > 0:
+        args += ['--z_b='+','.join('{0:.16e}'.format(z) for z in z_b)]
 
-    fd, infile = tf.mkstemp()
+    if len(Delta_b) > 0:
+        args += ['--Delta_b='+','.join('{0:.16e}'.format(d) for d in Delta_b)]
 
-    f = os.fdopen(fd, 'w')
-
-    f.write('''
-&poly
-	n_r = {0:d}
-	n_poly = {1:s}
-        Delta_b = {2:s}
-        z_b = {3:s}
-        Gamma_1 = {4:24.16e}
-/
-
-&num
-	dz = {5:24.16e}
-	toler = {6:24.16e}
-/
-
-&out
-	file = '{7:s}'
-/
-'''.format(len(n_poly), n_poly_str, Delta_b_str, z_b_str,
-           Gamma_1, dz, toler, filename))
-
-    f.close()
-
-    # Run build_poly
-
-    os.system('./build_poly {0:s}'.format(infile))
-
-    # Delete the input file
-
-#    print(infile)
-
-    os.remove(infile)
+    subprocess.run(args)
 
 #
             

@@ -1,7 +1,7 @@
 ! Program  : eval_lambda
 ! Purpose  : evaluate TAR eigenvalue
 !
-! Copyright 2020 Rich Townsend & The GYRE Team
+! Copyright 2020-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -21,7 +21,7 @@ program eval_lambda
 
    ! Uses
 
-   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
+   use forum_m, only: RD, hdf5io_t, CREATE_FILE, arg_parser_t, OPT_NO_ARG, OPT_REQUIRED_ARG
 
    use gyre_m
 
@@ -33,33 +33,67 @@ program eval_lambda
 
    ! Variables
 
-   integer                   :: m
-   integer                   :: l
-   real(RD)                  :: q_min
-   real(RD)                  :: q_max
-   integer                   :: n_q
+   integer, allocatable      :: m
+   integer, allocatable      :: l
+   real(RD), allocatable     :: q_min
+   real(RD), allocatable     :: q_max
+   integer, allocatable      :: n
    logical                   :: log_q
    logical                   :: rossby
-   character(:), allocatable :: filename
+   character(:), allocatable :: file_name
 
+   type(arg_parser_t)    :: arg_parser
    integer               :: k
    real(RD), allocatable :: q(:)
    real(RD), allocatable :: lam(:)
    integer               :: i
    type(hdf5io_t)        :: hi
 
-   ! Read parameters
+   ! Parse command-line arguments
 
-   @:ASSERT(n_arg() == 8, 'Syntax: eval_lambda l m q_min q_max n_q log_q rossby filename')
+   log_q = .FALSE.
+   rossby = .FALSE.
 
-   call get_arg(1, l)
-   call get_arg(2, m)
-   call get_arg(3, q_min)
-   call get_arg(4, q_max)
-   call get_arg(5, n_q)
-   call get_arg(6, log_q)
-   call get_arg(7, rossby)
-   call get_arg(8, filename)
+   arg_parser = arg_parser_t('eval_lambda OUTPUT_FILE', auto_help=.TRUE.)
+
+   call arg_parser%define_option('l', OPT_REQUIRED_ARG, 'l', &
+      usage='--l=L', description='harmonic degree')
+   call arg_parser%define_option('m', OPT_REQUIRED_ARG, 'm', &
+      usage='--m=M', description='azimuthal order')
+   call arg_parser%define_option('q-min', OPT_REQUIRED_ARG, &
+      usage='--q-min=MIN', description='minimum spin parameter')
+   call arg_parser%define_option('q-max', OPT_REQUIRED_ARG, &
+      usage='--q-max=MIN', description='maximum spin parameter')
+   call arg_parser%define_option('n', OPT_REQUIRED_ARG, &
+      usage='--n=N', description='number of spin parameters')
+   call arg_parser%define_option('log', OPT_NO_ARG, &
+      usage='--log', description='use logarithmic abscissa')
+   call arg_parser%define_option('rossby', OPT_NO_ARG, &
+      usage='--rossby', description='consider Rossby modes')
+
+   call arg_parser%parse(arg_proc, opt_proc)
+
+   if (.NOT. ALLOCATED(file_name)) call print_summary()
+
+   if (.NOT. ALLOCATED(l)) then
+      @:STOP('--l must be specified')
+   end if
+
+   if (.NOT. ALLOCATED(m)) then
+      @:STOP('--m must be specified')
+   end if
+
+   if (.NOT. ALLOCATED(q_min)) then
+      @:STOP('--q-min must be specified')
+   end if
+
+   if (.NOT. ALLOCATED(q_max)) then
+      @:STOP('--q-max must be specified')
+   end if
+
+   if (.NOT. ALLOCATED(n)) then
+      @:STOP('--n must be specified')
+   end if
 
    ! Initialize
 
@@ -77,29 +111,29 @@ program eval_lambda
 
    ! Allocate arrays
 
-   allocate(q(n_q))
-   allocate(lam(n_q))
+   allocate(q(n))
+   allocate(lam(n))
 
    ! Evaluate them
 
-   if (n_q > 1) then
+   if (n > 1) then
 
       !$OMP PARALLEL DO SCHEDULE (GUIDED)
-      do i = 1, n_q
+      do i = 1, n
 
          if (log_q) then
-            q(i) = 10**((LOG10(q_min)*(n_q-i) + LOG10(q_max)*(i-1))/(n_q-1))
+            q(i) = 10**((LOG10(q_min)*(n-i) + LOG10(q_max)*(i-1))/(n-1))
          else
-            q(i) = (q_min*(n_q-i) + q_max*(i-1))/(n_q-1)
+            q(i) = (q_min*(n-i) + q_max*(i-1))/(n-1)
          endif
 
          lam(i) = lambda(q(i), m, k)
 
       end do
 
-   elseif (n_q == 1) then
+   elseif (n == 1) then
 
-      @:ASSERT(q_min == q_max, 'min/max values must match when n_q == 1')
+      @:ASSERT(q_min == q_max, 'min/max values must match when n == 1')
 
       q(1) = q_min
 
@@ -107,13 +141,13 @@ program eval_lambda
 
    else
 
-      @:ABORT('n_q must be 1 or greater')
+      @:ABORT('n must be 1 or greater')
 
    endif
 
    ! Write out results
 
-   hi = hdf5io_t(filename, CREATE_FILE)
+   hi = hdf5io_t(file_name, CREATE_FILE)
    call hi%write_attr('l', l)
    call hi%write_attr('m', m)
    call hi%write_attr('k', k)
@@ -123,5 +157,68 @@ program eval_lambda
    call hi%final()
 
    ! Finish
+
+contains
+
+   subroutine arg_proc(a, value)
+
+      integer, intent(in)      :: a
+      character(*), intent(in) :: value
+
+      select case(a)
+      case(1)
+         file_name = value
+      case default
+         call print_summary()
+      end select
+
+   end subroutine arg_proc
+
+   !****
+
+   subroutine opt_proc(name, value)
+
+      character(*), intent(in) :: name
+      character(*), intent(in) :: value
+
+      integer :: stat
+
+      stat = STAT_OK
+
+      select case(name)
+      case('l')
+         call parse_value(value, l)
+      case('m')
+         call parse_value(value, m)
+      case('q-min')
+         call parse_value(value, q_min)
+      case('q-max')
+         call parse_value(value, q_max)
+      case('n')
+         call parse_value(value, n)
+      case('log')
+         log_q = .TRUE.
+      case('rossby')
+         rossby = .TRUE.
+      case('help')
+         call print_summary()
+      case default
+         @:ABORT('invalid option name')
+      end select
+
+      if (stat /= STAT_OK) then
+         @:STOP('invalid --'//name)
+      end if
+
+   end subroutine opt_proc
+
+   !****
+
+   subroutine print_summary()
+
+      call arg_parser%print_summary()
+      @:STOP()
+
+   end subroutine print_summary
 
 end program eval_lambda

@@ -1,7 +1,7 @@
 ! Program  : eval_love
 ! Purpose  : evaluate static Love numbers
 !
-! Copyright 2024 Rich Townsend & The GYRE Team
+! Copyright 2024-2025 Rich Townsend & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -21,7 +21,7 @@ program eval_love
 
    ! Uses
 
-   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
+   use forum_m, only: RD, hdf5io_t, CREATE_FILE, arg_parser_t, OPT_REQUIRED_ARG
 
    use gyre_m
 
@@ -33,11 +33,12 @@ program eval_love
 
    ! Variables
 
-   character(:), allocatable :: filename
+   character(:), allocatable :: file_name
    character(:), allocatable :: model_type
    character(:), allocatable :: file_format
-   integer                   :: l
+   integer, allocatable      :: l
 
+   type(arg_parser_t)       :: arg_parser
    type(model_par_t)        :: ml_p
    type(osc_par_t)          :: os_p
    type(rot_par_t)          :: rt_p
@@ -58,12 +59,25 @@ program eval_love
 
    ! Read parameters
 
-   @:ASSERT(n_arg() == 4, 'Syntax: eval_love filename model_type file_format l')
+   model_type = 'EVOL'
+   file_format = 'GSM'
 
-   call get_arg(1, filename)
-   call get_arg(2, model_type)
-   call get_arg(3, file_format)
-   call get_arg(4, l)
+   arg_parser = arg_parser_t('eval_love MODEL_FILE', auto_help=.TRUE.)
+
+   call arg_parser%define_option('l', OPT_REQUIRED_ARG, 'l', &
+      usage='--l=L', description='harmonic degree')
+   call arg_parser%define_option('model-type', OPT_REQUIRED_ARG, &
+      usage='--model-type=TYPE', description='model type ( EVOL | POLY | ...)')
+   call arg_parser%define_option('file-format', OPT_REQUIRED_ARG, &
+      usage='--file-format=FORMAT', description='file format ( GSM | MESA | ... )')
+
+   call arg_parser%parse(arg_proc, opt_proc)
+
+   if (.NOT. ALLOCATED(file_name)) call print_summary()
+
+   if (.NOT. ALLOCATED(l)) then
+      @:STOP('--l must be specified')
+   end if
 
    ! Initialize
 
@@ -75,7 +89,7 @@ program eval_love
 
    ! Set up parameters
 
-   ml_p = model_par_t(model_type=model_type, file_format=file_format, file=filename)
+   ml_p = model_par_t(model_type=model_type, file_format=file_format, file=file_name)
 
    os_p = osc_par_t()
    rt_p = rot_par_t()
@@ -124,5 +138,60 @@ program eval_love
    print *, k_l
 
    ! Finish
+
+contains
+
+   subroutine arg_proc(a, value)
+
+      integer, intent(in)      :: a
+      character(*), intent(in) :: value
+
+      select case(a)
+      case(1)
+         file_name = value
+      case default
+         call print_summary()
+      end select
+
+   end subroutine arg_proc
+
+   !****
+
+   subroutine opt_proc(name, value)
+
+      character(*), intent(in) :: name
+      character(*), intent(in) :: value
+
+      integer :: stat
+
+      stat = STAT_OK
+
+      select case(name)
+      case('l')
+         call parse_value(value, l)
+      case('model-type')
+         model_type = value
+      case('file-format')
+         file_format = value
+      case('help')
+         call print_summary()
+      case default
+         @:ABORT('invalid option name')
+      end select
+
+      if (stat /= STAT_OK) then
+         @:STOP('invalid --'//name)
+      end if
+
+   end subroutine opt_proc
+
+   !****
+
+   subroutine print_summary()
+
+      call arg_parser%print_summary()
+      @:STOP()
+
+   end subroutine print_summary
 
 end program eval_love

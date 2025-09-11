@@ -48,5 +48,4 @@ oscillations, similar numerical techniques can be brought to bear.
    :name: appendices
 
    appendices/comp-ptrope.rst
-   appendices/build-poly.rst
    appendices/support-tools.rst

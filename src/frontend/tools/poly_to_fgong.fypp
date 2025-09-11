@@ -21,7 +21,7 @@ program poly_to_fgong
 
    ! Uses
 
-   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
+   use forum_m, only: RD, arg_parser_t, OPT_NO_ARG
 
    use gyre_m
    use poly_file_m
@@ -40,10 +40,11 @@ program poly_to_fgong
 
    ! Variables
 
-   character(:), allocatable :: in_filename
-   character(:), allocatable :: out_filename
+   character(:), allocatable :: in_file_name
+   character(:), allocatable :: out_file_name
    logical                   :: drop_outer
 
+   type(arg_parser_t)      :: arg_parser
    type(model_par_t)       :: ml_p
    class(model_t), pointer :: ml
    type(grid_t)            :: gr
@@ -61,13 +62,19 @@ program poly_to_fgong
    integer                 :: unit
    integer                 :: j
 
-   ! Read parameters
+   ! Parse command-line arguments
 
-   @:ASSERT(n_arg() == 3, 'Syntax: poly_to_fgong in_filename out_filename drop_outer')
+   drop_outer = .FALSE.
 
-   call get_arg(1, in_filename)
-   call get_arg(2, out_filename)
-   call get_arg(3, drop_outer)
+   arg_parser = arg_parser_t('poly_to_fgong POLY_FILE FGONG_FILE', auto_help=.TRUE.)
+
+   call arg_parser%define_option('drop-outer', OPT_NO_ARG, &
+      usage='--drop-outer', description='drop outer point from model')
+
+   call arg_parser%parse(arg_proc, opt_proc)
+
+   if (.NOT. ALLOCATED(in_file_name)) call print_summary()
+   if (.NOT. ALLOCATED(out_file_name)) call print_summary()
 
    ! Initialize
 
@@ -75,7 +82,7 @@ program poly_to_fgong
 
    ! Read the polytrope data
 
-   ml_p%file = TRIM(in_filename)
+   ml_p%file = TRIM(in_file_name)
 
    call read_poly_model(ml_p, ml)
 
@@ -148,7 +155,7 @@ program poly_to_fgong
 
    ! Write out the FGONG file
 
-   open(NEWUNIT=unit, FILE=out_filename, STATUS='REPLACE')
+   open(NEWUNIT=unit, FILE=out_file_name, STATUS='REPLACE')
 
    write(unit, 100) 'Fee'
    write(unit, 100) 'Fi'
@@ -169,5 +176,58 @@ program poly_to_fgong
    close(unit)
 
    ! Finish
+
+contains
+
+   subroutine arg_proc(a, value)
+
+      integer, intent(in)      :: a
+      character(*), intent(in) :: value
+
+      select case(a)
+      case(1)
+         in_file_name = value
+      case(2)
+         out_file_name = value
+      case default
+         call print_summary()
+      end select
+
+   end subroutine arg_proc
+
+   !****
+
+   subroutine opt_proc(name, value)
+
+      character(*), intent(in) :: name
+      character(*), intent(in) :: value
+
+      integer :: stat
+
+      stat = STAT_OK
+
+      select case(name)
+      case('drop-outer')
+         drop_outer = .TRUE.
+      case('help')
+         call print_summary()
+      case default
+         @:ABORT('invalid option name')
+      end select
+
+      if (stat /= STAT_OK) then
+         @:STOP('invalid --'//name)
+      end if
+
+   end subroutine opt_proc
+
+   !****
+
+   subroutine print_summary()
+
+      call arg_parser%print_summary()
+      @:STOP()
+
+   end subroutine print_summary
 
 end program poly_to_fgong

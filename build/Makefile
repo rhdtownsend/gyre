@@ -104,7 +104,7 @@ libgyre_SRCS = ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp		\
    sad_bound_m.fypp sad_bvp_m.fypp sad_diff_m.fypp sad_eqns_m.fypp	\
    sad_match_m.fypp sad_trans_m.fypp scan_m.fypp scan_par_m.fypp	\
    search_m.fypp special_m.fypp state_m.fypp status_m.fypp		\
-   summary_m.fypp sysmtx_factory_m.fypp sysmtx_m.fypp			\
+   string_m.fypp summary_m.fypp sysmtx_factory_m.fypp sysmtx_m.fypp	\
    tar_eigen_m.fypp tar_fit_m.fypp tar_rot_m.fypp tidal_coeff_m.fypp	\
    tidal_resp_m.fypp tidal_context_m.fypp tide_par_m.fypp		\
    tnad_bvp_m.fypp tnad_diff_m.fypp tnad_eqns_m.fypp			\

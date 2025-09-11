@@ -36,31 +36,21 @@ module string_m
    interface parse_value
       module procedure parse_value_i_
       module procedure parse_value_r_
+      module procedure parse_value_l_
    end interface parse_value
 
    interface parse_values
       module procedure parse_values_i_
       module procedure parse_values_r_
+      module procedure parse_values_l_
       module procedure parse_values_a_
    end interface parse_values
-
-   interface parse_name_value
-      module procedure parse_name_value_r_
-      module procedure parse_name_value_i_
-   end interface parse_name_value
-
-   interface parse_name_values
-      module procedure parse_name_values_r_
-      module procedure parse_name_values_i_
-   end interface parse_name_values
 
    ! Access specifiers
 
    public :: split_list
    public :: parse_value
    public :: parse_values
-   public :: parse_name_value
-   public :: parse_name_values
    public :: join_fmts
    public :: sprint
    public :: subst
@@ -144,9 +134,7 @@ contains
 
    !****
 
-   !****
-
-   #:for type, suffix in (('integer', 'i'), ('real(RD)', 'r'))
+   #:for type, suffix in (('integer', 'i'), ('real(RD)', 'r'), ('logical', 'l'))
 
       subroutine parse_value_${suffix}$_(string, value, stat)
 
@@ -181,36 +169,32 @@ contains
 
       end subroutine parse_value_${suffix}$_
 
-   !****
+      !****
 
-      subroutine parse_values_${suffix}$_(string, value_a, value_b, stat, delim)
+      subroutine parse_values_${suffix}$_(string, values, stat, delim)
 
          character(*), intent(in)           :: string
-         ${type}$, allocatable, intent(out) :: value_a
-         ${type}$, allocatable, intent(out) :: value_b
+         ${type}$, allocatable, intent(out) :: values(:)
          integer, intent(out), optional     :: stat
          character(*), intent(in), optional :: delim
 
-         character(:), allocatable :: value_a_str
-         character(:), allocatable :: value_b_str
+         character(:), allocatable :: values_str(:)
+         integer                   :: i
          integer                   :: iostat
 
-         ! Parse the string into a pair of values, with delim as the
+         ! Parse the string into list of values, with delim as the
          ! separator
 
-         call parse_values(string, value_a_str, value_b_str, stat, delim)
+         call parse_values(string, values_str, stat, delim)
 
          parse_block: block
 
-            allocate(value_a)
+            allocate(values(SIZE(values_str)))
 
-            read(value_a_str, FMT=*, IOSTAT=iostat) value_a
-            if (iostat /= 0) exit parse_block
-
-            allocate(value_b)
-
-            read(value_b_str, FMT=*, IOSTAT=iostat) value_b
-            if (iostat /= 0) exit parse_block
+            do i = 1, SIZE(values)
+               read(values_str(i), FMT=*, IOSTAT=iostat) values(i)
+               if (iostat /= 0) exit parse_block
+            end do
 
             return
 
@@ -228,90 +212,55 @@ contains
 
       end subroutine parse_values_${suffix}$_
 
-      !****
-
-      subroutine parse_name_value_${suffix}$_(string, name, value, stat, delim)
-
-         character(*), intent(in)               :: string
-         character(:), allocatable, intent(out) :: name
-         ${type}$, allocatable, intent(out)     :: value
-         integer, intent(out), optional         :: stat
-         character(*), intent(in), optional     :: delim
-
-         character(:), allocatable :: value_str
-
-         ! Parse the string into a name and a value, with delim as the
-         ! separator
-
-         call parse_values(string, name, value_str, stat, delim)
-         if (PRESENT(stat)) then
-            if (stat /= 0) return
-         end if
-
-         allocate(value)
-
-         call parse_value(value_str, value, stat)
-
-         ! Finish
-
-         return
-
-      end subroutine parse_name_value_${suffix}$_
-
-      !****
-
-      subroutine parse_name_values_${suffix}$_(string, name, value_a, value_b, stat, delim)
-
-         character(*), intent(in)               :: string
-         character(:), allocatable, intent(out) :: name
-         ${type}$, allocatable, intent(out)     :: value_a
-         ${type}$, allocatable, intent(out)     :: value_b
-         integer, intent(out), optional         :: stat
-         character(*), intent(in), optional     :: delim
-
-         character(:), allocatable :: values_str
-
-         ! Parse the string into a name and a pair of values, with delim
-         ! as the separator
-
-         call parse_values(string, name, values_str, stat, delim)
-         if (PRESENT(stat)) then
-            if (stat /= 0) return
-         end if
-
-         call parse_values(values_str, value_a, value_b, stat, delim)
-
-         ! Finish
-
-         return
-
-      end subroutine parse_name_values_${suffix}$_
-
    #:endfor
 
    !****
 
-   subroutine parse_values_a_(string, value_a, value_b, stat, delim)
+   subroutine parse_values_a_(string, values, stat, delim)
 
       character(*), intent(in)               :: string
-      character(:), allocatable, intent(out) :: value_a
-      character(:), allocatable, intent(out) :: value_b
+      character(:), allocatable, intent(out) :: values(:)
       integer, intent(out), optional         :: stat
       character(*), intent(in), optional     :: delim
 
       character(:), allocatable :: delim_
+      integer, allocatable      :: i_delim(:)
+      integer                   :: i
+      integer, allocatable      :: i_sub_a(:)
+      integer, allocatable      :: i_sub_b(:)
+      integer                   :: n
 
       if (PRESENT(delim)) then
          delim_ = delim
       else
-         delim_ = ':'
+         delim_ = ','
       end if
 
-      ! Parse the string into a pair of values, with delim as the
+      ! Parse the string into a list of values, with delim as the
       ! separator
 
-      value_b = string
-      call split(value_b, value_a, delim_)
+      ! Determine the indices of delimeters
+
+      allocate(i_delim(0))
+
+      do i = 1, LEN(string)
+         if (string(i:i) == delim_) i_delim = [i_delim,i]
+      end do
+
+      ! Determine the indices of substrings
+
+      i_sub_a = [1, i_delim+1]
+      i_sub_b = [i_delim-1, LEN(string)]
+
+      ! Extract the values from the string
+
+      n = SIZE(i_delim) + 1
+
+      allocate(character(MAXVAL(i_sub_b-i_sub_a+1))::values(n))
+
+      do i = 1, n
+         values(i) = string(i_sub_a(i):i_sub_b(i))
+      end do
 
       if (PRESENT(stat)) stat = STAT_OK
 

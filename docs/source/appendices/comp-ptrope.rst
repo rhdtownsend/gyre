@@ -4,13 +4,12 @@
 Composite Polytropes
 ********************
 
-Composite polytropes are an extension of standard :wiki:`polytrope <Polytrope>`
-models for stellar structure, to allow for discontinuities in the
-density :math:`\rho` and/or the polytropic index :math:`n`.  This
-appendix lays out the mathematical formalism\ [#formalism]_
-underpinning them; it is intended to complement the :ref:`build-poly`
-appendix, which describes how composite polytrope models can be built
-using the :program:`build_poly` executable.
+Composite polytropes are an extension of standard :wiki:`polytrope
+<Polytrope>` models for stellar structure, to allow for
+discontinuities in the density :math:`\rho` and/or the polytropic
+index :math:`n`.  This appendix lays out the mathematical formalism\
+[#formalism]_ underpinning them, as implemented in the
+:ref:`build_poly tool <support-tools-build-poly>`.
 
 .. toctree::
   :maxdepth: 2

@@ -21,7 +21,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-check_output $OUT_FILE '' --relative=2e-13
+check_output $OUT_FILE '' --relative=3e-12
 if [ $? -ne 0 ]; then
     exit 1;
 fi

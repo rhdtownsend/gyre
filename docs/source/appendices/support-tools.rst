@@ -22,14 +22,15 @@ for a given stellar model and/or set of parameters:
    support-tools/eval-love.rst
    support-tools/eval-tidal-coeff.rst
 
-Converting Models
------------------
+Manipulating Models
+-------------------
 
-The following tools convert models between the various
+The following tools create or convert models in the various
 :ref:`stellar-models` types supported by GYRE:
 
 .. toctree::
    :maxdepth: 2
 
+   support-tools/build-poly.rst
    support-tools/poly-to-fgong.rst
    support-tools/poly-to-txt.rst

@@ -21,7 +21,7 @@ program build_poly
 
    ! Uses
 
-   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE, reallocate
+   use forum_m, only: RD, hdf5io_t, CREATE_FILE, reallocate, arg_parser_t, OPT_REQUIRED_ARG
 
    use gyre_m
 
@@ -39,66 +39,66 @@ program build_poly
 
    ! Variables
 
-   character(:), allocatable :: filename
-   integer                   :: unit
-   integer                   :: n_r
+   character(:), allocatable :: file_name
    real(RD), allocatable     :: n_poly(:)
-   real(RD)                  :: Gamma_1
+   real(RD), allocatable     :: Gamma_1
    real(RD), allocatable     :: z_b(:)
    real(RD), allocatable     :: Delta_b(:)
-   real(RD)                  :: theta_s
-   real(RD)                  :: dz
-   real(RD)                  :: toler
-   character(FILENAME_LEN)   :: file
+   real(RD), allocatable     :: theta_s
+   real(RD), allocatable     :: dz
+   real(RD), allocatable     :: toler
+
+   type(arg_parser_t)        :: arg_parser
+   integer                   :: n_r
    real(RD), allocatable     :: z(:)
    real(RD), allocatable     :: theta(:)
    real(RD), allocatable     :: dtheta(:)
    integer                   :: n_r_out
    type(hdf5io_t)            :: hi
 
-   namelist /poly/ n_r, n_poly, Gamma_1, z_b, Delta_b, theta_s
-   namelist /num/ dz, toler
-   namelist /out/ file
+   ! Parse command-line arguments
 
-   ! Read command-line arguments
-
-   @:ASSERT(n_arg() == 1, 'Syntax: build_poly <filename>')
-
-   call get_arg(1, filename)
-
-   ! Set defaults
-
-   allocate(n_poly(D))
-   allocate(z_b(D))
-   allocate(Delta_b(D))
-
-   n_r = 1
    Gamma_1 = 5._RD/3._RD
    theta_s = 0._RD
-
-   n_poly(1) = 0._RD
-
-   dz = 0.01_RD
    toler = 1E-10_RD
 
-   ! Read parameters
+   allocate(z_b(0))
+   allocate(Delta_b(0))
 
-   open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
+   arg_parser = arg_parser_t('build_poly POLY_FILE', auto_help=.TRUE.)
 
-   rewind(unit)
-   read(unit, NML=poly)
+   call arg_parser%define_option('n_poly', OPT_REQUIRED_ARG, 'n', &
+      usage='--n_poly=N_POLY[,N_POLY...]', description='polytropic indices')
+   call arg_parser%define_option('Gamma_1', OPT_REQUIRED_ARG, 'G', &
+      usage='--Gamma_1=GAMMA_1', description='adiabatic exponent')
+   call arg_parser%define_option('z_b', OPT_REQUIRED_ARG, 'z', &
+      usage='--z_b=Z_B[,Z_B...]', description='polytropic coordinates of region boundaries')
+   call arg_parser%define_option('Delta_b', OPT_REQUIRED_ARG, 'D', &
+      usage='--Delta_b=DELTA_B[,DELTA_B...]', description='logarithmic density jumps at region boundaries')
+   call arg_parser%define_option('theta_s', OPT_REQUIRED_ARG, &
+      usage='--theta_s=THETA_S', description='surface polytropic variable value')
+   call arg_parser%define_option('dz', OPT_REQUIRED_ARG, 'd', &
+      usage='--dz=DZ', description='grid spacing in polytropic coordinate')
+   call arg_parser%define_option('toler', OPT_REQUIRED_ARG, 't', &
+      usage='--toler=TOLER', description='tolerance')
 
-   call reallocate(n_poly, [n_r])
-   call reallocate(z_b, [n_r-1])
-   call reallocate(Delta_b, [n_r-1])
+   call arg_parser%parse(arg_proc, opt_proc)
 
-   rewind(unit)
-   read(unit, NML=num)
+   if (.NOT. ALLOCATED(file_name)) call print_summary()
 
-   rewind(unit)
-   read(unit, NML=out)
+   if (.NOT. ALLOCATED(n_poly)) then
+      @:STOP('--n_poly must be specified')
+   end if
 
-   close(unit)
+   n_r = SIZE(n_poly)
+
+   if (SIZE(z_b) /= n_r-1) then
+      @:STOP('SIZE(z_b) must match SIZE(n_poly)-1')
+   end if
+
+   if (SIZE(Delta_b) /= n_r-1) then
+      @:STOP('SIZE(Delta_b) must match SIZE(n_poly)-1')
+   end if
 
    ! Solve the Lane-Emden equation
 
@@ -111,7 +111,7 @@ program build_poly
 
    ! Write the model
 
-   hi = hdf5io_t(file, CREATE_FILE)
+   hi = hdf5io_t(file_name, CREATE_FILE)
 
    call hi%write_attr('n', SIZE(z))
    call hi%write_attr('n_r', n_r)
@@ -128,5 +128,68 @@ program build_poly
    call hi%final()
 
    ! Finish
+
+contains
+
+   subroutine arg_proc(a, value)
+
+      integer, intent(in)      :: a
+      character(*), intent(in) :: value
+
+      select case(a)
+      case(1)
+         file_name = value
+      case default
+         call print_summary()
+      end select
+
+   end subroutine arg_proc
+
+   !****
+
+   subroutine opt_proc(name, value)
+
+      character(*), intent(in) :: name
+      character(*), intent(in) :: value
+
+      integer :: stat
+
+      stat = STAT_OK
+
+      select case(name)
+      case('n_poly')
+         call parse_values(value, n_poly)
+      case('Gamma_1')
+         call parse_value(value, Gamma_1)
+      case('z_b')
+         call parse_values(value, z_b)
+      case('Delta_b')
+         call parse_values(value, Delta_b)
+      case('theta_s')
+         call parse_value(value, theta_s)
+      case('dz')
+         call parse_value(value, dz)
+      case('toler')
+         call parse_value(value, toler)
+      case('help')
+         call print_summary()
+      case default
+         @:ABORT('invalid option name')
+      end select
+
+      if (stat /= STAT_OK) then
+         @:STOP('invalid --'//name)
+      end if
+
+   end subroutine opt_proc
+
+   !****
+
+   subroutine print_summary()
+
+      call arg_parser%print_summary()
+      @:STOP()
+
+   end subroutine print_summary
 
 end program build_poly

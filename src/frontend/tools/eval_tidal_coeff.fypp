@@ -21,7 +21,7 @@ program eval_tidal_coeff
 
    ! Uses
 
-   use forum_m, only: RD, n_arg, get_arg
+   use forum_m, only: RD, arg_parser_t, OPT_REQUIRED_ARG
 
    use gyre_m
 
@@ -34,12 +34,14 @@ program eval_tidal_coeff
    ! Variables
 
    character(:), allocatable :: coeff
-   real(RD)                  :: R_a
-   real(RD)                  :: e
-   integer                   :: l
-   integer                   :: m
-   integer                   :: k
+   real(RD), allocatable     :: R_a
+   real(RD), allocatable     :: e
+   integer, allocatable      :: n
+   integer, allocatable      :: l
+   integer, allocatable      :: m
+   integer, allocatable      :: k
 
+   type(arg_parser_t)      :: arg_parser
    type(model_par_t)       :: ml_p
    class(model_t), pointer :: ml => null()
    type(orbit_par_t)       :: or_p
@@ -47,16 +49,64 @@ program eval_tidal_coeff
    real(RD)                :: Omega_orb
    real(RD)                :: f
 
-   ! Get arguments
+   ! Parse command-line arguments
 
-   @:ASSERT(n_arg() == 6, 'Syntax: eval_tidal_coeff [cbar|Gbar_{1..5}|X|X_quad|Y|Y*] R_a e [n|l] m k')
+   R_a = 1._RD
+   e = 0._RD
 
-   call get_arg(1, coeff)
-   call get_arg(2, R_a)
-   call get_arg(3, e)
-   call get_arg(4, l)
-   call get_arg(5, m)
-   call get_arg(6, k)
+   arg_parser = arg_parser_t('eval_tidal_coeff ( cbar | Gbar_{1..4} | X | X_quad | Y | Y^*)', auto_help=.TRUE.)
+
+   call arg_parser%define_option('R/a', OPT_REQUIRED_ARG, &
+      usage='--R/a=R_A', description='ratio of stellar radius to semi-major axis')
+   call arg_parser%define_option('e', OPT_REQUIRED_ARG, 'e', &
+      usage='--e=E', description='orbital eccentricity')
+   call arg_parser%define_option('n', OPT_REQUIRED_ARG, 'n', &
+      usage='--n=N', description='Hansen degree')
+   call arg_parser%define_option('l', OPT_REQUIRED_ARG, 'l', &
+      usage='--l=L', description='harmonic degree')
+   call arg_parser%define_option('m', OPT_REQUIRED_ARG, 'm', &
+      usage='--m=M', description='azimuthal order')
+   call arg_parser%define_option('k', OPT_REQUIRED_ARG, 'k', &
+      usage='--k=K', description='Fourier index')
+
+   call arg_parser%parse(arg_proc, opt_proc)
+
+   if (.NOT. ALLOCATED(coeff)) call print_summary()
+
+   select case(coeff)
+   case ('cbar', 'G_bar_1', 'Gbar_2', 'Gbar_3', 'Gbar_4')
+      if (.NOT. ALLOCATED(R_a)) then
+         @:STOP('--R_a must be specified')
+      end if
+      if (.NOT. ALLOCATED(l)) then
+         @:STOP('--l must be specified')
+      end if
+      if (.NOT. ALLOCATED(m)) then
+         @:STOP('--m must be specified')
+      end if
+      if (.NOT. ALLOCATED(k)) then
+         @:STOP('--k must be specified')
+      end if
+   case('X', 'X_quad')
+      if (.NOT. ALLOCATED(n)) then
+         @:STOP('--n must be specified')
+      end if
+      if (.NOT. ALLOCATED(m)) then
+         @:STOP('--m must be specified')
+      end if
+      if (.NOT. ALLOCATED(k)) then
+         @:STOP('--k must be specified')
+      end if
+   case('Y', 'Y^*')
+      if (.NOT. ALLOCATED(l)) then
+         @:STOP('--l must be specified')
+      end if
+      if (.NOT. ALLOCATED(m)) then
+         @:STOP('--m must be specified')
+      end if
+   case default
+      @:STOP('invalid coeff')
+   end select
 
    ! Initialize
 
@@ -86,20 +136,77 @@ program eval_tidal_coeff
       f = tidal_Gbar_3(ml, or_p, l, m, k)
    case ('Gbar_4')
       f = tidal_Gbar_4(ml, or_p, l, m, k)
-   case ('Gbar_5')
-      f = tidal_Gbar_5(ml, or_p, l, m, k)
    case ('X')
-      f = hansen_X(or_p, l, m, k)
+      f = hansen_X(or_p, n, m, k)
    case ('X_quad')
-      f = hansen_X_RQ(or_p, l, m, k)
+      f = hansen_X_RQ(or_p, n, m, k)
    case ('Y')
       f = REAL(spherical_Y(l, m, HALFPI, 0._RD))
-   case ('Y*')
+   case ('Y^*')
       f = REAL(CONJG(spherical_Y(l, m, HALFPI, 0._RD)))
-   case default
-      @:ABORT('invalid coeff; should be one of [c|G_1|G_2|G_3|G_4|X|Y|Y*]')
    end select
 
    print *, f
+
+contains
+
+   subroutine arg_proc(a, value)
+
+      integer, intent(in)      :: a
+      character(*), intent(in) :: value
+
+      select case(a)
+      case(1)
+         coeff = value
+      case default
+         call print_summary()
+      end select
+
+   end subroutine arg_proc
+
+   !****
+
+   subroutine opt_proc(name, value)
+
+      character(*), intent(in) :: name
+      character(*), intent(in) :: value
+
+      integer :: stat
+
+      stat = STAT_OK
+
+      select case(name)
+      case('R/a')
+         call parse_value(value, R_a)
+      case('e')
+         call parse_value(value, e)
+      case('l')
+         call parse_value(value, l)
+      case('n')
+         call parse_value(value, n)
+      case('m')
+         call parse_value(value, m)
+      case('k')
+         call parse_value(value, k)
+      case('help')
+         call print_summary()
+      case default
+         @:ABORT('invalid option name')
+      end select
+
+      if (stat /= STAT_OK) then
+         @:STOP('invalid --'//name)
+      end if
+
+   end subroutine opt_proc
+
+   !****
+
+   subroutine print_summary()
+
+      call arg_parser%print_summary()
+      @:STOP()
+
+   end subroutine print_summary
 
 end program eval_tidal_coeff
