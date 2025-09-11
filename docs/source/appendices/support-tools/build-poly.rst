@@ -41,7 +41,7 @@ Options
 
 .. option:: -D, --Delta_b=DELTA_B[,DELTA_B...]
 
-   Logarithmic densiy jumps at region boundaries.
+   Logarithmic density jumps at region boundaries.
 
 .. option:: --theta_s=THETA_S
 
