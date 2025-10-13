@@ -76,6 +76,7 @@ module rad_bound_m
       procedure         :: build_zero_r_i_
       procedure, public :: build_o
       procedure         :: build_vacuum_o_
+      procedure         :: build_zero_r_o_
       procedure         :: build_dziem_o_
       procedure         :: build_decomp_o_
       procedure         :: build_jcd_o_
@@ -132,6 +133,8 @@ contains
       select case (os_p%outer_bound)
       case ('VACUUM')
          bd%type_o = VACUUM_TYPE
+      case ('ZERO_R')
+         bd%type_o = ZERO_R_TYPE
       case ('DZIEM')
          if (ml%is_vacuum(pt_o)) then
             bd%type_o = VACUUM_TYPE
@@ -213,8 +216,7 @@ contains
       ! Outer boundary
 
       select case (this%type_o)
-      case (VACUUM_TYPE)
-         this%coeff(2, J_U) = ml%coeff(I_U, pt_o)
+      case (VACUUM_TYPE,ZERO_R_TYPE)
       case (DZIEM_TYPE)
          this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
          this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
@@ -365,6 +367,8 @@ contains
       select case (this%type_o)
       case (VACUUM_TYPE)
          call this%build_vacuum_o_(st, B, scl)
+      case (ZERO_R_TYPE)
+         call this%build_zero_r_o_(st, B, scl)
       case (DZIEM_TYPE)
          call this%build_dziem_o_(st, B, scl)
       case (ISOTHRM_TYPE)
@@ -415,6 +419,36 @@ contains
       return
 
    end subroutine build_vacuum_o_
+
+   !****
+
+   subroutine build_zero_r_o_(this, st, B, scl)
+
+      class(rad_bound_t), intent(in) :: this
+      class(state_rt), intent(in)    :: st
+      real(RD), intent(out)          :: B(:,:)
+      real(RD), intent(out)          :: scl(:)
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      @:CHECK_BOUNDS(SIZE(scl), this%n_o)
+
+      ! Evaluate the outer boundary conditions (zero radial
+      ! displacement)
+
+      ! Set up the boundary conditions
+
+      B(1,1) = 1._RD
+      B(1,2) = 0._RD
+
+      scl = 1._RD
+
+      ! Finish
+
+      return
+
+   end subroutine build_zero_r_o_
 
    !****
 
