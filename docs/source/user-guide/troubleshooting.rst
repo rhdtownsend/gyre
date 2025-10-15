@@ -13,7 +13,3 @@ GYRE operation, and steps that can be taken to resolve them.
    troubleshooting/missing-modes.rst
    troubleshooting/duplicated-modes.rst
    troubleshooting/long-runtimes.rst
-   
-
-
-	     

@@ -34,7 +34,7 @@ used. Allowable fields are:
 
 :nml_n:`n_iter_max` (default :nml_v:`50`)
   Maximum number of iterations in root-finding algorithm
-  
+
 :nml_n:`matrix_type` (default :nml_v:`'BLOCK`')
   Storage type of system matrix; one of
 
@@ -51,7 +51,7 @@ used. Allowable fields are:
 :nml_n:`ad_search` (default :nml_v:`'BRACKET'`)
   Initial search method for adiabatic calculations; one of
 
-  - :nml_v:`'BRACKET'` : Bracket sign changes in the discriminant function 
+  - :nml_v:`'BRACKET'` : Bracket sign changes in the discriminant function
 
 :nml_n:`nad_search` (default :nml_v:`'AD'`)
   Initial search method for non-adiabatic calculations; one of
@@ -61,6 +61,6 @@ used. Allowable fields are:
   - :nml_v:`'CONTOUR'` : Find intersections between real and imaginary zero-contours of the discriminant function
 
   See the :ref:`non-ad-osc` chapter for more details about these search methods.
-    
+
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
    Comma-separated list of :nml_g:`mode` tags to match

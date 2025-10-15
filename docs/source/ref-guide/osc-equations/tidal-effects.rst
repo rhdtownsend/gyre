@@ -38,7 +38,7 @@ of partial tidal potentials defined by
 (the summation over :math:`\ell` and :math:`m` comes from a multipolar
 space expansion of the potential, and the summation over :math:`k`
 from a Fourier time expansion). Here,
-   
+
 .. math::
 
    \epsT = \left( \frac{\Rstar}{a} \right)^{3} q = \frac{\Oorb^{2} \Rstar^{3}}{G\Mstar} \frac{q}{1+q}
@@ -108,7 +108,7 @@ where
 
 .. math::
    :label: e:tidal-part-pot
-   
+
    \tPhiTlmk \equiv - \epsT \,
    \frac{G\Mstar}{\Rstar} \,
    \cbar_{\ell,m,k}

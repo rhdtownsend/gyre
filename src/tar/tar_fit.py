@@ -73,4 +73,4 @@ class TarFit:
             return q**2
         else:
             raise Exception('Invalid k')
-        
+

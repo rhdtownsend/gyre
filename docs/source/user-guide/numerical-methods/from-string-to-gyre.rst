@@ -9,7 +9,7 @@ oscillation equations. The full details of :program:`gyre`'s approach
 are laid out in :ads_citet:`townsend:2013`; in this section we briefly
 summarize it, highlighting similarities and differences with the
 stretched-string problem.
-	   
+
 Separation
 ----------
 
@@ -93,7 +93,7 @@ The linear system can be written in the same form
 
 .. math::
 
-   \vu = 
+   \vu =
    \begin{pmatrix}
    \vty_{1} \\
    \vty_{2} \\
@@ -107,7 +107,7 @@ block-staircase matrix with components
 
 .. math::
 
-   \mS = 
+   \mS =
    \begin{pmatrix}
    \subin{\mB} & \mz & \cdots & \mz & \mz \\
    -\mY_{2;1} & \mI & \cdots & \mz & \mz \\

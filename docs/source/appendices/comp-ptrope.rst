@@ -23,7 +23,5 @@ index :math:`n`.  This appendix lays out the mathematical formalism\
 .. rubric:: Footnotes
 
 .. [#formalism] The formalism here is based on `Mixed polytrope with density
-		discontinuities` (Christensen-Dalsgaard, 2015, unpublished),
-		with extensions to allow for constant-density regions.
-   
-  
+    discontinuities` (Christensen-Dalsgaard, 2015, unpublished),
+    with extensions to allow for constant-density regions.

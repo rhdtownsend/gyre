@@ -64,4 +64,3 @@ Why Does...
   This behavior is typically caused by overflow of the OpenMP stack
   (for more info see `here <https://stackoverflow.com/questions/13870564/gfortran-openmp-segmentation-fault-occurs-on-basic-do-loop>`__).
   Try setting the :envvar:`OMP_STACKSIZE` environment variable to 500K or 1M.
-

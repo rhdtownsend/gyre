@@ -37,7 +37,7 @@ mode eigenfrequencies:
   frame. So, be sure to also set :nml_n:`grid_frame` \ =\
   :nml_n:`'COROT_I'`\ \|\ :nml_n:`'COROT_O'` in the :nml_g:`scan`
   namelist group.
-  
+
 Next, try increasing the number of points in the frequency grids,
 simply by increasing the :nml_n:`n_freq` parameter in the
 :nml_g:`scan` namelist group(s).

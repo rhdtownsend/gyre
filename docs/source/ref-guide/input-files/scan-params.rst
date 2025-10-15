@@ -25,7 +25,7 @@ follows:
 
 :nml_n:`freq_max` (default :nml_v:`10`)
   Maximum frequency, when :nml_n:`grid_type` is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`
-  
+
 :nml_n:`n_freq` (default :nml_v:`10`)
   Number of frequency points, when :nml_n:`grid_type` is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`
 

@@ -60,7 +60,7 @@ class ChebFit:
         n = len(self.f) - 1
 
         c = np.empty([n+1])
-   
+
         for k in range(0, n+1):
 
             c[k] = 0.
@@ -83,6 +83,6 @@ class ChebFit:
                 c[k] /= n
             else:
                 c[k] /= 0.5*n
-        
+
         return c
-    
+

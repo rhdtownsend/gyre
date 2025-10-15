@@ -11,10 +11,10 @@ follows:
 
   - :nml_v:`'HOM'` : :ref:`Homogeneous compressible model <hom-models>`
   - :nml_v:`'POLY'` : :ref:`Polytropic model <poly-models>` read from external file
-  - :nml_v:`'ANAPOLY_0'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=0` 
-  - :nml_v:`'ANAPOLY_1'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=1` 
-  - :nml_v:`'ANAPOLY_5'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=5` 
-  - :nml_v:`'ANAPOLY_5_1'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=5,1` 
+  - :nml_v:`'ANAPOLY_0'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=0`
+  - :nml_v:`'ANAPOLY_1'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=1`
+  - :nml_v:`'ANAPOLY_5'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=5`
+  - :nml_v:`'ANAPOLY_5_1'` : :ref:`Analytic polytropic model <anapoly-models>` with :math:`\npoly=5,1`
   - :nml_v:`'EVOL'` : :ref:`Evolutionary model <evol-models>` read from external file
 
 :nml_n:`file`
@@ -35,7 +35,7 @@ follows:
 
 :nml_n:`data_format` (default :nml_v:`''`, indicates auto-select)
   Fortran format specifier for data read from OSC-, FGONG- and FAMDL-format files
-  
+
 :nml_n:`deriv_type` (default :nml_v:`'MONO'`)
   Cubic interpolation derivatives type (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'`
   and :nml_n:`interp_type`\ =\ :nml_v:`'CUBIC'`); One
@@ -48,7 +48,7 @@ follows:
   First adiabatic exponent (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`)
 
 :nml_n:`theta_s` (default :nml_n:`0`)
-  Surface value of polytropic dependent variable (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY_0'`\ \|\ :nml_v:`'ANAPOLY_1'`\ \|\ :nml_v:`'ANAPOLY_5'`) 
+  Surface value of polytropic dependent variable (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY_0'`\ \|\ :nml_v:`'ANAPOLY_1'`\ \|\ :nml_v:`'ANAPOLY_5'`)
 
 :nml_n:`x_match` (default :nml_n:`0.5`)
   Radial coordinate of match point between inner and outer regions (when :nml_n:`model_type`\ =\ :nml_v:`'ANAPOLY_5_1'`)
@@ -62,7 +62,7 @@ follows:
 
 :nml_n:`n` (default :nml_v:`10`)
   Number of points in model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`)
-       
+
 :nml_n:`s` (default :nml_v:`1`)
   Skewness parameter for model grid (when :nml_n:`model_type`\ =\
   :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'` and :nml_n:`grid_type`\ =\ :nml_v:`'GEO'`\ \|\
@@ -70,7 +70,7 @@ follows:
 
 :nml_n:`x_i` (default :nml_v:`0`)
   Inner boundary coordinate of model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`)
-    
+
 :nml_n:`x_o` (default :nml_v:`1`)
   Outer boundary coordinate of model grid (when :nml_n:`model_type`\ =\ :nml_v:`'HOM'`\ \|\ :nml_v:`'ANAPOLY_*'`)
 
@@ -103,4 +103,4 @@ follows:
 :nml_n:`use_nabla_rad` (default :nml_v:`.FALSE.`)
   Use :math:`\nabrad` to calculate the radiative luminosity
   (when :nml_n:`model_type`\ =\ :nml_v:`'EVOL'` \& :nml_n:`file_format`\ =\ :nml_v:`'OSC'`)
-  
+

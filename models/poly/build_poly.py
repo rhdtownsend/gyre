@@ -24,7 +24,7 @@ def build_poly(n_poly, Delta_b, z_b, Gamma_1, dz, toler, filename):
     subprocess.run(args)
 
 #
-            
+
 if __name__ == "__main__":
 
     Gamma_1 = 1.66666666666666667

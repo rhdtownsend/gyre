@@ -140,7 +140,7 @@ Classification & Validation
 
 Perturbations
 -------------
-  
+
 .. list-table::
    :header-rows: 1
    :widths: 15 10 10 65
@@ -349,7 +349,7 @@ Note that these items are available only when using :program:`gyre_tides`.
    * - :nml_v:`R_a`
      - :math:`R/a`
      - real(:nml_v:`n_row`)
-     - ratio of primary radius to orbital semi-major axis 
+     - ratio of primary radius to orbital semi-major axis
    * - :nml_v:`cbar`
      - :math:`\cbar_{\ell,m,k}`
      - real(:nml_v:`n_row`)

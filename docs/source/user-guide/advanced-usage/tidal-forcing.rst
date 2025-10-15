@@ -98,5 +98,3 @@ torque. The expression for :code:`e_dot` mirrors equation (23) of
 :ads_citet:`sun:2023`, and for :code:`J_dot` equation (25) `ibid.`
 
 .. literalinclude:: secular-rates.py
-		    
-

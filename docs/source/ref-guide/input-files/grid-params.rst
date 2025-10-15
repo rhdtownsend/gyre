@@ -36,10 +36,10 @@ the spatial grid, as follows:
 
 :nml_n:`dx_min` (default :nml_v:`SQRT(EPSILON(1._WP))`)
   Minimum spacing of grid points
-  
+
 :nml_n:`dx_max` (default :nml_v:`HUGE(0._WP)`)
   Maximum spacing of grid points
-  
+
 :nml_n:`n_iter_max` (default :nml_v:`32`)
   Maximum number of refinement iterations
 

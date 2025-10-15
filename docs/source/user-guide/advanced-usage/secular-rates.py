@@ -9,18 +9,18 @@ s = pg.read_output('summary.h5')
 
 sg = s.group_by('id').groups[0]
 
-Omega_orb = sg['Omega_orb']               
+Omega_orb = sg['Omega_orb']
 R_a = sg['R_a']
 q = sg['q']
 
 eps_T = R_a**3*q
-    
+
 l = sg['l']
 m = sg['m']
 k = sg['k']
 
 cbar = sg['cbar']
-        
+
 Fbar = -0.5*sg['eul_Phi_ref']/(cbar*eps_T)
 
 x = sg['x_ref']
@@ -49,17 +49,17 @@ for i in range(len(kap)):
 
 # Semi-major axis (units of R per dynamical timescale)
 
-a_dot = np.sum(4. * Omega_orb * q / R_a * 
+a_dot = np.sum(4. * Omega_orb * q / R_a *
     (R_a)**(l+3) * (x)**(l+1) * kap * Fbar.imag * Gbar_2)
 
 # Eccentricity (units of per dynamical timescale)
 
-e_dot = np.sum(4. * Omega_orb * q * 
+e_dot = np.sum(4. * Omega_orb * q *
     (R_a)**(l+3) * (x)**(l+1) * kap * Fbar.imag * Gbar_3)
 
 # Argument of periastron (units of radians per dynamical timescale)
 
-pom_dot = np.sum(4. * Omega_orb * q * 
+pom_dot = np.sum(4. * Omega_orb * q *
     (R_a)**(l+3) * (x)**(l+1) * kap * Fbar.real * Gbar_1)
 
 # Angular momentum (units of GM^2/R)

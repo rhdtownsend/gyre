@@ -19,4 +19,3 @@ eigenfunctions.
    numerical-methods/stretched-string.rst
    numerical-methods/from-string-to-gyre.rst
    numerical-methods/limitations.rst
-

@@ -23,7 +23,7 @@ def write_file (file, l, n, omega) :
 
     f.close()
 
-    
+
 # Build a reference file using analytical frequencies (from [Pek1938])
 
 def build_ref_0 (out_file, gamma) :
@@ -42,7 +42,7 @@ def build_ref_0 (out_file, gamma) :
     omega = np.empty(N, dtype=np.complex128)
 
     j = 0
-    
+
     for l_ in range(l_min, l_max+1) :
         for n_ in range(n_min, n_max+1) :
 
@@ -63,7 +63,7 @@ def build_ref_0 (out_file, gamma) :
 
     write_file(out_file, l, n, omega)
 
-    
+
 # Build a reference file using tabulated frequency data
 
 def build_ref (in_file, out_file, nu_ref, l_0) :
@@ -84,7 +84,7 @@ def build_ref (in_file, out_file, nu_ref, l_0) :
     omega = np.empty(N, dtype=np.complex128)
 
     j = 0
-    
+
     for l_ in range(l_min, l_max+1) :
         for i in range(len(d)):
             l[j] = l_

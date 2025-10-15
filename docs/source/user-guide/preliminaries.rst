@@ -96,4 +96,3 @@ GYRE has been developed with financial support from the following grants:
 
 GYRE has also benefited greatly from contributions (code, bug
 reports, feature requests) from the academic community. Thanks, folks!
-
