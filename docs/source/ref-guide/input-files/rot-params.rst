@@ -45,4 +45,4 @@ follows:
 .. rubric:: Footnotes
 
 .. [#only-D] This option is available only for stellar models with :ref:`D capability <model-caps>`
-  
+

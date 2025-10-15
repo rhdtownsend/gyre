@@ -18,4 +18,3 @@ frontends are obtained from the basic equations of stellar structure.
    osc-equations/rot-effects.rst
    osc-equations/conv-effects.rst
    osc-equations/tidal-effects.rst
-   

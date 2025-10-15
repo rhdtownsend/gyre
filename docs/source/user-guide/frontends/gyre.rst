@@ -53,7 +53,7 @@ should appear in namelist input files for :program:`gyre`.
    * - :ref:`output-params`
      - :nml_g:`ad_output`
      - 1
-   * - 
+   * -
      - :nml_g:`nad_output`
      - 1
    * - :ref:`rot-params`

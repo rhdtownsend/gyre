@@ -18,7 +18,7 @@ There are two different ways to define the rotation angular frequency
   obtained from the stellar model. If the model doesn't have this
   capability (see the :ref:`model-caps` section), then :math:`\Orot`
   is set to zero throughout the star.
-  
+
 * If :nml_n:`Omega_rot_source` = :nml_v:`'UNIFORM'`, then uniform
   rotation is assumed with a spatially constant :math:`\Orot` set by
   the :nml_n:`Omega_rot` and :nml_n:`Omega_rot_units` parameters.

@@ -30,7 +30,7 @@ The independent variable is the fractional radius :math:`x \equiv r/\Rstar`
    \end{aligned}
 
 (with :math:`\Lstar` the stellar luminosity).
-   
+
 .. _osc-dimless-eqns:
 
 Oscillation Equations
@@ -54,7 +54,7 @@ The dimensionless oscillation equations are
    \alphagrv y_{4} +
    \upsT \, y_{5}, \\
    %
-   x \deriv{y_{3}}{x} &= 
+   x \deriv{y_{3}}{x} &=
    \alphagrv \left( 3 - U - \ell \right) y_{3} +
    \alphagrv y_{4} \\
    %
@@ -65,7 +65,7 @@ The dimensionless oscillation equations are
    \alphagrv (U + \ell - 2) y_{4}
    - \alphagrv \upsT \, U y_{5}, \\
    %
-   x \deriv{y_{5}}{x} &= 
+   x \deriv{y_{5}}{x} &=
    \frac{V}{\frht} \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \ckapad V \nabla + \cdif \right] y_{1} + \mbox{} \\
    &
    \frac{V}{\frht} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} (\nabad - \nabla) - \ckapad V \nabla - \cdif \right] y_{2} + \mbox{} \\
@@ -113,7 +113,7 @@ replaced by
    x \deriv{y_{1}}{x} &=
    \left( \frac{V}{\Gammi} - 1 \right) y_{1} - \frac{V}{\Gamma_{1}} y_{2}, \\
    %
-   x \deriv{y_{2}}{x} &= 
+   x \deriv{y_{2}}{x} &=
    \left( c_{1} \omega^{2} + U - \As \right) y_{1} + \left( 3 - U + \As \right) y_{2}.
    \end{aligned}
 
@@ -144,7 +144,7 @@ conditions above are replaced with zero radial displacement
 conditions,
 
 .. math::
-   
+
    \begin{aligned}
    y_{1} &= 0, \\
    y_{4} &= 0.
@@ -188,7 +188,7 @@ above is replaced by the :ads_citet:`dziembowski:1971` outer boundary condition,
    y_{2} +
    V^{-1} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} - l - 1 \right] y_{3}
    = 0.
-   
+
 When :nml_n:`outer_bound`\ =\ :nml_v:`'UNNO'` or :nml_v:`'JCD'`, the
 first condition is replaced by the (possibly-leaky) outer boundary
 conditions described by :ads_citet:`unno:1989` and
@@ -207,7 +207,7 @@ Internal Boundaries
 Across density discontinuities, GYRE applies the boundary conditions
 
 .. math::
-   
+
    \begin{aligned}
    U^{+} y_{2}^{+} - U^{-} y_{2}^{-} &= y_{1} (U^{+} - U^{-}) \\
    y_{4}^{+} - y_{4}^{-} &= -y_{1} (U^{+} - U^{-}) \\

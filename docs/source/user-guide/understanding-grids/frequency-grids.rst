@@ -158,7 +158,7 @@ appearing in the expressions above, and the corresponding namelist
 parameters:
 
 .. list-table::
-   :widths: 30 30 
+   :widths: 30 30
    :header-rows: 1
 
    * - Symbol

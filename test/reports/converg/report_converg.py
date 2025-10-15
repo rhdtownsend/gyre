@@ -15,10 +15,10 @@ import gyre
 from colors import *
 
 from matplotlib.backends.backend_pdf import PdfPages
- 
+
 # Run parameters
 
-IVP_SOLVER = ['MAGNUS_GL2', 
+IVP_SOLVER = ['MAGNUS_GL2',
               'MAGNUS_GL4',
               'MAGNUS_GL6',
               'COLLOC_GL2',
@@ -52,19 +52,19 @@ def run_gyre (n_grid, l, ivp_solver, vars_set, summ_file) :
 &constants
 /
 &model
-	model_type = 'HOM'
+        model_type = 'HOM'
         grid_type = 'GEO'
         n = {n_grid:d}
         s = 1000
 /
 &mode
-	l = {l:d}
+        l = {l:d}
 /
 &osc
         variables_set = '{vars_set:s}'
 /
 &num
-	diff_scheme = '{ivp_solver:s}'
+        diff_scheme = '{ivp_solver:s}'
 /
 &scan
         grid_type = 'LINEAR'
@@ -76,15 +76,15 @@ def run_gyre (n_grid, l, ivp_solver, vars_set, summ_file) :
 &grid
 /
 &ad_output
-	summary_file = '{summ_file:s}'
-	summary_item_list = 'l,n_pg,n_p,n_g,omega'
+        summary_file = '{summ_file:s}'
+        summary_item_list = 'l,n_pg,n_p,n_g,omega'
 /
 &nad_output
 /
 '''.format(l=l, vars_set=vars_set, ivp_solver=ivp_solver, n_grid=n_grid, summ_file=summ_file))
 
     # Run gyre
-         
+
     os.system('./gyre gyre.in > /dev/null')
 #    os.remove('gyre.in')
 
@@ -174,8 +174,8 @@ def plot_data (pp, n_grid, domega, title) :
     pp.savefig(fig)
 
     plt.close(fig)
-    
-#                   
+
+
 
 def tex_escape (text) :
 
@@ -226,7 +226,7 @@ if __name__ == '__main__' :
 
                 # Read the summary results
 
-                if os.path.isfile('summary.h5') : 
+                if os.path.isfile('summary.h5') :
 
                     omega = read_summary('summary.h5', N_PG).real
                     os.remove('summary.h5')
@@ -237,7 +237,7 @@ if __name__ == '__main__' :
                     domega.append(np.abs(omega - eval_omega_ana(L, N_PG)))
 
             # Plot the results
-                    
+
             title = r'{{\tt ivp\_solver = {ivp_solver:s}}}, {{\tt variables\_set = {vars_set:s}}}'.format(ivp_solver=tex_escape(ivp_solver),
                                                                                                           vars_set=tex_escape(vars_set))
 

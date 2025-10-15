@@ -14,4 +14,3 @@ there are others available focused on different kinds of task.
 
    frontends/gyre.rst
    frontends/gyre_tides.rst
-

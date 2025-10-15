@@ -31,7 +31,7 @@ oscillations, similar numerical techniques can be brought to bear.
    user-guide/advanced-usage.rst
    user-guide/faq.rst
    user-guide/troubleshooting.rst
-   
+
 .. toctree::
    :caption: Reference Guide
    :name: ref-guide

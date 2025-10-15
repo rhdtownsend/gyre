@@ -14,7 +14,7 @@ Synopsis
 
 Description
 -----------
-	     
+
 The :program:`build_poly` tool constructs a :ref:`composite polytrope
 <comp-ptrope>`, and writes it to a file in the :ref:`POLY
 <poly-file-format>` format.
@@ -50,7 +50,7 @@ Options
 .. option:: -d, --dz=DZ
 
    Grid spacing in polytropic coordinate.
-   
+
 .. option:: -t, --toler=TOLER
 
    Tolerance of Lane-Emden equation solver.
@@ -61,7 +61,7 @@ Examples
 To build a simple (complete) polytrope with :math:`\npoly=3`, run :program:`build_poly` as follows:
 
 .. code-block:: console
-                         
+
    $ $GYRE_DIR/bin/build_poly --n_poly=3 --dz=0.01 poly.simple.h5
 
 This model, written to the file :file:`poly.simple.h5`, is visualized in the figure below.
@@ -82,7 +82,7 @@ To build a composite polytrope, comprising two regions (inner
 discontinuity, run :program:`build_poly` as follows:
 
 .. code-block:: console
-                         
+
    $ $GYRE_DIR/bin/build_poly --n_poly=3,1.5 --z_b=1.4 --Delta_b=-0.5 --dz=0.01 poly.composite.h5
 
 This model, written to the file :file:`poly.composite.h5`, is visualized in the figure below.

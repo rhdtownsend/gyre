@@ -27,4 +27,3 @@ follows, and the group ends with a slash ``/``.
    input-files/rot-params
    input-files/scan-params
    input-files/tidal-params
-

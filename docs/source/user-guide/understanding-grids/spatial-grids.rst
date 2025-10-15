@@ -225,7 +225,7 @@ appearing in the expressions above, and the corresponding namelist
 parameters.
 
 .. list-table::
-   :widths: 30 30 
+   :widths: 30 30
    :header-rows: 1
 
    * - Symbol
@@ -245,7 +245,7 @@ parameters.
    * - :math:`\Delta x_{\rm min}`
      - :nml_n:`dx_min`
 
-.. _spatial-grids-rec:       
+.. _spatial-grids-rec:
 
 Recommended Values
 ------------------

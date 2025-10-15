@@ -86,7 +86,7 @@ html_theme_options = {
 }
 
 # CSS
-html_css_files = ["theme_overrides.css"] 
+html_css_files = ["theme_overrides.css"]
 
 # Set master doc
 master_doc = 'index'
@@ -156,8 +156,8 @@ for key, value in macros.items():
         mathjax_macros[key] = value
         latex_preamble += f'\\newcommand{{\\{key}}}{{{value}}}\n'
 
-mathjax3_config = {                  
-    'tex': { 
+mathjax3_config = {
+    'tex': {
         'macros': mathjax_macros
     }
 }
@@ -179,7 +179,7 @@ intersphinx_disabled_reftypes = ["std:doc"]
 
 # Equation number formatting
 math_eqref_format = '{number}'
-                       
+
 # Spelling
 spelling_word_list_filename='spelling_wordlist.txt'
 spelling_filters=['sphinxcontrib.spelling.filters.ContractionFilter']

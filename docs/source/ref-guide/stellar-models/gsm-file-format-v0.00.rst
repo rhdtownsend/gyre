@@ -61,7 +61,7 @@ Data items in the root HDF5 group of version-0.00 GSM-format files are as follow
      - :math:`T`
      - dataset
      - real (:code:`n`)
-     - temperature [:math:`\kelvin`]       
+     - temperature [:math:`\kelvin`]
    * - :code:`N2`
      - :math:`N^{2}`
      - dataset

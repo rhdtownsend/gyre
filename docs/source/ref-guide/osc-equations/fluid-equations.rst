@@ -63,7 +63,7 @@ to be functions of the pressure and entropy:
 
    \epsnuc = \epsnuc(P, S), \qquad
    \kappa = \kappa(P, S).
-   
+
 .. rubric:: Footnotes
 
 .. [#choice] This may seem like a strange choice, but it simplifies

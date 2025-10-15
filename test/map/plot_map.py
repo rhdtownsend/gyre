@@ -8,25 +8,25 @@ import numpy as np
 # Read a discriminant map
 
 def read_map (filename):
-    
+
     import numpy as np
     import h5py as h5
-    
+
     f = h5.File(filename, 'r')
-    
+
     D_e = f['discrim_map_e'][...]
     D_f = f['discrim_map_f'][...]
-    
+
     log_D = 0.5*np.log10(D_f['re']**2 + D_f['im']**2) + D_e*np.log10(2.)
-    
+
     D_re = D_f['re']*2.**(D_e-np.min(D_e))
     D_im = D_f['im']*2.**(D_e-np.min(D_e))
-    
+
     omega_re = f['omega_re'][...]
     omega_im = f['omega_im'][...]
-    
+
     f.close()
-    
+
     return {'omega_re': omega_re,
             'omega_im': omega_im,
             'D_re': D_re,

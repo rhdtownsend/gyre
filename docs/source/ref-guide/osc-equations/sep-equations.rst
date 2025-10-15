@@ -71,7 +71,7 @@ is the Lagrangian perturbation to the radiative luminosity. The radial part of t
 .. math::
 
    \delta\tFradr = \left[
-   4 \frac{\delta \tT}{T} - \frac{\delta\trho}{\rho} - \frac{\delta\tkappa}{\kappa} + 
+   4 \frac{\delta \tT}{T} - \frac{\delta\trho}{\rho} - \frac{\delta\tkappa}{\kappa} +
    \frac{\sderiv{(\delta \tT/T)}{\ln r}}{\sderiv{\ln T}{\ln r}} \right] \Fradr.
 
 Finally, the thermodynamic, nuclear and opacity relations become

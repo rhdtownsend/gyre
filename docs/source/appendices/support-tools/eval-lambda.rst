@@ -14,7 +14,7 @@ Synopsis
 
 Description
 -----------
-	     
+
 The :program:`eval_lambda` tool evaluates the eigenvalue
 :math:`\lambda` appearing in Laplace's tidal equations (see the
 :ref:`osc-rot` section), over a grid :math:`\{q\}` of spin parameter
@@ -88,7 +88,7 @@ Options
 .. option:: --n=N
 
    Number of points in grid.
-   
+
 .. option:: --log
 
    Use logarithmic grid spacing.

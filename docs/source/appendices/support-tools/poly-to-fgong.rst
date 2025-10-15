@@ -14,7 +14,7 @@ Synopsis
 
 Description
 -----------
-   
+
 The :program:`poly_to_fgong` tool converts :ref:`polytropic stellar
 models <poly-models>` in the :ref:`POLY <poly-file-format>` format, to
 :ref:`evolutionary models <evol-models>` in the FGONG format. In this

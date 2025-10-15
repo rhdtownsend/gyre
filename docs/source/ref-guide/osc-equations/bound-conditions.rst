@@ -21,7 +21,7 @@ regularity conditions
    \ell \tPhi' - r \deriv{\tPhi'}{r} = 0, \\
    \delta \tS = 0.
    \end{aligned}
-   
+
 Sometimes it's desirable that the inner boundary is instead placed at
 :math:`r > 0` --- for instance, to excise the stellar core from
 the oscillation calculations. Then, there is much more flexibility in the
@@ -52,7 +52,7 @@ boundary condition
    \delta \tP = 0.
 
 Finally, the thermal boundary condition can be derived from the
-equation 
+equation
 
 .. math::
 
@@ -99,7 +99,7 @@ are given by
    \left. \frac{\delta \tS}{\cP} \right|^{+} - \left. \frac{\delta \tS}{\cP} \right|^{-} &= - \left( \nabad^{+} - \nabad^{-} \right) \frac{\delta \tP}{P}, \\
    \left. \deriv{\tPhi'}{r} \right|^{+} - \left. \deriv{\tPhi'}{r} \right|^{-} &= - 4 \pi G \left( \rho^{+} - \rho^{-} \right) \txir. \\
    \end{aligned}
-   
+
 Here, + (-) superscripts indicate quantities evaluated on the inner
 (outer) side of the discontinuity. The first of these conditions
 arises from applying equation (:eq:`e:osc-eul-lag`) to the pressure
@@ -113,4 +113,4 @@ and Poisson equations (:eq:`e:osc-sep-cont` and
 
 .. [#continuous] This is to ensure that the fluid doesn't 'tear', and
                  that pressure, potential and temperature gradients are
-		 continuous.
+                 continuous.

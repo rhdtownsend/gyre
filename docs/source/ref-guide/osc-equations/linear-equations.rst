@@ -29,7 +29,7 @@ the equilibrium state as
 
 .. math::
 
-   T \pderiv{\delta S}{t} = \delta \epsnuc - 
+   T \pderiv{\delta S}{t} = \delta \epsnuc -
    \delta \left( \frac{1}{\rho} \nabla \cdot \vFrad \right),
 
 where the heating term :math:`\delta (\rho^{-1} \nabla \cdot \vFcon)`
@@ -110,4 +110,3 @@ The :math:`(\rho,T)` and :math:`(P,S)` pairs of partials are related by
              approximation. GYRE offers multiple ways to freeze
              convection; see the :ref:`osc-conv` section for further
              details.
-   

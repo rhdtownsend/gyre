@@ -61,7 +61,7 @@ should appear in namelist input files for :program:`gyre_tides`.
    * - :ref:`tidal-params`
      - :nml_g:`tide`
      - :math:`\geq 1`
-       
+
 .. rubric:: Footnotes
 
 .. [#last] While the input file can contain one or more of the

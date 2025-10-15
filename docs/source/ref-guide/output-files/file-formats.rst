@@ -10,7 +10,7 @@ the :ref:`output-params` section). Possible choices are:
 
 * :nml_v:`'HDF'` : A binary format based on the `HDF5
   <https://support.hdfgroup.org/HDF5/whatishdf5.html>`__ format
-  
+
 * :nml_v:`'TXT'` : A text format modeled after
   MESA's `profile file format <http://mesa.sourceforge.net/output.html>`__
 

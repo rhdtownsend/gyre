@@ -19,7 +19,7 @@ def build_cite(rawtext, ref, lineno, inliner, options, template):
         year = year_str[0]
     else:
         year = ads_data[ref].year
-        
+
     if len(ads_data[ref].author) == 1:
         author = format(ads_data[ref].author[0].split(',')[0])
     elif len(ads_data[ref].author) == 2:
@@ -89,7 +89,7 @@ def setup(app):
     app.add_role('ads_citealp', ads_citealp)
     app.add_role('ads_citeauthor', ads_citeauthor)
     app.add_role('ads_citeyear', ads_citeyear)
-    
+
     return {
         'version': '0.1',
     }

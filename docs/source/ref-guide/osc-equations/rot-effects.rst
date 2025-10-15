@@ -184,8 +184,8 @@ boundary.
 .. rubric:: Footnotes
 
 .. [#gyre-tides] Currently the TAR cannot be used with the
-		 :program:`gyre_tides` frontend, because it doesn't play well with
-		 forcing by the tidal potential :math:`\PhiT`.
+      :program:`gyre_tides` frontend, because it doesn't play well with
+      forcing by the tidal potential :math:`\PhiT`.
 
 .. [#harmonic-deg] The harmonic degree isn't formally a 'good' quantum
                    number in the TAR; however, it can still be used to

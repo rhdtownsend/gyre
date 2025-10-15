@@ -130,7 +130,7 @@ Then, the second derivative of :math:`\tilde{y}` can be approximated to second o
 
    \left. \nderiv{\tilde{y}}{x}{2} \right|_{x=x_{j}} \approx \frac{\tilde{y}_{j+1} - 2 \tilde{y}_{j} + \tilde{y}_{j-1}}{\Delta x^{2}}
    \qquad (2 \leq j \leq N-1).
-   
+
 This allows us to replace the ODE with :math:`N-2` difference
 equations
 
@@ -147,13 +147,13 @@ Together with the two boundary conditions
    \tilde{y}_{N} = 0,
 
 we thus have a linear system of :math:`N` algebraic equations and :math:`N` unknowns.
-   
+
 Linear System
 -------------
 
 To find solutions to the linear system, we first write it in matrix form as
 
-.. math:: 
+.. math::
    :label: linear-sys
 
    \mS \vu = \mathbf{0},
@@ -162,7 +162,7 @@ where :math:`\vu` is the vector with components
 
 .. math::
 
-   \vu = 
+   \vu =
    \begin{pmatrix}
    \tilde{y}_{1} \\
    \tilde{y}_{2} \\
@@ -176,7 +176,7 @@ with components
 
 .. math::
 
-   \mS = 
+   \mS =
    \begin{pmatrix}
    1 & 0 & 0 & \cdots & 0 & 0 & 0 \\
    1 & \sigma^{2} \tau^{2} - 2 & 1 & \cdots & 0 & 0 & 0 \\
@@ -185,7 +185,7 @@ with components
    0 & 0 & 0 & \cdots & 0 & 0 & 1
    \end{pmatrix}.
 
-Here we've introduced 
+Here we've introduced
 
 .. math::
 

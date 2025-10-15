@@ -7,7 +7,7 @@ The :nml_g:`mode` namelist group defines mode parameters, as follows:
 
 :nml_n:`l` (default :nml_v:`0`)
   Harmonic degree :math:`\ell`
-  
+
 :nml_n:`m` (default :nml_v:`0`)
   Azimuthal order :math:`m`
 

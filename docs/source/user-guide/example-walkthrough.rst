@@ -60,7 +60,7 @@ of the more-important aspects of the file above:
 * the :nml_g:`model` namelist group tells :program:`gyre` to read an evolutionary
   model, in :ref:`MESA format <mesa-file-format>`, from the file
   :file:`spb.mesa`;
-* the two :nml_g:`mode` namelist groups tells :program:`gyre` to search first for dipole (:math:`\ell=1`) and then 
+* the two :nml_g:`mode` namelist groups tells :program:`gyre` to search first for dipole (:math:`\ell=1`) and then
   quadrupole (:math:`\ell=2`) modes;
 * the :nml_g:`osc` namelist group tells :program:`gyre` to assume,
   when setting up the outer boundary conditions in the oscillation
@@ -83,7 +83,7 @@ Running gyre
 With the hard work done, it's now trivial to run :program:`gyre`:
 
 .. code-block:: console
-			 
+
    $ $GYRE_DIR/bin/gyre gyre.in
 
 As the frontend runs (on multiple cores, if you have a multi-core machine;
@@ -136,7 +136,7 @@ a mode that :program:`gyre` has successfully found:
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
    :start-at: Root Solving
-   :end-before: Mode Search	      
+   :end-before: Mode Search
 
 The columns appearing are as follows:
 
@@ -145,7 +145,7 @@ The columns appearing are as follows:
 
 ``m``
   azimuthal order :math:`m`
-  
+
 ``n_pg``
   radial order :math:`n` (in the Eckart-Osaki-:ads_citeauthor:`scuflaire:1974`-:ads_citeauthor:`takata:2006b` scheme)
 
@@ -198,4 +198,3 @@ output files are written:
 
 The :ref:`interpreting-output` chapter discusses how to read and analyze
 these files.
-  

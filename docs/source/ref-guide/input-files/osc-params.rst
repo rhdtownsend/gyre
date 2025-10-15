@@ -84,7 +84,7 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
 :nml_n:`alpha_rht` (default :nml_v:`0.`)
   Scaling factor for time-dependent term in radiative heat equation (see the
   :math:`\alpharht` entry in the :ref:`osc-physics-switches` section)
-  
+
 :nml_n:`alpha_trb` (default :nml_v:`0.`)
    Scaling factor for the turbulent mixing length (see the
    :math:`\alphatrb` entry in the :ref:`osc-physics-switches`
@@ -130,13 +130,13 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
 
 :nml_n:`x_atm` (default :nml_v:`-1`, implying outer grid point)
   Fractional radius for convection-zone crossover point of :math:`\pi/\gamma` modes (isolated p and g modes; see :ads_citealp:`ong:2020`)
-   
+
 :nml_n:`adiabatic` (default :nml_v:`.TRUE.`)
   Flag to perform adiabatic calculations
-  
+
 :nml_n:`nonadiabatic` (default :nml_v:`.FALSE.`)
   Flag to perform non-adiabatic calculations
-  
+
 :nml_n:`quasiad_eigfuncs` (default :nml_v:`.FALSE.`)
   Flag to calculate quasi-adiabatic entropy/luminosity eigenfunctions
   during adiabatic calculations

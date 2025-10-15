@@ -123,7 +123,7 @@ them, the table rows can be grouped by harmonic degree:
    plt.legend()
 
 The resulting plot, in :numref:`fig-freq-grouped`, looks much better.
-   
+
 .. _fig-freq-grouped:
 
 .. figure:: interpreting-output/fig_freq_grouped.svg
@@ -143,7 +143,7 @@ Now let's take a look at one of the detail files, for the mode with
 data into an :external:py:class:`astropy.table.Table` object:
 
 .. code-block:: python
-   
+
    # Read data from a GYRE detail file
 
    d = pg.read_output('detail.l1.n-7.h5')

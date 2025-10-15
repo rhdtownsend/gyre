@@ -20,7 +20,7 @@ The GYRE Stellar Oscillation Code
 
 Overview
 ========
-	    
+
 GYRE is a *stellar oscillation code*. Given an input stellar model,
 GYRE calculates the eigenfrequencies and eigenfunctions for the normal
 oscillation modes of the model. These data can be put to a variety of

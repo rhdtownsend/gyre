@@ -182,7 +182,7 @@ Classification & Validation
      - frequency weight function :math:`[G\Mstar^{2}/\Rstar]`;
        evaluated from the integrand in eqn. (A5) of
        :ads_citet:`townsend:2025` with :math:`n'=n`
-       
+
    * - :nml_v:`zeta`
      - :math:`\zeta`
      - complex
@@ -413,7 +413,7 @@ Rotation
    * - :nml_v:`Omega_rot_ref`
      - :math:`\Omega_{\rm rot,ref}`
      - real
-     - rotation angular frequency at reference location:math:`[\sqrt{G\Mstar/\Rstar^{3}}]`
+     - rotation angular frequency at reference location :math:`[\sqrt{G\Mstar/\Rstar^{3}}]`
    * - :nml_v:`Omega_rot`
      - :math:`\Orot`
      - real(:nml_v:`n`)
@@ -510,7 +510,7 @@ Stellar Structure
    * - :nml_v:`dnabla_ad`\ [#only-N]_
      - :math:`\dnabad`
      - real(:nml_v:`n`)
-     - logarithmic derivative of adiabatic temperature gradient 
+     - logarithmic derivative of adiabatic temperature gradient
    * - :nml_v:`beta_rad`\ [#only-D]_
      - :math:`\beta`
      - real(:nml_v:`n`)
@@ -586,7 +586,7 @@ Stellar Structure
      - :math:`T`
      - real(:nml_v:`n`)
      - temperature :math:`[\kelvin]`
-       
+
 Tidal Response
 --------------
 
@@ -669,5 +669,3 @@ Note that these items are available only when using :program:`gyre_tides`.
 .. [#only-D] This option is available only for stellar models with :ref:`D capability <model-caps>`
 
 .. [#only-P] This option is available only for polytrope models (`'HOM'`, `'POLY'`, `'ANAPOLY_*'`)
-	     
-		
