@@ -29,7 +29,7 @@ follows:
 :nml_n:`n_freq` (default :nml_v:`10`)
   Number of frequency points, when :nml_n:`grid_type` is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`
 
-:nml_n:`freq_units` (default :nml_v:`NONE`)
+:nml_n:`freq_units` (default :nml_v:`'NONE'`)
   Units of :nml_n:`freq_min` and :nml_n:`freq_max`, when
   :nml_n:`grid_type` is :nml_v:`'LINEAR'` or :nml_v:`'INVERSE'`; units
   of read frequencies when :nml_n:`grid_type` is :nml_v:`'FILE'`
@@ -65,7 +65,7 @@ follows:
 :nml_n:`file`
   File to read frequencies from, when :nml_n:`grid_type` is :nml_v:`'FILE'`
 
-:nml_n:`axis` (default :nml_v:`'REAL`')
+:nml_n:`axis` (default :nml_v:`'REAL'`)
   Axis that scan applies to; one of
 
   - :nml_v:`'REAL'` : Real axis

@@ -57,7 +57,7 @@ as follows:
   Comma-separated list of filter criteria for detail files; see the
   :ref:`output-filters` section for possible choices
 
-:nml_n:`freq_units` (default :nml_v:`NONE`)
+:nml_n:`freq_units` (default :nml_v:`'NONE'`)
   Units of :nml_v:`freq` output item; one of:
 
   - :nml_v:`'NONE'` : Dimensionless angular frequency
@@ -74,7 +74,7 @@ as follows:
   - :nml_v:`'ROSSBY_I'` : Fraction of Rossby frequency at inner boundary
   - :nml_v:`'ROSSBY_O'` : Fraction of Rossby frequency at outer boundary
 
-:nml_n:`freq_frame` (default :nml_v:`INERTIAL`)
+:nml_n:`freq_frame` (default :nml_v:`'INERTIAL'`)
   Frame of :nml_v:`freq` output item; one of:
 
    - :nml_v:`'INERTIAL'` : Inertial frame

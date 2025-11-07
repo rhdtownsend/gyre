@@ -23,7 +23,7 @@ follows:
 :nml_n:`Omega_rot` (default :nml_v:`0`)
   Rotation angular frequency (when :nml_n:`Omega_rot_source`\ =\ :nml_v:`'UNIFORM'`)
 
-:nml_n:`Omega_rot_units` (default :nml_v:`'NULL'`)
+:nml_n:`Omega_rot_units` (default :nml_v:`'NONE'`)
   Units of :nml_n:`Omega_rot` (when :nml_n:`Omega_rot_source`\ =\ :nml_v:`'UNIFORM'`); one of:
 
   - :nml_v:`'NONE'` : Dimensionless angular frequency
