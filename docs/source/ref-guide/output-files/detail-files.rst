@@ -659,7 +659,7 @@ Note that these items are available only when using :program:`gyre_tides`.
      - secular orbital evolution coefficient; equivalent to :math:`G^{(4)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
    * - :nml_v:`Gbar_E`
      - :math:`\Gbar^{(E)}_{\ell,m,k}`
-     - real(:nml_v:`n_row`)
+     - real
      - secular energy transfer coefficient; derived from :math:`\Gbar^{(4)}_{\ell,m,k}` by dropping the leading :math:`m` term
 
 .. rubric:: Footnotes
