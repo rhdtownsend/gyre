@@ -95,7 +95,7 @@ contains
 
       ! Find discriminant root brackets
 
-      call find_brackets_(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+      call find_brackets_(bp, omega, omega_a, omega_b, discrim_a, discrim_b, nm_p%parallel_scan)
 
       ! Process each bracket to find modes
 
@@ -235,7 +235,7 @@ contains
 
    !****
 
-   subroutine find_brackets_(bp, omega, omega_a, omega_b, discrim_a, discrim_b)
+   subroutine find_brackets_(bp, omega, omega_a, omega_b, discrim_a, discrim_b, parallel)
 
       class(bvp_rt), intent(inout)           :: bp
       real(RD), intent(in)                   :: omega(:)
@@ -243,6 +243,7 @@ contains
       real(RD), allocatable, intent(out)     :: omega_b(:)
       type(ext_rt), allocatable, intent(out) :: discrim_a(:)
       type(ext_rt), allocatable, intent(out) :: discrim_b(:)
+      logical, intent(in)                    :: parallel
 
       integer      :: n_omega
       integer      :: c_beg
@@ -267,19 +268,43 @@ contains
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      discrim_loop: do i = 1, n_omega
+      ! Note: the following loops could be combined into one using
+      ! conditional OMP constructs, but if(.False.) seems to disable
+      ! the parallelism of eval_discrim() as well
+      
+      if (parallel) then
 
-         call eval_discrim(bp, state_rt(omega(i)), discrim_i)
+         !$OMP PARALLEL DO FIRSTPRIVATE(bp) PRIVATE(discrim_i)
+         discrim_loop_parallel: do i = 1, n_omega
 
-         discrim_f(i) = FRACTION(discrim_i)
-         discrim_e(i) = EXPONENT(discrim_i)
+            call eval_discrim(bp, state_rt(omega(i)), discrim_i)
 
-         if (check_log_level('DEBUG')) then
-            write(OUTPUT_UNIT, 110) omega(i), discrim_f(i), discrim_e(i)
-110         format(2X,E24.16,2X,F19.16,2X,I7)
-         endif
+            discrim_f(i) = FRACTION(discrim_i)
+            discrim_e(i) = EXPONENT(discrim_i)
 
-      end do discrim_loop
+            if (check_log_level('DEBUG')) then
+               write(OUTPUT_UNIT, 110) omega(i), discrim_f(i), discrim_e(i)
+110            format(2X,E24.16,2X,F19.16,2X,I7)
+            endif
+
+         end do discrim_loop_parallel
+
+      else
+         
+         discrim_loop_serial: do i = 1, n_omega
+
+            call eval_discrim(bp, state_rt(omega(i)), discrim_i)
+
+            discrim_f(i) = FRACTION(discrim_i)
+            discrim_e(i) = EXPONENT(discrim_i)
+
+            if (check_log_level('DEBUG')) then
+               write(OUTPUT_UNIT, 110) omega(i), discrim_f(i), discrim_e(i)
+            endif
+
+         end do discrim_loop_serial
+
+      end if
 
       discrim = scale(ext_rt(discrim_f), discrim_e)
 
