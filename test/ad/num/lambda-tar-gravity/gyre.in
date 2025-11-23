@@ -22,10 +22,10 @@
 /
 
 &osc
+  lambda_method = 'TAR-GRAVITY'
 /
 
 &rot
-  coriolis_method = 'NULL'
   Omega_rot_source = 'UNIFORM'
   Omega_rot = 0.2
   Omega_rot_units = 'CRITICAL'

@@ -33,7 +33,6 @@ module nad_bound_m
    use nad_trans_m
    use osc_par_m
    use point_m
-   use rot_m
    use state_m
 
    use ISO_FORTRAN_ENV

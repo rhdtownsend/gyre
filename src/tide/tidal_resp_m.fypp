@@ -125,10 +125,10 @@ contains
 
       call system_clock(count_rate=c_rate)
 
-      ! Check that the NULL coriolis method is being used
+      ! Check that the SPHARM lambda method is being used
 
-      if (rt_p%coriolis_method /= 'NULL') then
-         @:ABORT('only the NULL coriolis method can be used')
+      if (os_p%lambda_method /= 'SPH') then
+         @:ABORT('only the SPH lambda method can be used')
       end if
 
       ! Set up tidal params, contexts, grid, etc

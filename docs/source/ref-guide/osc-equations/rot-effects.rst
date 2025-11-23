@@ -5,9 +5,10 @@ Rotation Effects
 
 The oscillation equations presented in the preceding sections are
 formulated for a non-rotating star. The corresponding equations for a
-rotating star are significantly more complicated, and a complete
-treatment of rotation lies beyond the scope of GYRE. However, GYRE can
-include two important effects arising from rotation.
+rotating star are significantly more complicated (see
+:ads_citealp:`unno:1989` for details), and a complete treatment of
+rotation lies beyond the scope of GYRE. However, GYRE can include two
+important effects arising from rotation.
 
 .. _osc-rot-doppler:
 
@@ -74,7 +75,7 @@ Non-Perturbative Coriolis Force Treatment
 
 The perturbation expansion technique above breaks down when
 :math:`\Orot/\sigmac \gtrsim 1`. To deal with such cases, the
-:program:`gyre` frontend [#gyre-tides]_ can incorporate a
+:program:`gyre` frontend\ [#gyre-tides]_ can incorporate a
 non-perturbative treatment of the Coriolis force based on the
 'traditional approximation of rotation' (TAR). The TAR was first
 introduced by Eckart (1960; `Hydrodynamics of Oceans and Atmospheres`)
@@ -100,9 +101,10 @@ Here, the Hough functions :math:`\houghr`, :math:`\hought` and
 :math:`\houghp` are the eigenfunctions obtained by solving Laplace's
 tidal equations (TEs), a second-order system of differential equations
 and boundary conditions in the polar (:math:`\theta`) coordinate (see
-:ads_citealt:`townsend:2020`). Together with the associated eigenvalue
-:math:`\lambda`, they depend on the harmonic degree :math:`\ell`\
-[#harmonic-deg]_ and azimuthal order :math:`m`, and the spin parameter
+:ads_citealt:`townsend:2020`). Together with their associated
+eigenvalue :math:`\lambda`, they depend on the harmonic degree
+:math:`\ell`\ [#harmonic-deg]_, azimuthal order :math:`m`, and spin
+parameter
 
 .. math::
 
@@ -149,27 +151,29 @@ Conversely, for the Rossby family
    \quad
    \text{as } \Orot \rightarrow 0.
 
-and :math:`\lambda \rightarrow 0`. Moreover, Rossby-mode
-eigenfrequencies also show the limiting behavior
+and :math:`\lambda \rightarrow 0`. The solution forms
+(:eq:`e:osc-sol-forms-hough`) then reduce to toroidal-mode solutions
+of the oscillation equations, as described in section 13.3 of
+:ads_citet:`unno:1989`. In the approach to the non-rotating limit,
+the frequencies of Rossby modes behave as
 
 .. math::
    :label: e:ross-freq
 
-   \sigmac = \frac{2 m \Orot}{\ell(\ell+1)}
-   \quad
-   \text{as } \Orot \rightarrow 0,
+   \sigmac \approx \frac{2 m \Orot}{\ell(\ell+1)} + \mathcal{O}(\Orot^2),
 
-which is independent of the stellar structure.
+:ads_citep:`saio:1980`, meaning that the spin parameter :math:`q`
+remains finite.
 
 Implementing the TAR
 ^^^^^^^^^^^^^^^^^^^^
 
-To implement the TAR in the :ref:`separated equations
-<osc-sep-eqns>` and :ref:`boundary conditions <osc-bound-conds>`,
-all instances of the term :math:`\ell(\ell+1)` are replaced by the TE
-eigenvalue :math:`\lambda`. Then, all instances of the harmonic degree
-:math:`\ell` are replaced by :math:`\elle`, an effective harmonic
-degree found by solving
+To implement the TAR in the :ref:`separated equations <osc-sep-eqns>`
+and :ref:`boundary conditions <osc-bound-conds>`, the angular
+eigenvalue :math:`\lambda` is evaluated from the TE rather than using
+equation (:eq:`e:lambda-norot`). Then, all instances of the harmonic
+degree :math:`\ell` are replaced by :math:`\elle`, an effective
+harmonic degree found as the positive root of the equation
 
 .. math::
 

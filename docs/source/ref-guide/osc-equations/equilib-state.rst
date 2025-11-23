@@ -1,11 +1,12 @@
+
 .. _equilib-state:
 
 Equilibrium State
 =================
 
-In a static equilibrium state the fluid velocity :math:`\vv`
-vanishes. The momentum equation then becomes the hydrostatic
-equilibrium equation
+In the absence of rotation and other large-scale flows, the
+equilibrium state of a star is static: :math:`\vv = 0.`  The momentum
+equation then reduces to the hydrostatic equilibrium equation
 
 .. math::
 

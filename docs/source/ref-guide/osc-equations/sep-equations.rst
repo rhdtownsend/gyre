@@ -35,7 +35,7 @@ the mechanical (mass and momentum conservation) equations become
 .. math::
    :label: e:osc-sep-cont
 
-   \trho' + \frac{1}{r^{2}} \deriv{}{r} \left( \rho r^{2} \txir \right) - \frac{\ell(\ell+1)}{r} \rho \txih = 0,
+   \trho' + \frac{1}{r^{2}} \deriv{}{r} \left( \rho r^{2} \txir \right) - \frac{\lambda}{r} \rho \txih = 0,
 
 .. math::
 
@@ -50,15 +50,15 @@ Likewise, Poisson's equation becomes
 .. math::
    :label: e:osc-sep-poisson
 
-   \frac{1}{r^{2}} \deriv{}{r} \left( r^{2} \deriv{\tPhi'}{r} \right) - \frac{\ell(\ell+1)}{r^{2}} \tPhi' = 4 \pi G \trho'
+   \frac{1}{r^{2}} \deriv{}{r} \left( r^{2} \deriv{\tPhi'}{r} \right) - \frac{\lambda}{r^{2}} \tPhi' = 4 \pi G \trho'
 
 and the heat equation becomes
 
 .. math::
 
    -\ii \sigma T \delta \tS = \delta \tepsnuc
-   - \deriv{\delta \tLrad}{M_{r}} + \frac{\ell(\ell+1)}{\sderiv{\ln T}{r}} \frac{\Fradr}{\rho}  \frac{\tT'}{T} +
-    \ell(\ell + 1) \frac{\txih}{r} \deriv{\Lrad}{M_{r}},
+   - \deriv{\delta \tLrad}{M_{r}} + \frac{\lambda}{\sderiv{\ln T}{r}} \frac{\Fradr}{\rho}  \frac{\tT'}{T} +
+    \lambda \frac{\txih}{r} \deriv{\Lrad}{M_{r}},
 
 where
 
@@ -88,3 +88,17 @@ Finally, the thermodynamic, nuclear and opacity relations become
    \qquad
    \frac{\delta \tkappa}{\kappa} = \kapad \frac{\delta \tP}{P} + \kapS \frac{\delta \tS}{\cP}.
 
+In these equations,
+
+.. math::
+   :label: e:lambda-norot
+
+   \lambda = \ell(\ell+1)
+
+is the eigenvalue of the angular parts of the oscillation equations,
+which enters here into the radial parts as a separation constant. It
+is related to the local horizontal wavenumber by
+
+.. math::
+
+   k_{\rm h}^{2} = \frac{\lambda}{r^{2}}.

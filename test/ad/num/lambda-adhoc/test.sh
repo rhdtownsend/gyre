@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.h5
 
-LABEL="numerics (rotation, TAR Coriolis)"
+LABEL="numerics (ADHOC lambda method)"
 
 # Do the tests
 

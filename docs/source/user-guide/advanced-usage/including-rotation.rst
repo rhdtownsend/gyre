@@ -41,10 +41,6 @@ case the effects are be applied as a post-calculation correction to
 non-rotating eigenfrequencies (see the :nml_v:`domega_rot` output item
 in the :ref:`summary-files` and :ref:`detail-files` sections). In the
 latter case, the traditional approximation of rotation (TAR) can be
-enabled by setting :nml_n:`coriolis_method`\ =\ :nml_v:`'TAR'` in the
-:nml_g:`rot` namelist group.
-
-The :ref:`TAR solution family <osc-rot-solfam>` is controlled by the
-:nml_n:`rossby` parameter of the :nml_g:`rot` namelist group; set to
-:nml_v:`.TRUE.` for the Rossby family, and to :nml_v:`.FALSE.` for the
-gravito-acoustic family.
+enabled by setting the :nml_n:`lambda_method` in the :nml_g:`osc`
+namelist group, to :nml_v:`'TAR-GRAVITY'` (for gravito-acoustic modes)
+or to :nml_v:`'TAR-ROSSBY'` (for Rossby modes).

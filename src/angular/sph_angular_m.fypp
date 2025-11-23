@@ -1,0 +1,124 @@
+! Module  : sph_angular_m
+! Purpose : angular coefficients (spherical-harmonic)
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module sph_angular_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use angular_m
+   use math_m
+   use mode_par_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, extends (angular_${S}$) :: sph_angular_${S}$
+         private
+         integer :: l
+      contains
+         private
+         procedure, public :: l_e => l_e_${S}$_
+         procedure, public :: lambda => lambda_${S}$_
+      end type sph_angular_${S}$
+
+      ! Interfaces
+
+      interface sph_angular_${S}$
+         module procedure sph_angular_${S}$_
+      end interface sph_angular_${S}$
+
+      ! Access specifiers
+
+      public :: sph_angular_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function sph_angular_${S}$_(md_p) result(an)
+
+         type(mode_par_t), intent(in) :: md_p
+         type(sph_angular_${S}$)      :: an
+
+         ! Construct the sph_angular type
+
+         an%l = md_p%l
+
+         ! Finish
+
+         return
+
+      end function sph_angular_${S}$_
+
+      !****
+
+      function l_e_${S}$_(this, Omega_rot, omega) result(l_e)
+
+         class(sph_angular_${S}$), intent(in) :: this
+         real(RD), intent(in)                 :: Omega_rot
+         ${T}$, intent(in)                    :: omega
+         ${T}$                                :: l_e
+
+         ! Evaluate the effective harmonic degree
+
+         l_e = this%l
+
+         ! Finish
+
+         return
+
+      end function l_e_${S}$_
+
+      !****
+
+      function lambda_${S}$_(this, Omega_rot, omega) result(lambda)
+
+         class(sph_angular_${S}$), intent(in) :: this
+         real(RD), intent(in)                 :: Omega_rot
+         ${T}$, intent(in)                    :: omega
+         ${T}$                                :: lambda
+
+         ! Evaluate the angular eigenvalue
+
+         lambda = this%l*(this%l+1)
+
+         ! Finish
+
+         return
+
+      end function lambda_${S}$_
+
+   #:endfor
+
+end module sph_angular_m

@@ -26,10 +26,10 @@ The independent variable is the fractional radius :math:`x \equiv r/\Rstar`
    y_{3} &= x^{2-\ell}\, \frac{\tPhi'}{gr}, \\
    y_{4} &= x^{2-\ell}\, \frac{1}{g} \deriv{\tPhi'}{r}, \\
    y_{5} &= x^{2-\ell}\, \frac{\delta \tS}{\cP}, \\
-   y_{6} &= x^{-1-\ell}\, \frac{\delta \tLrad}{\Lstar}
+   y_{6} &= x^{-1-\ell}\, \frac{\delta \tLrad}{\Lstar},
    \end{aligned}
 
-(with :math:`\Lstar` the stellar luminosity).
+where :math:`\Lstar` is the stellar luminosity.
 
 .. _osc-dimless-eqns:
 
@@ -44,8 +44,8 @@ The dimensionless oscillation equations are
    \begin{aligned}
    x \deriv{y_{1}}{x} &=
    \left( \frac{V}{\Gammi} - 1 - \ell \right) y_{1} +
-   \left( \frac{\ell(\ell+1)}{c_{1} \omega^{2}} - \alphagam \frac{V}{\Gammi} \right) y_{2} +
-   \alphagrv \frac{\ell(\ell+1)}{c_{1} \omega^{2}} y_{3} +
+   \left( \frac{\lambda}{c_{1} \omega^{2}} - \alphagam \frac{V}{\Gammi} \right) y_{2} +
+   \alphagrv \frac{\lambda}{c_{1} \omega^{2}} y_{3} +
    \upsT \, y_{5}, \\
    %
    x \deriv{y_{2}}{x} &=
@@ -61,29 +61,29 @@ The dimensionless oscillation equations are
    x \deriv{y_{4}}{x} &=
    \alphagrv \As U y_{1} +
    \alphagrv \frac{V}{\Gammi} U y_{2} +
-   \alphagrv \ell(\ell+1) y_{3} -
+   \alphagrv \lambda y_{3} -
    \alphagrv (U + \ell - 2) y_{4}
    - \alphagrv \upsT \, U y_{5}, \\
    %
    x \deriv{y_{5}}{x} &=
    \frac{V}{\frht} \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \ckapad V \nabla + \cdif \right] y_{1} + \mbox{} \\
    &
-   \frac{V}{\frht} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} (\nabad - \nabla) - \ckapad V \nabla - \cdif \right] y_{2} + \mbox{} \\
+   \frac{V}{\frht} \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) - \ckapad V \nabla - \cdif \right] y_{2} + \mbox{} \\
    &
-   \alphagrv \frac{V}{\frht} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} (\nabad - \nabla) \right] y_{3} +
+   \alphagrv \frac{V}{\frht} \left[ \frac{\lambda}{c_{1} \omega^{2}} (\nabad - \nabla) \right] y_{3} +
    \alphagrv \frac{V \nabad}{\frht} y_{4} + \mbox{} \\
    &
    \left[ \frac{V \nabla}{\frht} (4 \frht - \ckapS) + \dfrht + 2 - \ell \right] y_{5} -
    \frac{V \nabla}{\frht \crad} y_{6} \\
    %
    x \deriv{y_{6}}{x} &=
-   \left[ \alphahfl \ell(\ell+1) \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad - \alphaegv \cegv \nabad V \right] y_{1} + \mbox{} \\
+   \left[ \alphahfl \lambda \left( \frac{\nabad}{\nabla} - 1 \right) \crad - V \cepsad - \alphaegv \cegv \nabad V \right] y_{1} + \mbox{} \\
    &
-   \left[ V \cepsad - \ell(\ell+1) \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omega^{2}} \right) + \alphaegv \cegv \nabad V \right] y_{2} + \mbox{} \\
+   \left[ V \cepsad - \lambda \crad \left( \alphahfl \frac{\nabad}{\nabla} - \frac{3 + \dcrad}{c_{1}\omega^{2}} \right) + \alphaegv \cegv \nabad V \right] y_{2} + \mbox{} \\
    &
-   \alphagrv \left[ \ell(\ell+1) \crad \frac{3 + \dcrad}{c_{1}\omega^{2}} \right] y_{3} + \mbox{} \\
+   \alphagrv \left[ \lambda \crad \frac{3 + \dcrad}{c_{1}\omega^{2}} \right] y_{3} + \mbox{} \\
    &
-   \left[ \cepsS - \alphahfl \frac{\ell(\ell+1)\crad}{\nabla V} + \ii \alphathm \omega \cthk + \alphaegv \cegv \right] y_{5} -
+   \left[ \cepsS - \alphahfl \frac{\lambda\crad}{\nabla V} + \ii \alphathm \omega \cthk + \alphaegv \cegv \right] y_{5} -
    \left[ 1 + \ell \right] y_{6},
    \end{aligned}
 
@@ -184,9 +184,9 @@ above is replaced by the :ads_citet:`dziembowski:1971` outer boundary condition,
 
 .. math::
 
-   \left\{ 1 + V^{-1} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} - 4 - c_{1} \omega^{2} \right] \right\} y_{1} -
+   \left\{ 1 + V^{-1} \left[ \frac{\lambda}{c_{1} \omega^{2}} - 4 - c_{1} \omega^{2} \right] \right\} y_{1} -
    y_{2} +
-   V^{-1} \left[ \frac{\ell(\ell+1)}{c_{1} \omega^{2}} - l - 1 \right] y_{3}
+   V^{-1} \left[ \frac{\lambda}{c_{1} \omega^{2}} - \ell - 1 \right] y_{3}
    = 0.
 
 When :nml_n:`outer_bound`\ =\ :nml_v:`'UNNO'` or :nml_v:`'JCD'`, the
@@ -298,7 +298,7 @@ the expressions above, and the corresponding namelist parameters.
      - :nml_n:`alpha_gbc`
      - Scaling factor for the :math:`y_1` term in the outer
        gravitational potential boundary condition (the second line of
-       eqn. :math:numref:`e:outer-bc`). Set to 1 for normal behavior,
+       eqn. :eq:`e:outer-bc`). Set to 1 for normal behavior,
        and to 0 to suppress this term
    * - :math:`\alphathm`
      - :nml_n:`alpha_thm`

@@ -6,12 +6,6 @@ Rotation Parameters
 The :nml_g:`rot` namelist group defines rotational parameters, as
 follows:
 
-:nml_n:`coriolis_method` (default :nml_v:`'NULL'`)
-  Method used to treat the Coriolis force; one of:
-
-  - :nml_v:`'NULL'` : Neglect the Coriolis force
-  - :nml_v:`'TAR'` : Use the traditional approximation of rotation
-
 :nml_n:`Omega_rot_source` (default :nml_v:`'MODEL'`)
   Source for rotational angular frequency :math:`\Orot`; one of:
 
@@ -32,12 +26,6 @@ follows:
   - :nml_v:`'RAD_PER_SEC'` : Angular frequency in radians per second\ [#only-D]_
   - :nml_v:`'CYC_PER_DAY'` : Linear frequency in cycles per day\ [#only-D]_
   - :nml_v:`'CRITICAL'` : Fraction of the Roche critical rate\ [#only-D]_
-
-:nml_n:`rossby` (default :nml_v:`.FALSE.`)
-  Flag to use Rossby solution family in TAR (when :nml_n:`coriolis_method`\ =\ :nml_v:`'TAR'`)
-
-:nml_n:`complex_lambda` (default :nml_v:`.FALSE.`)
-  Flag to use complex arithmetic when evaluating the TAR angular eigenvalue :math:`\lambda` (when :nml_n:`coriolis_method`\ =\ :nml_v:`'TAR'`)
 
 :nml_n:`tag_list` (default :nml_v:`''`, which matches all)
   Comma-separated list of :nml_g:`mode` tags to match

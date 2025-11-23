@@ -22,10 +22,11 @@
 /
 
 &osc
+  lambda_method = 'ADHOC'
+  lambda = 2.0
 /
 
 &rot
-  coriolis_method = 'TAR'
   Omega_rot_source = 'UNIFORM'
   Omega_rot = 0.2
   Omega_rot_units = 'CRITICAL'

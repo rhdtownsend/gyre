@@ -1,5 +1,5 @@
-! Module  : tar_rot_m
-! Purpose : rotational effects (traditional approximation of rotation)
+! Module  : tar_angular_m
+! Purpose : angular coe fficients (traditional approximation of rotation)
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -17,18 +17,17 @@
 
 #:include 'gyre.inc'
 
-module tar_rot_m
+module tar_angular_m
 
    ! Uses
 
    use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO
 
+   use angular_m
    use constants_m
    use math_m
    use mode_par_m
    use tar_fit_m
-   use rot_m
-   use rot_par_m
 
    use ISO_FORTRAN_ENV
 
@@ -40,27 +39,25 @@ module tar_rot_m
 
       ! Derived-type definitions
 
-      type, extends(rot_${S}$) :: tar_rot_${S}$
+      type, extends(angular_${S}$) :: tar_angular_${S}$
          private
          type(tar_fit_t) :: tf
-         integer         :: l
          integer         :: m
-         logical         :: rossby
       contains
          private
          procedure, public :: l_e => l_e_${S}$_
          procedure, public :: lambda => lambda_${S}$_
-      end type tar_rot_${S}$
+      end type tar_angular_${S}$
 
       ! Interfaces
 
-      interface tar_rot_${S}$
-         module procedure tar_rot_${S}$_
-      end interface tar_rot_${S}$
+      interface tar_angular_${S}$
+         module procedure tar_angular_${S}$_
+      end interface tar_angular_${S}$
 
       ! Access specifiers
 
-      public :: tar_rot_${S}$
+      public :: tar_angular_${S}$
 
    #:endfor
 
@@ -72,19 +69,19 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function tar_rot_${S}$_(md_p, rt_p) result(rt)
+      function tar_angular_${S}$_(md_p, rossby) result(an)
 
          type(mode_par_t), intent(in) :: md_p
-         type(rot_par_t), intent(in)  :: rt_p
-         type(tar_rot_${S}$)          :: rt
+         logical, intent(in)          :: rossby
+         type(tar_angular_${S}$)      :: an
 
          integer                 :: k
          character(FILENAME_LEN) :: filename
          type(hdf5io_t)          :: hi
 
-         ! Construct the tar_rot_t
+         ! Construct the tar_angular_t
 
-         if (rt_p%rossby) then
+         if (rossby) then
             k = -(md_p%l - ABS(md_p%m) + 1)
          else
             k = md_p%l - ABS(md_p%m)
@@ -96,30 +93,27 @@ contains
 100      format(SP,'tar_fit.m',I0,'.k',I0,'.h5')
 
          hi = hdf5io_t(TRIM(GYRE_DIR)//'/data/tar/'//TRIM(filename), OPEN_FILE_RO)
-         call read(hi, rt%tf)
+         call read(hi, an%tf)
          call hi%final()
 
          !$OMP END CRITICAL
 
-         rt%l = md_p%l
-         rt%m = md_p%m
-
-         rt%rossby = rt_p%rossby
+         an%m = md_p%m
 
          ! Finish
 
          return
 
-      end function tar_rot_${S}$_
+      end function tar_angular_${S}$_
 
       !****
 
       function l_e_${S}$_(this, Omega_rot, omega) result(l_e)
 
-         class(tar_rot_${S}$), intent(in) :: this
-         real(RD), intent(in)             :: Omega_rot
-         ${T}$, intent(in)                :: omega
-         ${T}$                            :: l_e
+         class(tar_angular_${S}$), intent(in) :: this
+         real(RD), intent(in)                 :: Omega_rot
+         ${T}$, intent(in)                    :: omega
+         ${T}$                                :: l_e
 
          ! Evaluate the effective harmonic degree
 
@@ -135,10 +129,10 @@ contains
 
       function lambda_${S}$_(this, Omega_rot, omega) result(lambda)
 
-         class(tar_rot_${S}$), intent(in) :: this
-         real(RD), intent(in)             :: Omega_rot
-         ${T}$, intent(in)                :: omega
-         ${T}$                            :: lambda
+         class(tar_angular_${S}$), intent(in) :: this
+         real(RD), intent(in)                 :: Omega_rot
+         ${T}$, intent(in)                    :: omega
+         ${T}$                                :: lambda
 
          ${T}$ :: nu
 
@@ -156,4 +150,4 @@ contains
 
    #:endfor
 
-end module tar_rot_m
+end module tar_angular_m

@@ -23,8 +23,8 @@ regularity conditions
    \end{aligned}
 
 Sometimes it's desirable that the inner boundary is instead placed at
-:math:`r > 0` --- for instance, to excise the stellar core from
-the oscillation calculations. Then, there is much more flexibility in the
+:math:`r > 0` --- for instance, to excise the stellar core from the
+oscillation calculations. Then, there is much more flexibility in the
 choice of inner boundary condition. Possible options include setting
 :math:`\txir = 0` or :math:`\txih=0` instead of the first equation
 above.

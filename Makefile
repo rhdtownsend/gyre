@@ -69,9 +69,9 @@ export LIB_DIR ?= $(CURDIR)/lib
 export INC_DIR ?= $(CURDIR)/include
 
 export SRC_DIR := $(CURDIR)/src
-export SRC_DIRS := $(addprefix $(SRC_DIR)/,ad bvp common context diff ext	\
+export SRC_DIRS := $(addprefix $(SRC_DIR)/,ad angular bvp common context diff ext	\
    frontend/gyre frontend/tools grid include interp lib math matrix mode model  \
-   nad output par poly rad rot sad search tar tide tnad)
+   nad output par poly rad sad search tar tide tnad)
 
 ifeq ($(FORUM),yes)
    export FORUM_LIB_DIR = $(LIB_DIR)

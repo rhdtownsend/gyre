@@ -1,5 +1,5 @@
-! Module  : rot_m
-! Purpose : rotational effects
+! Module  : angular_m
+! Purpose : angular coefficients evaluation
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -17,7 +17,7 @@
 
 #:include 'gyre.inc'
 
-module rot_m
+module angular_m
 
    ! No implicit typing
 
@@ -27,11 +27,11 @@ module rot_m
 
       ! Derived-type definitions
 
-      type, abstract :: rot_${S}$
+      type, abstract :: angular_${S}$
       contains
          procedure(l_e_${S}$_), deferred    :: l_e
          procedure(lambda_${S}$_), deferred :: lambda
-      end type rot_${S}$
+      end type angular_${S}$
 
       ! Interfaces
 
@@ -39,29 +39,29 @@ module rot_m
 
          function l_e_${S}$_(this, Omega_rot, omega) result(l_e)
             use forum_m, only: RD
-            import rot_${S}$
+            import angular_${S}$
             implicit none (type, external)
-            class(rot_${S}$), intent(in) :: this
-            real(RD), intent(in)         :: Omega_rot
-            ${T}$, intent(in)            :: omega
-            ${T}$                        :: l_e
+            class(angular_${S}$), intent(in) :: this
+            real(RD), intent(in)             :: Omega_rot
+            ${T}$, intent(in)                :: omega
+            ${T}$                            :: l_e
          end function l_e_${S}$_
 
          function lambda_${S}$_(this, Omega_rot, omega) result(lambda)
             use forum_m, only: RD
-            import rot_${S}$
+            import angular_${S}$
             implicit none (type, external)
-            class(rot_${S}$), intent(in) :: this
-            real(RD), intent(in)         :: Omega_rot
-            ${T}$, intent(in)            :: omega
-            ${T}$                        :: lambda
+            class(angular_${S}$), intent(in) :: this
+            real(RD), intent(in)             :: Omega_rot
+            ${T}$, intent(in)                :: omega
+            ${T}$                            :: lambda
          end function lambda_${S}$_
 
       end interface
 
       ! Access specifiers
 
-      public :: rot_${S}$
+      public :: angular_${S}$
 
    #:endfor
 
@@ -69,4 +69,4 @@ module rot_m
 
    private
 
-end module rot_m
+end module angular_m

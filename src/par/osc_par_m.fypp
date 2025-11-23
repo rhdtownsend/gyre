@@ -45,6 +45,7 @@ module osc_par_m
       real(RD)                :: alpha_egv = 0._RD
       real(RD)                :: alpha_rht = 0._RD
       real(RD)                :: alpha_trb = 0._RD
+      real(RD)                :: lambda = 0._RD
       character(64)           :: variables_set = 'GYRE'
       character(64)           :: inner_bound = 'REGULAR'
       character(64)           :: outer_bound = 'VACUUM'
@@ -56,11 +57,13 @@ module osc_par_m
       character(64)           :: deps_source = 'MODEL'
       character(FILENAME_LEN) :: deps_file = ''
       character(256)          :: deps_file_format = ''
+      character(64)           :: lambda_method = 'SPH'
       character(2048)         :: tag_list = ''
       logical                 :: adiabatic = .TRUE.
       logical                 :: nonadiabatic = .FALSE.
       logical                 :: quasiad_eigfuncs = .FALSE.
       logical                 :: reduce_order = .TRUE.
+      logical                 :: complex_lambda = .FALSE.
    end type osc_par_t
 
    ! Access specifiers
@@ -96,6 +99,7 @@ contains
       real(RD)                              :: alpha_rht
       real(RD)                              :: alpha_trb
       real(RD)                              :: alpha_egv
+      real(RD)                              :: lambda
       character(LEN(os_p%variables_set))    :: variables_set
       character(LEN(os_p%inner_bound))      :: inner_bound
       character(LEN(os_p%outer_bound))      :: outer_bound
@@ -107,19 +111,21 @@ contains
       character(LEN(os_p%deps_source))      :: deps_source
       character(LEN(os_p%deps_file))        :: deps_file
       character(LEN(os_p%deps_file_format)) :: deps_file_format
+      character(LEN(os_p%lambda_method))    :: lambda_method
       character(LEN(os_p%tag_list))         :: tag_list
       logical                               :: adiabatic
       logical                               :: nonadiabatic
       logical                               :: quasiad_eigfuncs
       logical                               :: reduce_order
+      logical                               :: complex_lambda
 
-      namelist /osc/ x_ref, x_atm, alpha_grv, alpha_gbc, alpha_thm, alpha_hfl, &
-         alpha_gam, alpha_pi, alpha_kar, alpha_kat, alpha_rht, alpha_trb, alpha_egv, &
+      namelist /osc/ x_ref, x_atm, alpha_grv, alpha_gbc, alpha_thm, alpha_hfl, alpha_gam, &
+         alpha_pi, alpha_kar, alpha_kat, alpha_rht, alpha_trb, alpha_egv, lambda, &
          inner_bound, outer_bound, outer_bound_cutoff, outer_bound_branch, &
          variables_set, inertia_norm, time_factor, &
-         conv_scheme, deps_source, deps_file, deps_file_format, &
+         conv_scheme, deps_source, deps_file, deps_file_format, lambda_method, &
          tag_list, adiabatic, nonadiabatic, quasiad_eigfuncs, &
-         reduce_order
+         reduce_order, complex_lambda
 
       ! Count the number of osc namelists
 
@@ -159,6 +165,7 @@ contains
          alpha_rht = os_p(i)%alpha_rht
          alpha_trb = os_p(i)%alpha_trb
          alpha_egv = os_p(i)%alpha_egv
+         lambda = os_p(i)%lambda
          variables_set = os_p(i)%variables_set
          inner_bound = os_p(i)%inner_bound
          outer_bound = os_p(i)%outer_bound
@@ -170,11 +177,13 @@ contains
          deps_source = os_p(i)%deps_source
          deps_file = os_p(i)%deps_file
          deps_file_format = os_p(i)%deps_file_format
+         lambda_method = os_p(i)%lambda_method
          tag_list = os_p(i)%tag_list
          adiabatic = os_p(i)%adiabatic
          nonadiabatic = os_p(i)%nonadiabatic
          quasiad_eigfuncs = os_p(i)%quasiad_eigfuncs
          reduce_order = os_p(i)%reduce_order
+         complex_lambda = os_p(i)%complex_lambda
 
          ! Read the namelist
 
@@ -195,6 +204,7 @@ contains
          os_p(i)%alpha_rht = alpha_rht
          os_p(i)%alpha_trb = alpha_trb
          os_p(i)%alpha_egv = alpha_egv
+         os_p(i)%lambda = lambda
          os_p(i)%variables_set = variables_set
          os_p(i)%inner_bound = inner_bound
          os_p(i)%outer_bound = outer_bound
@@ -206,11 +216,13 @@ contains
          os_p(i)%deps_source = deps_source
          os_p(i)%deps_file = deps_file
          os_p(i)%deps_file_format = deps_file_format
+         os_p(i)%lambda_method = lambda_method
          os_p(i)%tag_list = tag_list
          os_p(i)%adiabatic = adiabatic
          os_p(i)%nonadiabatic = nonadiabatic
          os_p(i)%quasiad_eigfuncs = quasiad_eigfuncs
          os_p(i)%reduce_order = reduce_order
+         os_p(i)%complex_lambda = complex_lambda
 
       end do read_loop
 

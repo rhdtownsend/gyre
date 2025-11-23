@@ -42,7 +42,6 @@ module wave_m
    use osc_par_m
    use point_m
    use poly_model_m
-   use rot_m
    use state_m
    use util_m
 

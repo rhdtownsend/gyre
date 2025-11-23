@@ -2,53 +2,52 @@
 /
 
 &model
-  model_type = 'EVOL'
-  file = 'spb.mesa'
-  file_format = 'MESA'
+  model_type = 'POLY'
+        file = 'poly.h5'
 /
 
 &mode
   l = 2
   m = -2
-  tag = 'l=1'
+/
+
+&mode
+  l = 2
+  m = -1
 /
 
 &osc
   lambda_method = 'TAR-ROSSBY'
-  nonadiabatic = .TRUE.
 /
 
 &rot
   Omega_rot_source = 'UNIFORM'
-  Omega_rot = 0.5
+  Omega_rot = 0.2
   Omega_rot_units = 'CRITICAL'
 /
 
 &num
-  diff_scheme = 'COLLOC_GL4'
+  diff_scheme = 'COLLOC_GL6'
 /
 
 &scan
   grid_type = 'INVERSE'
   grid_frame = 'COROT_O'
-  freq_min = 0.85
-  freq_max = 0.99
+  freq_min = 0.990
+  freq_max = 0.999
   freq_min_units = 'ROSSBY_O'
   freq_max_units = 'ROSSBY_O'
   freq_frame = 'COROT_O'
-  n_freq = 200
+  n_freq = 50
 /
 
 &grid
-  w_osc = 10.
-  w_exp = 2.
-  w_ctr = 10.
 /
 
 &ad_output
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,m,n_pg,n_p,n_g,omega'
 /
 
 &nad_output
-  summary_file = 'summary.h5'
-  summary_item_list = 'l,n_pg,n_p,n_g,omega'
 /

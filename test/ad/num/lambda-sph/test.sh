@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.h5
 
-LABEL="numerics (rotation, null Coriolis)"
+LABEL="numerics (SPH lambda method)"
 
 # Do the tests
 

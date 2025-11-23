@@ -49,6 +49,21 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
   - :nml_v:`'MIX'` : Mixed formulation (:nml_v:`'JCD'` for :math:`y_{3,4}`, :nml_v:`'DZIEM'` for :math:`y_{1,2}`)
   - :nml_v:`'LAGP'` : Lagrangian pressure perturbation formulation
 
+:nml_n:`lambda_method` (default :nml_v:`'SPH'`)
+  Method used to evaluate the angular eigenvalue :math:`\lambda`; one of:
+
+  - :nml_v:`'SPH'` : Use the spherical-harmonic value :math:`\lambda=\ell(\ell+1)`
+  - :nml_v:`'TAR-GRAVITY'` : Use the traditional approximation of rotation, for gravito-acoustic modes
+  - :nml_v:`'TAR-ROSSBY'` : Use the traditional approximation of rotation, for Rossby modes
+  - :nml_v:`'ADHOC` : Use an ad-hoc value set by the :nml_n:`lambda` parameter
+
+:nml_n:`lambda` (default :nml_v:`0.`)
+  Value of angular eigenvalue :math:`\lambda` (when :nml_n:`lambda_method`\ =\ :nml_v:`'ADHOC'`)
+
+:nml_n:`complex_lambda` (default :nml_v:`.FALSE.`)
+  Flag to use complex arithmetic when evaluating the angular angular eigenvalue :math:`\lambda`
+  (when :nml_n:`lambda_method`\ =\ :nml_v:`'TAR-GRAVITY'` \ \|\ :nml_v:`'TAR-ROSSBY'`)
+
 :nml_n:`alpha_grv` (default :nml_v:`1.`)
   Scaling factor for gravitational potential perturbations (see the :math:`\alphagrv`
   entry in the :ref:`osc-physics-switches` section)

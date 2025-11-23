@@ -440,7 +440,7 @@ Rotation
    * - :nml_v:`lambda`
      - :math:`\lambda`
      - complex(:nml_v:`n`)
-     - tidal equation eigenvalue
+     - angular eigenvalue
 
 Stellar Structure
 -----------------

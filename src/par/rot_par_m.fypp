@@ -33,12 +33,9 @@ module rot_par_m
 
    type :: rot_par_t
       real(RD)        :: Omega_rot = 0._RD
-      character(64)   :: coriolis_method = 'NULL'
       character(64)   :: Omega_rot_source = 'MODEL'
       character(64)   :: Omega_rot_units = 'NONE'
       character(2048) :: tag_list = ''
-      logical         :: complex_lambda = .FALSE.
-      logical         :: rossby = .FALSE.
    end type rot_par_t
 
    ! Access specifiers
@@ -60,15 +57,12 @@ contains
       integer                               :: n_rt_p
       integer                               :: i
       real(RD)                              :: Omega_rot
-      character(LEN(rt_p%coriolis_method))  :: coriolis_method
       character(LEN(rt_p%Omega_rot_source)) :: Omega_rot_source
       character(LEN(rt_p%Omega_rot_units))  :: Omega_rot_units
       character(LEN(rt_p%tag_list))         :: tag_list
-      logical                               :: complex_lambda
-      logical                               :: rossby
 
-      namelist /rot/ Omega_rot, coriolis_method, Omega_rot_source, Omega_rot_units, &
-         tag_list, complex_lambda, rossby
+      namelist /rot/ Omega_rot, Omega_rot_source, Omega_rot_units, &
+         tag_list
 
       ! Count the number of rot namelists
 
@@ -96,12 +90,9 @@ contains
          rt_p(i) = rot_par_t()
 
          Omega_rot = rt_p(i)%Omega_rot
-         coriolis_method = rt_p(i)%coriolis_method
          Omega_rot_source = rt_p(i)%Omega_rot_source
          Omega_rot_units = rt_p(i)%Omega_rot_units
          tag_list = rt_p(i)%tag_list
-         complex_lambda = rt_p(i)%complex_lambda
-         rossby = rt_p(i)%rossby
 
          ! Read the namelist
 
@@ -110,12 +101,9 @@ contains
          ! Store read values
 
          rt_p(i)%Omega_rot = Omega_rot
-         rt_p(i)%coriolis_method = coriolis_method
          rt_p(i)%Omega_rot_source = Omega_rot_source
          rt_p(i)%Omega_rot_units = Omega_rot_units
          rt_p(i)%tag_list = tag_list
-         rt_p(i)%complex_lambda = complex_lambda
-         rt_p(i)%rossby = rossby
 
       end do read_loop
 

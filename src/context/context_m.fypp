@@ -32,8 +32,8 @@ module context_m
    use mode_par_m
    use osc_par_m
    use point_m
-   use rot_m
-   use rot_factory_m
+   use angular_m
+   use angular_factory_m
    use rot_par_m
    use state_m
 
@@ -55,17 +55,17 @@ module context_m
 
    type :: context_t
       private
-      class(model_t), pointer    :: ml => null()
-      class(rot_ct), allocatable :: rt
-      type(point_t)              :: pt_i
-      type(point_t)              :: pt_o
-      integer                    :: m
-      integer                    :: Omega_rot_source
-      real(RD)                   :: Omega_rot_
-      integer                    :: deps_source
-      logical                    :: complex_lambda
-      type(cubic_interp_ct)      :: ci_eps_rho
-      type(cubic_interp_ct)      :: ci_eps_T
+      class(model_t), pointer        :: ml => null()
+      class(angular_ct), allocatable :: an
+      type(point_t)                  :: pt_i
+      type(point_t)                  :: pt_o
+      integer                        :: m
+      integer                        :: Omega_rot_source
+      real(RD)                       :: Omega_rot_
+      integer                        :: deps_source
+      logical                        :: complex_lambda
+      type(cubic_interp_ct)          :: ci_eps_rho
+      type(cubic_interp_ct)          :: ci_eps_T
    contains
       private
       procedure, public  :: model
@@ -110,14 +110,14 @@ contains
 
       cx%ml => ml
 
-      allocate(cx%rt, SOURCE=rot_ct(md_p, rt_p))
+      allocate(cx%an, SOURCE=angular_ct(md_p, os_p))
 
       cx%pt_i = gr%pt_i()
       cx%pt_o = gr%pt_o()
 
       cx%m = md_p%m
 
-      cx%complex_lambda = rt_p%complex_lambda
+      cx%complex_lambda = os_p%complex_lambda
 
       select case (rt_p%Omega_rot_source)
       case ('MODEL')
@@ -258,7 +258,7 @@ contains
 
       ! Evaluate the angular eigenvalue (real)
 
-      lambda = REAL(this%rt%lambda(Omega_rot, CMPLX(st%omega, KIND=RD)))
+      lambda = REAL(this%an%lambda(Omega_rot, CMPLX(st%omega, KIND=RD)))
 
       ! Finish
 
@@ -279,11 +279,11 @@ contains
 
       if (this%complex_lambda) then
 
-         lambda = this%rt%lambda(Omega_rot, st%omega)
+         lambda = this%an%lambda(Omega_rot, st%omega)
 
       else
 
-         lambda = this%rt%lambda(Omega_rot, CMPLX(st%omega_r, KIND=RD))
+         lambda = this%an%lambda(Omega_rot, CMPLX(st%omega_r, KIND=RD))
 
       endif
 
@@ -304,7 +304,7 @@ contains
 
       ! Evaluate the effective harmonic degree (real)
 
-      l_e = REAL(this%rt%l_e(Omega_rot, CMPLX(st%omega, KIND=RD)))
+      l_e = REAL(this%an%l_e(Omega_rot, CMPLX(st%omega, KIND=RD)))
 
       ! Finish
 
@@ -325,11 +325,11 @@ contains
 
       if (this%complex_lambda) then
 
-         l_e = this%rt%l_e(Omega_rot, st%omega)
+         l_e = this%an%l_e(Omega_rot, st%omega)
 
       else
 
-         l_e = this%rt%l_e(Omega_rot, CMPLX(st%omega_r, KIND=RD))
+         l_e = this%an%l_e(Omega_rot, CMPLX(st%omega_r, KIND=RD))
 
       endif
 

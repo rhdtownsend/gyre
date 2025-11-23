@@ -30,7 +30,6 @@ module grid_util_m
    use osc_par_m
    use point_m
    use root_m
-   use rot_m
    use state_m
    use status_m
 
