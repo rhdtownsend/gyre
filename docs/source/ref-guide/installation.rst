@@ -16,18 +16,16 @@ components:
 * A modern (2003+) Fortran compiler
 * The :netlib:`BLAS <blas>` linear algebra library
 * The :netlib:`LAPACK <lapack>` linear algebra library
-* The :netlib:`LAPACK95 <lapack95>` Fortran 95
-  interface to LAPACK
+* The :netlib:`LAPACK95 <lapack95>` Fortran 95 interface to LAPACK
 * The `HDF5 <https://www.hdfgroup.org/solutions/hdf5/>`__ data management library
 * The `crlibm <https://hal-ens-lyon.archives-ouvertes.fr/ensl-01529804>`__ correctly rounded math library
 * The :git:`crmath <rhdtownsend/crmath>` Fortran 2003 interface to crlibm
-* An OpenMP-aware version of the :netlib:`ODEPACK <odepack>` differential equation library (optional)
-* A `Python <https://www.python.org/>`__ interpreter (3.5 or more recent)
+* The :git:`fypp <aradi/fypp>` Fortran preprocessor
 
-On Linux and MacOS platforms, all of these components (save for
-Python 3) are bundled together in the MESA Software Development Kit
-(SDK), which can be downloaded from the `MESA SDK <mesa-sdk_>`__
-homepage. Using this SDK is strongly recommended.
+On Linux and MacOS platforms, all of these components are bundled
+together in the MESA Software Development Kit (SDK), which can be
+downloaded from the `MESA SDK <mesa-sdk_>`__ homepage. Using this SDK
+is strongly recommended.
 
 Building GYRE
 =============

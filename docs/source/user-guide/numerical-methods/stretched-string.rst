@@ -67,10 +67,11 @@ and so
 
    k L = n \pi
 
-where :math:`n` is a non-zero integer (we exclude :math:`n=0` because
-it corresponds to the trivial solution :math:`y(x,t)=0`). Combining
-this with the dispersion relation, we find that the normal-mode
-eigenfrequencies of the stretched-string BVP are
+where :math:`n` is a positive integer (we exclude :math:`n=0` because
+it corresponds to the trivial solution :math:`y=0`; and negative
+values of :math:`n` yield the same solution as the corresponding
+positive values). Combining this with the dispersion relation, we find
+that the normal-mode eigenfrequencies of the stretched-string BVP are
 
 .. math::
    :label: analytic-eigenfreqs

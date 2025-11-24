@@ -189,3 +189,6 @@ pygments_style = 'sphinx'
 
 # Copybutton settings
 copybutton_exclude = '.linenos, .gp, .go'
+
+# Fix rendering of quotes, dashes etc.
+smartquotes = True

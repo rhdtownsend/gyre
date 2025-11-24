@@ -130,7 +130,7 @@ behavior of the eigenfunctions and eigenvalue in the limit :math:`\Orot
    \end{aligned}
    \right\}
    \quad
-   \text{as } \Orot \rightarrow 0.
+   \text{as } \Orot \rightarrow 0,
 
 and :math:`\lambda \rightarrow \ell(\ell+1)`. With these expressions,
 the solution forms (:eq:`e:osc-sol-forms-hough`) reduce to those given
@@ -149,7 +149,7 @@ Conversely, for the Rossby family
    \end{aligned}
    \right\}
    \quad
-   \text{as } \Orot \rightarrow 0.
+   \text{as } \Orot \rightarrow 0,
 
 and :math:`\lambda \rightarrow 0`. The solution forms
 (:eq:`e:osc-sol-forms-hough`) then reduce to toroidal-mode solutions
@@ -160,7 +160,7 @@ the frequencies of Rossby modes behave as
 .. math::
    :label: e:ross-freq
 
-   \sigmac \approx \frac{2 m \Orot}{\ell(\ell+1)} + \mathcal{O}(\Orot^2),
+   \sigmac \approx \frac{2 m \Orot}{\ell(\ell+1)} + \mathcal{O}(\Orot^2)
 
 :ads_citep:`saio:1980`, meaning that the spin parameter :math:`q`
 remains finite.

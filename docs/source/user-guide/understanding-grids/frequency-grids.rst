@@ -108,12 +108,13 @@ The grid creation then proceeds as described above in the :ref:`linear-freq-grid
 File Grid
 ~~~~~~~~~
 
-When :nml_nv:`grid_type = 'FILE'`, :program:`gyre` first reads a sequence of
-dimensioned frequencies :math:`\{f_{1},f_{2},\ldots,f_{M}\}` from an
-external file named by the :nml_n:`grid_file` parameter. This file is
-a single-column ASCII table; the number of points :math:`M` is
-determined implicitly from the number of lines in the file. Then, it
-transforms these frequencies via
+When :nml_nv:`grid_type = 'FILE'`, :program:`gyre` first reads a
+sequence of dimensioned frequencies
+:math:`\{f_{1},f_{2},\ldots,f_{M}\}` from an external file named by
+the :nml_n:`grid_file` parameter. This file is a single-column ASCII
+text table; the number of points :math:`M` is determined implicitly
+from the number of lines in the file. Then, it transforms these
+frequencies via
 
 .. math::
 
