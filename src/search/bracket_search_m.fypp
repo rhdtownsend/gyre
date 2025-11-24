@@ -271,7 +271,7 @@ contains
       ! Note: the following loops could be combined into one using
       ! conditional OMP constructs, but if(.False.) seems to disable
       ! the parallelism of eval_discrim() as well
-      
+
       if (parallel) then
 
          !$OMP PARALLEL DO FIRSTPRIVATE(bp) PRIVATE(discrim_i)
@@ -290,7 +290,7 @@ contains
          end do discrim_loop_parallel
 
       else
-         
+
          discrim_loop_serial: do i = 1, n_omega
 
             call eval_discrim(bp, state_rt(omega(i)), discrim_i)
