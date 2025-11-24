@@ -22,7 +22,8 @@ The :nml_g:`osc` namelist group defines oscillation parameters, as follows:
   - :nml_v:`'UNNO'` : Formulation following :ads_citet:`unno:1989`
   - :nml_v:`'JCD'` : Formulation following Jørgen Christensen-Dalsgaard (ADIPLS)
   - :nml_v:`'ISOTHERMAL'` : Formulation based on local dispersion analysis for isothermal atmosphere
-  - :nml_v:`'GAMMA'` : Vanishing displacement and derivative at outer boundary, intended for use with :math:`\gamma` modes (isolated g modes; see :ads_citealp:`ong:2020`)
+  - :nml_v:`'GAMMA1'` : Vanishing displacement and derivative at outer boundary, intended for use with :math:`\gamma` modes (isolated g modes; see :ads_citealp:`ong:2020`)
+  - :nml_v:`'GAMMA2'` : Variant of :nml_v:`'GAMMA1'` option described in :git:`PR #8 <rhdtownsend/gyre/pull/8>`
 
 :nml_n:`outer_bound_cutoff` (default :nml_v:`''`)
   Outer boundary conditions to use when evaluating cutoff frequencies (see :nml_n:`freq_units`); same options
