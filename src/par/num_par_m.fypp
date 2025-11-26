@@ -41,7 +41,7 @@ module num_par_m
       character(64)           :: c_root_solver = 'RIDDERS'
       character(64)           :: ad_search = 'BRACKET'
       character(64)           :: nad_search = 'AD'
-      character(64)           :: matrix_type = 'BLOCK'
+      character(64)           :: matrix_type = 'BAND'
       character(FILENAME_LEN) :: dump_contour_template = ''
       character(2048)         :: tag_list = ''
    end type num_par_t
