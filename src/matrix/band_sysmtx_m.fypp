@@ -46,7 +46,8 @@ module band_sysmtx_m
          ${T}$, allocatable           :: scl_i(:)  ! Inner boundary scales
          ${T}$, allocatable           :: scl_o(:)  ! Outer boundary scales
          type(ext_${S}$), allocatable :: scl(:)    ! Block scales
-         integer                      :: n_ul      ! Number of sub-/super-diagonals
+         integer                      :: n_l       ! Number of sub-diagonals
+         integer                      :: n_u       ! Number of super-diagonals
       contains
          private
          procedure, public :: set_B_i => set_B_i_${S}$_
@@ -94,12 +95,14 @@ contains
 
          ! Construct the sysmtx type
 
-         ! Note that an additional n_ul rows are added to A_b to provide
-         ! space for fill-in during factorization
+         ! Note that an additional n_l rows are added to A_b to
+         ! provide space for fill-in during factorization. See e.g.
+         ! https://www.netlib.org/lapack/lug/node124.html
 
-         sm%n_ul = n_e + n_i - 1
+         sm%n_l = n_e + n_i - 1
+         sm%n_u = n_e + n_o - 1
 
-         allocate(sm%A_b(3*sm%n_ul+1,n_e*(n+1)))
+         allocate(sm%A_b(2*sm%n_l+sm%n_u+1,n_e*(n+1)))
          allocate(sm%ipiv(n_e*(n+1)))
 
          allocate(sm%scl_i(n_i))
@@ -244,26 +247,29 @@ contains
          integer :: i_b
          integer :: j_b
 
-         @:ASSERT_DEBUG(abs(i_0-j_0) <= this%n_ul, 'invalid indices')
-         @:ASSERT_DEBUG(abs(i_0-(j_0+SIZE(R)-1)) <= this%n_ul, 'invalid indices')
+         @:ASSERT_DEBUG(i_0-j_0 <= this%n_l, 'invalid indices')
+         @:ASSERT_DEBUG(i_0-(j_0+SIZE(R)-1) <= this%n_l, 'invalid indices')
+
+         @:ASSERT_DEBUG(j_0-i_0 <= this%n_u, 'invalid indices')
+         @:ASSERT_DEBUG((j_0+SIZE(R)-1)-i_0 <= this%n_u, 'invalid indices')
 
          ! Set data in row i_0, starting at column j_0. The rest of the row
          ! is zeroed out
 
-         do j = MAX(i_0-this%n_ul, 1), j_0-1
-            i_b = 2*this%n_ul + 1 + i_0 - j
+         do j = MAX(i_0-this%n_l, 1), j_0-1
+            i_b = this%n_l + this%n_u + 1 + i_0 - j
             j_b = j
             this%A_b(i_b, j_b) = 0._RD
          end do
 
          do j = j_0, j_0+SIZE(R)-1
-            i_b = 2*this%n_ul + 1 + i_0 - j
+            i_b = this%n_l + this%n_u + 1 + i_0 - j
             j_b = j
             this%A_b(i_b, j_b) = R(j-j_0+1)
          end do
 
-         do j = j_0+SIZE(R), MIN(i_0+this%n_ul, this%n_e*(this%n+1))
-            i_b = 2*this%n_ul + 1 + i_0 - j
+         do j = j_0+SIZE(R), MIN(i_0+this%n_u, this%n_e*(this%n+1))
+            i_b = this%n_l + this%n_u + 1 + i_0 - j
             j_b = j
             this%A_b(i_b, j_b) = 0._RD
          end do
@@ -287,13 +293,16 @@ contains
          integer :: i_b
          integer :: j_b
 
-         @:ASSERT_DEBUG(abs(i_0-j_0) <= this%n_ul, 'invalid indices')
-         @:ASSERT_DEBUG(abs(i_0-(j_0+SIZE(R)-1)) <= this%n_ul, 'invalid indices')
+         @:ASSERT_DEBUG(i_0-j_0 <= this%n_l, 'invalid indices')
+         @:ASSERT_DEBUG(i_0-(j_0+SIZE(R)-1) <= this%n_l, 'invalid indices')
+
+         @:ASSERT_DEBUG(j_0-i_0 <= this%n_u, 'invalid indices')
+         @:ASSERT_DEBUG((j_0+SIZE(R)-1)-i_0 <= this%n_u, 'invalid indices')
 
          ! Get data from row i_0, starting at column j_0
 
          do j = j_0, j_0+SIZE(R)-1
-            i_b = 2*this%n_ul + 1 + i_0 - j
+            i_b = this%n_l + this%n_u + 1 + i_0 - j
             j_b = j
             R(j-j_0+1) = this%A_b(i_b, j_b)
          end do
@@ -321,7 +330,7 @@ contains
          n = SIZE(this%A_b, 1)
          m = SIZE(this%A_b, 2)
 
-         call XGBTRF(m, m, this%n_ul, this%n_ul, this%A_b, n, this%ipiv, info)
+         call XGBTRF(m, m, this%n_l, this%n_u, this%A_b, n, this%ipiv, info)
          @:ASSERT(info == 0 .OR. info > m-this%n_e, 'non-zero return from XGBTRF')
 
          ! Finish
@@ -348,14 +357,14 @@ contains
 
             scl = 0._RD
 
-            do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
-               i_b = 2*this%n_ul + 1 + i - j
+            do j = MAX(i-this%n_l, 1), MIN(i+this%n_u, this%n_e*(this%n+1))
+               i_b = this%n_l + this%n_u + 1 + i - j
                j_b = j
                scl = MAX(scl, abs(this%A_b(i_b,j_b)))
             end do
 
-            do j = MAX(i-this%n_ul, 1), MIN(i+this%n_ul, this%n_e*(this%n+1))
-               i_b = 2*this%n_ul + 1 + i - j
+            do j = MAX(i-this%n_l, 1), MIN(i+this%n_u, this%n_e*(this%n+1))
+               i_b = this%n_l + this%n_u + 1 + i - j
                j_b = j
                this%A_b(i_b,j_b) = this%A_b(i_b,j_b)/scl
             end do
@@ -398,7 +407,7 @@ contains
          ! Evaluate the determinant
 
          det = product([ &
-            ext_${S}$(this%A_b(2*this%n_ul+1,:)), &
+            ext_${S}$(this%A_b(this%n_l+this%n_u+1,:)), &
             ext_${S}$(this%scl_i), &
             this%scl,ext_${S}$(this%scl_o)])
 
@@ -432,7 +441,7 @@ contains
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) >= 1
 
-         associate (n => this%n, n_e => this%n_e, n_ul => this%n_ul)
+         associate (n => this%n, n_e => this%n_e, n_l => this%n_l, n_u => this%n_u)
 
             ! Locate the smallest element on the diagonal of the outer
             ! block (this will be taken to be the singular element)
@@ -441,26 +450,26 @@ contains
             A_s = HUGE(0._RD)
 
             sing_loop : do i = n_e*n+1, n_e*(n+1)
-               if (abs(this%A_b(2*n_ul+1,i)) < A_s) then
-                  A_s = abs(this%A_b(2*n_ul+1,i))
+               if (abs(this%A_b(n_l+n_u+1,i)) < A_s) then
+                  A_s = abs(this%A_b(n_l+n_u+1,i))
                   i_s = i
                end if
             end do sing_loop
 
             ! Set up the reduced banded system
 
-            allocate(A_b(3*n_ul+1,i_s-1))
+            allocate(A_b(2*n_l+n_u+1,i_s-1))
             allocate(B(i_s-1,1))
 
             allocate(ipiv(i_s-1))
 
-            A_b(:2*n_ul+1,:) = this%A_b(:2*n_ul+1,:i_s-1)
-            A_b(2*n_ul+2:,:) = 0._RD
+            A_b(:n_l+n_u+1,:) = this%A_b(:n_l+n_u+1,:i_s-1)
+            A_b(n_l+n_u+2:,:) = 0._RD
 
-            n2 = MIN(2*n_ul, i_s-1)
+            n2 = MIN(n_l+n_u, i_s-1)
 
             B(:i_s-n2-1,1) = 0._RD
-            B(i_s-n2:,1) = -this%A_b(2*n_ul+1-n2:2*n_ul,i_s)
+            B(i_s-n2:,1) = -this%A_b(n_l+n_u+1-n2:n_l+n_u,i_s)
 
             do j = 1,i_s-1
                ipiv(j) = j
@@ -468,7 +477,7 @@ contains
 
             ! Solve for the 1:i_s-1 components of the solution vector
 
-            call XGBTRS('N', SIZE(A_b, 2), n_ul, n_ul, 1, A_b, SIZE(A_b, 1), ipiv, B, SIZE(B, 1), info)
+            call XGBTRS('N', SIZE(A_b, 2), n_l, n_u, 1, A_b, SIZE(A_b, 1), ipiv, B, SIZE(B, 1), info)
             @:ASSERT(info == 0, 'non-zero return from XGBTRS')
 
             u(:i_s-1) = B(:,1)
@@ -508,7 +517,7 @@ contains
          ! conditions). These components are supplied in v_i and v_o,
          ! respectively.
 
-         associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_ul => this%n_ul)
+         associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_l => this%n_l, n_u => this%n_u)
 
             ! Set up the banded system
 
@@ -518,7 +527,7 @@ contains
 
             ! Solve for u
 
-            call XGBTRS('N', n_e*(n+1), n_ul, n_ul, 1, &
+            call XGBTRS('N', n_e*(n+1), n_l, n_u, 1, &
                this%A_b, SIZE(this%A_b, 1), this%ipiv, B, n_e*(n+1), info)
             @:ASSERT(info == 0, 'non-zero return from XGBTRS')
 
@@ -555,8 +564,8 @@ contains
             !$OMP PARALLEL DO PRIVATE (j_a, j_b, R)
             multiply_loop : do i = 1, n_e*(n+1)
 
-               j_a = MAX(i-this%n_ul, 1)
-               j_b = MIN(i+this%n_ul, n_e*(n+1))
+               j_a = MAX(i-this%n_l, 1)
+               j_b = MIN(i+this%n_u, n_e*(n+1))
 
                call this%get_row_(i, j_a, R(j_a:j_b))
 
