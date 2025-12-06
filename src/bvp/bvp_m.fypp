@@ -51,16 +51,14 @@ module bvp_m
          integer, public                  :: n_e
          integer, public                  :: n_i
          integer, public                  :: n_o
-         logical                          :: factored
       contains
          private
          procedure, public :: build => build_${S}$_
-         procedure, public :: factor => factor_${S}$_
-         procedure, public :: det => det_${S}$_
-         procedure, public :: soln_vec_hom => soln_vec_hom_${S}$_
-         procedure, public :: soln_vec_inhom => soln_vec_inhom_${S}$_
-         procedure, public :: resd_vec_hom => resd_vec_hom_${S}$_
-         procedure, public :: resd_vec_inhom => resd_vec_inhom_${S}$_
+         procedure, public :: eval_det => eval_det_${S}$_
+         procedure, public :: eval_soln_vec_hom => eval_soln_vec_hom_${S}$_
+         procedure, public :: eval_soln_vec_inhom => eval_soln_vec_inhom_${S}$_
+         procedure, public :: eval_resd_vec_hom => eval_resd_vec_hom_${S}$_
+         procedure, public :: eval_resd_vec_inhom => eval_resd_vec_inhom_${S}$_
       end type bvp_${S}$
 
       ! Interfaces
@@ -120,8 +118,6 @@ contains
          bp%n_i = n_i
          bp%n_o = n_o
 
-         bp%factored = .FALSE.
-
          ! Finish
 
          return
@@ -162,10 +158,6 @@ contains
             call this%sm%set_E(j, E_l, E_r, scl)
          end do sub_loop
 
-         ! Reset the factored flag
-
-         this%factored = .FALSE.
-
          ! Finish
 
          return
@@ -174,55 +166,36 @@ contains
 
       !****
 
-      subroutine factor_${S}$_(this)
+      subroutine eval_det_${S}$_(this, det)
 
          class(bvp_${S}$), intent(inout) :: this
-
-         ! Factorize the sysmtx
-
-         call this%sm%factor()
-
-         this%factored = .TRUE.
-
-         ! Finish
-
-         return
-
-      end subroutine factor_${S}$_
-
-      !****
-
-      function det_${S}$_(this) result(det)
-
-         class(bvp_${S}$), intent(inout) :: this
-         type(ext_${S}$)                 :: det
-
-         @:ASSERT(this%factored, 'matrix has not been factorized')
+         type(ext_${S}$), intent(out)    :: det
 
          ! Evaluate the determinant of the sysmtx
 
-         det = this%sm%det()
+         call this%sm%eval_det(det)
 
          ! Finish
 
          return
 
-      end function det_${S}$_
+      end subroutine eval_det_${S}$_
 
       !****
 
-      function soln_vec_hom_${S}$_(this) result(y)
+      subroutine eval_soln_vec_hom_${S}$_(this, y)
 
          class(bvp_${S}$), intent(inout) :: this
-         ${T}$                           :: y(this%n_e,this%n)
+         ${T}$, intent(out)              :: y(:,:)
 
          ${T}$ :: u(this%n_e*this%n)
 
-         @:ASSERT_DEBUG(this%factored, 'matrix has not been factorized')
+         @:CHECK_BOUNDS(SIZE(y, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(y, 2), this%n)
 
          ! Evaluate the solution vector y of the homogeneous system
 
-         u = this%sm%soln_vec_hom()
+         call this%sm%eval_soln_vec_hom(u)
 
          y = RESHAPE(u, SHAPE(y))
 
@@ -230,27 +203,28 @@ contains
 
          return
 
-      end function soln_vec_hom_${S}$_
+      end subroutine eval_soln_vec_hom_${S}$_
 
       !****
 
-      function soln_vec_inhom_${S}$_(this, z_i, z_o) result(y)
+      subroutine eval_soln_vec_inhom_${S}$_(this, z_i, z_o, y)
 
          class(bvp_${S}$), intent(inout) :: this
          ${T}$, intent(in)               :: z_i(:)
          ${T}$, intent(in)               :: z_o(:)
-         ${T}$                           :: y(this%n_e,this%n)
+         ${T}$, intent(out)              :: y(:,:)
 
          ${T}$ :: u(this%n_e*this%n)
 
          @:CHECK_BOUNDS(SIZE(z_i), this%n_i)
          @:CHECK_BOUNDS(SIZE(z_o), this%n_o)
 
-         @:ASSERT_DEBUG(this%factored, 'matrix has not been factorized')
+         @:CHECK_BOUNDS(SIZE(y, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(y, 2), this%n)
 
          ! Evaluate the solution vector y of the inhomogeneous system
 
-         u = this%sm%soln_vec_inhom(z_i, z_o)
+         call this%sm%eval_soln_vec_inhom(z_i, z_o, u)
 
          y = RESHAPE(u, SHAPE(y))
 
@@ -258,15 +232,15 @@ contains
 
          return
 
-      end function soln_vec_inhom_${S}$_
+      end subroutine eval_soln_vec_inhom_${S}$_
 
       !****
 
-      function resd_vec_hom_${S}$_(this, y) result(dz)
+      subroutine eval_resd_vec_hom_${S}$_(this, y, dz)
 
-         class(bvp_${S}$), intent(inout) :: this
-         ${T}$, intent(in)               :: y(:,:)
-         ${T}$                           :: dz(this%n_e,this%n)
+         class(bvp_${S}$), intent(in) :: this
+         ${T}$, intent(in)            :: y(:,:)
+         ${T}$, intent(out)           :: dz(:,:)
 
          ${T}$ :: u(this%n_e*this%n)
          ${T}$ :: dv(this%n_e*this%n)
@@ -274,13 +248,14 @@ contains
          @:CHECK_BOUNDS(SIZE(y,1), this%n_e)
          @:CHECK_BOUNDS(SIZE(y,2), this%n)
 
-         @:ASSERT_DEBUG(.NOT. this%factored, 'matrix has already been factorized')
+         @:CHECK_BOUNDS(SIZE(dz, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(dz, 2), this%n)
 
          ! Evaluate the residuals vector dy of the homogeneous system
 
          u = RESHAPE(y, SHAPE(u))
 
-         dv = this%sm%resd_vec_hom(u)
+         call this%sm%eval_resd_vec_hom(u, dv)
 
          dz = RESHAPE(dv, SHAPE(dz))
 
@@ -288,17 +263,17 @@ contains
 
          return
 
-      end function resd_vec_hom_${S}$_
+      end subroutine eval_resd_vec_hom_${S}$_
 
       !****
 
-      function resd_vec_inhom_${S}$_(this, y, z_i, z_o) result(dz)
+      subroutine eval_resd_vec_inhom_${S}$_(this, y, z_i, z_o, dz)
 
-         class(bvp_${S}$), intent(inout) :: this
-         ${T}$, intent(in)               :: y(:,:)
-         ${T}$, intent(in)               :: z_i(:)
-         ${T}$, intent(in)               :: z_o(:)
-         ${T}$                           :: dz(this%n_e,this%n)
+         class(bvp_${S}$), intent(in) :: this
+         ${T}$, intent(in)            :: y(:,:)
+         ${T}$, intent(in)            :: z_i(:)
+         ${T}$, intent(in)            :: z_o(:)
+         ${T}$, intent(out)           :: dz(:,:)
 
          ${T}$ :: u(this%n_e*this%n)
          ${T}$ :: dv(this%n_e*this%n)
@@ -309,13 +284,14 @@ contains
          @:CHECK_BOUNDS(SIZE(z_i), this%n_i)
          @:CHECK_BOUNDS(SIZE(z_o), this%n_o)
 
-         @:ASSERT_DEBUG(.NOT. this%factored, 'matrix has already been factorized')
+         @:CHECK_BOUNDS(SIZE(dz, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(dz, 2), this%n)
 
          ! Evaluate the residuals vector dy of the inhomogeneous system
 
          u = RESHAPE(y, SHAPE(u))
 
-         dv = this%sm%resd_vec_inhom(u, z_i, z_o)
+         call this%sm%eval_resd_vec_inhom(u, z_i, z_o, dv)
 
          dz = RESHAPE(dv, SHAPE(dz))
 
@@ -323,7 +299,7 @@ contains
 
          return
 
-      end function resd_vec_inhom_${S}$_
+      end subroutine eval_resd_vec_inhom_${S}$_
 
    #:endfor
 

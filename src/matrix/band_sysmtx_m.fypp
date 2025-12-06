@@ -48,6 +48,7 @@ module band_sysmtx_m
          type(ext_${S}$), allocatable :: scl(:)    ! Block scales
          integer                      :: n_l       ! Number of sub-diagonals
          integer                      :: n_u       ! Number of super-diagonals
+         logical                      :: factored  ! Factorization flag
       contains
          private
          procedure, public :: set_B_i => set_B_i_${S}$_
@@ -55,13 +56,13 @@ module band_sysmtx_m
          procedure, public :: set_E => set_E_${S}$_
          procedure         :: set_row_ => set_row_${S}$_
          procedure         :: get_row_ => get_row_${S}$_
-         procedure, public :: factor => factor_${S}$_
+         procedure         :: factor_ => factor_${S}$_
          procedure         :: scale_rows_ => scale_rows_${S}$_
-         procedure, public :: det => det_${S}$_
-         procedure, public :: soln_vec_hom => soln_vec_hom_${S}$_
-         procedure, public :: soln_vec_inhom => soln_vec_inhom_${S}$_
-         procedure, public :: resd_vec_hom => resd_vec_hom_${S}$_
-         procedure, public :: resd_vec_inhom => resd_vec_inhom_${S}$_
+         procedure, public :: eval_det => eval_det_${S}$_
+         procedure, public :: eval_soln_vec_hom => eval_soln_vec_hom_${S}$_
+         procedure, public :: eval_soln_vec_inhom => eval_soln_vec_inhom_${S}$_
+         procedure, public :: eval_resd_vec_hom => eval_resd_vec_hom_${S}$_
+         procedure, public :: eval_resd_vec_inhom => eval_resd_vec_inhom_${S}$_
          procedure, public :: dump => dump_${S}$_
       end type band_sysmtx_${S}$
 
@@ -115,6 +116,8 @@ contains
          sm%n_i = n_i
          sm%n_o = n_o
 
+         sm%factored = .FALSE.
+
          ! Finish
 
          return
@@ -149,6 +152,9 @@ contains
 
          this%scl_i = scl
 
+         !$OMP ATOMIC UPDATE
+         this%factored = this%factored .AND. .FALSE.
+
          ! Finish
 
          return
@@ -182,6 +188,9 @@ contains
          end do
 
          this%scl_o = scl
+
+         !$OMP ATOMIC UPDATE
+         this%factored = this%factored .AND. .FALSE.
 
          ! Finish
 
@@ -227,6 +236,9 @@ contains
          end do
 
          this%scl(k) = scl
+
+         !$OMP ATOMIC UPDATE
+         this%factored = this%factored .AND. .FALSE.
 
          ! Finish
 
@@ -333,6 +345,8 @@ contains
          call XGBTRF(m, m, this%n_l, this%n_u, this%A_b, n, this%ipiv, info)
          @:ASSERT(info == 0 .OR. info > m-this%n_e, 'non-zero return from XGBTRF')
 
+         this%factored = .TRUE.
+
          ! Finish
 
          return
@@ -397,14 +411,16 @@ contains
 
       !****
 
-      function det_${S}$_(this) result(det)
+      subroutine eval_det_${S}$_(this, det)
 
-         class(band_sysmtx_${S}$), intent(in) :: this
-         type(ext_${S}$)                      :: det
+         class(band_sysmtx_${S}$), intent(inout) :: this
+         type(ext_${S}$), intent(out)            :: det
 
          integer :: j
 
          ! Evaluate the determinant
+
+         if (.NOT. this%factored) call this%factor_()
 
          det = product([ &
             ext_${S}$(this%A_b(this%n_l+this%n_u+1,:)), &
@@ -419,14 +435,14 @@ contains
 
          return
 
-      end function det_${S}$_
+      end subroutine eval_det_${S}$_
 
       !****
 
-      function soln_vec_hom_${S}$_(this) result(u)
+      subroutine eval_soln_vec_hom_${S}$_(this, u)
 
-         class(band_sysmtx_${S}$), intent(in) :: this
-         ${T}$                                :: u(this%n_e*(this%n+1))
+         class(band_sysmtx_${S}$), intent(inout) :: this
+         ${T}$, intent(out)                      :: u(:)
 
          integer              :: i_s
          real(RD)             :: A_s
@@ -438,8 +454,12 @@ contains
          integer              :: j
          integer              :: info
 
+         @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
+
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) >= 1
+
+         if (.NOT. this%factored) call this%factor_()
 
          associate (n => this%n, n_e => this%n_e, n_l => this%n_l, n_u => this%n_u)
 
@@ -493,16 +513,16 @@ contains
 
          return
 
-      end function soln_vec_hom_${S}$_
+      end subroutine eval_soln_vec_hom_${S}$_
 
       !****
 
-      function soln_vec_inhom_${S}$_(this, v_i, v_o) result(u)
+      subroutine eval_soln_vec_inhom_${S}$_(this, v_i, v_o, u)
 
-         class(band_sysmtx_${S}$), intent(in) :: this
-         ${T}$, intent(in)                    :: v_i(:)
-         ${T}$, intent(in)                    :: v_o(:)
-         ${T}$                                :: u(this%n_e*(this%n+1))
+         class(band_sysmtx_${S}$), intent(inout) :: this
+         ${T}$, intent(in)                       :: v_i(:)
+         ${T}$, intent(in)                       :: v_o(:)
+         ${T}$, intent(out)                      :: u(:)
 
          ${T}$   :: B(this%n_e*(this%n+1),1)
          integer :: info
@@ -510,12 +530,16 @@ contains
          @:CHECK_BOUNDS(SIZE(v_i), this%n_i)
          @:CHECK_BOUNDS(SIZE(v_o), this%n_o)
 
+         @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
+
          ! Evaluate the solution vector u of the inhomogeneous linear
          ! system S u = v. It is assumed that the right-hand side vector v
          ! has non-zero components in only the n_i first and n_o last rows
          ! (corresponding to the inner and outer boundary
          ! conditions). These components are supplied in v_i and v_o,
          ! respectively.
+
+         if (.NOT. this%factored) call this%factor_()
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_l => this%n_l, n_u => this%n_u)
 
@@ -539,15 +563,15 @@ contains
 
          return
 
-      end function soln_vec_inhom_${S}$_
+      end subroutine eval_soln_vec_inhom_${S}$_
 
       !****
 
-      function resd_vec_hom_${S}$_(this, u) result(dv)
+      subroutine eval_resd_vec_hom_${S}$_(this, u, dv)
 
          class(band_sysmtx_${S}$), intent(in) :: this
          ${T}$, intent(in)                    :: u(:)
-         ${T}$                                :: dv(this%n_e*(this%n+1))
+         ${T}$, intent(out)                   :: dv(:)
 
          integer :: i
          integer :: j_a
@@ -555,6 +579,8 @@ contains
          ${T}$   :: R(this%n_e*(this%n+1))
 
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
+
+         @:CHECK_BOUNDS(SIZE(dv), this%n_e*(this%n+1))
 
          ! Evaluate the residual vector dv = S u of the homogeneous linear
          ! system S u = 0.
@@ -579,22 +605,24 @@ contains
 
          return
 
-      end function resd_vec_hom_${S}$_
+      end subroutine eval_resd_vec_hom_${S}$_
 
       !****
 
-      function resd_vec_inhom_${S}$_(this, u, v_i, v_o) result(dv)
+      subroutine eval_resd_vec_inhom_${S}$_(this, u, v_i, v_o, dv)
 
          class(band_sysmtx_${S}$), intent(in) :: this
          ${T}$, intent(in)                      :: u(:)
          ${T}$, intent(in)                      :: v_i(:)
          ${T}$, intent(in)                      :: v_o(:)
-         ${T}$                                  :: dv(this%n_e*(this%n+1))
+         ${T}$, intent(out)                     :: dv(:)
 
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
 
          @:CHECK_BOUNDS(SIZE(v_i), this%n_i)
          @:CHECK_BOUNDS(SIZE(v_o), this%n_o)
+
+         @:CHECK_BOUNDS(SIZE(dv), this%n_e*(this%n+1))
 
          ! Evaluate the residual vector dv = S u - v of the inhomogeneous
          ! linear system S u = v. It is assumed that the right-hand side
@@ -605,7 +633,7 @@ contains
 
          ! First evaluate dv for the homogeneous case
 
-         dv = this%resd_vec_hom(u)
+         call this%eval_resd_vec_hom(u, dv)
 
          ! Subtract v
 
@@ -620,7 +648,7 @@ contains
 
          return
 
-      end function resd_vec_inhom_${S}$_
+      end subroutine eval_resd_vec_inhom_${S}$_
 
       !****
 

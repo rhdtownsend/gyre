@@ -158,9 +158,8 @@ contains
       ! Calculate the solution vector
 
       call bp%build(st)
-      call bp%factor()
 
-      y = bp%soln_vec_inhom(z_i, z_o)
+      call bp%eval_soln_vec_inhom(z_i, z_o, y)
 
       ! Convert to canonical form
 
@@ -191,7 +190,7 @@ contains
 
       complex(RD)    :: y_c(6,bp%n)
       type(state_ct) :: st_c
-      type(ext_ct)   :: discrim
+      type(ext_rt)   :: discrim
 
       ! Set up complex eigenfunctions
 
@@ -206,9 +205,9 @@ contains
 
       ! Construct the wave_t
 
-      discrim = ext_ct(bp%det())
+      call bp%eval_det(discrim)
 
-      wv = wave_t(st_c, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, static=.TRUE.)
+      wv = wave_t(st_c, y_c, ext_ct(discrim), bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, static=.TRUE.)
 
       ! Finish
 

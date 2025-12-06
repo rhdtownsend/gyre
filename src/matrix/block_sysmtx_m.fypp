@@ -48,19 +48,20 @@ module block_sysmtx_m
          ${T}$, allocatable           :: scl_i(:)    ! Inner boundary scales
          ${T}$, allocatable           :: scl_o(:)    ! Outer boundary scales
          type(ext_${S}$), allocatable :: scl(:)      ! Block scales
+         logical                      :: factored    ! Factorization flag
       contains
          private
          procedure, public :: set_B_i => set_B_i_${S}$_
          procedure, public :: set_B_o => set_B_o_${S}$_
          procedure, public :: set_E => set_E_${S}$_
-         procedure, public :: factor => factor_${S}$_
+         procedure         :: factor_ => factor_${S}$_
          procedure         :: scale_rows_ => scale_rows_${S}$_
-         procedure, public :: det => det_${S}$_
-         procedure, public :: soln_vec_hom => soln_vec_hom_${S}$_
-         procedure, public :: soln_vec_inhom => soln_vec_inhom_${S}$_
+         procedure, public :: eval_det => eval_det_${S}$_
+         procedure, public :: eval_soln_vec_hom => eval_soln_vec_hom_${S}$_
+         procedure, public :: eval_soln_vec_inhom => eval_soln_vec_inhom_${S}$_
          procedure         :: backsub_ => backsub_${S}$_
-         procedure, public :: resd_vec_hom => resd_vec_hom_${S}$_
-         procedure, public :: resd_vec_inhom => resd_vec_inhom_${S}$_
+         procedure, public :: eval_resd_vec_hom => eval_resd_vec_hom_${S}$_
+         procedure, public :: eval_resd_vec_inhom => eval_resd_vec_inhom_${S}$_
          procedure, public :: dump => dump_${S}$_
       end type block_sysmtx_${S}$
 
@@ -112,6 +113,8 @@ contains
          sm%n_i = n_i
          sm%n_o = n_o
 
+         sm%factored = .FALSE.
+
          ! Finish
 
          return
@@ -136,6 +139,9 @@ contains
          this%B_i = B
          this%scl_i = scl
 
+         !$OMP ATOMIC UPDATE
+         this%factored = this%factored .AND. .FALSE.
+
          ! Finish
 
          return
@@ -159,6 +165,9 @@ contains
 
          this%B_o = B
          this%scl_o = scl
+
+         !$OMP ATOMIC UPDATE
+         this%factored = this%factored .AND. .FALSE.
 
          ! Finish
 
@@ -191,6 +200,9 @@ contains
          this%E_r(:,:,k) = E_r
 
          this%scl(k) = scl
+
+         !$OMP ATOMIC UPDATE
+         this%factored = this%factored .AND. .FALSE.
 
          ! Finish
 
@@ -303,6 +315,8 @@ contains
 
          end associate
 
+         this%factored = .TRUE.
+
          ! Finish
 
          return
@@ -352,10 +366,10 @@ contains
 
       !****
 
-      function det_${S}$_(this) result(det)
+      subroutine eval_det_${S}$_(this, det)
 
-         class(block_sysmtx_${S}$), intent(in) :: this
-         type(ext_${S}$)                       :: det
+         class(block_sysmtx_${S}$), intent(inout) :: this
+         type(ext_${S}$), intent(out)             :: det
 
          ${T}$   :: M(2*this%n_e,2*this%n_e)
          integer :: ipiv(2*this%n_e)
@@ -363,6 +377,8 @@ contains
          integer :: i
 
          ! Evaluate the determinant
+
+         if (.NOT. this%factored) call this%factor_()
 
          associate (n_e => this%n_e, n_i => this%n_i)
 
@@ -395,14 +411,14 @@ contains
 
          return
 
-      end function det_${S}$_
+      end subroutine eval_det_${S}$_
 
       !****
 
-      function soln_vec_hom_${S}$_(this) result(u)
+      subroutine eval_soln_vec_hom_${S}$_(this, u)
 
-         class(block_sysmtx_${S}$), intent(in) :: this
-         ${T}$                                 :: u(this%n_e*(this%n+1))
+         class(block_sysmtx_${S}$), intent(inout) :: this
+         ${T}$, intent(out)                       :: u(:)
 
          logical, parameter :: USE_SVD = .TRUE.
          ${T}$, parameter   :: ZERO = 0._RD
@@ -419,11 +435,15 @@ contains
          integer  :: i
          ${T}$    :: u_bound(2*this%n_e)
 
+         @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
+
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) >= 1; if nul(S) =
          ! 0, then this routine will return the vector which minimizes the
          ! norm of S u. When nul(S) > 1, the routine returns the null
          ! vector associated with the smallest eigenvalue.
+
+         if (.NOT. this%factored) call this%factor_()
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
@@ -493,16 +513,16 @@ contains
 
          return
 
-      end function soln_vec_hom_${S}$_
+      end subroutine eval_soln_vec_hom_${S}$_
 
       !****
 
-      function soln_vec_inhom_${S}$_(this, v_i, v_o) result(u)
+      subroutine eval_soln_vec_inhom_${S}$_(this, v_i, v_o, u)
 
-         class(block_sysmtx_${S}$), intent(in) :: this
-         ${T}$, intent(in)                     :: v_i(:)
-         ${T}$, intent(in)                     :: v_o(:)
-         ${T}$                                 :: u(this%n_e*(this%n+1))
+         class(block_sysmtx_${S}$), intent(inout) :: this
+         ${T}$, intent(in)                        :: v_i(:)
+         ${T}$, intent(in)                        :: v_o(:)
+         ${T}$, intent(out)                       :: u(:)
 
          ${T}$   :: M(2*this%n_e,2*this%n_e)
          integer :: ipiv(2*this%n_e)
@@ -513,12 +533,16 @@ contains
          @:CHECK_BOUNDS(SIZE(v_i), this%n_i)
          @:CHECK_BOUNDS(SIZE(v_o), this%n_o)
 
+         @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
+
          ! Evaluate the solution vector v of the inhomogeneous linear
          ! system S u = v. It is assumed that the right-hand side vector v
          ! has non-zero components in only the n_i first and n_o last rows
          ! (corresponding to the inner and outer boundary
          ! conditions). These components are supplied in v_i and v_o,
          ! respectively.
+
+         if (.NOT. this%factored) call this%factor_()
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
@@ -557,7 +581,7 @@ contains
 
          return
 
-      end function soln_vec_inhom_${S}$_
+      end subroutine eval_soln_vec_inhom_${S}$_
 
       !****
 
@@ -626,17 +650,19 @@ contains
 
       !****
 
-      function resd_vec_hom_${S}$_(this, u) result(dv)
+      subroutine eval_resd_vec_hom_${S}$_(this, u, dv)
 
          class(block_sysmtx_${S}$), intent(in) :: this
          ${T}$, intent(in)                     :: u(:)
-         ${T}$                                 :: dv(this%n_e*(this%n+1))
+         ${T}$, intent(out)                    :: dv(:)
 
          integer :: k
          integer :: i_a
          integer :: i_b
 
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
+
+         @:CHECK_BOUNDS(SIZE(dv), this%n_e*(this%n+1))
 
          ! Evaluate the residual vector dv = S u of the homogeneous linear
          ! system S u = 0.
@@ -663,22 +689,24 @@ contains
 
          return
 
-      end function resd_vec_hom_${S}$_
+      end subroutine eval_resd_vec_hom_${S}$_
 
       !****
 
-      function resd_vec_inhom_${S}$_(this, u, v_i, v_o)result(dv)
+      subroutine eval_resd_vec_inhom_${S}$_(this, u, v_i, v_o, dv)
 
          class(block_sysmtx_${S}$), intent(in) :: this
          ${T}$, intent(in)                     :: u(:)
          ${T}$, intent(in)                     :: v_i(:)
          ${T}$, intent(in)                     :: v_o(:)
-         ${T}$                                 :: dv(this%n_e*(this%n+1))
+         ${T}$, intent(out)                    :: dv(:)
 
          @:CHECK_BOUNDS(SIZE(u),this%n_e*(this%n+1))
 
          @:CHECK_BOUNDS(SIZE(v_i),this%n_i)
          @:CHECK_BOUNDS(SIZE(v_o),this%n_o)
+
+         @:CHECK_BOUNDS(SIZE(dv), this%n_e*(this%n+1))
 
          ! Evaluate the residual vector dv = S u - v of the inhomogeneous
          ! linear system S u = v. It is assumed that the right-hand side
@@ -689,7 +717,7 @@ contains
 
          ! First evaluate dv for the homogeneous case
 
-         dv = this%resd_vec_hom(u)
+         call this%eval_resd_vec_hom(u, dv)
 
          ! Subtract v
 
@@ -704,7 +732,7 @@ contains
 
          return
 
-      end function resd_vec_inhom_${S}$_
+      end subroutine eval_resd_vec_inhom_${S}$_
 
       !****
 

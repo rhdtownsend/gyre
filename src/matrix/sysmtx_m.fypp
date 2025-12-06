@@ -33,16 +33,15 @@ module sysmtx_m
          integer :: n_i  ! Number of inner boundary conditions
          integer :: n_o  ! Number of outer boundary conditions
       contains
-         procedure(set_B_${S}$_), deferred          :: set_B_i
-         procedure(set_B_${S}$_), deferred          :: set_B_o
-         procedure(set_E_${S}$_), deferred          :: set_E
-         procedure(factor_${S}$_), deferred         :: factor
-         procedure(det_${S}$_), deferred            :: det
-         procedure(soln_vec_hom_${S}$_), deferred   :: soln_vec_hom
-         procedure(soln_vec_inhom_${S}$_), deferred :: soln_vec_inhom
-         procedure(resd_vec_hom_${S}$_), deferred   :: resd_vec_hom
-         procedure(resd_vec_inhom_${S}$_), deferred :: resd_vec_inhom
-         procedure(dump_${S}$_), deferred           :: dump
+         procedure(set_B_${S}$_), deferred               :: set_B_i
+         procedure(set_B_${S}$_), deferred               :: set_B_o
+         procedure(set_E_${S}$_), deferred               :: set_E
+         procedure(eval_det_${S}$_), deferred            :: eval_det
+         procedure(eval_soln_vec_hom_${S}$_), deferred   :: eval_soln_vec_hom
+         procedure(eval_soln_vec_inhom_${S}$_), deferred :: eval_soln_vec_inhom
+         procedure(eval_resd_vec_hom_${S}$_), deferred   :: eval_resd_vec_hom
+         procedure(eval_resd_vec_inhom_${S}$_), deferred :: eval_resd_vec_inhom
+         procedure(dump_${S}$_), deferred                :: dump
       end type sysmtx_${S}$
 
       ! Interfaces
@@ -71,61 +70,55 @@ module sysmtx_m
             type(ext_${S}$), intent(in)        :: scl
          end subroutine set_E_${S}$_
 
-         function det_${S}$_(this) result(det)
+         subroutine eval_det_${S}$_(this, det)
             use ext_m
-            import sysmtx_${S}$
-            implicit none (type, external)
-            class(sysmtx_${S}$), intent(in) :: this
-            type(ext_${S}$)                 :: det
-         end function det_${S}$_
-
-         subroutine factor_${S}$_(this)
             import sysmtx_${S}$
             implicit none (type, external)
             class(sysmtx_${S}$), intent(inout) :: this
-         end subroutine factor_${S}$_
+            type(ext_${S}$), intent(out)       :: det
+         end subroutine eval_det_${S}$_
 
-         function soln_vec_hom_${S}$_(this) result(u)
+         subroutine eval_soln_vec_hom_${S}$_(this, u)
             use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
             implicit none (type, external)
-            class(sysmtx_${S}$), intent(in) :: this
-            ${T}$                           :: u(this%n_e*(this%n+1))
-         end function soln_vec_hom_${S}$_
+            class(sysmtx_${S}$), intent(inout) :: this
+            ${T}$, intent(out)                 :: u(:)
+         end subroutine eval_soln_vec_hom_${S}$_
 
-         function soln_vec_inhom_${S}$_(this, v_i, v_o) result(u)
+         subroutine eval_soln_vec_inhom_${S}$_(this, v_i, v_o, u)
             use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
             implicit none (type, external)
-           class(sysmtx_${S}$), intent(in) :: this
-            ${T}$, intent(in)               :: v_i(:)
-            ${T}$, intent(in)               :: v_o(:)
-            ${T}$                           :: u(this%n_e*(this%n+1))
-         end function soln_vec_inhom_${S}$_
+           class(sysmtx_${S}$), intent(inout) :: this
+            ${T}$, intent(in)                 :: v_i(:)
+            ${T}$, intent(in)                 :: v_o(:)
+            ${T}$, intent(out)                :: u(:)
+         end subroutine eval_soln_vec_inhom_${S}$_
 
-         function resd_vec_hom_${S}$_(this, u) result(dv)
-            use forum_m, only: RD
-            use ext_m
-            import sysmtx_${S}$
-            implicit none (type, external)
-            class(sysmtx_${S}$), intent(in) :: this
-            ${T}$, intent(in)               :: u(:)
-            ${T}$                           :: dv(this%n_e*(this%n+1))
-         end function resd_vec_hom_${S}$_
-
-         function resd_vec_inhom_${S}$_(this, u, v_i, v_o) result(dv)
+         subroutine eval_resd_vec_hom_${S}$_(this, u, dv)
             use forum_m, only: RD
             use ext_m
             import sysmtx_${S}$
             implicit none (type, external)
             class(sysmtx_${S}$), intent(in) :: this
             ${T}$, intent(in)               :: u(:)
+            ${T}$, intent(out)              :: dv(:)
+         end subroutine eval_resd_vec_hom_${S}$_
+
+         subroutine eval_resd_vec_inhom_${S}$_(this, u, v_i, v_o, dv)
+            use forum_m, only: RD
+            use ext_m
+            import sysmtx_${S}$
+            implicit none (type, external)
+            class(sysmtx_${S}$), intent(in) :: this
+            ${T}$, intent(in)               :: u(:)
             ${T}$, intent(in)               :: v_i(:)
             ${T}$, intent(in)               :: v_o(:)
-            ${T}$                           :: dv(this%n_e*(this%n+1))
-         end function resd_vec_inhom_${S}$_
+            ${T}$, intent(out)              :: dv(:)
+         end subroutine eval_resd_vec_inhom_${S}$_
 
          subroutine dump_${S}$_(this, hi)
             use forum_m, only: hdf5io_t

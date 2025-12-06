@@ -143,9 +143,8 @@ contains
       ! Calculate the homogeneous solution vector
 
       call bp%build(st)
-      call bp%factor()
 
-      y = bp%soln_vec_hom()
+      call bp%eval_soln_vec_hom(y)
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
@@ -182,9 +181,8 @@ contains
       ! Calculate the inhomogeneous solution vector
 
       call bp%build(st)
-      call bp%factor()
 
-      y = bp%soln_vec_inhom(z_i, z_o)
+      call bp%eval_soln_vec_inhom(z_i, z_o, y)
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
@@ -218,7 +216,7 @@ contains
 
       ! Construct the wave_t
 
-      discrim = bp%det()
+      call bp%eval_det(discrim)
 
       wv = wave_t(st, y, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id)
 
