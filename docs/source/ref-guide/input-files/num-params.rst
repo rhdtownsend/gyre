@@ -35,7 +35,7 @@ used. Allowable fields are:
 :nml_n:`n_iter_max` (default :nml_v:`50`)
   Maximum number of iterations in root-finding algorithm
 
-:nml_n:`matrix_type` (default :nml_v:`'BLOCK`')
+:nml_n:`matrix_type` (default :nml_v:`'BAND`')
   Storage type of system matrix; one of
 
   - :nml_v:`'BAND'` : Band-structured
@@ -46,7 +46,7 @@ used. Allowable fields are:
   being found multiple times
 
 :nml_n:`restrict_roots` (default :nml_v:`.TRUE.`)
-  Flag to check each roots found lies within the bounds of the frequency scan
+  Flag to discard roots that fall outside the bounds of the frequency scan
 
 :nml_n:`parallel_scan` (default :nml_v:`.TRUE.`)
    Parallelize the frequency scan
