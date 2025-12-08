@@ -55,7 +55,6 @@ module block_sysmtx_m
          procedure, public :: set_B_o => set_B_o_${S}$_
          procedure, public :: set_E => set_E_${S}$_
          procedure         :: factor_ => factor_${S}$_
-         procedure         :: scale_rows_ => scale_rows_${S}$_
          procedure, public :: eval_det => eval_det_${S}$_
          procedure, public :: eval_soln_vec_hom => eval_soln_vec_hom_${S}$_
          procedure, public :: eval_soln_vec_inhom => eval_soln_vec_inhom_${S}$_
@@ -219,13 +218,14 @@ contains
          ${T}$, parameter :: ONE = 1._RD
 
          integer :: l
+         integer :: i
          integer :: k
+         ${T}$   :: scl
          ${T}$   :: M_G(2*this%n_e,this%n_e)
          ${T}$   :: M_U(2*this%n_e,this%n_e)
          ${T}$   :: M_E(2*this%n_e,this%n_e)
          integer :: ipiv(this%n_e)
          integer :: info
-         integer :: i
 
          ! Factorize the sysmtx using the cyclic structured (SLU) algorithm
          ! by [Wri1994]. The factorization is done in place: E_l(:,:,1) and
@@ -236,9 +236,37 @@ contains
 
          !$OMP PARALLEL PRIVATE(l)
 
-         call this%scale_rows_()
-
          associate (n => this%n, n_e => this%n_e)
+
+            ! Scale the rows of the sysmtx to have maximum absolute value of
+            ! unity
+
+            !$OMP SINGLE
+            do i = 1, this%n_i
+               scl = MAXVAL(abs(this%B_i(i,:)))
+               this%B_i(i,:) = this%B_i(i,:)/scl
+               this%scl_i(i) = this%scl_i(i)*scl
+            end do
+            !$OMP END SINGLE
+
+            !$OMP DO PRIVATE(i, scl)
+            do k = 1, this%n
+               do i = 1, this%n_e
+                  scl = MAX(MAXVAL(abs(this%E_l(i,:,k))), MAXVAL(abs(this%E_r(i,:,k))))
+                  this%E_l(i,:,k) = this%E_l(i,:,k)/scl
+                  this%E_r(i,:,k) = this%E_r(i,:,k)/scl
+                  this%scl(k) = this%scl(k)*scl
+               end do
+            end do
+            !$OMP END DO
+
+            !$OMP SINGLE
+            do i = 1, this%n_o
+               scl = MAXVAL(abs(this%B_o(i,:)))
+               this%B_o(i,:) = this%B_o(i,:)/scl
+               this%scl_o(i) = this%scl_o(i)*scl
+            end do
+            !$OMP END SINGLE
 
             ! Loop through factorization levels
 
@@ -326,47 +354,6 @@ contains
          return
 
       end subroutine factor_${S}$_
-
-      !****
-
-      subroutine scale_rows_${S}$_(this)
-
-         class(block_sysmtx_${S}$), intent(inout) :: this
-
-         real(RD) :: scl
-         integer  :: i
-         integer  :: k
-
-         ! Scale the rows of the sysmtx to have maximum absolute value of
-         ! unity
-
-         do i = 1, this%n_i
-            scl = MAXVAL(abs(this%B_i(i,:)))
-            this%B_i(i,:) = this%B_i(i,:)/scl
-            this%scl_i(i) = this%scl_i(i)*scl
-         end do
-
-         !$OMP DO PRIVATE(i, scl)
-         do k = 1, this%n
-            do i = 1, this%n_e
-               scl = MAX(MAXVAL(abs(this%E_l(i,:,k))), MAXVAL(abs(this%E_r(i,:,k))))
-               this%E_l(i,:,k) = this%E_l(i,:,k)/scl
-               this%E_r(i,:,k) = this%E_r(i,:,k)/scl
-               this%scl(k) = this%scl(k)*scl
-            end do
-         end do
-
-         do i = 1, this%n_o
-            scl = MAXVAL(abs(this%B_o(i,:)))
-            this%B_o(i,:) = this%B_o(i,:)/scl
-            this%scl_o(i) = this%scl_o(i)*scl
-         end do
-
-         ! Finish
-
-         return
-
-      end subroutine scale_rows_${S}$_
 
       !****
 
