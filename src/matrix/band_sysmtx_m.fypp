@@ -57,7 +57,6 @@ module band_sysmtx_m
          procedure         :: set_row_ => set_row_${S}$_
          procedure         :: get_row_ => get_row_${S}$_
          procedure         :: factor_ => factor_${S}$_
-         procedure         :: scale_rows_ => scale_rows_${S}$_
          procedure, public :: eval_det => eval_det_${S}$_
          procedure, public :: eval_soln_vec_hom => eval_soln_vec_hom_${S}$_
          procedure, public :: eval_soln_vec_inhom => eval_soln_vec_inhom_${S}$_
@@ -337,8 +336,6 @@ contains
 
          ! Factorize the sysmtx using LU decomposition
 
-         call this%scale_rows_()
-
          n = SIZE(this%A_b, 1)
          m = SIZE(this%A_b, 2)
 
@@ -352,62 +349,6 @@ contains
          return
 
       end subroutine factor_${S}$_
-
-      !****
-
-      subroutine scale_rows_${S}$_(this)
-
-         class(band_sysmtx_${S}$), intent(inout) :: this
-
-         integer  :: i
-         integer  :: j
-         real(RD) :: scl
-         integer  :: i_b
-         integer  :: j_b
-
-         ! Scale the rows of the sysmtx to have maximum absolute value of unity
-
-         do i = 1, this%n_e*(this%n+1)
-
-            scl = 0._RD
-
-            do j = MAX(i-this%n_l, 1), MIN(i+this%n_u, this%n_e*(this%n+1))
-               i_b = this%n_l + this%n_u + 1 + i - j
-               j_b = j
-               scl = MAX(scl, abs(this%A_b(i_b,j_b)))
-            end do
-
-            do j = MAX(i-this%n_l, 1), MIN(i+this%n_u, this%n_e*(this%n+1))
-               i_b = this%n_l + this%n_u + 1 + i - j
-               j_b = j
-               this%A_b(i_b,j_b) = this%A_b(i_b,j_b)/scl
-            end do
-
-            if (i <= this%n_i) then
-
-               this%scl_i(i) = this%scl_i(i)*scl
-
-            elseif (i > this%n_e*this%n + this%n_i) then
-
-               associate (i_ => i-this%n_e*this%n-this%n_i)
-                  this%scl_o(i_) = this%scl_o(i_)*scl
-               end associate
-
-            else
-
-               associate (k => (i-1+this%n_o)/this%n_e)
-                  this%scl(k) = this%scl(k)*scl
-               end associate
-
-            endif
-
-         end do
-
-         ! Finish
-
-         return
-
-      end subroutine scale_rows_${S}$_
 
       !****
 
