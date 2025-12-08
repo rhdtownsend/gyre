@@ -234,6 +234,8 @@ contains
          ! reconstruct solutions, and S is scaled by the factorization
          ! determinants
 
+         !$OMP PARALLEL PRIVATE(l)
+
          call this%scale_rows_()
 
          associate (n => this%n, n_e => this%n_e)
@@ -248,7 +250,7 @@ contains
 
                ! Reduce pairs of blocks to single blocks
 
-               !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (M_G, M_U, M_E, ipiv, info, i)
+               !$OMP DO SCHEDULE(DYNAMIC) PRIVATE(M_G, M_U, M_E, ipiv, info, i)
                reduce_loop : do k = 1, n-l, 2*l
 
                   ! Set up matrices (see expressions following eqn. 2.5 of
@@ -315,6 +317,8 @@ contains
 
          end associate
 
+         !$OMP END PARALLEL
+
          this%factored = .TRUE.
 
          ! Finish
@@ -342,7 +346,7 @@ contains
             this%scl_i(i) = this%scl_i(i)*scl
          end do
 
-         !$OMP PARALLEL DO PRIVATE (i, scl)
+         !$OMP DO PRIVATE(i, scl)
          do k = 1, this%n
             do i = 1, this%n_e
                scl = MAX(MAXVAL(abs(this%E_l(i,:,k))), MAXVAL(abs(this%E_r(i,:,k))))
