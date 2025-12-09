@@ -48,20 +48,14 @@ module band_sysmtx_m
          type(ext_${S}$), allocatable :: scl(:)    ! Block scales
          integer                      :: n_l       ! Number of sub-diagonals
          integer                      :: n_u       ! Number of super-diagonals
-         logical                      :: factored  ! Factorization flag
       contains
          private
-         procedure, public :: set_B_i => set_B_i_${S}$_
-         procedure, public :: set_B_o => set_B_o_${S}$_
-         procedure, public :: set_E => set_E_${S}$_
          procedure         :: set_row_ => set_row_${S}$_
          procedure         :: get_row_ => get_row_${S}$_
-         procedure         :: factor_ => factor_${S}$_
+         procedure         :: build_and_factor_ => build_and_factor_${S}$_
          procedure, public :: eval_det => eval_det_${S}$_
-         procedure, public :: eval_soln_vec_hom => eval_soln_vec_hom_${S}$_
-         procedure, public :: eval_soln_vec_inhom => eval_soln_vec_inhom_${S}$_
-         procedure, public :: eval_resd_vec_hom => eval_resd_vec_hom_${S}$_
-         procedure, public :: eval_resd_vec_inhom => eval_resd_vec_inhom_${S}$_
+         procedure, public :: solve_hom => solve_hom_${S}$_
+         procedure, public :: solve_inhom => solve_inhom_${S}$_
          procedure, public :: dump => dump_${S}$_
       end type band_sysmtx_${S}$
 
@@ -115,135 +109,11 @@ contains
          sm%n_i = n_i
          sm%n_o = n_o
 
-         sm%factored = .FALSE.
-
          ! Finish
 
          return
 
       end function band_sysmtx_${S}$_
-
-      !****
-
-      subroutine set_B_i_${S}$_(this, B, scl)
-
-         class(band_sysmtx_${S}$), intent(inout) :: this
-         ${T}$, intent(in)                       :: B(:,:)
-         ${T}$, intent(in)                       :: scl(:)
-
-         integer :: i_0
-         integer :: j_0
-         integer :: i
-
-         @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
-         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-         @:CHECK_BOUNDS(SIZE(scl), this%n_i)
-
-         ! Set the inner boundary conditions
-
-         i_0 = 1
-         j_0 = 1
-
-         do i = 1, this%n_i
-            call this%set_row_(i_0+i-1, j_0, B(i,:))
-         end do
-
-         this%scl_i = scl
-
-         !$OMP ATOMIC UPDATE
-         this%factored = this%factored .AND. .FALSE.
-
-         ! Finish
-
-         return
-
-      end subroutine set_B_i_${S}$_
-
-      !****
-
-      subroutine set_B_o_${S}$_(this, B, scl)
-
-         class(band_sysmtx_${S}$), intent(inout) :: this
-         ${T}$, intent(in)                       :: B(:,:)
-         ${T}$, intent(in)                       :: scl(:)
-
-         integer :: i_0
-         integer :: j_0
-         integer :: i
-
-         @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
-         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-         @:CHECK_BOUNDS(SIZE(scl), this%n_o)
-
-         ! Set the outer boundary conditions
-
-         i_0 = this%n*this%n_e + this%n_i + 1
-         j_0 = this%n*this%n_e + 1
-
-         do i = 1, this%n_o
-            call this%set_row_(i_0+i-1, j_0, B(i,:))
-         end do
-
-         this%scl_o = scl
-
-         !$OMP ATOMIC UPDATE
-         this%factored = this%factored .AND. .FALSE.
-
-         ! Finish
-
-         return
-
-      end subroutine set_B_o_${S}$_
-
-      !****
-
-      subroutine set_E_${S}$_(this, k, E_l, E_r, scl)
-
-         class(band_sysmtx_${S}$), intent(inout) :: this
-         integer, intent(in)                     :: k
-         ${T}$, intent(in)                       :: E_l(:,:)
-         ${T}$, intent(in)                       :: E_r(:,:)
-         type(ext_${S}$), intent(in)             :: scl
-
-         integer :: i_0
-         integer :: j_0
-         integer :: i
-         ${T}$   :: R(2*this%n_e)
-
-         @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
-         @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
-
-         @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
-         @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
-
-         @:ASSERT(k >= 1, 'invalid block index')
-         @:ASSERT(k <= this%n, 'invalid block index')
-
-         ! Set the block
-
-         i_0 = this%n_e*(k-1) + this%n_i + 1
-         j_0 = this%n_e*(k-1) + 1
-
-         do i = 1, this%n_e
-
-            R = [E_l(i,:),E_r(i,:)]
-
-            call this%set_row_(i_0+i-1, j_0, R)
-
-         end do
-
-         this%scl(k) = scl
-
-         !$OMP ATOMIC UPDATE
-         this%factored = this%factored .AND. .FALSE.
-
-         ! Finish
-
-         return
-
-      end subroutine set_E_${S}$_
 
       !****
 
@@ -326,42 +196,122 @@ contains
 
       !****
 
-      subroutine factor_${S}$_(this)
+      subroutine build_and_factor_${S}$_(this, eval_B, eval_E)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
+         interface
+            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+               use forum_m, only: RD
+               implicit none (type, external)
+               ${T}$, intent(out) :: B_i(:,:)
+               ${T}$, intent(out) :: B_o(:,:)
+               ${T}$, intent(out) :: scl_i(:)
+               ${T}$, intent(out) :: scl_o(:)
+            end subroutine eval_B
+            subroutine eval_E(k, E_l, E_r, scl)
+               use forum_m, only: RD
+               use ext_m
+               implicit none (type, external)
+               integer, intent(in)          :: k
+               ${T}$, intent(out)           :: E_l(:,:)
+               ${T}$, intent(out)           :: E_r(:,:)
+               type(ext_${S}$), intent(out) :: scl
+            end subroutine eval_E
+         end interface
 
-         integer :: n
-         integer :: m
+         ${T}$   :: B_i(this%n_i,this%n_e)
+         ${T}$   :: B_o(this%n_i,this%n_e)
+         ${T}$   :: E_l(this%n_e,this%n_e)
+         ${T}$   :: E_r(this%n_e,this%n_e)
+         ${T}$   :: R(2*this%n_e)
+         integer :: i
+         ${T}$   :: scl
+         integer :: k
          integer :: info
 
-         ! Factorize the sysmtx using LU decomposition
+         ! Build and factorize the sysmtx
 
-         n = SIZE(this%A_b, 1)
-         m = SIZE(this%A_b, 2)
+         associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_o => this%n_o)
 
-         call XGBTRF(m, m, this%n_l, this%n_u, this%A_b, n, this%ipiv, info)
-         @:ASSERT(info == 0 .OR. info > m-this%n_e, 'non-zero return from XGBTRF')
+            ! Build the boundary blocks, and row-scale to unity
 
-         this%factored = .TRUE.
+            call eval_B(B_i, B_o, this%scl_i, this%scl_o)
+            do i = 1, n_i
+               scl = MAXVAL(abs(B_i(i,:)))
+               this%scl_i(i) = this%scl_i(i)*scl
+               call this%set_row_(i, 1, B_i(i,:)/scl)
+            end do
+            do i = 1, n_o
+               scl = MAXVAL(abs(B_o(i,:)))
+               this%scl_o(i) = this%scl_o(i)*scl
+               call this%set_row_(n_e*n+n_i+i, n_e*n+1, B_o(i,:)/scl)
+            end do
+
+            ! Build the equation blocks, and row-scale to unity
+
+            !$OMP PARALLEL
+
+            !$OMP DO PRIVATE(E_l, E_r, i, R, scl)
+            do k = 1, n
+               call eval_E(k, E_l, E_r, this%scl(k))
+               do i = 1, n_e
+                  R = [E_l(i,:),E_r(i,:)]
+                  scl = MAXVAL(abs(R))
+                  this%scl(k) = this%scl(k)*scl
+                  call this%set_row_(n_e*(k-1)+n_i+i, n_e*(k-1)+1, R/scl)
+               end do
+            end do
+            !$OMP END DO
+
+            !$OMP END PARALLEL
+
+            ! Factorize the sysmtx using banded LU decomposition
+
+            call XGBTRF(SIZE(this%A_b, 2), SIZE(this%A_b, 2), this%n_l, this%n_u, &
+               this%A_b, SIZE(this%A_b, 1), this%ipiv, info)
+            @:ASSERT(info == 0 .OR. info > -this%n_e, 'non-zero return from XGBTRF')
+
+         end associate
 
          ! Finish
 
          return
 
-      end subroutine factor_${S}$_
+      end subroutine build_and_factor_${S}$_
 
       !****
 
-      subroutine eval_det_${S}$_(this, det)
+      subroutine eval_det_${S}$_(this, eval_B, eval_E, det)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
-         type(ext_${S}$), intent(out)            :: det
+         interface
+            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+               use forum_m, only: RD
+               implicit none (type, external)
+               ${T}$, intent(out) :: B_i(:,:)
+               ${T}$, intent(out) :: B_o(:,:)
+               ${T}$, intent(out) :: scl_i(:)
+               ${T}$, intent(out) :: scl_o(:)
+            end subroutine eval_B
+            subroutine eval_E(k, E_l, E_r, scl)
+               use forum_m, only: RD
+               use ext_m
+               implicit none (type, external)
+               integer, intent(in)          :: k
+               ${T}$, intent(out)           :: E_l(:,:)
+               ${T}$, intent(out)           :: E_r(:,:)
+               type(ext_${S}$), intent(out) :: scl
+            end subroutine eval_E
+         end interface
+         type(ext_${S}$), intent(out) :: det
 
          integer :: j
 
-         ! Evaluate the determinant
+         ! Build and factorize the sysmtx
 
-         if (.NOT. this%factored) call this%factor_()
+         call this%build_and_factor_(eval_B, eval_E)
+
+         ! Evaluate the determinant
 
          det = product([ &
             ext_${S}$(this%A_b(this%n_l+this%n_u+1,:)), &
@@ -380,10 +330,29 @@ contains
 
       !****
 
-      subroutine eval_soln_vec_hom_${S}$_(this, u)
+      subroutine solve_hom_${S}$_(this, eval_B, eval_E, u)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
-         ${T}$, intent(out)                      :: u(:)
+         interface
+            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+               use forum_m, only: RD
+               implicit none (type, external)
+               ${T}$, intent(out) :: B_i(:,:)
+               ${T}$, intent(out) :: B_o(:,:)
+               ${T}$, intent(out) :: scl_i(:)
+               ${T}$, intent(out) :: scl_o(:)
+            end subroutine eval_B
+            subroutine eval_E(k, E_l, E_r, scl)
+               use forum_m, only: RD
+               use ext_m
+               implicit none (type, external)
+               integer, intent(in)          :: k
+               ${T}$, intent(out)           :: E_l(:,:)
+               ${T}$, intent(out)           :: E_r(:,:)
+               type(ext_${S}$), intent(out) :: scl
+            end subroutine eval_E
+         end interface
+         ${T}$, intent(out) :: u(:)
 
          integer              :: i_s
          real(RD)             :: A_s
@@ -397,10 +366,12 @@ contains
 
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
 
+         ! Build and factorize the sysmtx
+
+         call this%build_and_factor_(eval_B, eval_E)
+
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) >= 1
-
-         if (.NOT. this%factored) call this%factor_()
 
          associate (n => this%n, n_e => this%n_e, n_l => this%n_l, n_u => this%n_u)
 
@@ -454,24 +425,45 @@ contains
 
          return
 
-      end subroutine eval_soln_vec_hom_${S}$_
+      end subroutine solve_hom_${S}$_
 
       !****
 
-      subroutine eval_soln_vec_inhom_${S}$_(this, v_i, v_o, u)
+      subroutine solve_inhom_${S}$_(this, eval_B, eval_E, v, u)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
-         ${T}$, intent(in)                       :: v_i(:)
-         ${T}$, intent(in)                       :: v_o(:)
-         ${T}$, intent(out)                      :: u(:)
+         interface
+            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+               use forum_m, only: RD
+               implicit none (type, external)
+               ${T}$, intent(out) :: B_i(:,:)
+               ${T}$, intent(out) :: B_o(:,:)
+               ${T}$, intent(out) :: scl_i(:)
+               ${T}$, intent(out) :: scl_o(:)
+            end subroutine eval_B
+            subroutine eval_E(k, E_l, E_r, scl)
+               use forum_m, only: RD
+               use ext_m
+               implicit none (type, external)
+               integer, intent(in)          :: k
+               ${T}$, intent(out)           :: E_l(:,:)
+               ${T}$, intent(out)           :: E_r(:,:)
+               type(ext_${S}$), intent(out) :: scl
+            end subroutine eval_E
+         end interface
+         ${T}$, intent(in)  :: v(:)
+         ${T}$, intent(out) :: u(:)
 
          ${T}$   :: B(this%n_e*(this%n+1),1)
          integer :: info
 
-         @:CHECK_BOUNDS(SIZE(v_i), this%n_i)
-         @:CHECK_BOUNDS(SIZE(v_o), this%n_o)
+         @:CHECK_BOUNDS(SIZE(v), this%n_e)
 
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
+
+         ! Build and factorize the sysmtx
+
+         call this%build_and_factor_(eval_B, eval_E)
 
          ! Evaluate the solution vector u of the inhomogeneous linear
          ! system S u = v. It is assumed that the right-hand side vector v
@@ -480,15 +472,13 @@ contains
          ! conditions). These components are supplied in v_i and v_o,
          ! respectively.
 
-         if (.NOT. this%factored) call this%factor_()
-
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_l => this%n_l, n_u => this%n_u)
 
             ! Set up the banded system
 
-            B(:n_i,1) = v_i/this%scl_i
+            B(:n_i,1) = v(:n_i)/this%scl_i
             B(n_i+1:n_i+n*n_e,1) = 0._RD
-            B(n_i+n*n_e+1:,1) = v_o/this%scl_o
+            B(n_i+n*n_e+1:,1) = v(n_i+1:)/this%scl_o
 
             ! Solve for u
 
@@ -504,92 +494,7 @@ contains
 
          return
 
-      end subroutine eval_soln_vec_inhom_${S}$_
-
-      !****
-
-      subroutine eval_resd_vec_hom_${S}$_(this, u, dv)
-
-         class(band_sysmtx_${S}$), intent(in) :: this
-         ${T}$, intent(in)                    :: u(:)
-         ${T}$, intent(out)                   :: dv(:)
-
-         integer :: i
-         integer :: j_a
-         integer :: j_b
-         ${T}$   :: R(this%n_e*(this%n+1))
-
-         @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
-
-         @:CHECK_BOUNDS(SIZE(dv), this%n_e*(this%n+1))
-
-         ! Evaluate the residual vector dv = S u of the homogeneous linear
-         ! system S u = 0.
-
-         associate (n => this%n, n_e => this%n_e)
-
-            !$OMP PARALLEL DO PRIVATE (j_a, j_b, R)
-            multiply_loop : do i = 1, n_e*(n+1)
-
-               j_a = MAX(i-this%n_l, 1)
-               j_b = MIN(i+this%n_u, n_e*(n+1))
-
-               call this%get_row_(i, j_a, R(j_a:j_b))
-
-               dv(i) = SUM(R(j_a:j_b)*u(j_a:j_b))
-
-            end do multiply_loop
-
-         end associate
-
-         ! Finish
-
-         return
-
-      end subroutine eval_resd_vec_hom_${S}$_
-
-      !****
-
-      subroutine eval_resd_vec_inhom_${S}$_(this, u, v_i, v_o, dv)
-
-         class(band_sysmtx_${S}$), intent(in) :: this
-         ${T}$, intent(in)                      :: u(:)
-         ${T}$, intent(in)                      :: v_i(:)
-         ${T}$, intent(in)                      :: v_o(:)
-         ${T}$, intent(out)                     :: dv(:)
-
-         @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
-
-         @:CHECK_BOUNDS(SIZE(v_i), this%n_i)
-         @:CHECK_BOUNDS(SIZE(v_o), this%n_o)
-
-         @:CHECK_BOUNDS(SIZE(dv), this%n_e*(this%n+1))
-
-         ! Evaluate the residual vector dv = S u - v of the inhomogeneous
-         ! linear system S u = v. It is assumed that the right-hand side
-         ! vector v has non-zero components in only the n_i first and n_o
-         ! last rows (corresponding to the inner and outer boundary
-         ! conditions). These components are supplied in v_i and v_o,
-         ! respectively.
-
-         ! First evaluate dv for the homogeneous case
-
-         call this%eval_resd_vec_hom(u, dv)
-
-         ! Subtract v
-
-         associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
-
-            dv(:n_i) = dv(:n_i) - v_i
-            dv(n_e*n+1:) = dv(n_e*n+1:) - v_o
-
-         end associate
-
-         ! Finish
-
-         return
-
-      end subroutine eval_resd_vec_inhom_${S}$_
+      end subroutine solve_inhom_${S}$_
 
       !****
 
