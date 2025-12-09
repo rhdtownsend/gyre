@@ -53,12 +53,11 @@ module bvp_m
          integer, public                  :: n_o
       contains
          private
-         procedure, public :: build => build_${S}$_
+         procedure         :: eval_B_${S}$_
+         procedure         :: eval_E_${S}$_
          procedure, public :: eval_det => eval_det_${S}$_
-         procedure, public :: eval_soln_vec_hom => eval_soln_vec_hom_${S}$_
-         procedure, public :: eval_soln_vec_inhom => eval_soln_vec_inhom_${S}$_
-         procedure, public :: eval_resd_vec_hom => eval_resd_vec_hom_${S}$_
-         procedure, public :: eval_resd_vec_inhom => eval_resd_vec_inhom_${S}$_
+         procedure, public :: solve_hom => solve_hom_${S}$_
+         procedure, public :: solve_inhom => solve_inhom_${S}$_
       end type bvp_${S}$
 
       ! Interfaces
@@ -126,66 +125,110 @@ contains
 
       !****
 
-      subroutine build_${S}$_(this, st)
+      subroutine eval_B_${S}$_(this, st, B_i, B_o, scl_i, scl_o)
 
-         class(bvp_${S}$), target, intent(inout) :: this
-         class(state_${S}$), intent(in)          :: st
+         class(bvp_${S}$), intent(inout) :: this
+         class(state_${S}$), intent(in)  :: st
+         ${T}$, intent(out)              :: B_i(:,:)
+         ${T}$, intent(out)              :: B_o(:,:)
+         ${T}$, intent(out)              :: scl_i(:)
+         ${T}$, intent(out)              :: scl_o(:)
 
-         ${T}$           :: B_i(this%n_i,this%n_e)
-         ${T}$           :: B_o(this%n_o,this%n_e)
-         ${T}$           :: E_l(this%n_e,this%n_e)
-         ${T}$           :: E_r(this%n_e,this%n_e)
-         ${T}$           :: scl_i(this%n_i)
-         ${T}$           :: scl_o(this%n_o)
-         type(ext_${S}$) :: scl
-         integer         :: j
+         @:CHECK_BOUNDS(SIZE(B_i, 1), this%n_i)
+         @:CHECK_BOUNDS(SIZE(B_i, 2), this%n_e)
 
-         ! Build the bvp for the specified state
+         @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
+         @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
 
-         ! Set up boundary conditions
+         @:CHECK_BOUNDS(SIZE(scl_i), this%n_i)
+         @:CHECK_BOUNDS(SIZE(scl_o), this%n_o)
+
+         ! Evaluate boundary conditions
 
          call this%bd%build_i(st, B_i, scl_i)
-         call this%sm%set_B_i(B_i, scl_i)
-
          call this%bd%build_o(st, B_o, scl_o)
-         call this%sm%set_B_o(B_o, scl_o)
-
-         ! Set up difference equations
-
-         !$OMP PARALLEL DO PRIVATE (E_l, E_r, scl) SCHEDULE (DYNAMIC)
-         sub_loop : do j = 1, this%n-1
-            call this%df(j)%build(st, E_l, E_r, scl)
-            call this%sm%set_E(j, E_l, E_r, scl)
-         end do sub_loop
 
          ! Finish
 
          return
 
-      end subroutine build_${S}$_
+      end subroutine eval_B_${S}$_
 
       !****
 
-      subroutine eval_det_${S}$_(this, det)
+      subroutine eval_E_${S}$_(this, st, j, E_l, E_r, scl)
 
          class(bvp_${S}$), intent(inout) :: this
+         class(state_${S}$), intent(in)  :: st
+         integer, intent(in)             :: j
+         ${T}$, intent(out)              :: E_l(:,:)
+         ${T}$, intent(out)              :: E_r(:,:)
+         type(ext_${S}$), intent(out)    :: scl
+
+         @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
+
+         @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
+
+         ! Evaluate equation blocks
+
+         call this%df(j)%build(st, E_l, E_r, scl)
+
+         ! Finish
+
+         return
+
+      end subroutine eval_E_${S}$_
+
+      !****
+
+      subroutine eval_det_${S}$_(this, st, det)
+
+         class(bvp_${S}$), intent(inout) :: this
+         class(state_${S}$), intent(in)  :: st
          type(ext_${S}$), intent(out)    :: det
 
          ! Evaluate the determinant of the sysmtx
 
-         call this%sm%eval_det(det)
+         call this%sm%eval_det(eval_B_, eval_E_, det)
 
          ! Finish
 
          return
+
+      contains
+
+         subroutine eval_B_(B_i, B_o, scl_i, scl_o)
+
+            ${T}$, intent(out) :: B_i(:,:)
+            ${T}$, intent(out) :: B_o(:,:)
+            ${T}$, intent(out) :: scl_i(:)
+            ${T}$, intent(out) :: scl_o(:)
+
+            call this%eval_B_${S}$_(st, B_i, B_o, scl_i, scl_o)
+
+         end subroutine eval_B_
+
+         subroutine eval_E_(k, E_l, E_r, scl)
+
+            integer, intent(in)          :: k
+            ${T}$, intent(out)           :: E_l(:,:)
+            ${T}$, intent(out)           :: E_r(:,:)
+            type(ext_${S}$), intent(out) :: scl
+
+            call this%eval_E_${S}$_(st, k, E_l, E_r, scl)
+
+         end subroutine eval_E_
 
       end subroutine eval_det_${S}$_
 
       !****
 
-      subroutine eval_soln_vec_hom_${S}$_(this, y)
+      subroutine solve_hom_${S}$_(this, st, y)
 
          class(bvp_${S}$), intent(inout) :: this
+         class(state_${S}$), intent(in)  :: st
          ${T}$, intent(out)              :: y(:,:)
 
          ${T}$ :: u(this%n_e*this%n)
@@ -195,7 +238,7 @@ contains
 
          ! Evaluate the solution vector y of the homogeneous system
 
-         call this%sm%eval_soln_vec_hom(u)
+         call this%sm%solve_hom(eval_B_, eval_E_, u)
 
          y = RESHAPE(u, SHAPE(y))
 
@@ -203,13 +246,38 @@ contains
 
          return
 
-      end subroutine eval_soln_vec_hom_${S}$_
+      contains
+
+         subroutine eval_B_(B_i, B_o, scl_i, scl_o)
+
+            ${T}$, intent(out) :: B_i(:,:)
+            ${T}$, intent(out) :: B_o(:,:)
+            ${T}$, intent(out) :: scl_i(:)
+            ${T}$, intent(out) :: scl_o(:)
+
+            call this%eval_B_${S}$_(st, B_i, B_o, scl_i, scl_o)
+
+         end subroutine eval_B_
+
+         subroutine eval_E_(k, E_l, E_r, scl)
+
+            integer, intent(in)          :: k
+            ${T}$, intent(out)           :: E_l(:,:)
+            ${T}$, intent(out)           :: E_r(:,:)
+            type(ext_${S}$), intent(out) :: scl
+
+            call this%eval_E_${S}$_(st, k, E_l, E_r, scl)
+
+         end subroutine eval_E_
+
+      end subroutine solve_hom_${S}$_
 
       !****
 
-      subroutine eval_soln_vec_inhom_${S}$_(this, z_i, z_o, y)
+      subroutine solve_inhom_${S}$_(this, st, z_i, z_o, y)
 
          class(bvp_${S}$), intent(inout) :: this
+         class(state_${S}$), intent(in)  :: st
          ${T}$, intent(in)               :: z_i(:)
          ${T}$, intent(in)               :: z_o(:)
          ${T}$, intent(out)              :: y(:,:)
@@ -224,7 +292,7 @@ contains
 
          ! Evaluate the solution vector y of the inhomogeneous system
 
-         call this%sm%eval_soln_vec_inhom(z_i, z_o, u)
+         call this%sm%solve_inhom(eval_B_, eval_E_, [z_i,z_o], u)
 
          y = RESHAPE(u, SHAPE(y))
 
@@ -232,74 +300,31 @@ contains
 
          return
 
-      end subroutine eval_soln_vec_inhom_${S}$_
+      contains
 
-      !****
+         subroutine eval_B_(B_i, B_o, scl_i, scl_o)
 
-      subroutine eval_resd_vec_hom_${S}$_(this, y, dz)
+            ${T}$, intent(out) :: B_i(:,:)
+            ${T}$, intent(out) :: B_o(:,:)
+            ${T}$, intent(out) :: scl_i(:)
+            ${T}$, intent(out) :: scl_o(:)
 
-         class(bvp_${S}$), intent(in) :: this
-         ${T}$, intent(in)            :: y(:,:)
-         ${T}$, intent(out)           :: dz(:,:)
+            call this%eval_B_${S}$_(st, B_i, B_o, scl_i, scl_o)
 
-         ${T}$ :: u(this%n_e*this%n)
-         ${T}$ :: dv(this%n_e*this%n)
+         end subroutine eval_B_
 
-         @:CHECK_BOUNDS(SIZE(y,1), this%n_e)
-         @:CHECK_BOUNDS(SIZE(y,2), this%n)
+         subroutine eval_E_(k, E_l, E_r, scl)
 
-         @:CHECK_BOUNDS(SIZE(dz, 1), this%n_e)
-         @:CHECK_BOUNDS(SIZE(dz, 2), this%n)
+            integer, intent(in)          :: k
+            ${T}$, intent(out)           :: E_l(:,:)
+            ${T}$, intent(out)           :: E_r(:,:)
+            type(ext_${S}$), intent(out) :: scl
 
-         ! Evaluate the residuals vector dy of the homogeneous system
+            call this%eval_E_${S}$_(st, k, E_l, E_r, scl)
 
-         u = RESHAPE(y, SHAPE(u))
+         end subroutine eval_E_
 
-         call this%sm%eval_resd_vec_hom(u, dv)
-
-         dz = RESHAPE(dv, SHAPE(dz))
-
-         ! Finish
-
-         return
-
-      end subroutine eval_resd_vec_hom_${S}$_
-
-      !****
-
-      subroutine eval_resd_vec_inhom_${S}$_(this, y, z_i, z_o, dz)
-
-         class(bvp_${S}$), intent(in) :: this
-         ${T}$, intent(in)            :: y(:,:)
-         ${T}$, intent(in)            :: z_i(:)
-         ${T}$, intent(in)            :: z_o(:)
-         ${T}$, intent(out)           :: dz(:,:)
-
-         ${T}$ :: u(this%n_e*this%n)
-         ${T}$ :: dv(this%n_e*this%n)
-
-         @:CHECK_BOUNDS(SIZE(y,1), this%n_e)
-         @:CHECK_BOUNDS(SIZE(y,2), this%n)
-
-         @:CHECK_BOUNDS(SIZE(z_i), this%n_i)
-         @:CHECK_BOUNDS(SIZE(z_o), this%n_o)
-
-         @:CHECK_BOUNDS(SIZE(dz, 1), this%n_e)
-         @:CHECK_BOUNDS(SIZE(dz, 2), this%n)
-
-         ! Evaluate the residuals vector dy of the inhomogeneous system
-
-         u = RESHAPE(y, SHAPE(u))
-
-         call this%sm%eval_resd_vec_inhom(u, z_i, z_o, dv)
-
-         dz = RESHAPE(dv, SHAPE(dz))
-
-         ! Finish
-
-         return
-
-      end subroutine eval_resd_vec_inhom_${S}$_
+      end subroutine solve_inhom_${S}$_
 
    #:endfor
 

@@ -159,11 +159,9 @@ contains
       real(RD) :: y(2,bp%n)
       integer  :: j
 
-      ! Calculate the solution vector
+      ! Calculate the homogeneous solution vector
 
-      call bp%build(st)
-
-      call bp%eval_soln_vec_hom(y)
+      call bp%solve_hom(st, y)
 
       ! Convert to canonical form
 
@@ -199,11 +197,9 @@ contains
       @:CHECK_BOUNDS(SIZE(z_i), bp%n_i)
       @:CHECK_BOUNDS(SIZE(z_o), bp%n_o)
 
-      ! Calculate the solution vector
+      ! Calculate the inhomogeneous solution vector
 
-      call bp%build(st)
-
-      call bp%eval_soln_vec_inhom(z_i, z_o, y)
+      call bp%solve_inhom(st, z_i, z_o, y)
 
       ! Convert to canonical form
 
@@ -326,7 +322,7 @@ contains
 
       ! Construct the wave_t
 
-      call bp%eval_det(discrim)
+      call bp%eval_det(st, discrim)
 
       wv = wave_t(st_c, y_c, ext_ct(discrim), bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id)
 
