@@ -21,7 +21,7 @@ program gyre
 
    ! Uses
 
-   use forum_m, only: RD, n_arg, get_arg, reallocate
+   use forum_m, only: RD, n_arg, get_arg, reallocate, sort_indices
 
    use gyre_m
 
@@ -71,6 +71,7 @@ program gyre
    integer                       :: d_ad
    complex(RD), allocatable      :: omega_ad(:)
    integer, allocatable          :: id_ad(:)
+   integer, allocatable          :: j(:)
 
    ! Read command-line arguments
 
@@ -264,7 +265,10 @@ program gyre
          case ('AD')
 
             @:ASSERT(os_p_sel%adiabatic, 'No adiabatic modes to start from')
-            call prox_search(bp_nad, omega_ad(:n_ad), id_ad(:n_ad), omega_min, omega_max, nm_p_sel, process_mode_nad)
+
+            j = sort_indices(id_ad(:n_ad))
+
+            call prox_search(bp_nad, omega_ad(j), id_ad(j), omega_min, omega_max, nm_p_sel, process_mode_nad)
 
          case ('MINMOD')
 
@@ -349,7 +353,7 @@ contains
 
       ! Cache/write the mode
 
-      call sm_ad%cache(md)
+      call sm_ad%cache(md, md%id)
       call dt_ad%write(md)
 
       ! Finish
@@ -374,7 +378,7 @@ contains
 
       ! Cache/write the mode
 
-      call sm_nad%cache(md)
+      call sm_nad%cache(md, md%id)
       call dt_nad%write(md)
 
       ! Finish
