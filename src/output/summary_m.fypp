@@ -369,7 +369,9 @@ contains
             ('eul_Phi_ref', 'wv%eul_Phi(wv%j_ref)'), &
             ('deul_Phi_ref', 'wv%deul_Phi(wv%j_ref)'), &
             ('lag_S_ref', 'wv%lag_S(wv%j_ref)'), &
-            ('lag_L_ref', 'wv%lag_L(wv%j_ref)'))
+            ('lag_L_ref', 'wv%lag_L(wv%j_ref)'), &
+            ('chi', 'wv%chi'), &
+            ('n_iter', 'wv%n_iter'))
             case ('${N}$')
                call sc%append(${E}$)
          #:endfor
