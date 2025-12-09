@@ -61,9 +61,7 @@ contains
 
          ! Evaluate the discriminant
 
-         call bp%build(st)
-
-         call bp%eval_det(discrim)
+         call bp%eval_det(st, discrim)
 
          ! Finish
 

@@ -36,6 +36,8 @@ module bracket_search_m
    use util_m
    use wave_m
 
+   use omp_lib
+
    use ISO_FORTRAN_ENV
 
    ! No implicit typing
@@ -74,31 +76,130 @@ contains
          end subroutine process_mode
       end interface
 
-      real(RD), allocatable     :: omega_a(:)
-      real(RD), allocatable     :: omega_b(:)
-      type(ext_rt), allocatable :: discrim_a(:)
-      type(ext_rt), allocatable :: discrim_b(:)
-      integer                   :: c_beg
-      integer                   :: c_end
-      integer                   :: c_rate
-      integer                   :: n_iter
-      integer                   :: i
-      type(ext_rt)              :: x_a
-      type(ext_rt)              :: x_b
-      type(ext_rt)              :: f_x_a
-      type(ext_rt)              :: f_x_b
-      type(ext_rt)              :: x_root
-      integer                   :: stat
-      type(wave_t)              :: wv
-      type(mode_t)              :: md
-      type(ext_rt)              :: chi
+      type(ext_rt) :: discrim(SIZE(omega))
 
-      ! Find discriminant root brackets
+      ! Search for roots via bracketing and then solving
 
-      call find_brackets_(bp, omega, omega_a, omega_b, discrim_a, discrim_b, nm_p%parallel_scan)
+      ! The code below could be simplified using OMP IF clauses, but
+      ! they seem to mess up inner parallel regions (all the code ends
+      ! up running on one core)
 
-      ! Process each bracket to find modes
+      if (nm_p%parallel_scan) then
 
+         !$OMP PARALLEL FIRSTPRIVATE(bp)
+         call scan_discrim_(bp, omega, discrim)
+         call bracket_and_solve_(bp, omega, discrim, omega_min, omega_max, nm_p, process_mode)
+         !$OMP END PARALLEL
+
+      else
+
+         call scan_discrim_(bp, omega, discrim)
+         call bracket_and_solve_(bp, omega, discrim, omega_min, omega_max, nm_p, process_mode)
+
+      end if
+
+      ! Finish
+
+      return
+
+   end subroutine bracket_search
+
+   !****
+
+   subroutine scan_discrim_(bp, omega, discrim)
+
+      class(bvp_rt), intent(inout) :: bp
+      real(RD), intent(in)         :: omega(:)
+      type(ext_rt), intent(out)    :: discrim(:)
+
+      integer  :: c_beg
+      integer  :: c_end
+      integer  :: c_rate
+      integer  :: i
+      real(RD) :: discrim_f
+      integer  :: discrim_e
+
+      @:CHECK_BOUNDS(SIZE(discrim), SIZE(omega))
+
+      ! Evaluate the discriminant at the frequency scan points
+
+      !$OMP MASTER
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Evaluating discriminant'
+100      format(A)
+      endif
+      !$OMP END MASTER
+
+      call SYSTEM_CLOCK(c_beg, c_rate)
+
+      !$OMP DO PRIVATE(discrim_f, discrim_e)
+      discrim_loop: do i = 1, SIZE(omega)
+
+         call eval_discrim(bp, state_rt(omega(i)), discrim(i))
+
+         discrim_f = FRACTION(discrim(i))
+         discrim_e = EXPONENT(discrim(i))
+
+         if (check_log_level('DEBUG')) then
+            write(OUTPUT_UNIT, 110) omega(i), discrim_f, discrim_e
+110         format(2X,E24.16,2X,F19.16,2X,I7)
+         endif
+
+      end do discrim_loop
+      !$OMP END DO
+
+      call SYSTEM_CLOCK(c_end)
+
+      !$OMP MASTER
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
+120      format(2X,A,F10.3,1X,A/)
+      endif
+      !$OMP END MASTER
+
+      ! Finish
+
+      return
+
+   end subroutine scan_discrim_
+
+   !****
+
+   subroutine bracket_and_solve_(bp, omega, discrim, omega_min, omega_max, nm_p, process_mode)
+
+      class(bvp_rt), intent(inout) :: bp
+      real(RD), intent(in)         :: omega(:)
+      type(ext_rt), intent(in)     :: discrim(:)
+      real(RD), intent(in)         :: omega_min
+      real(RD), intent(in)         :: omega_max
+      type(num_par_t), intent(in)  :: nm_p
+      interface
+         subroutine process_mode (md, n_iter, chi)
+            use ext_m
+            use mode_m
+            implicit none (type, external)
+            type(mode_t), intent(in)  :: md
+            integer, intent(in)       :: n_iter
+            type(ext_rt), intent(in)  :: chi
+         end subroutine process_mode
+      end interface
+
+      integer      :: c_beg
+      integer      :: c_end
+      integer      :: c_rate
+      integer      :: i
+      integer      :: n_iter
+      type(ext_rt) :: omega_root
+      integer      :: stat
+      type(wave_t) :: wv
+      type(mode_t) :: md
+      type(ext_rt) :: chi
+
+      @:CHECK_BOUNDS(SIZE(discrim), SIZE(omega))
+
+      ! Look for brackets and process them
+
+      !$OMP MASTER
       if (check_log_level('INFO')) then
 
          write(OUTPUT_UNIT, 100) 'Root Solving'
@@ -108,57 +209,63 @@ contains
 110      format(1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
 
       endif
+      !$OMP END MASTER
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      mode_loop : do i = 1, SIZE(omega_a)
+      !$OMP DO PRIVATE(n_iter, omega_root, stat, wv, md, chi) SCHEDULE(GUIDED)
+      mode_loop : do i = 1, SIZE(omega)-1
+
+         ! Check for a bracket
+
+         if (discrim(i)*discrim(i+1) > ext_rt(0._RD)) cycle mode_loop
 
          ! Find the discriminant root
 
          n_iter = 0
 
-         x_a = ext_rt(omega_a(i))
-         x_b = ext_rt(omega_b(i))
-         f_x_a = discrim_a(i)
-         f_x_b = discrim_b(i)
-
-         call solve_root(eval_discrim_x_, x_a, x_b, ext_rt(0._RD), nm_p, &
-            x_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
-            f_x_a=f_x_a, f_x_b=f_x_b)
+         call solve_root(eval_discrim_, ext_rt(omega(i)), ext_rt(omega(i+1)), &
+            ext_rt(0._RD), nm_p, omega_root, stat, n_iter=n_iter, &
+            n_iter_max=nm_p%n_iter_max, f_x_a=discrim(i), f_x_b=discrim(i+1))
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'solve')
-            cycle mode_loop
          endif
 
          ! Construct the mode_t
 
+         !$OMP ATOMIC
          id_m = id_m + 1
 
          select type (bp)
          type is (ad_bvp_t)
-            wv = wave_t(bp, state_rt(real(x_root)), id_m)
+            wv = wave_t(bp, state_rt(CMPLX(real(omega_root), KIND=RD)), id_m)
          type is (rad_bvp_t)
-            wv = wave_t(bp, state_rt(real(x_root)), id_m)
+            wv = wave_t(bp, state_rt(CMPLX(real(omega_root), KIND=RD)), id_m)
          class default
             @:ABORT('invalid bp class')
          end select
 
          md = mode_t(wv)
 
+         chi = abs(md%discrim)/max(abs(discrim(i)), abs(discrim(i+1)))
+
          ! Process it
 
-         chi = abs(md%discrim)/max(abs(discrim_a(i)), abs(discrim_b(i)))
-
+         !$OMP CRITICAL
          call process_mode(md, n_iter, chi)
+         !$OMP END CRITICAL
 
       end do mode_loop
+      !$OMP END DO
 
       call SYSTEM_CLOCK(c_end)
 
+      !$OMP MASTER
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
 130      format(2X,A,1X,F10.3,1X,A/)
       endif
+      !$OMP END MASTER
 
       ! Finish
 
@@ -166,7 +273,7 @@ contains
 
    contains
 
-      subroutine eval_discrim_x_(x, discrim, stat)
+      subroutine eval_discrim_(x, discrim, stat)
 
          type(ext_rt), intent(in)  :: x
          type(ext_rt), intent(out) :: discrim
@@ -196,9 +303,7 @@ contains
 
          return
 
-      end subroutine eval_discrim_x_
-
-      !****
+      end subroutine eval_discrim_
 
       subroutine report_stat_(stat, stage_str)
 
@@ -219,8 +324,8 @@ contains
             write(OUTPUT_UNIT, 110) 'n_iter  :', n_iter
 110         format(3X,A,1X,I0)
 
-            write(OUTPUT_UNIT, 120) 'omega_a :', omega_a(i)
-            write(OUTPUT_UNIT, 120) 'omega_b :', omega_b(i)
+            write(OUTPUT_UNIT, 120) 'omega_a :', omega(i)
+            write(OUTPUT_UNIT, 120) 'omega_b :', omega(i+1)
 120         format(3X,A,1X,E24.16)
 
          end if
@@ -231,115 +336,6 @@ contains
 
       end subroutine report_stat_
 
-   end subroutine bracket_search
-
-   !****
-
-   subroutine find_brackets_(bp, omega, omega_a, omega_b, discrim_a, discrim_b, parallel)
-
-      class(bvp_rt), intent(inout)           :: bp
-      real(RD), intent(in)                   :: omega(:)
-      real(RD), allocatable, intent(out)     :: omega_a(:)
-      real(RD), allocatable, intent(out)     :: omega_b(:)
-      type(ext_rt), allocatable, intent(out) :: discrim_a(:)
-      type(ext_rt), allocatable, intent(out) :: discrim_b(:)
-      logical, intent(in)                    :: parallel
-
-      integer      :: n_omega
-      integer      :: c_beg
-      integer      :: c_end
-      integer      :: c_rate
-      integer      :: i
-      type(ext_rt) :: discrim_i
-      real(RD)     :: discrim_f(SIZE(omega))
-      integer      :: discrim_e(SIZE(omega))
-      type(ext_rt) :: discrim(SIZE(omega))
-      integer      :: n_brack
-      integer      :: i_brack(SIZE(omega))
-
-      ! Calculate the discriminant on the omega abscissa
-
-      if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 100) 'Evaluating discriminant'
-100      format(A)
-      endif
-
-      n_omega = SIZE(omega)
-
-      call SYSTEM_CLOCK(c_beg, c_rate)
-
-      ! Note: the following loops could be combined into one using
-      ! conditional OMP constructs, but if(.False.) seems to disable
-      ! the parallelism of eval_discrim() as well
-
-      if (parallel) then
-
-         !$OMP PARALLEL DO FIRSTPRIVATE(bp) PRIVATE(discrim_i)
-         discrim_loop_parallel: do i = 1, n_omega
-
-            call eval_discrim(bp, state_rt(omega(i)), discrim_i)
-
-            discrim_f(i) = FRACTION(discrim_i)
-            discrim_e(i) = EXPONENT(discrim_i)
-
-            if (check_log_level('DEBUG')) then
-               write(OUTPUT_UNIT, 110) omega(i), discrim_f(i), discrim_e(i)
-110            format(2X,E24.16,2X,F19.16,2X,I7)
-            endif
-
-         end do discrim_loop_parallel
-
-      else
-
-         discrim_loop_serial: do i = 1, n_omega
-
-            call eval_discrim(bp, state_rt(omega(i)), discrim_i)
-
-            discrim_f(i) = FRACTION(discrim_i)
-            discrim_e(i) = EXPONENT(discrim_i)
-
-            if (check_log_level('DEBUG')) then
-               write(OUTPUT_UNIT, 110) omega(i), discrim_f(i), discrim_e(i)
-            endif
-
-         end do discrim_loop_serial
-
-      end if
-
-      discrim = scale(ext_rt(discrim_f), discrim_e)
-
-      call SYSTEM_CLOCK(c_end)
-
-      if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
-120      format(2X,A,F10.3,1X,A/)
-      endif
-
-      ! Find root brackets
-
-      n_brack = 0
-
-      bracket_loop : do i = 1, n_omega-1
-
-         if (discrim(i)*discrim(i+1) <= ext_rt(0._RD)) then
-            n_brack = n_brack + 1
-            i_brack(n_brack) = i
-         end if
-
-      end do bracket_loop
-
-      ! Set up the bracket frequencies
-
-      omega_a = omega(i_brack(:n_brack))
-      omega_b = omega(i_brack(:n_brack)+1)
-
-      discrim_a = discrim(i_brack(:n_brack))
-      discrim_b = discrim(i_brack(:n_brack)+1)
-
-      ! Finish
-
-      return
-
-   end subroutine find_brackets_
+   end subroutine bracket_and_solve_
 
 end module bracket_search_m
