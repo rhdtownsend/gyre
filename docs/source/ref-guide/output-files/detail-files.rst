@@ -82,6 +82,14 @@ Solution Data
      - :math:`y_{6}`
      - complex(:nml_n:`n`)
      - dependent variable
+   * - :nml_v:`chi`
+     - :math:`\chi`
+     - real
+     - root-finding converge parameter
+   * - :nml_v:`n_iter`
+     - :math:`n_{\rm iter}`
+     - integer
+     - root-finding number of iterations
 
 The definitions of the dependent variables
 :math:`\{y_{1},\ldots,y_{6}\}` are provided in the :ref:`osc-eqns`

@@ -43,6 +43,14 @@ Solution Data
      - :math:`\omega`
      - complex(:nml_v:`n_row`)
      - dimensionless eigenfrequency
+   * - :nml_v:`chi`
+     - :math:`\chi`
+     - real(:nml_v:`n_row`)
+     - root-finding converge parameter
+   * - :nml_v:`n_iter`
+     - :math:`n_{\rm iter}`
+     - integer(:nml_v:`n_row`)
+     - root-finding number of iterations
 
 Observables
 -----------
