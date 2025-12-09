@@ -67,7 +67,7 @@ contains
    #:for T, S in zip(REAL_TYPES+EXT_REAL_TYPES, REAL_SUFFIXES+EXT_REAL_SUFFIXES)
 
       subroutine solve_root_${S}$_(eval_func, x_a, x_b, x_tol, nm_p, x_root, stat, &
-         n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
+         n_iter, n_iter_max, relative_tol, f_x_a, f_x_b, f_x_root)
 
          interface
             subroutine eval_func(x, func, stat)
@@ -85,11 +85,12 @@ contains
          class(num_par_t), intent(in)   :: nm_p
          ${T}$, intent(out)             :: x_root
          integer, intent(out)           :: stat
-         integer, optional, intent(out) :: n_iter
-         integer, optional, intent(in)  :: n_iter_max
-         logical, optional, intent(in)  :: relative_tol
-         ${T}$, optional, intent(in)    :: f_x_a
-         ${T}$, optional, intent(in)    :: f_x_b
+         integer, intent(out), optional :: n_iter
+         integer, intent(in), optional  :: n_iter_max
+         logical, intent(in), optional  :: relative_tol
+         ${T}$, intent(in), optional    :: f_x_a
+         ${T}$, intent(in), optional    :: f_x_b
+         ${T}$, intent(out), optional   :: f_x_root
 
          ${T}$ :: a
          ${T}$ :: b
@@ -121,6 +122,8 @@ contains
 
          x_root = b
 
+         if (PRESENT(f_x_root)) f_x_root = f_b
+
          ! Finish
 
          return
@@ -134,7 +137,7 @@ contains
    #:for T, T_R, S in zip(COMPLEX_TYPES+EXT_COMPLEX_TYPES, REAL_TYPES+EXT_REAL_TYPES, COMPLEX_SUFFIXES+EXT_COMPLEX_SUFFIXES)
 
       subroutine solve_root_${S}$_(eval_func, z_a, z_b, z_tol, nm_p, z_root, stat, &
-         n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
+         n_iter, n_iter_max, relative_tol, f_z_a, f_z_b, f_z_root)
 
          interface
             subroutine eval_func(x, func, stat)
@@ -152,11 +155,12 @@ contains
          class(num_par_t), intent(in)   :: nm_p
          ${T}$, intent(out)             :: z_root
          integer, intent(out)           :: stat
-         integer, optional, intent(out) :: n_iter
-         integer, optional, intent(in)  :: n_iter_max
-         logical, optional, intent(in)  :: relative_tol
-         ${T}$, optional, intent(in)    :: f_z_a
-         ${T}$, optional, intent(in)    :: f_z_b
+         integer, intent(out), optional :: n_iter
+         integer, intent(in), optional  :: n_iter_max
+         logical, intent(in), optional  :: relative_tol
+         ${T}$, intent(in), optional    :: f_z_a
+         ${T}$, intent(in), optional    :: f_z_b
+         ${T}$, intent(out), optional   :: f_z_root
 
          ${T}$ :: a
          ${T}$ :: b
@@ -188,6 +192,8 @@ contains
 
          z_root = b
 
+         if (PRESENT(f_z_root)) f_z_root = f_b
+
          ! Finish
 
          return
@@ -218,9 +224,9 @@ contains
          ${T}$, intent(in)              :: x_tol
          class(num_par_t), intent(in)   :: nm_p
          integer, intent(out)           :: stat
-         integer, optional, intent(out) :: n_iter
-         integer, optional, intent(in)  :: n_iter_max
-         logical, optional, intent(in)  :: relative_tol
+         integer, intent(out), optional :: n_iter
+         integer, intent(in), optional  :: n_iter_max
+         logical, intent(in), optional  :: relative_tol
          ${T}$, optional, intent(inout) :: f_x_a
          ${T}$, optional, intent(inout) :: f_x_b
 
@@ -258,9 +264,9 @@ contains
          ${T}$, intent(inout)           :: x_b
          ${T}$, intent(in)              :: x_tol
          integer, intent(out)           :: stat
-         integer, optional, intent(out) :: n_iter
-         integer, optional, intent(in)  :: n_iter_max
-         logical, optional, intent(in)  :: relative_tol
+         integer, intent(out), optional :: n_iter
+         integer, intent(in), optional  :: n_iter_max
+         logical, intent(in), optional  :: relative_tol
          ${T}$, optional, intent(inout) :: f_x_a
          ${T}$, optional, intent(inout) :: f_x_b
 
@@ -475,10 +481,10 @@ contains
          ${T}$, intent(inout)          :: x_a
          ${T}$, intent(inout)          :: x_b
          integer, intent(out)          :: stat
-         logical, optional, intent(in) :: clamp_a
-         logical, optional, intent(in) :: clamp_b
-         ${T}$, optional, intent(out)  :: f_x_a
-         ${T}$, optional, intent(out)  :: f_x_b
+         logical, intent(in), optional :: clamp_a
+         logical, intent(in), optional :: clamp_b
+         ${T}$, intent(out), optional  :: f_x_a
+         ${T}$, intent(out), optional  :: f_x_b
 
          logical  :: clamp_a_
          logical  :: clamp_b_
@@ -579,9 +585,9 @@ contains
          ${T_R}$, intent(in)            :: z_tol
          class(num_par_t), intent(in)   :: nm_p
          integer, intent(out)           :: stat
-         integer, optional, intent(out) :: n_iter
-         integer, optional, intent(in)  :: n_iter_max
-         logical, optional, intent(in)  :: relative_tol
+         integer, intent(out), optional :: n_iter
+         integer, intent(in), optional  :: n_iter_max
+         logical, intent(in), optional  :: relative_tol
          ${T}$, optional, intent(inout) :: f_z_a
          ${T}$, optional, intent(inout) :: f_z_b
 
@@ -623,9 +629,9 @@ contains
          ${T}$, intent(inout)           :: z_b
          ${T_R}$, intent(in)            :: z_tol
          integer, intent(out)           :: stat
-         integer, optional, intent(out) :: n_iter
-         integer, optional, intent(in)  :: n_iter_max
-         logical, optional, intent(in)  :: relative_tol
+         integer, intent(out), optional :: n_iter
+         integer, intent(in), optional  :: n_iter_max
+         logical, intent(in), optional  :: relative_tol
          ${T}$, optional, intent(inout) :: f_z_a
          ${T}$, optional, intent(inout) :: f_z_b
 
@@ -767,9 +773,9 @@ contains
          ${T}$, intent(inout)           :: z_b
          ${T_R}$, intent(in)            :: z_tol
          integer, intent(out)           :: stat
-         integer, optional, intent(out) :: n_iter
-         integer, optional, intent(in)  :: n_iter_max
-         logical, optional, intent(in)  :: relative_tol
+         integer, intent(out), optional :: n_iter
+         integer, intent(in), optional  :: n_iter_max
+         logical, intent(in), optional  :: relative_tol
          ${T}$, optional, intent(inout) :: f_z_a
          ${T}$, optional, intent(inout) :: f_z_b
 
@@ -937,11 +943,11 @@ contains
          ${T}$, intent(inout)          :: z_b
          ${T_R}$, intent(in)           :: f_z_tol
          integer, intent(out)          :: stat
-         ${T}$, optional, intent(out)  :: f_z_a
-         ${T}$, optional, intent(out)  :: f_z_b
-         logical, optional, intent(in) :: clamp_a
-         logical, optional, intent(in) :: clamp_b
-         logical, optional, intent(in) :: relative_tol
+         ${T}$, intent(out), optional  :: f_z_a
+         ${T}$, intent(out), optional  :: f_z_b
+         logical, intent(in), optional :: clamp_a
+         logical, intent(in), optional :: clamp_b
+         logical, intent(in), optional :: relative_tol
 
          logical :: relative_tol_
          logical :: clamp_a_
