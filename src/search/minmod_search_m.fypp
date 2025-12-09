@@ -61,13 +61,10 @@ contains
       real(RD), intent(in)         :: omega_max
       type(num_par_t), intent(in)  :: nm_p
       interface
-         subroutine process_mode (md, n_iter, chi)
-            use ext_m
+         subroutine process_mode(md)
             use mode_m
             implicit none (type, external)
             type(mode_t), intent(in) :: md
-            integer, intent(in)      :: n_iter
-            type(ext_rt), intent(in) :: chi
          end subroutine process_mode
       end interface
 
@@ -89,6 +86,7 @@ contains
       integer                   :: i
       integer                   :: n_iter
       type(ext_rt)              :: x_minim
+      type(ext_rt)              :: f_x_minim
       integer                   :: stat
 
       ! Find discriminant minmod brackets

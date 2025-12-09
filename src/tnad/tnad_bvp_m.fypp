@@ -136,11 +136,13 @@ contains
 
    !****
 
-   function wave_t_hom_(bp, st, id) result(wv)
+   function wave_t_hom_(bp, st, id, chi, n_iter) result(wv)
 
       class(tnad_bvp_t), intent(inout) :: bp
       type(state_ct), intent(in)       :: st
       integer, intent(in)              :: id
+      real(RD), intent(in)             :: chi
+      integer, intent(in)              :: n_iter
       type(wave_t)                     :: wv
 
       complex(RD) :: y(6,bp%n)
@@ -157,7 +159,7 @@ contains
 
       ! Construct the wave_t
 
-      wv = wave_t_y_(bp, st, y, id)
+      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
 
       ! Finish
 
@@ -167,13 +169,15 @@ contains
 
    !****
 
-   function wave_t_inhom_(bp, st, z_i, z_o, id) result(wv)
+   function wave_t_inhom_(bp, st, z_i, z_o, id, chi, n_iter) result(wv)
 
       class(tnad_bvp_t), intent(inout) :: bp
       type(state_ct), intent(in)       :: st
       complex(RD), intent(in)          :: z_i(:)
       complex(RD), intent(in)          :: z_o(:)
       integer, intent(in)              :: id
+      real(RD), intent(in)             :: chi
+      integer, intent(in)              :: n_iter
       type(wave_t)                     :: wv
 
       complex(RD) :: y(6,bp%n)
@@ -193,7 +197,7 @@ contains
 
       ! Construct the wave_t
 
-      wv = wave_t_y_(bp, st, y, id)
+      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
 
       ! Finish
 
@@ -203,12 +207,14 @@ contains
 
    !****
 
-   function wave_t_y_(bp, st, y, id) result(wv)
+   function wave_t_y_(bp, st, y, id, chi, n_iter) result(wv)
 
       class(tnad_bvp_t), intent(inout) :: bp
       type(state_ct), intent(in)       :: st
       complex(RD), intent(in)          :: y(:,:)
       integer, intent(in)              :: id
+      real(RD), intent(in)             :: chi
+      integer, intent(in)              :: n_iter
       type(wave_t)                     :: wv
 
       integer      :: j
@@ -231,9 +237,7 @@ contains
 
       ! Construct the wave_t
 
-      call bp%eval_det(st, discrim)
-
-      wv = wave_t(st, y_c, discrim, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id)
+      wv = wave_t(st, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
 
       ! Finish
 

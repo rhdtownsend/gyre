@@ -68,13 +68,10 @@ contains
       real(RD), intent(in)                 :: omega_max
       type(num_par_t), intent(in)          :: nm_p
       interface
-         subroutine process_mode (md, n_iter, chi)
-            use ext_m
+         subroutine process_mode(md)
             use mode_m
             implicit none (type, external)
             type(mode_t), intent(in) :: md
-            integer, intent(in)      :: n_iter
-            type(ext_rt), intent(in) :: chi
          end subroutine process_mode
       end interface
 
@@ -124,13 +121,10 @@ contains
       real(RD), intent(in)         :: omega_max
       type(num_par_t), intent(in)  :: nm_p
       interface
-         subroutine process_mode (md, n_iter, chi)
-            use ext_m
+         subroutine process_mode(md)
             use mode_m
             implicit none (type, external)
             type(mode_t), intent(in) :: md
-            integer, intent(in)      :: n_iter
-            type(ext_rt), intent(in) :: chi
          end subroutine process_mode
       end interface
 
@@ -151,9 +145,10 @@ contains
       logical                  :: apply_deflate
       integer                  :: stat
       type(ext_ct)             :: z_root
+      type(ext_ct)             :: f_z_root
       type(wave_t)             :: wv
       type(mode_t)             :: md
-      type(ext_rt)             :: chi
+      real(RD)                 :: chi
 
       @:CHECK_BOUNDS(SIZE(id_in), SIZE(omega_in_a))
       @:CHECK_BOUNDS(SIZE(omega_in_b), SIZE(omega_in_a))
@@ -233,19 +228,21 @@ contains
 
          call solve_root(eval_discrim_z_, z_a, z_b, ext_rt(0._RD), nm_p, &
             z_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
-            f_z_a=f_z_a, f_z_b=f_z_b)
+            f_z_a=f_z_a, f_z_b=f_z_b, f_z_root=f_z_root)
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'solve')
             cycle in_loop
          endif
 
+         chi = real(abs(f_z_root)/max(abs(discrim_a), abs(discrim_b)))
+
          ! Construct the mode_t
 
          select type (bp)
          type is (nad_bvp_t)
-            wv = wave_t(bp, state_ct(cmplx(z_root), omega_r=omega_r), id_in(i))
+            wv = wave_t(bp, state_ct(cmplx(z_root), omega_r=omega_r), id_in(i), chi, n_iter_def+n_iter)
          type is (tnad_bvp_t)
-            wv = wave_t(bp, state_ct(cmplx(z_root), omega_r=omega_r), id_in(i))
+            wv = wave_t(bp, state_ct(cmplx(z_root), omega_r=omega_r), id_in(i), chi, n_iter_def+n_iter)
          class default
             @:ABORT('Invalid bp class')
          end select
@@ -254,9 +251,7 @@ contains
 
          ! Process it
 
-         chi = abs(md%discrim)/max(abs(discrim_a), abs(discrim_b))
-
-         call process_mode(md, n_iter_def+n_iter, chi)
+         call process_mode(md)
 
          ! Store the frequency in the deflation array
 

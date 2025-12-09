@@ -47,11 +47,11 @@ module bracket_search_m
    ! Derived-type definitions
 
    type :: bracket_t
-      real(RD)     :: omega
-      type(ext_rt) :: chi
-      integer      :: n_iter
-      integer      :: id
-      logical      :: active
+      real(RD) :: omega
+      real(RD) :: chi
+      integer  :: n_iter
+      integer  :: id
+      logical  :: active
    end type bracket_t
 
    ! Module variables
@@ -76,13 +76,10 @@ contains
       real(RD), intent(in)         :: omega_max
       type(num_par_t), intent(in)  :: nm_p
       interface
-         subroutine process_mode (md, n_iter, chi)
-            use ext_m
+         subroutine process_mode(md)
             use mode_m
             implicit none (type, external)
-            type(mode_t), intent(in)  :: md
-            integer, intent(in)       :: n_iter
-            type(ext_rt), intent(in)  :: chi
+            type(mode_t), intent(in) :: md
          end subroutine process_mode
       end interface
 
@@ -236,7 +233,7 @@ contains
          endif
 
          bk(i)%omega = real(x_root)
-         bk(i)%chi = abs(f_x_root)/max(abs(discrim(i)), abs(discrim(i+1)))
+         bk(i)%chi = real(abs(f_x_root)/max(abs(discrim(i)), abs(discrim(i+1))))
 
       end do omega_loop
       !$OMP END DO
@@ -326,13 +323,10 @@ contains
       class(bvp_rt), intent(inout)   :: bp
       type(bracket_t), intent(inout) :: bk(:)
       interface
-         subroutine process_mode (md, n_iter, chi)
-            use ext_m
+         subroutine process_mode(md)
             use mode_m
             implicit none (type, external)
-            type(mode_t), intent(in)  :: md
-            integer, intent(in)       :: n_iter
-            type(ext_rt), intent(in)  :: chi
+            type(mode_t), intent(in) :: md
          end subroutine process_mode
       end interface
 
@@ -378,9 +372,9 @@ contains
 
             select type (bp)
             type is (ad_bvp_t)
-               wv = wave_t(bp, state_rt(CMPLX(bk(i)%omega, KIND=RD)), bk(i)%id)
+               wv = wave_t(bp, state_rt(CMPLX(bk(i)%omega, KIND=RD)), bk(i)%id, bk(i)%chi, bk(i)%n_iter)
             type is (rad_bvp_t)
-               wv = wave_t(bp, state_rt(CMPLX(bk(i)%omega, KIND=RD)), bk(i)%id)
+               wv = wave_t(bp, state_rt(CMPLX(bk(i)%omega, KIND=RD)), bk(i)%id, bk(i)%chi, bk(i)%n_iter)
             class default
                @:ABORT('invalid bp class')
             end select
@@ -390,7 +384,7 @@ contains
             ! Process it
 
             !$OMP CRITICAL
-            call process_mode(md, bk(i)%n_iter, bk(i)%chi)
+            call process_mode(md)
             !$OMP END CRITICAL
 
          end if

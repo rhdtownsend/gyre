@@ -140,11 +140,13 @@ contains
 
    !****
 
-   function wave_t_hom_(bp, st, id) result(wv)
+   function wave_t_hom_(bp, st, id, chi, n_iter) result(wv)
 
       class(ad_bvp_t), intent(inout) :: bp
       type(state_rt), intent(in)     :: st
       integer, intent(in)            :: id
+      real(RD), intent(in)           :: chi
+      integer, intent(in)            :: n_iter
       type(wave_t)                   :: wv
 
       real(RD) :: y(4,bp%n)
@@ -163,7 +165,7 @@ contains
 
       ! Construct the wave type
 
-      wv = wave_t_y_(bp, st, y, id)
+      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
 
       ! Finish
 
@@ -173,13 +175,15 @@ contains
 
    !****
 
-   function wave_t_inhom_(bp, st, z_i, z_o, id) result(wv)
+   function wave_t_inhom_(bp, st, z_i, z_o, id, chi, n_iter) result(wv)
 
       class(ad_bvp_t), intent(inout) :: bp
       type(state_rt), intent(in)     :: st
       real(RD), intent(in)           :: z_i(:)
       real(RD), intent(in)           :: z_o(:)
       integer, intent(in)            :: id
+      real(RD), intent(in)           :: chi
+      integer, intent(in)            :: n_iter
       type(wave_t)                   :: wv
 
       real(RD) :: y(4,bp%n)
@@ -201,7 +205,7 @@ contains
 
       ! Construct the wave type
 
-      wv = wave_t_y_(bp, st, y, id)
+      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
 
       ! Finish
 
@@ -211,17 +215,18 @@ contains
 
    !****
 
-   function wave_t_y_(bp, st, y, id) result(wv)
+   function wave_t_y_(bp, st, y, id, chi, n_iter) result(wv)
 
       class(ad_bvp_t), intent(inout) :: bp
       type(state_rt), intent(in)     :: st
       real(RD), intent(in)           :: y(:,:)
       integer, intent(in)            :: id
+      real(RD), intent(in)           :: chi
+      integer, intent(in)            :: n_iter
       type(wave_t)                   :: wv
 
       type(state_ct) :: st_c
       complex(RD)    :: y_c(6,bp%n)
-      type(ext_rt)   :: discrim
 
       @:CHECK_BOUNDS(SIZE(y, 1), bp%n_e)
       @:CHECK_BOUNDS(SIZE(y, 2), bp%n)
@@ -243,9 +248,7 @@ contains
 
       ! Construct the wave type
 
-      call bp%eval_det(st, discrim)
-
-      wv = wave_t(st_c, y_c, ext_ct(discrim), bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id)
+      wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
 
       ! Finish
 

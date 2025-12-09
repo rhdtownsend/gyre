@@ -29,7 +29,6 @@ module wave_m
    use anapoly_5_1_model_m
    use constants_m
    use context_m
-   use ext_m
    use freq_context_m
    use grid_m
    use grid_util_m
@@ -66,7 +65,6 @@ module wave_m
       logical                  :: is_vacuum
       complex(RD), allocatable :: y_c(:,:)
       real(RD)                 :: E_scl2
-      type(ext_ct), public     :: discrim
       complex(RD), public      :: scl
       complex(RD), public      :: omega
       complex(RD), public      :: l_i
@@ -76,6 +74,8 @@ module wave_m
       integer, public          :: m
       logical, public          :: static
       integer, public          :: id
+      integer, public          :: n_iter
+      real(RD), public         :: chi
    contains
       private
       procedure, public :: state
@@ -162,17 +162,18 @@ module wave_m
 
 contains
 
-   function wave_t_(st, y_c, discrim, cx, gr, md_p, nm_p, os_p, id, static) result(wv)
+   function wave_t_(st, y_c, cx, gr, md_p, nm_p, os_p, id, chi, n_iter, static) result(wv)
 
       type(state_ct), intent(in)    :: st
       complex(RD), intent(in)       :: y_c(:,:)
-      type(ext_ct), intent(in)      :: discrim
       type(context_t), intent(in)   :: cx
       type(grid_t), intent(in)      :: gr
       type(mode_par_t), intent(in)  :: md_p
       type(num_par_t), intent(in)   :: nm_p
       type(osc_par_t), intent(in)   :: os_p
       integer, intent(in)           :: id
+      real(RD), intent(in)          :: chi
+      integer, intent(in)           :: n_iter
       logical, intent(in), optional :: static
       type(wave_t)                  :: wv
 
@@ -194,7 +195,6 @@ contains
       wv%y_c = y_c
 
       wv%omega = st%omega
-      wv%discrim = discrim
 
       wv%scl = 1._RD
 
@@ -210,6 +210,8 @@ contains
       wv%m = md_p%m
 
       wv%id = id
+      wv%chi = chi
+      wv%n_iter = n_iter
 
       if (PRESENT(static)) then
          wv%static = static

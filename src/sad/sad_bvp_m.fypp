@@ -203,9 +203,7 @@ contains
 
       ! Construct the wave_t
 
-      call bp%eval_det(st, discrim)
-
-      wv = wave_t(st_c, y_c, ext_ct(discrim), bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, static=.TRUE.)
+      wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, 0._RD, 1, static=.TRUE.)
 
       ! Finish
 

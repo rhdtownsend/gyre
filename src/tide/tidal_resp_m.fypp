@@ -177,9 +177,9 @@ contains
 
                      select type (bp_nad)
                      type is (nad_bvp_t)
-                        wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, id_m)
+                        wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, id_m, 0._RD, 1)
                      type is (tnad_bvp_t)
-                        wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, id_m)
+                        wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, id_m, 0._RD, 1)
                      end select
 
                   case (STATIC_TIDE)

@@ -149,11 +149,13 @@ contains
 
    !****
 
-   function wave_t_hom_(bp, st, id) result(wv)
+   function wave_t_hom_(bp, st, id, chi, n_iter) result(wv)
 
       class(rad_bvp_t), intent(inout) :: bp
       type(state_rt), intent(in)      :: st
       integer, intent(in)             :: id
+      real(RD), intent(in)            :: chi
+      integer, intent(in)             :: n_iter
       type(wave_t)                    :: wv
 
       real(RD) :: y(2,bp%n)
@@ -172,7 +174,7 @@ contains
 
       ! Construct the wave_t
 
-      wv = wave_t_y_(bp, st, y, id)
+      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
 
       ! Finish
 
@@ -182,13 +184,15 @@ contains
 
    !****
 
-   function wave_t_inhom_(bp, st, z_i, z_o, id) result(wv)
+   function wave_t_inhom_(bp, st, z_i, z_o, id, chi, n_iter) result(wv)
 
       class(rad_bvp_t), intent(inout) :: bp
       type(state_rt), intent(in)      :: st
       real(RD), intent(in)            :: z_i(:)
       real(RD), intent(in)            :: z_o(:)
       integer, intent(in)             :: id
+      real(RD), intent(in)            :: chi
+      integer, intent(in)             :: n_iter
       type(wave_t)                    :: wv
 
       real(RD) :: y(2,bp%n)
@@ -210,7 +214,7 @@ contains
 
       ! Construct the wave_t
 
-      wv = wave_t_y_(bp, st, y, id)
+      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
 
       ! Finish
 
@@ -220,12 +224,14 @@ contains
 
    !****
 
-   function wave_t_y_(bp, st, y, id) result(wv)
+   function wave_t_y_(bp, st, y, id, chi, n_iter) result(wv)
 
       class(rad_bvp_t), intent(inout) :: bp
       type(state_rt), intent(in)      :: st
       real(RD), intent(in)            :: y(:,:)
       integer, intent(in)             :: id
+      real(RD), intent(in)            :: chi
+      integer, intent(in)             :: n_iter
       type(wave_t)                    :: wv
 
       class(model_t), pointer :: ml
@@ -242,7 +248,6 @@ contains
       real(RD)                :: y_g(4,bp%n)
       complex(RD)             :: y_c(6,bp%n)
       type(state_ct)          :: st_c
-      type(ext_rt)            :: discrim
 
       ! Set up gravitational eigenfunctions
 
@@ -322,9 +327,7 @@ contains
 
       ! Construct the wave_t
 
-      call bp%eval_det(st, discrim)
-
-      wv = wave_t(st_c, y_c, ext_ct(discrim), bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id)
+      wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
 
       ! Finish
 
