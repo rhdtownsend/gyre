@@ -133,12 +133,12 @@ contains
 
       ! Evaluate the discriminant at the frequency scan points
 
-      !$OMP MASTER
+      !$OMP SINGLE
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 100) 'Discriminant evaluation'
 100      format(A)
       endif
-      !$OMP END MASTER
+      !$OMP END SINGLE
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
@@ -160,12 +160,12 @@ contains
 
       call SYSTEM_CLOCK(c_end)
 
-      !$OMP MASTER
+      !$OMP SINGLE
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
 120      format(2X,A,F10.3,1X,A/)
       endif
-      !$OMP END MASTER
+      !$OMP END SINGLE
 
       ! Finish
 
@@ -199,14 +199,14 @@ contains
       ! Find discriminant brackets, and solve for the bracketed
       ! root
 
-      !$OMP MASTER
+      !$OMP SINGLE
       if (check_log_level('INFO')) then
 
          write(OUTPUT_UNIT, 100) 'Root Solving'
 100      format(A)
 
       endif
-      !$OMP END MASTER
+      !$OMP END SINGLE
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
@@ -240,12 +240,12 @@ contains
 
       call SYSTEM_CLOCK(c_end)
 
-      !$OMP MASTER
+      !$OMP SINGLE
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
 130      format(2X,A,1X,F10.3,1X,A/)
       endif
-      !$OMP END MASTER
+      !$OMP END SINGLE
 
       ! Finish
 
@@ -336,10 +336,10 @@ contains
       integer      :: i
       type(wave_t) :: wv
       type(mode_t) :: md
-      
+
       ! Process active brackets
 
-      !$OMP MASTER
+      !$OMP SINGLE
       if (check_log_level('INFO')) then
 
          write(OUTPUT_UNIT, 100) 'Mode Processing'
@@ -348,26 +348,26 @@ contains
          write(OUTPUT_UNIT, 110) 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
 110      format(1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
       end if
-      !$OMP END MASTER
+      !$OMP END SINGLE
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
       ! Set up ids
 
-      !$OMP MASTER
+      !$OMP SINGLE
       do i = 1, SIZE(bk)
          if (bk(i)%active) then
             id_m = id_m + 1
             bk(i)%id = id_m
          end if
       end do
-      !$OMP END MASTER
+      !$OMP END SINGLE
 
       !$OMP DO PRIVATE(wv, md) SCHEDULE(guided)
       bracket_loop: do i = 1, SIZE(bk)
 
          if (bk(i)%active) then
-      
+
             ! Construct the mode_t
 
             select type (bp)
@@ -394,12 +394,12 @@ contains
 
       call SYSTEM_CLOCK(c_end)
 
-      !$OMP MASTER
+      !$OMP SINGLE
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
 130      format(2X,A,1X,F10.3,1X,A/)
       endif
-      !$OMP END MASTER
+      !$OMP END SINGLE
 
       ! Finish
 
