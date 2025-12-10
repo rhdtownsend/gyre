@@ -65,7 +65,7 @@
 
 &ad_output
   summary_file = 'summary.h5'
-  summary_item_list = 'l,n_pg,n_p,n_g,omega'
+  summary_item_list = 'id,l,n_pg,n_p,n_g,omega'
 /
 
 &nad_output

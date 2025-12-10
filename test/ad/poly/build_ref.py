@@ -17,6 +17,7 @@ def write_file (file, l, n, omega) :
 
     f.attrs['label'] = np.string_(' '*256)
 
+    f.create_dataset('id', data=range(1, len(omega)+1))
     f.create_dataset('l', data=l)
     f.create_dataset('n_pg', data=n)
     f.create_dataset('omega', data=omega)
