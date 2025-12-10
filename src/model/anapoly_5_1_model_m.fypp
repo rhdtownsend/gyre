@@ -194,7 +194,6 @@ contains
       real(RD) :: alpha
       real(RD) :: A(2,2)
       real(RD) :: dtheta_s
-      integer  :: status
 
       @:CHECK_BOUNDS(SIZE(C), 2)
 
@@ -563,8 +562,6 @@ contains
       class(anapoly_5_1_model_t), intent(in) :: this
       type(point_t), intent(in)              :: pt
       real(RD)                               :: coeff
-
-      real(RD) :: z
 
       ! Evaluate the c_1 coefficient
 

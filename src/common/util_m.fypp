@@ -191,7 +191,6 @@ contains
          integer :: i
          logical :: mask(SIZE(par))
          integer :: n_par_sel
-         integer :: j
 
          ! Select all parameters whose tag_list matches tag
 

@@ -47,7 +47,6 @@ program poly_to_txt
    real(RD), allocatable   :: U(:)
    real(RD), allocatable   :: c_1(:)
    real(RD), allocatable   :: Gamma_1(:)
-   integer                 :: n
    integer                 :: unit
    integer                 :: j
 

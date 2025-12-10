@@ -219,7 +219,6 @@ contains
 
       integer      :: j
       complex(RD)  :: y_c(bp%n_e,bp%n)
-      type(ext_ct) :: discrim
 
       @:CHECK_BOUNDS(SIZE(y, 1), bp%n_e)
       @:CHECK_BOUNDS(SIZE(y, 2), bp%n)

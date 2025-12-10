@@ -358,9 +358,6 @@ contains
 
          type(cubic_interp_rt), allocatable :: ci(:,:)
 
-         real(RD), allocatable :: dV_2_dx(:)
-         real(RD), allocatable :: dU_dx(:)
-         real(RD), allocatable :: dc_1_dx(:)
          integer               :: i
          integer               :: s
          integer               :: j_i

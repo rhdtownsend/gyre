@@ -86,7 +86,6 @@ contains
       integer                   :: i
       integer                   :: n_iter
       type(ext_rt)              :: x_minim
-      type(ext_rt)              :: f_x_minim
       integer                   :: stat
 
       ! Find discriminant minmod brackets

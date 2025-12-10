@@ -110,7 +110,6 @@ contains
       integer                   :: j_re
       integer                   :: j_im
       complex(RD)               :: omega
-      type(ext_ct)              :: discrim
       integer                   :: i_percent
       type(ext_ct), allocatable :: discrim_map(:,:)
       type(contour_map_t)       :: cm

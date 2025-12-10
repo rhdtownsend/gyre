@@ -84,9 +84,8 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(tnad_diff_t)                    :: df
 
-      type(tnad_eqns_t)       :: eq
-      type(point_t)           :: pt_m
-      class(model_t), pointer :: ml
+      type(tnad_eqns_t) :: eq
+      type(point_t)     :: pt_m
 
       ! Construct the tnad_diff_t
 

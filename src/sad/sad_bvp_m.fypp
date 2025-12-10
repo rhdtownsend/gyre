@@ -188,7 +188,6 @@ contains
 
       complex(RD)    :: y_c(6,bp%n)
       type(state_ct) :: st_c
-      type(ext_rt)   :: discrim
 
       ! Set up complex eigenfunctions
 

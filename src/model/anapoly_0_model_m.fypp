@@ -94,7 +94,6 @@ contains
       type(anapoly_0_model_t)       :: ml
 
       real(RD), allocatable :: w(:)
-      integer               :: status
 
       ! Construct the anapoly_0_model_t
 
