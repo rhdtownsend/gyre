@@ -447,7 +447,7 @@ contains
       associate ( &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
-         Omega_rot => this%Omega_rot(i,J_OMEGA_ROT), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          pt => this%pt(i))
 
          omega_c = this%cx%omega_c(Omega_rot, st)
