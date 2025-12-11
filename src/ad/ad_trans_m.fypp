@@ -51,8 +51,9 @@ module ad_trans_m
    integer, parameter :: J_DU = 4
    integer, parameter :: J_C_1 = 5
    integer, parameter :: J_DC_1 = 6
+   integer, parameter :: J_OMEGA_ROT = 7
 
-   integer, parameter :: J_LAST = J_DC_1
+   integer, parameter :: J_LAST = J_OMEGA_ROT
 
    ! Derived-type definitions
 
@@ -161,6 +162,7 @@ contains
       allocate(this%coeff(n_s,J_LAST))
 
       do i = 1, n_s
+
          if (ml%is_vacuum(pt(i))) then
             this%coeff(i,J_V_2) = HUGE(0._RD)
             this%coeff(i,J_DV_2) = HUGE(0._RD)
@@ -173,6 +175,9 @@ contains
          this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
          this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
          this%coeff(i,J_DC_1) = ml%dcoeff(I_C_1, pt(i))
+
+         this%coeff(i,J_OMEGA_ROT) = this%cx%Omega_rot(pt(i))
+
       end do
 
       ! Store the stencil points for on-the-fly evaluations
@@ -416,7 +421,6 @@ contains
       class(state_rt), intent(in)   :: st
       real(RD)                      :: G(this%n_e,this%n_e)
 
-      real(RD) :: Omega_rot
       real(RD) :: omega_c
       real(RD) :: lambda
 
@@ -426,9 +430,8 @@ contains
       associate( &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          pt => this%pt(i))
-
-         Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -660,7 +663,6 @@ contains
       class(state_rt), intent(in)   :: st
       real(RD)                      :: H(this%n_e,this%n_e)
 
-      real(RD) :: Omega_rot
       real(RD) :: omega_c
       real(RD) :: lambda
 
@@ -670,9 +672,8 @@ contains
       associate( &
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          pt => this%pt(i))
-
-         Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -865,7 +866,6 @@ contains
       class(state_rt), intent(in)   :: st
       real(RD)                      :: dH(this%n_e,this%n_e)
 
-      real(RD) :: Omega_rot
       real(RD) :: omega_c
       real(RD) :: lambda
 
@@ -877,9 +877,8 @@ contains
          dU => this%coeff(i,J_DU), &
          c_1 => this%coeff(i,J_C_1), &
          dc_1 => this%coeff(i,J_DC_1), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
          pt => this%pt(i))
-
-         Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
 
