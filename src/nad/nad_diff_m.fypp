@@ -175,7 +175,7 @@ contains
          ! Rescale by the uncoupled eigenvalues, in order to help the root
          ! finder
 
-         A = this%eq%A(1, st)
+         call this%eq%eval_A(1, st, A)
 
          lambda(1) = sqrt(A(2,1)*A(1,2))
          lambda(2) = sqrt(A(4,3)*A(3,4))

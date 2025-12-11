@@ -141,9 +141,9 @@ contains
 
             ! Evaluate the RHS matrices
 
-            A(:,:,1) = this%eq%A(1, st)
-            A(:,:,2) = this%eq%A(2, st)
-            A(:,:,3) = this%eq%A(3, st)
+            call this%eq%eval_A(1, st, A(:,:,1))
+            call this%eq%eval_A(2, st, A(:,:,2))
+            call this%eq%eval_A(3, st, A(:,:,3))
 
             ! Build the difference equations
 

@@ -108,9 +108,9 @@ contains
 
       integer         :: j
       integer         :: s
-      complex(RD)     :: xA(6,6)
-      complex(RD)     :: xA_5(6,this%n)
-      complex(RD)     :: xA_6(6,this%n)
+      complex(RD)     :: A(6,6)
+      complex(RD)     :: A_5(6,this%n)
+      complex(RD)     :: A_6(6,this%n)
       complex(RD)     :: dy_6(this%n)
 
       @:CHECK_BOUNDS(SIZE(y_ad, 1), 4)
@@ -126,20 +126,24 @@ contains
       ! Evaluate components of the non-adiabatic RHS matrix
       ! corresponding to the energy conservation and transport equations
 
-      !$OMP PARALLEL DO PRIVATE (xA)
+      !$OMP PARALLEL DO PRIVATE (A)
       do j = 1, this%n
 
-         xA = this%eq%xA(j, st)
-
-         xA_5(:,j) = xA(5,:)
-         xA_6(:,j) = xA(6,:)
+         if (this%gr%pt(j)%x /= 0._RD) then
+            call this%eq%eval_A(j, st, A)
+            A_5(:,j) = A(5,:)
+            A_6(:,j) = A(6,:)
+         else
+            A_5(:,j) = 0._RD
+            A_6(:,j) = 0._RD
+         end if
 
       end do
 
       ! Evaluate the luminosity perturbation eigenfunction
 
       where (this%gr%pt%x /= 0._RD)
-         y_qad(6,:) = -(xA_5(1,:)*y_qad(1,:) + xA_5(2,:)*y_qad(2,:) + xA_5(3,:)*y_qad(3,:) + xA_5(4,:)*y_qad(4,:))/xA_5(6,:)
+         y_qad(6,:) = -(A_5(1,:)*y_qad(1,:) + A_5(2,:)*y_qad(2,:) + A_5(3,:)*y_qad(3,:) + A_5(4,:)*y_qad(4,:))/A_5(6,:)
       elsewhere
          y_qad(6,:) = 0._RD
       end where
@@ -156,8 +160,8 @@ contains
       ! Evaluate the entropy perturbation eigenfunction
 
       where (this%gr%pt%x /= 0._RD)
-         y_qad(5,:) = (dy_6 - (xA_6(1,:)*y_qad(1,:) + xA_6(2,:)*y_qad(2,:) + xA_6(3,:)*y_qad(3,:) + &
-            xA_6(4,:)*y_qad(4,:) + xA_6(6,:)*y_qad(6,:)))/xA_6(5,:)
+         y_qad(5,:) = (dy_6 - (A_6(1,:)*y_qad(1,:) + A_6(2,:)*y_qad(2,:) + A_6(3,:)*y_qad(3,:) + &
+            A_6(4,:)*y_qad(4,:) + A_6(6,:)*y_qad(6,:)))/A_6(5,:)
       elsewhere
          y_qad(5,:) = 0._RD
       end where

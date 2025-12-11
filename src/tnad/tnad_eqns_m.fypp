@@ -67,8 +67,7 @@ module tnad_eqns_m
    contains
       private
       procedure, public :: stencil
-      procedure, public :: A
-      procedure, public :: xA
+      procedure, public :: eval_A
       procedure, public :: y_trb
       procedure, public :: F_trb
    end type tnad_eqns_t
@@ -185,33 +184,13 @@ contains
 
    !****
 
-   function A(this, i, st)
+   subroutine eval_A(this, i, st, A)
 
       class(tnad_eqns_t), intent(in) :: this
       integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
-      complex(RD)                    :: A(this%n_e,this%n_e)
+      complex(RD), intent(out)       :: A(:,:)
 
-      ! Evaluate the RHS matrix
-
-      A = this%xA(i, st)/this%pt(i)%x
-
-      ! Finish
-
-      return
-
-   end function A
-
-   !****
-
-   function xA(this, i, st)
-
-      class(tnad_eqns_t), intent(in) :: this
-      integer, intent(in)            :: i
-      class(state_ct), intent(in)    :: st
-      complex(RD)                    :: xA(this%n_e,this%n_e)
-
-      complex(RD) :: A(6,6)
       real(RD)    :: Omega_rot_i
       complex(RD) :: l_i
       complex(RD) :: F_trb
@@ -219,17 +198,21 @@ contains
       complex(RD) :: C(1,6)
       complex(RD) :: D
 
-      ! Evaluate the log(x)-space RHS matrix
+      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
+
+      ! Evaluate the RHS matrix
 
       associate ( &
          V => this%coeff(i,J_V), &
          Gamma_1 => this%coeff(i,J_GAMMA_1), &
          Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
-         pt_i => this%cx%point_i())
+         pt_i => this%cx%point_i(), &
+         x => this%pt(i)%x)
 
          ! Set up original (nad) eqns
 
-         A = this%eq%xA(i, st)
+         call this%eq%eval_A(i, st, A)
 
          ! Build matrices to add turbulent correction to y_2 (through a
          ! virtual y_trb variable)
@@ -257,21 +240,25 @@ contains
 
          D = - 1._RD - F_trb*A(1,2)
 
-         ! Eliminate y_trb to find xA
+         ! Eliminate y_trb to update A
 
-         xA = A - MATMUL(B, C)/D
+         A = A - MATMUL(B, C)/D
+
+         ! Apply the variables transformation
+
+         call this%tr%trans_eqns(A, i, st)
+
+         ! Apply the radial scaling
+
+         A = A/x
 
       end associate
-
-      ! Apply the variables transformation
-
-      call this%tr%trans_eqns(xA, i, st)
 
       ! Finish
 
       return
 
-   end function xA
+   end subroutine eval_A
 
    !****
 
@@ -300,7 +287,7 @@ contains
 
          ! Set up original (nad) eqns
 
-         A = this%eq%xA(i, st)
+         call this%eq%eval_A(i, st, A)
 
          ! Evaluate y_trb
 

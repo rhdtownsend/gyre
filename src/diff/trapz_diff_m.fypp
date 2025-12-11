@@ -46,6 +46,7 @@ module trapz_diff_m
          real(RD), allocatable          :: w(:)
          real(RD)                       :: dx
          real(RD)                       :: x_m
+         logical                        :: origin
       contains
          private
          procedure, public :: build => build_${S}$_
@@ -94,6 +95,8 @@ contains
 
          call df%eq%stencil([pt_a,pt_b])
 
+         df%origin = pt_a%x == 0._RD
+
          df%n_e = eq%n_e
 
          ! Finish
@@ -112,7 +115,7 @@ contains
          ${T}$, intent(out)                  :: E_r(:,:)
          type(ext_${S}$), intent(out)        :: scl
 
-         ${T}$ :: xA(this%n_e,this%n_e,2)
+         ${T}$ :: A(this%n_e,this%n_e,2)
 
          @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
          @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
@@ -120,17 +123,32 @@ contains
          @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
          @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
 
-         ! Evaluate the RHS matrix
-
-         xA(:,:,1) = this%eq%xA(1, st)
-         xA(:,:,2) = this%eq%xA(2, st)
-
          ! Build the difference equations
 
-         E_l = -this%x_m*identity_matrix(this%n_e) - this%dx*MATMUL(diagonal_matrix(1._RD-this%w), xA(:,:,1))
-         E_r =  this%x_m*identity_matrix(this%n_e) - this%dx*MATMUL(diagonal_matrix(      this%w), xA(:,:,2))
+         if (this%origin) then
 
-         scl = ext_${S}$(1._RD)
+            ! If we're at the origin, fudge things to avoid evaluating A there
+
+            E_l = -identity_matrix(this%n_e)
+            E_r =  identity_matrix(this%n_e)
+
+            scl = ext_${S}$(1._RD)
+
+         else
+
+            ! Evaluate the RHS matrix
+
+            call this%eq%eval_A(1, st, A(:,:,1))
+            call this%eq%eval_A(2, st, A(:,:,2))
+
+            ! Build the difference equations
+
+            E_l = -identity_matrix(this%n_e) - this%dx*MATMUL(diagonal_matrix(1._RD-this%w), A(:,:,1))
+            E_r =  identity_matrix(this%n_e) - this%dx*MATMUL(diagonal_matrix(      this%w), A(:,:,2))
+
+            scl = ext_${S}$(1._RD)
+
+         end if
 
          ! Finish
 

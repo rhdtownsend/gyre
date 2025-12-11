@@ -94,8 +94,7 @@ module nad_eqns_m
    contains
       private
       procedure, public :: stencil
-      procedure, public :: A
-      procedure, public :: xA
+      procedure, public :: eval_A
    end type nad_eqns_t
 
    ! Interfaces
@@ -243,31 +242,12 @@ contains
 
    !****
 
-   function A(this, i, st)
+   subroutine eval_A(this, i, st, A)
 
       class(nad_eqns_t), intent(in) :: this
       integer, intent(in)           :: i
       class(state_ct), intent(in)   :: st
-      complex(RD)                   :: A(this%n_e,this%n_e)
-
-      ! Evaluate the RHS matrix
-
-      A = this%xA(i, st)/this%pt(i)%x
-
-      ! Finish
-
-      return
-
-   end function A
-
-   !****
-
-   function xA(this, i, st)
-
-      class(nad_eqns_t), intent(in) :: this
-      integer, intent(in)           :: i
-      class(state_ct), intent(in)   :: st
-      complex(RD)                   :: xA(this%n_e,this%n_e)
+      complex(RD), intent(out)      :: A(:,:)
 
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
@@ -284,7 +264,10 @@ contains
       real(RD)    :: c_kap_S
       real(RD)    :: c_dif
 
-      ! Evaluate the log(x)-space RHS matrix
+      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
+
+      ! Evaluate the RHS matrix
 
       associate ( &
          V => this%coeff(i,J_V), &
@@ -355,62 +338,66 @@ contains
 
          ! Set up the matrix
 
-         xA(1,1) = V/Gamma_1 - 1._RD - l_i
-         xA(1,2) = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1*alpha_gam
-         xA(1,3) = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
-         xA(1,4) = alpha_grv*(0._RD)
-         xA(1,5) = ups_T
-         xA(1,6) = 0._RD
+         A(1,1) = V/Gamma_1 - 1._RD - l_i
+         A(1,2) = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1*alpha_gam
+         A(1,3) = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
+         A(1,4) = alpha_grv*(0._RD)
+         A(1,5) = ups_T
+         A(1,6) = 0._RD
 
-         xA(2,1) = c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._RD, As > 0._RD)
-         xA(2,2) = As - U + 3._RD - l_i
-         xA(2,3) = alpha_grv*(0._RD)
-         xA(2,4) = alpha_grv*(-1._RD)
-         xA(2,5) = ups_T
-         xA(2,6) = 0._RD
+         A(2,1) = c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._RD, As > 0._RD)
+         A(2,2) = As - U + 3._RD - l_i
+         A(2,3) = alpha_grv*(0._RD)
+         A(2,4) = alpha_grv*(-1._RD)
+         A(2,5) = ups_T
+         A(2,6) = 0._RD
 
-         xA(3,1) = alpha_grv*(0._RD)
-         xA(3,2) = alpha_grv*(0._RD)
-         xA(3,3) = alpha_grv*(3._RD - U - l_i)
-         xA(3,4) = alpha_grv*(1._RD)
-         xA(3,5) = alpha_grv*(0._RD)
-         xA(3,6) = alpha_grv*(0._RD)
+         A(3,1) = alpha_grv*(0._RD)
+         A(3,2) = alpha_grv*(0._RD)
+         A(3,3) = alpha_grv*(3._RD - U - l_i)
+         A(3,4) = alpha_grv*(1._RD)
+         A(3,5) = alpha_grv*(0._RD)
+         A(3,6) = alpha_grv*(0._RD)
 
-         xA(4,1) = alpha_grv*(U*As)
-         xA(4,2) = alpha_grv*(U*V/Gamma_1)
-         xA(4,3) = alpha_grv*(lambda)
-         xA(4,4) = alpha_grv*(-U - l_i + 2._RD)
-         xA(4,5) = alpha_grv*(-U*ups_T)
-         xA(4,6) = alpha_grv*(0._RD)
+         A(4,1) = alpha_grv*(U*As)
+         A(4,2) = alpha_grv*(U*V/Gamma_1)
+         A(4,3) = alpha_grv*(lambda)
+         A(4,4) = alpha_grv*(-U - l_i + 2._RD)
+         A(4,5) = alpha_grv*(-U*ups_T)
+         A(4,6) = alpha_grv*(0._RD)
 
-         xA(5,1) = V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._RD*(nabla_ad - nabla) + c_kap_ad*V*nabla + c_dif)/f_rh
-         xA(5,2) = V*(lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla) - c_kap_ad*V*nabla - c_dif)/f_rh
-         xA(5,3) = alpha_grv*(V*lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla))/f_rh
-         xA(5,4) = alpha_grv*(V*nabla_ad)/f_rh
-         xA(5,5) = V*nabla*(4._RD*f_rh - c_kap_S)/f_rh - df_rh - (l_i - 2._RD)
-         xA(5,6) = -V*nabla/(c_rad*f_rh)
+         A(5,1) = V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._RD*(nabla_ad - nabla) + c_kap_ad*V*nabla + c_dif)/f_rh
+         A(5,2) = V*(lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla) - c_kap_ad*V*nabla - c_dif)/f_rh
+         A(5,3) = alpha_grv*(V*lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla))/f_rh
+         A(5,4) = alpha_grv*(V*nabla_ad)/f_rh
+         A(5,5) = V*nabla*(4._RD*f_rh - c_kap_S)/f_rh - df_rh - (l_i - 2._RD)
+         A(5,6) = -V*nabla/(c_rad*f_rh)
 
-         xA(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._RD)*c_rad - V*c_eps_ad - alpha_egv*c_egv*nabla_ad*V
-         xA(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term + alpha_egv*c_egv*nabla_ad*V
-         xA(6,3) = alpha_grv*conv_term
-         xA(6,4) = alpha_grv*(0._RD)
+         A(6,1) = alpha_hfl*lambda*(nabla_ad/nabla - 1._RD)*c_rad - V*c_eps_ad - alpha_egv*c_egv*nabla_ad*V
+         A(6,2) = V*c_eps_ad - lambda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term + alpha_egv*c_egv*nabla_ad*V
+         A(6,3) = alpha_grv*conv_term
+         A(6,4) = alpha_grv*(0._RD)
          if (x > 0._RD) then
-            xA(6,5) = c_eps_S - alpha_hfl*lambda*c_rad/(nabla*V) + alpha_thm*i_omega_c*c_thk + alpha_egv*c_egv
+            A(6,5) = c_eps_S - alpha_hfl*lambda*c_rad/(nabla*V) + alpha_thm*i_omega_c*c_thk + alpha_egv*c_egv
          else
-            xA(6,5) = -alpha_hfl*HUGE(0._RD)
+            A(6,5) = -alpha_hfl*HUGE(0._RD)
          endif
-         xA(6,6) = -1._RD - l_i
+         A(6,6) = -1._RD - l_i
+
+         ! Apply the variables transformation
+
+         call this%tr%trans_eqns(A, i, st)
+
+         ! Apply the radial scaling
+
+         A = A/x
 
       end associate
-
-      ! Apply the variables transformation
-
-      call this%tr%trans_eqns(xA, i, st)
 
       ! Finish
 
       return
 
-   end function xA
+   end subroutine eval_A
 
 end module nad_eqns_m

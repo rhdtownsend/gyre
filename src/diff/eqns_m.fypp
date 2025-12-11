@@ -31,8 +31,7 @@ module eqns_m
          integer :: n_e
       contains
          procedure(stencil_${S}$_), deferred :: stencil
-         procedure(A_${S}$_), deferred       :: A
-         procedure(xA_${S}$_), deferred      :: xA
+         procedure(eval_A_${S}$_), deferred  :: eval_A
       end type eqns_${S}$
 
       ! Interfaces
@@ -47,7 +46,7 @@ module eqns_m
             type(point_t), intent(in)        :: pt(:)
          end subroutine stencil_${S}$_
 
-         function A_${S}$_(this, i, st) result(A)
+         subroutine eval_A_${S}$_(this, i, st, A)
             use forum_m, only: RD
             use state_m
             import eqns_${S}$
@@ -55,19 +54,8 @@ module eqns_m
             class(eqns_${S}$), intent(in)  :: this
             integer, intent(in)            :: i
             class(state_${S}$), intent(in) :: st
-            ${T}$                          :: A(this%n_e,this%n_e)
-         end function A_${S}$_
-
-         function xA_${S}$_(this, i, st) result(xA)
-            use forum_m, only: RD
-            use state_m
-            import eqns_${S}$
-            implicit none (type, external)
-            class(eqns_${S}$), intent(in)  :: this
-            integer, intent(in)            :: i
-            class(state_${S}$), intent(in) :: st
-            ${T}$                          :: xA(this%n_e,this%n_e)
-         end function xA_${S}$_
+            ${T}$, intent(out)             :: A(:,:)
+         end subroutine eval_A_${S}$_
 
       end interface
 

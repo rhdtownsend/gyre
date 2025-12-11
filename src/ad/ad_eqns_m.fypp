@@ -67,8 +67,7 @@ module ad_eqns_m
    contains
       private
       procedure, public :: stencil
-      procedure, public :: A
-      procedure, public :: xA
+      procedure, public :: eval_A
    end type ad_eqns_t
 
    ! Interfaces
@@ -183,37 +182,21 @@ contains
 
    !****
 
-   function A(this, i, st)
+   subroutine eval_A(this, i, st, A)
 
       class(ad_eqns_t), intent(in) :: this
       integer, intent(in)          :: i
       class(state_rt), intent(in)  :: st
-      real(RD)                     :: A(this%n_e,this%n_e)
-
-      ! Evaluate the RHS matrix
-
-      A = this%xA(i, st)/this%pt(i)%x
-
-      ! Finish
-
-      return
-
-   end function A
-
-   !****
-
-   function xA (this, i, st)
-
-      class(ad_eqns_t), intent(in) :: this
-      integer, intent(in)          :: i
-      class(state_rt), intent(in)  :: st
-      real(RD)                     :: xA(this%n_e,this%n_e)
+      real(RD), intent(out)        :: A(:,:)
 
       real(RD) :: omega_c
       real(RD) :: lambda
       real(RD) :: l_i
 
-      ! Evaluate the log(x)-space RHS matrix
+      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
+
+      ! Evaluate the RHS matrix
 
       associate ( &
          V => this%coeff(i,J_V), &
@@ -239,36 +222,40 @@ contains
 
          ! Set up the matrix
 
-         xA(1,1) = V/Gamma_1 - 1._RD - l_i
-         xA(1,2) = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1*alpha_gam
-         xA(1,3) = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
-         xA(1,4) = alpha_grv*(0._RD)
+         A(1,1) = V/Gamma_1 - 1._RD - l_i
+         A(1,2) = lambda/(c_1*alpha_omg*omega_c**2) - V/Gamma_1*alpha_gam
+         A(1,3) = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
+         A(1,4) = alpha_grv*(0._RD)
 
-         xA(2,1) = c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._RD, As > 0._RD)
-         xA(2,2) = As - U + 3._RD - l_i
-         xA(2,3) = alpha_grv*(0._RD)
-         xA(2,4) = alpha_grv*(-1._RD)
+         A(2,1) = c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._RD, As > 0._RD)
+         A(2,2) = As - U + 3._RD - l_i
+         A(2,3) = alpha_grv*(0._RD)
+         A(2,4) = alpha_grv*(-1._RD)
 
-         xA(3,1) = alpha_grv*(0._RD)
-         xA(3,2) = alpha_grv*(0._RD)
-         xA(3,3) = alpha_grv*(3._RD - U - l_i)
-         xA(3,4) = alpha_grv*(1._RD)
+         A(3,1) = alpha_grv*(0._RD)
+         A(3,2) = alpha_grv*(0._RD)
+         A(3,3) = alpha_grv*(3._RD - U - l_i)
+         A(3,4) = alpha_grv*(1._RD)
 
-         xA(4,1) = alpha_grv*(U*As)
-         xA(4,2) = alpha_grv*(U*V/Gamma_1)
-         xA(4,3) = alpha_grv*(lambda)
-         xA(4,4) = alpha_grv*(-U - l_i + 2._RD)
+         A(4,1) = alpha_grv*(U*As)
+         A(4,2) = alpha_grv*(U*V/Gamma_1)
+         A(4,3) = alpha_grv*(lambda)
+         A(4,4) = alpha_grv*(-U - l_i + 2._RD)
+
+         ! Apply the variables transformation
+
+         call this%tr%trans_eqns(A, i, st)
+
+         ! Apply the radial scaling
+
+         A = A/x
 
       end associate
-
-      ! Apply the variables transformation
-
-      call this%tr%trans_eqns(xA, i, st)
 
       ! Finish
 
       return
 
-   end function xA
+   end subroutine eval_A
 
 end module ad_eqns_m

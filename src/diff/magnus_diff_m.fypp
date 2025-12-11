@@ -263,17 +263,17 @@ contains
          class(state_${S}$), intent(in)       :: st
          ${T}$                                :: dOmega(this%n_e,this%n_e)
 
-         ${T}$ :: A(this%n_e,this%n_e,1)
+         ${T}$ :: A(this%n_e,this%n_e)
 
          ! Evaluate the GL2 Magnus slope matrix
 
          ! Calculate the RHS matrix
 
-         A(:,:,1) = this%eq%A(1, st)
+         call this%eq%eval_A(1, st, A(:,:))
 
          ! Set up the slope matrix
 
-         dOmega = A(:,:,1)
+         dOmega = A
 
          ! Finish
 
@@ -296,8 +296,8 @@ contains
 
          ! Calculate the RHS matrices
 
-         A(:,:,1) = this%eq%A(1, st)
-         A(:,:,2) = this%eq%A(2, st)
+         call this%eq%eval_A(1, st, A(:,:,1))
+         call this%eq%eval_A(2, st, A(:,:,2))
 
          ! Set up the Magnus slope matrix (Blanes et al. 2009, eqns. 243
          ! and 253; note that the 12 in the denominator of their expression
@@ -330,9 +330,9 @@ contains
 
          ! Calculate the RHS matrices
 
-         A(:,:,1) = this%eq%A(1, st)
-         A(:,:,2) = this%eq%A(2, st)
-         A(:,:,3) = this%eq%A(3, st)
+         call this%eq%eval_A(1, st, A(:,:,1))
+         call this%eq%eval_A(2, st, A(:,:,2))
+         call this%eq%eval_A(3, st, A(:,:,3))
 
          ! Set up the Magnus slope matrix (Blanes et al. 2009, eqns. 251
          ! and 257)

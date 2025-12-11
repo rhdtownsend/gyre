@@ -61,8 +61,7 @@ module rad_eqns_m
    contains
       private
       procedure, public :: stencil
-      procedure, public :: A
-      procedure, public :: xA
+      procedure, public :: eval_A
    end type rad_eqns_t
 
    ! Interfaces
@@ -161,35 +160,19 @@ contains
 
    !****
 
-   function A(this, i, st)
+   subroutine eval_A(this, i, st, A)
 
       class(rad_eqns_t), intent(in) :: this
       integer, intent(in)           :: i
       class(state_rt), intent(in)   :: st
-      real(RD)                      :: A(this%n_e,this%n_e)
-
-      ! Evaluate the RHS matrix
-
-      A = this%xA(i, st)/this%pt(i)%x
-
-      ! Finish
-
-      return
-
-   end function A
-
-   !****
-
-   function xA(this, i, st)
-
-      class(rad_eqns_t), intent(in) :: this
-      integer, intent(in)           :: i
-      class(state_rt), intent(in)   :: st
-      real(RD)                      :: xA(this%n_e,this%n_e)
+      real(RD), intent(out)         :: A(:,:)
 
       real(RD) :: omega_c
 
-      ! Evaluate the log(x)-space RHS matrix
+      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
+
+      ! Evaluate the RHS matrix
 
       associate ( &
          omega => st%omega, &
@@ -198,28 +181,33 @@ contains
          U => this%coeff(i,J_U), &
          c_1 => this%coeff(i,J_C_1), &
          Gamma_1 => this%coeff(i,J_GAMMA_1), &
+         x => this%pt(i)%x, &
          alpha_omg => this%alpha_omg)
 
          omega_c = omega
 
          ! Set up the matrix
 
-         xA(1,1) = V/Gamma_1 - 1._RD
-         xA(1,2) = -V/Gamma_1
+         A(1,1) = V/Gamma_1 - 1._RD
+         A(1,2) = -V/Gamma_1
 
-         xA(2,1) = c_1*alpha_omg*omega_c**2 + U - As
-         xA(2,2) = As - U + 3._RD
+         A(2,1) = c_1*alpha_omg*omega_c**2 + U - As
+         A(2,2) = As - U + 3._RD
+
+         ! Apply the variables transformation
+
+         call this%tr%trans_eqns(A, i, st)
+
+         ! Apply the radial scaling
+
+         A = A/x
 
       end associate
-
-      ! Apply the variables transformation
-
-      call this%tr%trans_eqns(xA, i, st)
 
       ! Finish
 
       return
 
-   end function xA
+   end subroutine eval_A
 
 end module rad_eqns_m

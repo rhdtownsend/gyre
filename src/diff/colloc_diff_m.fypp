@@ -225,7 +225,7 @@ contains
 
          ! Evaluate the RHS matrix
 
-         A = this%eq%A(1, st)
+         call this%eq%eval_A(1, st, A)
 
          ! Build the GL2 difference equations
 
@@ -326,7 +326,7 @@ contains
          ! Evaluate the RHS matrices
 
          do i = 1, this%n_s
-            A(:,:,i) = this%eq%A(i, st)
+            call this%eq%eval_A(i, st, A(:,:,i))
          end do
 
          ! Calculate the intermediate-state matrices K
