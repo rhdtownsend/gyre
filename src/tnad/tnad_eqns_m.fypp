@@ -48,8 +48,10 @@ module tnad_eqns_m
    integer, parameter :: J_As = 2
    integer, parameter :: J_C_1 = 3
    integer, parameter :: J_GAMMA_1 = 4
+   integer, parameter :: J_OMEGA_ROT = 5
+   integer, parameter :: J_OMEGA_ROT_I = 6
 
-   integer, parameter :: J_LAST = J_GAMMA_1
+   integer, parameter :: J_LAST = J_OMEGA_ROT_I
 
    ! Derived-type definitions
 
@@ -157,7 +159,11 @@ contains
          this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
          this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
 
+         this%coeff(i,J_OMEGA_ROT) = this%cx%Omega_rot(pt(i))
+
       end do
+
+      this%coeff(:,J_OMEGA_ROT_I) = this%cx%Omega_rot(this%cx%point_i())
 
       ! Set up stencil for the eq component
 
@@ -218,6 +224,7 @@ contains
       associate ( &
          V => this%coeff(i,J_V), &
          Gamma_1 => this%coeff(i,J_GAMMA_1), &
+         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
          pt_i => this%cx%point_i())
 
          ! Set up original (nad) eqns
@@ -229,8 +236,6 @@ contains
          !
          !  dy/dx = A*y + B*y_trb
          !      0 = C*y + D*y_trb
-
-         Omega_rot_i = this%cx%Omega_rot(pt_i)
 
          l_i = this%cx%l_e(Omega_rot_i, st)
 
@@ -279,7 +284,6 @@ contains
       complex(RD)                       :: y_trb
 
       complex(RD) :: A(6,6)
-      real(RD)    :: Omega_rot_i
       complex(RD) :: l_i
       complex(RD) :: F_trb
       complex(RD) :: C(6)
@@ -291,6 +295,7 @@ contains
       ! the solution vector
 
       associate ( &
+         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
          pt_i => this%cx%point_i())
 
          ! Set up original (nad) eqns
@@ -298,8 +303,6 @@ contains
          A = this%eq%xA(i, st)
 
          ! Evaluate y_trb
-
-         Omega_rot_i = this%cx%Omega_rot(pt_i)
 
          l_i = this%cx%l_e(Omega_rot_i, st)
 
@@ -333,8 +336,6 @@ contains
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: F_trb
 
-      real(RD)    :: Omega_rot
-      real(RD)    :: Omega_rot_i
       complex(RD) :: omega_c
       complex(RD) :: omega_c_r
       complex(RD) :: i_omega_c
@@ -350,6 +351,8 @@ contains
          As => this%coeff(i,J_AS), &
          c_1 => this%coeff(i,J_C_1), &
          Gamma_1 => this%coeff(i,J_GAMMA_1), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
+         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
          pt => this%pt(i), &
          pt_i => this%cx%point_i(), &
          x => this%pt(i)%x, &
@@ -357,9 +360,6 @@ contains
          alpha_trb => this%alpha_trb)
 
          if (pt%x > 0._RD .AND. As < 0._RD) then
-
-            Omega_rot = this%cx%Omega_rot(pt)
-            Omega_rot_i = this%cx%Omega_rot(pt_i)
 
             omega_c = this%cx%omega_c(Omega_rot, st)
             omega_c_r = this%cx%omega_c(Omega_rot, st, use_omega_r=.TRUE.)

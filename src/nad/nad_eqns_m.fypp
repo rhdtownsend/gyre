@@ -66,8 +66,10 @@ module nad_eqns_m
    integer, parameter :: J_C_EGV = 18
    integer, parameter :: J_KAP_RHO = 19
    integer, parameter :: J_KAP_T = 20
+   integer, parameter :: J_OMEGA_ROT = 21
+   integer, parameter :: J_OMEGA_ROT_I = 22
 
-   integer, parameter :: J_LAST = J_KAP_T
+   integer, parameter :: J_LAST = J_OMEGA_ROT_I
 
    ! Derived-type definitions
 
@@ -219,7 +221,11 @@ contains
          this%coeff(i,J_KAP_RHO) = ml%coeff(I_KAP_RHO, pt(i))
          this%coeff(i,J_KAP_T) = ml%coeff(I_KAP_T, pt(i))
 
+         this%coeff(i,J_OMEGA_ROT) = this%cx%Omega_rot(pt(i))
+
       end do
+
+      this%coeff(:,J_OMEGA_ROT_I) = this%cx%Omega_rot(this%cx%point_i())
 
       ! Set up stencil for the tr component
 
@@ -263,8 +269,6 @@ contains
       class(state_ct), intent(in)   :: st
       complex(RD)                   :: xA(this%n_e,this%n_e)
 
-      real(RD)    :: Omega_rot
-      real(RD)    :: Omega_rot_i
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: lambda
@@ -303,6 +307,8 @@ contains
          c_egv => this%coeff(i,J_C_EGV), &
          kap_rho => this%coeff(i,J_KAP_RHO), &
          kap_T => this%coeff(i,J_KAP_T), &
+         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
+         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
          pt => this%pt(i), &
          pt_i => this%cx%point_i(), &
          x => this%pt(i)%x, &
@@ -317,9 +323,6 @@ contains
          alpha_kar => this%alpha_kar, &
          alpha_kat => this%alpha_kat, &
          alpha_egv => this%alpha_egv)
-
-         Omega_rot = this%cx%Omega_rot(pt)
-         Omega_rot_i = this%cx%Omega_rot(pt_i)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
