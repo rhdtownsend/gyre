@@ -186,7 +186,7 @@ contains
 
       ! Cache/write the tidal response
 
-      call sm%cache(rs, rs%id)
+      call sm%cache(rs)
       call dt%write(rs)
 
       ! Finish

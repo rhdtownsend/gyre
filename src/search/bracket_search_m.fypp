@@ -21,7 +21,7 @@ module bracket_search_m
 
    ! Uses
 
-   use forum_m, only: RD
+   use forum_m, only: RD, sort_indices
 
    use ad_bvp_m
    use bvp_m
@@ -47,11 +47,8 @@ module bracket_search_m
    ! Derived-type definitions
 
    type :: bracket_t
-      real(RD) :: omega
-      real(RD) :: chi
-      integer  :: n_iter
-      integer  :: id
-      logical  :: active
+      type(mode_t) :: md
+      logical      :: active
    end type bracket_t
 
    ! Module variables
@@ -76,10 +73,11 @@ contains
       real(RD), intent(in)         :: omega_max
       type(num_par_t), intent(in)  :: nm_p
       interface
-         subroutine process_mode(md)
+         subroutine process_mode(md, culled)
             use mode_m
             implicit none (type, external)
             type(mode_t), intent(in) :: md
+            logical, intent(out)     :: culled
          end subroutine process_mode
       end interface
 
@@ -96,17 +94,17 @@ contains
 
          !$OMP PARALLEL FIRSTPRIVATE(bp)
          call scan_discrim_(bp, omega, discrim)
-         call create_brackets_(bp, omega, discrim, omega_min, omega_max, nm_p, bk)
-         call process_brackets_(bp, bk, process_mode)
+         call find_modes_(bp, omega, discrim, omega_min, omega_max, nm_p, bk)
          !$OMP END PARALLEL
 
       else
 
          call scan_discrim_(bp, omega, discrim)
-         call create_brackets_(bp, omega, discrim, omega_min, omega_max, nm_p, bk)
-         call process_brackets_(bp, bk, process_mode)
+         call find_modes_(bp, omega, discrim, omega_min, omega_max, nm_p, bk)
 
       end if
+
+      call process_modes_(bp, bk, process_mode)
 
       ! Finish
 
@@ -135,7 +133,7 @@ contains
 
       !$OMP SINGLE
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 100) 'Discriminant evaluation'
+         write(OUTPUT_UNIT, 100) 'Evaluating discriminant'
 100      format(A)
       endif
       !$OMP END SINGLE
@@ -175,7 +173,7 @@ contains
 
    !****
 
-   subroutine create_brackets_(bp, omega, discrim, omega_min, omega_max, nm_p, bk)
+   subroutine find_modes_(bp, omega, discrim, omega_min, omega_max, nm_p, bk)
 
       class(bvp_rt), intent(inout)           :: bp
       real(RD), intent(in)                   :: omega(:)
@@ -189,42 +187,43 @@ contains
       integer      :: c_end
       integer      :: c_rate
       integer      :: i
+      integer      :: n_iter
       type(ext_rt) :: x_root
-      type(ext_rt) :: f_x_root
       integer      :: stat
+      type(ext_rt) :: f_x_root
+      complex(RD)  :: omega_root
+      real(RD)     :: chi
+      type(wave_t) :: wv
 
       @:CHECK_BOUNDS(SIZE(discrim), SIZE(omega))
       @:CHECK_BOUNDS(SIZE(bk), SIZE(omega)-1)
 
-      ! Find discriminant brackets, and solve for the bracketed
-      ! root
+      ! Find modes within discriminant brackets
 
       !$OMP SINGLE
       if (check_log_level('INFO')) then
-
-         write(OUTPUT_UNIT, 100) 'Root Solving'
+         write(OUTPUT_UNIT, 100) 'Finding modes'
 100      format(A)
-
       endif
       !$OMP END SINGLE
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      !$OMP DO PRIVATE(x_root, stat, f_x_root) SCHEDULE(GUIDED)
+      !$OMP DO PRIVATE(n_iter, x_root, stat, f_x_root, omega_root, chi, wv) SCHEDULE(GUIDED)
       omega_loop : do i = 1, SIZE(omega)-1
 
-         ! Check for a bracket
+         ! Check for a bracketed root
 
          bk(i)%active = discrim(i)*discrim(i+1) <= ext_rt(0._RD)
 
          if (.NOT. bk(i)%active) cycle omega_loop
 
-         ! Find the discriminant root
+         ! Solve for the root
 
-         bk(i)%n_iter = 0
+         n_iter = 0
 
          call solve_root(eval_discrim_, ext_rt(omega(i)), ext_rt(omega(i+1)), &
-            ext_rt(0._RD), nm_p, x_root, stat, n_iter=bk(i)%n_iter, &
+            ext_rt(0._RD), nm_p, x_root, stat, n_iter=n_iter, &
             n_iter_max=nm_p%n_iter_max, f_x_a=discrim(i), f_x_b=discrim(i+1), f_x_root=f_x_root)
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'solve')
@@ -232,8 +231,21 @@ contains
             cycle omega_loop
          endif
 
-         bk(i)%omega = real(x_root)
-         bk(i)%chi = real(abs(f_x_root)/max(abs(discrim(i)), abs(discrim(i+1))))
+         omega_root = CMPLX(real(x_root), KIND=RD)
+         chi = real(abs(f_x_root)/max(abs(discrim(i)), abs(discrim(i+1))))
+
+         ! Construct the mode. Note that a dummy id is used; it will be updated later
+
+         select type (bp)
+         type is (ad_bvp_t)
+            wv = wave_t(bp, state_rt(omega_root), 0, chi, n_iter)
+         type is (rad_bvp_t)
+            wv = wave_t(bp, state_rt(omega_root), 0, chi, n_iter)
+         class default
+            @:ABORT('invalid bp class')
+         end select
+
+         bk(i)%md = mode_t(wv)
 
       end do omega_loop
       !$OMP END DO
@@ -299,7 +311,7 @@ contains
 
          if (check_log_level('INFO')) then
 
-            write(OUTPUT_UNIT, 110) 'n_iter  :', bk(i)%n_iter
+            write(OUTPUT_UNIT, 110) 'n_iter  :', n_iter
 110         format(3X,A,1X,I0)
 
             write(OUTPUT_UNIT, 120) 'omega_a :', omega(i)
@@ -314,97 +326,81 @@ contains
 
       end subroutine report_stat_
 
-   end subroutine create_brackets_
+   end subroutine find_modes_
 
    !****
 
-   subroutine process_brackets_(bp, bk, process_mode)
+   subroutine process_modes_(bp, bk, process_mode)
 
       class(bvp_rt), intent(inout)   :: bp
       type(bracket_t), intent(inout) :: bk(:)
       interface
-         subroutine process_mode(md)
+         subroutine process_mode(md, culled)
             use mode_m
             implicit none (type, external)
             type(mode_t), intent(in) :: md
+            logical, intent(out)     :: culled
          end subroutine process_mode
       end interface
 
-      integer      :: c_beg
-      integer      :: c_end
-      integer      :: c_rate
-      integer      :: i
-      type(wave_t) :: wv
-      type(mode_t) :: md
+      integer              :: c_beg
+      integer              :: c_end
+      integer              :: c_rate
+      integer              :: i
+      integer, allocatable :: j(:)
+      logical              :: culled
 
       ! Process active brackets
 
-      !$OMP SINGLE
       if (check_log_level('INFO')) then
-
-         write(OUTPUT_UNIT, 100) 'Mode Processing'
+         write(OUTPUT_UNIT, 100) 'Processing modes'
 100      format(A)
-
-         write(OUTPUT_UNIT, 110) 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110      format(1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
+         write(OUTPUT_UNIT, 110) 'id', 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
+110      format(1X,A3,1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
       end if
-      !$OMP END SINGLE
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      ! Set up ids
+      ! Set mode ids
 
-      !$OMP SINGLE
       do i = 1, SIZE(bk)
          if (bk(i)%active) then
             id_m = id_m + 1
-            bk(i)%id = id_m
+            bk(i)%md%id = id_m
+         else
+            bk(i)%md%id = HUGE(0)
          end if
       end do
-      !$OMP END SINGLE
 
-      !$OMP DO PRIVATE(wv, md) SCHEDULE(guided)
-      bracket_loop: do i = 1, SIZE(bk)
+      ! Process the modes, in id-order
 
-         if (bk(i)%active) then
+      j = sort_indices(bk%md%id)
 
-            ! Construct the mode_t
+      process_loop: do i = 1, COUNT(bk%active)
 
-            select type (bp)
-            type is (ad_bvp_t)
-               wv = wave_t(bp, state_rt(CMPLX(bk(i)%omega, KIND=RD)), bk(i)%id, bk(i)%chi, bk(i)%n_iter)
-            type is (rad_bvp_t)
-               wv = wave_t(bp, state_rt(CMPLX(bk(i)%omega, KIND=RD)), bk(i)%id, bk(i)%chi, bk(i)%n_iter)
-            class default
-               @:ABORT('invalid bp class')
-            end select
+         associate(md => bk(j(i))%md)
 
-            md = mode_t(wv)
+            call process_mode(md, culled)
 
-            ! Process it
+            if (check_log_level('INFO') .AND. .NOT. culled) then
+               write(OUTPUT_UNIT, 120) md%id, md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+                  md%omega, md%chi, md%n_iter
+120            format(1X,I3,1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
+            endif
 
-            !$OMP CRITICAL
-            call process_mode(md)
-            !$OMP END CRITICAL
+         end associate
 
-         end if
-
-      end do bracket_loop
-      !$OMP END DO
+      end do process_loop
 
       call SYSTEM_CLOCK(c_end)
 
-      !$OMP SINGLE
-      if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
-130      format(2X,A,1X,F10.3,1X,A/)
-      endif
-      !$OMP END SINGLE
+      write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
+130   format(2X,A,1X,F10.3,1X,A/)
 
       ! Finish
 
       return
 
-   end subroutine process_brackets_
+   end subroutine process_modes_
 
 end module bracket_search_m

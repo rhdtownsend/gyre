@@ -21,7 +21,7 @@ module summary_m
 
    ! Uses
 
-   use forum_m, only: RD, reallocate, sort_indices
+   use forum_m, only: RD, reallocate
 
    use context_m
    use constants_m
@@ -81,7 +81,6 @@ module summary_m
       type(out_par_t)                  :: ot_p
       character(ITEM_LEN), allocatable :: items(:)
       type(summary_col_t), allocatable :: sc(:)
-      integer, allocatable             :: inds(:)
       integer                          :: n_row = 0
    contains
       private
@@ -167,8 +166,6 @@ contains
 
       sm%items = items_glb(:n_glb)
 
-      allocate(sm%inds(D_0))
-
       sm%n_row = 0
 
       ! Finish
@@ -183,8 +180,6 @@ contains
 
       class(writer_t), allocatable :: wr
       integer                      :: i
-
-      integer, allocatable :: j(:)
 
       ! Write a summary file
 
@@ -227,8 +222,6 @@ contains
 
       ! Write the cached column data
 
-      j = sort_indices(this%inds(:this%n_row))
-
       column_item_loop : do i = 1, SIZE(this%sc)
 
          associate (sc => this%sc(i))
@@ -237,13 +230,13 @@ contains
             case (TYPE_M)
                ! Missing item; do nothing
             case (TYPE_I)
-               call wr%write(sc%item, sc%data_i(j))
+               call wr%write(sc%item, sc%data_i(:sc%n))
             case (TYPE_R)
-               call wr%write(sc%item, sc%data_r(j))
+               call wr%write(sc%item, sc%data_r(:sc%n))
             case (TYPE_C)
-               call wr%write(sc%item, sc%data_c(j))
+               call wr%write(sc%item, sc%data_c(:sc%n))
             case (TYPE_A)
-               call wr%write(sc%item, sc%data_a(j))
+               call wr%write(sc%item, sc%data_a(:sc%n))
             case default
                @:ABORT('invalid column type')
             end select
@@ -264,11 +257,10 @@ contains
 
    !****
 
-   subroutine cache(this, wv, ind)
+   subroutine cache(this, wv)
 
       class(summary_t), intent(inout) :: this
       class(wave_t), intent(in)       :: wv
-      integer, intent(in)             :: ind
 
       type(context_t)         :: cx
       class(model_t), pointer :: ml
@@ -277,7 +269,6 @@ contains
       integer                 :: i
       logical                 :: cached
       logical, save           :: first = .TRUE.
-      integer                 :: d
 
       ! Cache summary data
 
@@ -316,15 +307,7 @@ contains
 
       if (first) first = .FALSE.
 
-       d = SIZE(this%inds)
-       this%n_row = this%n_row + 1
-
-       if (this%n_row > d) then
-          d = 2*d
-          call reallocate(this%inds, [d])
-       endif
-
-       this%inds(this%n_row) = ind
+      this%n_row = this%n_row + 1
 
       ! Finish
 
