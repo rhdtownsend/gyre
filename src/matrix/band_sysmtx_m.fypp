@@ -126,7 +126,6 @@ contains
 
          integer :: j
          integer :: i_b
-         integer :: j_b
 
          @:ASSERT_DEBUG(i_0-j_0 <= this%n_l, 'invalid indices')
          @:ASSERT_DEBUG(i_0-(j_0+SIZE(R)-1) <= this%n_l, 'invalid indices')
@@ -137,22 +136,21 @@ contains
          ! Set data in row i_0, starting at column j_0. The rest of the row
          ! is zeroed out
 
+         i_b = this%n_l + this%n_u + 1 + i_0 - MAX(i_0-this%n_l, 1)
+
          do j = MAX(i_0-this%n_l, 1), j_0-1
-            i_b = this%n_l + this%n_u + 1 + i_0 - j
-            j_b = j
-            this%A_b(i_b, j_b) = 0._RD
+            this%A_b(i_b, j) = 0._RD
+            i_b = i_b - 1
          end do
 
          do j = j_0, j_0+SIZE(R)-1
-            i_b = this%n_l + this%n_u + 1 + i_0 - j
-            j_b = j
-            this%A_b(i_b, j_b) = R(j-j_0+1)
+            this%A_b(i_b, j) = R(j-j_0+1)
+            i_b = i_b - 1
          end do
 
          do j = j_0+SIZE(R), MIN(i_0+this%n_u, this%n_e*(this%n+1))
-            i_b = this%n_l + this%n_u + 1 + i_0 - j
-            j_b = j
-            this%A_b(i_b, j_b) = 0._RD
+            this%A_b(i_b, j) = 0._RD
+            i_b = i_b - 1
          end do
 
          ! Finish
