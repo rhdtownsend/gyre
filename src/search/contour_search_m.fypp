@@ -39,9 +39,21 @@ module contour_search_m
 
    implicit none (type, external)
 
+   ! Derived-type definitions
+
+   type :: isect_t
+      complex(RD) :: omega_a
+      complex(RD) :: omega_b
+      integer     :: id
+   end type isect_t
+
    ! Module variables
 
    integer, save :: id_m = 0
+
+   interface reallocate
+      module procedure reallocate_isect_t_1_
+   end interface reallocate
 
    ! Access specifiers
 
@@ -70,17 +82,34 @@ contains
          end subroutine process_mode
       end interface
 
-      complex(RD), allocatable :: omega_in_a(:)
-      complex(RD), allocatable :: omega_in_b(:)
-      integer, allocatable     :: id_in(:)
+      type(ext_ct)               :: discrim(SIZE(omega_re),SIZE(omega_im))
+      type(isect_t), allocatable :: is(:)
+
+      ! Search for roots by finding zero-contour intersections and then solving
+
+      ! The code below could be simplified using OMP IF clauses, but
+      ! they seem to mess up inner parallel regions (all the code ends
+      ! up running on one core)
+
+      if (nm_p%parallel_scan) then
+
+         !$OMP PARALLEL FIRSTPRIVATE(bp)
+         call scan_discrim_(bp, omega_re, omega_im, discrim)
+         !$OMP END PARALLEL
+
+      else
+
+         call scan_discrim_(bp, omega_re, omega_im, discrim)
+
+      end if
 
       ! Find contour intersections
 
-      call find_isects_(bp, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, id_in)
+      call find_isects_(bp, omega_re, omega_im, discrim, i, nm_p, is)
 
       ! Search for modes
 
-      call prox_search(bp, omega_in_a, omega_in_b, id_in, omega_min, omega_max, nm_p, process_mode)
+      call prox_search(bp, is%omega_a, is%omega_b, is%id, omega_min, omega_max, nm_p, process_mode)
 
       ! Finish
 
@@ -90,66 +119,105 @@ contains
 
    !****
 
-   subroutine find_isects_(bp, omega_re, omega_im, i, nm_p, omega_in_a, omega_in_b, id_in)
+   subroutine scan_discrim_(bp, omega_re, omega_im, discrim)
 
       class(bvp_ct), intent(inout)          :: bp
       real(RD), intent(in)                  :: omega_re(:)
       real(RD), intent(in)                  :: omega_im(:)
-      integer, intent(in)                   :: i
-      type(num_par_t), intent(in)           :: nm_p
-      complex(RD), allocatable, intent(out) :: omega_in_a(:)
-      complex(RD), allocatable, intent(out) :: omega_in_b(:)
-      integer, allocatable, intent(out)     :: id_in(:)
+      type(ext_ct), intent(out)             :: discrim(:,:)
 
-      integer                   :: n_omega_re
-      integer                   :: n_omega_im
-      integer                   :: n_percent
-      integer                   :: c_beg
-      integer                   :: c_end
-      integer                   :: c_rate
-      integer                   :: j_re
-      integer                   :: j_im
-      complex(RD)               :: omega
-      integer                   :: i_percent
-      type(ext_ct), allocatable :: discrim_map(:,:)
-      type(contour_map_t)       :: cm
-      integer                   :: n_in
-      integer                   :: d_in
+      integer     :: c_beg
+      integer     :: c_end
+      integer     :: c_rate
+      integer     :: n_re
+      integer     :: n_im
+      integer     :: k
+      integer     :: i
+      integer     :: j
+      complex(RD) :: omega
 
-      ! Calculate the discriminant on the omega grid
+      @:CHECK_BOUNDS(SIZE(discrim, 1), SIZE(omega_re))
+      @:CHECK_BOUNDS(SIZE(discrim, 2), SIZE(omega_re))
 
+      ! Evaluate the discriminant at the frequency scan points
+
+      !$OMP SINGLE
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 100) 'Evaluating discriminant'
 100      format(A)
       endif
-
-      n_omega_re = SIZE(omega_re)
-      n_omega_im = SIZE(omega_im)
-
-      allocate(discrim_map(n_omega_re,n_omega_im))
-
-      n_percent = 0
+      !$OMP END SINGLE
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      discrim_im_loop: do j_im = 1, n_omega_im
-         discrim_re_loop: do j_re = 1, n_omega_re
+      n_re = SIZE(omega_re)
+      n_im = SIZE(omega_im)
 
-            omega = CMPLX(omega_re(j_re), omega_im(j_im), KIND=RD)
+      !$OMP DO PRIVATE(i, j, omega) SCHEDULE(dynamic)
+      discrim_loop: do k = 1, n_re*n_im
 
-            call eval_discrim(bp, state_ct(omega, omega_r=omega_re(j_re)), discrim_map(j_re,j_im))
+         j = (k-1)/n_re + 1
+         i = k - (j-1)*n_re
 
-            if (check_log_level('DEBUG')) then
-               i_percent = FLOOR(100._RD*((j_im-1)*n_omega_re+j_re)/(n_omega_re*n_omega_im))
-               if (i_percent > n_percent) then
-                  write(OUTPUT_UNIT, 110) 'Percent complete: ', i_percent
-110               format(A,1X,I0)
-                  n_percent = i_percent
-               end if
-            endif
+         omega = CMPLX(omega_re(i), omega_im(j), KIND=RD)
 
-         end do discrim_re_loop
-      end do discrim_im_loop
+         call eval_discrim(bp, state_ct(omega, omega_r=omega_re(i)), discrim(i,j))
+
+      end do discrim_loop
+
+      call SYSTEM_CLOCK(c_end)
+
+      !$OMP SINGLE
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 110) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
+110      format(2X,A,F10.3,1X,A/)
+      endif
+      !$OMP END SINGLE
+
+      ! Finish
+
+      return
+
+   end subroutine scan_discrim_
+
+   !****
+
+   subroutine find_isects_(bp, omega_re, omega_im, discrim, i, nm_p, is)
+
+      class(bvp_ct), intent(inout)            :: bp
+      real(RD), intent(in)                    :: omega_re(:)
+      real(RD), intent(in)                    :: omega_im(:)
+      type(ext_ct), intent(in)                :: discrim(:,:)
+      integer, intent(in)                     :: i
+      type(num_par_t), intent(in)             :: nm_p
+      type(isect_t), allocatable, intent(out) :: is(:)
+
+      integer             :: c_beg
+      integer             :: c_end
+      integer             :: c_rate
+      type(contour_map_t) :: cm
+      integer             :: n_is
+      integer             :: d_is
+
+      ! Find intersections between zero-contours of the discriminant
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Finding contour intersections'
+100      format(A)
+      endif
+
+      ! Create the contour map and find intersections
+
+      call SYSTEM_CLOCK(c_beg, c_rate)
+
+      d_is = 128
+      n_is = 0
+
+      allocate(is(d_is))
+
+      cm = contour_map_t(omega_re, omega_im, discrim, process_isect_)
+
+      is = is(:n_is)
 
       call SYSTEM_CLOCK(c_end)
 
@@ -157,21 +225,6 @@ contains
          write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
 120      format(2X,A,F10.3,1X,A/)
       endif
-
-      ! Create the contour map
-
-      d_in = 128
-      n_in = 0
-
-      allocate(omega_in_a(d_in))
-      allocate(omega_in_b(d_in))
-      allocate(id_in(d_in))
-
-      cm = contour_map_t(omega_re, omega_im, discrim_map, process_isect_)
-
-      omega_in_a = omega_in_a(:n_in)
-      omega_in_b = omega_in_b(:n_in)
-      id_in = id_in(:n_in)
 
       ! Dump the map
 
@@ -192,21 +245,19 @@ contains
 
          ! Process the intersection
 
-         n_in = n_in + 1
+         n_is = n_is + 1
 
-         if (n_in > d_in) then
-            d_in = 2*d_in
-            call reallocate(omega_in_a, [d_in])
-            call reallocate(omega_in_b, [d_in])
-            call reallocate(id_in, [d_in])
+         if (n_is > d_is) then
+            d_is = 2*d_is
+            call reallocate(is, [d_is])
          endif
 
          id_m = id_m + 1
 
-         omega_in_a(n_in) = omega_init_(omega_a_re, omega_b_re, 'im')
-         omega_in_b(n_in) = omega_init_(omega_a_im, omega_b_im, 're')
+         is(n_is)%omega_a = omega_init_(omega_a_re, omega_b_re, 'im')
+         is(n_is)%omega_b = omega_init_(omega_a_im, omega_b_im, 're')
 
-         id_in(n_in) = id_m
+         is(n_is)%id = id_m
 
          ! Finish
 
@@ -253,5 +304,9 @@ contains
       end function omega_init_
 
    end subroutine find_isects_
+
+   !****
+
+   $:REALLOCATE('type(isect_t)', 'isect_t', 1)
 
 end module contour_search_m
