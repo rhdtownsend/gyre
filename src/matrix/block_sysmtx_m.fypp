@@ -50,7 +50,7 @@ module block_sysmtx_m
          type(ext_${S}$), allocatable :: scl(:)      ! Block scales
       contains
          private
-         procedure         :: build_and_factor_ => build_and_factor_${S}$_
+         procedure         :: build_and_factor_ => build_and_factor_orig_${S}$_
          procedure         :: backsub_ => backsub_${S}$_
          procedure, public :: eval_det => eval_det_${S}$_
          procedure, public :: solve_hom => solve_hom_${S}$_
@@ -114,7 +114,7 @@ contains
 
       !****
 
-      subroutine build_and_factor_${S}$_(this, eval_B, eval_E)
+      subroutine build_and_factor_orig_${S}$_(this, eval_B, eval_E)
 
          class(block_sysmtx_${S}$), intent(inout) :: this
          interface
@@ -300,7 +300,185 @@ contains
 
          return
 
-      end subroutine build_and_factor_${S}$_
+      end subroutine build_and_factor_orig_${S}$_
+
+      !****
+
+      subroutine build_and_factor_alt_${S}$_(this, eval_B, eval_E)
+
+         class(block_sysmtx_${S}$), intent(inout) :: this
+         interface
+            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+               use forum_m, only: RD
+               implicit none (type, external)
+               ${T}$, intent(out) :: B_i(:,:)
+               ${T}$, intent(out) :: B_o(:,:)
+               ${T}$, intent(out) :: scl_i(:)
+               ${T}$, intent(out) :: scl_o(:)
+            end subroutine eval_B
+            subroutine eval_E(k, E_l, E_r, scl)
+               use forum_m, only: RD
+               use ext_m
+               implicit none (type, external)
+               integer, intent(in)          :: k
+               ${T}$, intent(out)           :: E_l(:,:)
+               ${T}$, intent(out)           :: E_r(:,:)
+               type(ext_${S}$), intent(out) :: scl
+            end subroutine eval_E
+         end interface
+
+         ${T}$, parameter :: ONE = 1._RD
+
+         integer :: k
+         integer :: i
+         integer :: l
+         ${T}$   :: scl
+         ${T}$   :: M_U(2*this%n_e,this%n_e)
+         ${T}$   :: M_GE(2*this%n_e,2*this%n_e)
+         integer :: ipiv(this%n_e)
+         integer :: info
+
+         ! Build and factorize the sysmtx
+
+         associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_o => this%n_o)
+
+            !$OMP PARALLEL PRIVATE(l)
+
+            ! Build the boundary blocks, and row-scale to unity
+
+            !$OMP SINGLE
+            call eval_B(this%B_i, this%B_o, this%scl_i, this%scl_o)
+            do i = 1, n_i
+               scl = MAXVAL(abs(this%B_i(i,:)))
+               this%B_i(i,:) = this%B_i(i,:)/scl
+               this%scl_i(i) = this%scl_i(i)*scl
+            end do
+            do i = 1, n_o
+               scl = MAXVAL(abs(this%B_o(i,:)))
+               this%B_o(i,:) = this%B_o(i,:)/scl
+               this%scl_o(i) = this%scl_o(i)*scl
+            end do
+            !$OMP END SINGLE
+
+            ! Build and factorize the equation blocks using the cyclic
+            ! structured (SLU) algorithm by [Wri1994]. The
+            ! factorization is done in place: E_l(:,:,1) and
+            ! E_r(:,:,1) contain the final reduced blocks, the other
+            ! blocks of E_l and E_r contain the U^-1 G and U^-1 E
+            ! matrices needed to reconstruct solutions, and S is
+            ! scaled by the factorization determinants
+
+            ! Loop through factorization levels
+
+            l = 1
+
+            factor_loop : do
+
+               if (l >= n) exit factor_loop
+
+               ! Reduce pairs of blocks to single blocks
+
+               !$OMP DO SCHEDULE(DYNAMIC) PRIVATE(i, scl, M_U, M_GE, ipiv, info)
+               reduce_loop : do k = 1, n-l, 2*l
+
+                  ! Set up matrices (see expressions following
+                  ! eqn. 2.5 of Wright 1994). On the first pass
+                  ! through, E_l and E_r are evaluated using eval_E,
+                  ! and then row-scaled to unity
+
+                  if (l == 1) then
+
+                     call eval_E(k, this%E_l(:,:,k), this%E_r(:,:,k), this%scl(k))
+                     do i = 1, n_e
+                        scl = MAX(MAXVAL(abs(this%E_l(i,:,k))), MAXVAL(abs(this%E_r(i,:,k))))
+                        this%E_l(i,:,k) = this%E_l(i,:,k)/scl
+                        this%E_r(i,:,k) = this%E_r(i,:,k)/scl
+                        this%scl(k) = this%scl(k)*scl
+                     end do
+
+                     call eval_E(k+1, this%E_l(:,:,k+1), this%E_r(:,:,k+1), this%scl(k+1))
+                     do i = 1, n_e
+                        scl = MAX(MAXVAL(abs(this%E_l(i,:,k+1))), MAXVAL(abs(this%E_r(i,:,k+1))))
+                        this%E_l(i,:,k+1) = this%E_l(i,:,k+1)/scl
+                        this%E_r(i,:,k+1) = this%E_r(i,:,k+1)/scl
+                        this%scl(k+1) = this%scl(k+1)*scl
+                     end do
+
+                  end if
+
+                  M_U(:n_e,:) = this%E_r(:,:,k)
+                  M_U(n_e+1:,:) = this%E_l(:,:,k+l)
+
+                  M_GE(:n_e,:n_e) = this%E_l(:,:,k)
+                  M_GE(n_e+1:,:n_e) = 0._RD
+
+                  M_GE(:n_e,n_e+1:) = 0._RD
+                  M_GE(n_e+1:,n_e+1:) = this%E_r(:,:,k+l)
+
+                  ! Calculate the LU factorization of M_U, and use it to reduce
+                  ! M_GE
+
+                  call XGETRF(2*n_e, n_e, M_U, 2*n_e, ipiv, info)
+                  @:ASSERT(info >= 0, 'negative return from XGETRF')
+
+                  call XLASWP_inplace(2*n_e, M_GE(1,1), 2*n_e, 1, n_e, ipiv, 1)
+                  call XTRSM_inplace('L', 'L', 'N', 'U', n_e, 2*n_e, &
+                     ONE, M_U(1,1), 2*n_e, M_GE(1,1), 2*n_e)
+                  call XGEMM_inplace('N', 'N', n_e, 2*n_e, n_e, -ONE, &
+                     M_U(n_e+1,1), 2*n_e, M_GE(1,1), 2*n_e, ONE, &
+                     M_GE(n_e+1,1), 2*n_e)
+                  call XTRSM_inplace('L', 'U', 'N', 'N', n_e, 2*n_e, &
+                     ONE, M_U(1,1), 2*n_e, M_GE(1,1), 2*n_e)
+
+                  ! Store results
+
+                  this%E_l(:,:,k) = M_GE(n_e+1:,:n_e)
+                  this%E_r(:,:,k) = M_GE(n_e+1:,n_e+1:)
+
+                  this%E_l(:,:,k+l) = M_GE(:n_e,:n_e)
+                  this%E_r(:,:,k+l) = M_GE(:n_e,n_e+1:)
+
+                  ! Fold the factorization determinant into the scale
+
+                  this%scl(k) = this%scl(k)*PRODUCT(diagonal(M_U))
+
+                  do i = 1, n_e
+                     if (ipiv(i) /= i) this%scl(k) = -this%scl(k)
+                  end do
+
+               end do reduce_loop
+               !$OMP END DO
+
+               ! If this is the first level and n is odd, we need
+               ! to evaluate E_l and E_r for the final block
+
+               !$OMP SINGLE
+               if (l == 1 .AND. MOD(n, 2) /= 0) then
+                  call eval_E(n, this%E_l(:,:,n), this%E_r(:,:,n), this%scl(n))
+                  do i = 1, n_e
+                     scl = MAX(MAXVAL(abs(this%E_l(i,:,n))), MAXVAL(abs(this%E_r(i,:,n))))
+                     this%E_l(i,:,n) = this%E_l(i,:,n)/scl
+                     this%E_r(i,:,n) = this%E_r(i,:,n)/scl
+                     this%scl(n) = this%scl(n)*scl
+                  end do
+               end if
+               !$OMP END SINGLE
+
+               ! Loop around
+
+               l = 2*l
+
+            end do factor_loop
+
+            !$OMP END PARALLEL
+
+         end associate
+
+         ! Finish
+
+         return
+
+      end subroutine build_and_factor_alt_${S}$_
 
       !****
 
