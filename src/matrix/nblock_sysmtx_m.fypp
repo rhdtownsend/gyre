@@ -229,7 +229,7 @@ contains
                      if (l == 1) then
 
                         call eval_E(k, M_G(:n_e,:), M_U(:n_e,:), this%scl(k))
-                        call eval_E(k, M_U(n_e+1:,:), M_E(n_e+1:,:), this%scl(k+1))
+                        call eval_E(k+1, M_U(n_e+1:,:), M_E(n_e+1:,:), this%scl(k+1))
 
                         M_G(n_e+1:,:) = 0._RD
                         M_E(:n_e,:) = 0._RD
