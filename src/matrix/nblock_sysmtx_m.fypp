@@ -114,7 +114,7 @@ contains
 
       !****
 
-      subroutine build_and_factor_${S}$_(this, eval_B, eval_E)
+      subroutine build_and_factor_${S}$_(this, eval_B, eval_E, partial)
 
          class(nblock_sysmtx_${S}$), intent(inout) :: this
          interface
@@ -136,22 +136,26 @@ contains
                type(ext_${S}$), intent(out) :: scl
             end subroutine eval_E
          end interface
+         logical, intent(in), optional :: partial
 
+         logical  :: partial_
          integer  :: i
          real(RD) :: scl
          integer  :: s
-         
          integer  :: l
-         integer  :: k 
-
+         integer  :: k
          ${T}$    :: M(2*this%n_e,3*this%n_e)
-
          real(RD) :: rscl(2*this%n_e)
          integer  :: j
          real(RD) :: piv
          integer  :: i_piv
-         
          ${T}$    :: alpha
+
+         if(PRESENT(partial)) then
+            partial_ = partial
+         else
+            partial_ = .FALSE.
+         end if
 
          ! Build and factorize the sysmtx
 
@@ -162,7 +166,7 @@ contains
             ! Build the boundary blocks, and row-scale to unity
 
             !$OMP SINGLE
-            
+
             call eval_B(this%B_i, this%B_o, this%scl_i, this%scl_o)
 
             do i = 1, n_i
@@ -305,41 +309,39 @@ contains
                         ! Eliminate elements below the diagonal
 
                         do i = j+1, 2*n_e
-
                            alpha = M(i,j)
-
                            do s = j, 3*n_e
                               M(i,s) = M(i,s) - alpha*M(j,s)
                            end do
-
                         end do
 
                      end do
 
                      ! Convert the upper block of M_U to reduced row
-                     ! echelon form
+                     ! echelon form. This is skipped if partial is
+                     ! .TRUE., since we won't save upper blocks
 
-                     do j = n_e, 2, -1
+                     if (.NOT. partial_) then
 
-                        do i = j-1, 1, -1
-
-                           alpha = M(i,j)
-
-                           do s = j, 3*n_e
-                              M(i,s) = M(i,s) - alpha*M(j,s)
+                        do j = n_e, 2, -1
+                           do i = j-1, 1, -1
+                              alpha = M(i,j)
+                              do s = j, 3*n_e
+                                 M(i,s) = M(i,s) - alpha*M(j,s)
+                              end do
                            end do
-
                         end do
-
-                     end do
+                     end if
 
                      ! Store results
 
                      this%E_l(:,:,k) = M_G(n_e+1:,:)
                      this%E_r(:,:,k) = M_E(n_e+1:,:)
 
-                     this%E_l(:,:,k+l) = M_G(:n_e,:)
-                     this%E_r(:,:,k+l) = M_E(:n_e,:)
+                     if (.NOT. partial_) then
+                        this%E_l(:,:,k+l) = M_G(:n_e,:)
+                        this%E_r(:,:,k+l) = M_E(:n_e,:)
+                     end if
 
                   end associate
 
@@ -469,7 +471,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_(eval_B, eval_E, partial=.TRUE.)
 
          ! Evaluate the determinant
 
