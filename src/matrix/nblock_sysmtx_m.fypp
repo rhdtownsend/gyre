@@ -375,6 +375,224 @@ contains
 
       !****
 
+      subroutine build_and_factor_serial_${S}$_(this, eval_B, eval_E, partial)
+
+         class(nblock_sysmtx_${S}$), intent(inout) :: this
+         interface
+            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+               use forum_m, only: RD
+               implicit none (type, external)
+               ${T}$, intent(out) :: B_i(:,:)
+               ${T}$, intent(out) :: B_o(:,:)
+               ${T}$, intent(out) :: scl_i(:)
+               ${T}$, intent(out) :: scl_o(:)
+            end subroutine eval_B
+            subroutine eval_E(k, E_l, E_r, scl)
+               use forum_m, only: RD
+               use ext_m
+               implicit none (type, external)
+               integer, intent(in)          :: k
+               ${T}$, intent(out)           :: E_l(:,:)
+               ${T}$, intent(out)           :: E_r(:,:)
+               type(ext_${S}$), intent(out) :: scl
+            end subroutine eval_E
+         end interface
+         logical, intent(in), optional :: partial
+
+         logical  :: partial_
+         integer  :: i
+         real(RD) :: scl
+         integer  :: s
+         integer  :: k
+         ${T}$    :: M(2*this%n_e,3*this%n_e)
+         real(RD) :: rscl(2*this%n_e)
+         integer  :: j
+         real(RD) :: piv
+         integer  :: i_piv
+         ${T}$    :: alpha
+
+         if(PRESENT(partial)) then
+            partial_ = partial
+         else
+            partial_ = .FALSE.
+         end if
+
+         ! Build and factorize the sysmtx
+
+         associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_o => this%n_o)
+
+            ! Build the boundary blocks, and row-scale to unity
+
+            call eval_B(this%B_i, this%B_o, this%scl_i, this%scl_o)
+
+            do i = 1, n_i
+               scl = 0._RD
+               do s = 1, n_e
+                  scl = MAX(scl, abs(this%B_i(i,s)))
+               end do
+               this%scl_i(i) = this%scl_i(i)*scl
+               scl = 1._RD/scl
+               do s = 1, n_e
+                  this%B_i(i,s) = this%B_i(i,s)*scl
+               end do
+            end do
+
+            do i = 1, n_o
+               scl = 0._RD
+               do s = 1, n_e
+                  scl = MAX(scl, abs(this%B_o(i,s)))
+               end do
+               this%scl_o(i) = this%scl_o(i)*scl
+               scl = 1._RD/scl
+               do s = 1, n_e
+                  this%B_o(i,s) = this%B_o(i,s)*scl
+               end do
+            end do
+
+            ! Build and factorize the equation blocks using the cyclic
+            ! structured (SLU) algorithm by [Wri1994]. The
+            ! factorization is done in place: E_l(:,:,1) and
+            ! E_r(:,:,1) contain the final reduced blocks, the other
+            ! blocks of E_l and E_r contain the U^-1 G and U^-1 E
+            ! matrices needed to reconstruct solutions, and S is
+            ! scaled by the factorization determinants
+
+            ! Reduce pairs of blocks to single blocks
+
+            associate( &
+               M_U => M(:,:n_e), &
+               M_G => M(:,n_e+1:2*n_e), &
+               M_E => M(:,2*n_e+1:))
+
+               call eval_E(1, M_G(:n_e,:), M_U(:n_e,:), this%scl(1))
+
+               block_loop : do k = 1, n-1
+
+                  ! Set up matrices (see expressions following
+                  ! eqn. 2.5 of Wright 1994). On the first pass
+                  ! through, E_l and E_r are evaluated using eval_E,
+                  ! and then row-scaled to unity
+
+                  call eval_E(k+1, M_U(n_e+1:,:), M_E(n_e+1:,:), this%scl(k+1))
+
+                  M_G(n_e+1:,:) = 0._RD
+                  M_E(:n_e,:) = 0._RD
+
+                  ! Determine row scalings for implicit pivoting
+
+                  do i = 1, 2*n_e
+                     scl = 0._RD
+                     do s = 1, 3*n_e
+                        scl = MAX(scl, abs(M(i,s)))
+                     end do
+                     rscl(i) = 1._RD/scl
+                  end do
+
+                  ! Reduce the upper block of M_U to row echelon form
+
+                  column_loop: do j = 1, n_e
+
+                     ! Find the pivot
+
+                     piv = 0._RD
+
+                     do i = j, 2*n_e
+                        scl = abs(M_U(i,j))*rscl(i)
+                        if (scl > piv) then
+                           piv = scl
+                           i_piv = i
+                        end if
+                     end do
+
+                     @:ASSERT_DEBUG(piv /= 0._RD, 'singular matrix')
+
+                     ! If necessary, swap rows to place the pivot
+                     ! on the diagonal
+
+                     if (i_piv /= j) then
+
+                        do s = j, 3*n_e
+                           alpha = M(i_piv,s)
+                           M(i_piv,s) = M(j,s)
+                           M(j,s) = alpha
+                        end do
+
+                        scl = rscl(i_piv)
+                        rscl(i_piv) = rscl(j)
+                        rscl(j) = scl
+
+                        this%scl(k) = -this%scl(k)
+
+                     end if
+
+                     ! Scale the row so that the diagonal element is unity
+
+                     this%scl(k) = this%scl(k)*M(j,j)
+
+                     alpha = 1._RD/M(j,j)
+
+                     do s = j, 3*n_e
+                        M(j,s) = alpha*M(j,s)
+                     end do
+
+                     ! Eliminate elements below the diagonal
+
+                     do i = j+1, 2*n_e
+                        alpha = M(i,j)
+                        do s = j, 3*n_e
+                           M(i,s) = M(i,s) - alpha*M(j,s)
+                        end do
+                     end do
+
+                  end do column_loop
+
+                  ! Convert the upper block of M_U to reduced row
+                  ! echelon form. This is skipped if partial is
+                  ! .TRUE., since we won't save upper blocks
+
+                  if (.NOT. partial_) then
+
+                     do j = n_e, 2, -1
+                        do i = j-1, 1, -1
+                           alpha = M(i,j)
+                           do s = j, 3*n_e
+                              M(i,s) = M(i,s) - alpha*M(j,s)
+                           end do
+                        end do
+                     end do
+                  end if
+
+                  ! Store results
+
+                  if (.NOT. partial_) then
+                     this%E_l(:,:,k+1) = M_G(:n_e,:)
+                     this%E_r(:,:,k+1) = M_E(:n_e,:)
+                  end if
+
+                  ! Prepare for the next block
+ 
+                  M_G(:n_e,:) = M_G(n_e+1:,:)
+                  M_U(:n_e,:) = M_E(n_e+1:,:)
+
+              end do block_loop
+
+               ! Store final data in E_l(:,:,1) and E_r(:,:,1)
+
+               this%E_l(:,:,1) = M_G(:n_e,:)
+               this%E_r(:,:,1) = M_U(:n_e,:)
+
+            end associate
+
+         end associate
+
+         ! Finish
+
+         return
+
+      end subroutine build_and_factor_serial_${S}$_
+
+      !****
+
       subroutine backsub_${S}$_(this, u_bound, u)
 
          class(nblock_sysmtx_${S}$), intent(in) :: this
@@ -437,6 +655,45 @@ contains
          return
 
       end subroutine backsub_${S}$_
+
+      !****
+
+      subroutine backsub_serial_${S}$_(this, u_bound, u)
+
+         class(nblock_sysmtx_${S}$), intent(in) :: this
+         ${T}$, intent(in)                      :: u_bound(:)
+         ${T}$, intent(out)                     :: u(:)
+
+         integer :: k
+
+         @:CHECK_BOUNDS(SIZE(u_bound), 2*this%n_e)
+         @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
+
+         ! Given the solution vector u_bound at the boundaries,
+         ! backsubstitute to reconstruct the full solution vector u
+
+         associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+
+            u(:n_e) = u_bound(:n_e)
+            u(n_e*n+1:) = u_bound(n_e+1:)
+
+            backsub_loop : do k = n, 2, -1
+
+               associate(u_1 => u(:n_e), u_k => u(n_e*(k-1)+1:n_e*k), u_k1 => u(n_e*k+1:n_e*(k+1)))
+
+                  u_k = -MATMUL(this%E_l(:,:,k), u_1) - MATMUL(this%E_r(:,:,k), u_k1)
+
+               end associate
+
+            end do backsub_loop
+
+         end associate
+
+         ! Finish
+
+         return
+
+      end subroutine backsub_serial_${S}$_
 
       !****
 
