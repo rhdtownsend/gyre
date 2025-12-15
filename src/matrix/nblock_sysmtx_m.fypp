@@ -318,8 +318,9 @@ contains
                      end do
 
                      ! Convert the upper block of M_U to reduced row
-                     ! echelon form. This is skipped if partial is
-                     ! .TRUE., since we won't save upper blocks
+                     ! echelon form, and store This is skipped if
+                     ! partial is .TRUE., since we won't need these
+                     ! data
 
                      if (.NOT. partial_) then
 
@@ -331,17 +332,16 @@ contains
                               end do
                            end do
                         end do
+
+                        this%E_l(:,:,k+l) = M_G(:n_e,:)
+                        this%E_r(:,:,k+l) = M_E(:n_e,:)
+
                      end if
 
-                     ! Store results
+                     ! Prepare for the next block
 
                      this%E_l(:,:,k) = M_G(n_e+1:,:)
                      this%E_r(:,:,k) = M_E(n_e+1:,:)
-
-                     if (.NOT. partial_) then
-                        this%E_l(:,:,k+l) = M_G(:n_e,:)
-                        this%E_r(:,:,k+l) = M_E(:n_e,:)
-                     end if
 
                   end associate
 
@@ -547,8 +547,8 @@ contains
                   end do column_loop
 
                   ! Convert the upper block of M_U to reduced row
-                  ! echelon form. This is skipped if partial is
-                  ! .TRUE., since we won't save upper blocks
+                  ! echelon form, and store. This is skipped if
+                  ! partial is .TRUE., since we won't need these data
 
                   if (.NOT. partial_) then
 
@@ -560,13 +560,10 @@ contains
                            end do
                         end do
                      end do
-                  end if
 
-                  ! Store results
-
-                  if (.NOT. partial_) then
                      this%E_l(:,:,k+1) = M_G(:n_e,:)
                      this%E_r(:,:,k+1) = M_E(:n_e,:)
+
                   end if
 
                   ! Prepare for the next block
