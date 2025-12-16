@@ -23,7 +23,6 @@ module nblock_sysmtx_m
 
    use forum_m, only: RD, hdf5io_t
 
-   use blas_lapack_m
    use ext_m
    use linalg_m
    use math_m
@@ -48,6 +47,7 @@ module nblock_sysmtx_m
          ${T}$, allocatable           :: scl_i(:)    ! Inner boundary scales
          ${T}$, allocatable           :: scl_o(:)    ! Outer boundary scales
          ${T}$, allocatable           :: R(:,:)      ! Reduced system matrix
+         integer, allocatable         :: i_piv(:)    ! Pivoting info for R
          type(ext_${S}$), allocatable :: scl(:)      ! Block scales
       contains
          private
@@ -103,6 +103,7 @@ contains
          allocate(sm%scl(n))
 
          allocate(sm%R(2*n_e,2*n_e))
+         allocate(sm%i_piv(2*n_e))
 
          sm%n = n
          sm%n_e = n_e
@@ -167,12 +168,7 @@ contains
             !$OMP PARALLEL PRIVATE(l)
 
             ! Build and factorize the equation blocks using the cyclic
-            ! structured (SLU) algorithm by [Wri1994]. The
-            ! factorization is done in place: E_l(:,:,1) and
-            ! E_r(:,:,1) contain the final reduced blocks, the other
-            ! blocks of E_l and E_r contain the U^-1 G and U^-1 E
-            ! matrices needed to reconstruct solutions, and S is
-            ! scaled by the factorization determinants
+            ! structured (SLU) algorithm by [Wri1994]
 
             ! Loop through factorization levels
 
@@ -275,11 +271,13 @@ contains
                            M(j,s) = alpha*M(j,s)
                         end do
 
-                        ! Eliminate elements below the diagonal
+                        ! Eliminate elements below the diagonal (for
+                        ! efficiency, don't need to actually set these
+                        ! elements to zero)
 
                         do i = j+1, 2*n_e
                            alpha = M(i,j)
-                           do s = j, 3*n_e
+                           do s = j+1, 3*n_e
                               M(i,s) = M(i,s) - alpha*M(j,s)
                            end do
                         end do
@@ -292,8 +290,8 @@ contains
 
                      if (.NOT. partial_) then
 
-                        do j = n_e, 2, -1
-                           do i = j-1, 1, -1
+                        do j = 1, n_e
+                           do i = 1, j-1
                               alpha = M(i,j)
                               do s = j, 3*n_e
                                  M(i,s) = M(i,s) - alpha*M(j,s)
@@ -336,82 +334,82 @@ contains
             ! Build and factorize the final (2*n_e,2*n_e) system matrix
             ! (eqn. 2.8 of Wright 1994)
 
-            associate(R => this%R)
+            ! Set up the matrix
 
-               ! Set up the matrix
+            call eval_B(this%R(:n_i,:n_e), this%R(n_i+n_e+1:,n_e+1:), this%scl_i, this%scl_o)
 
-               call eval_B(R(:n_i,:n_e), R(n_i+n_e+1:,n_e+1:), this%scl_i, this%scl_o)
+               this%R(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
+               this%R(n_i+n_e+1:,:n_e) = 0._RD
 
-               R(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
-               R(n_i+n_e+1:,:n_e) = 0._RD
-
-               R(:n_i,n_e+1:) = 0._RD
-               R(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
+               this%R(:n_i,n_e+1:) = 0._RD
+               this%R(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
 
                ! Determine row scalings for implicit pivoting
 
                do i = 1, 2*n_e
                   scl = 0._RD
                   do s = 1, 2*n_e
-                     scl = MAX(scl, abs(R(i,s)))
+                     scl = MAX(scl, abs(this%R(i,s)))
                   end do
                   rscl(i) = 1._RD/scl
                end do
 
-               ! Reduce the matrix to row echelon form
+            ! Reduce the matrix to row echelon form
 
-               column_R_loop: do j = 1, 2*n_e
+            column_R_loop: do j = 1, 2*n_e
 
-                  ! Find the pivot
+               ! Find the pivot
 
-                  piv = 0._RD
+               piv = 0._RD
 
-                  do i = j, 2*n_e
-                     scl = abs(R(i,j))*rscl(i)
-                     if (scl > piv) then
-                        piv = scl
-                        i_piv = i
-                     end if
+               do i = j, 2*n_e
+                  scl = abs(this%R(i,j))*rscl(i)
+                  if (scl > piv) then
+                     piv = scl
+                     i_piv = i
+                  end if
+               end do
+
+               ! If the pivot is zero, then skip to the next column
+
+               if (piv == 0._RD) then
+                  this%i_piv(j) = j
+                  cycle column_R_loop
+               end if
+
+               ! If necessary, swap rows to place the pivot
+               ! on the diagonal
+
+               if (i_piv /= j) then
+
+                  do s = j, 2*n_e
+                     alpha = this%R(i_piv,s)
+                     this%R(i_piv,s) = this%R(j,s)
+                     this%R(j,s) = alpha
                   end do
 
-                  ! If the pivot is zero, then skip to the next column
+                  scl = rscl(i_piv)
+                  rscl(i_piv) = rscl(j)
+                  rscl(j) = scl
 
-                  if (piv == 0._RD) then
-                     print *,'skip due to zero piv'
-                     cycle column_R_loop
-                  end if
+                  this%scl(1) = -this%scl(1)
 
-                  ! If necessary, swap rows to place the pivot
-                  ! on the diagonal
+               end if
 
-                  if (i_piv /= j) then
+               ! Eliminate elements below the diagonal
 
-                     do s = j, 2*n_e
-                        alpha = R(i_piv,s)
-                        R(i_piv,s) = R(j,s)
-                        R(j,s) = alpha
-                     end do
-
-                     scl = rscl(i_piv)
-                     rscl(i_piv) = rscl(j)
-                     rscl(j) = scl
-
-                     this%scl(1) = -this%scl(1)
-
-                  end if
-
-                  ! Eliminate elements below the diagonal
-
-                  do i = j+1, 2*n_e
-                     alpha = R(i,j)/R(j,j)
-                     do s = j, 2*n_e
-                        R(i,s) = R(i,s) - alpha*R(j,s)
-                     end do
+               do i = j+1, 2*n_e
+                  alpha = this%R(i,j)/this%R(j,j)
+                  do s = j, 2*n_e
+                     this%R(i,s) = this%R(i,s) - alpha*this%R(j,s)
                   end do
+               end do
 
-               end do column_R_loop
+               ! Store the pivot information
 
-            end associate
+               this%i_piv(j) = i_piv
+
+            end do column_R_loop
 
          end associate
 
@@ -571,13 +569,13 @@ contains
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) == 1
 
-         associate (n => this%n, n_e => this%n_e, n_i => this%n_i, R => this%R)
+         associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
             R_s = HUGE(0._RD)
 
             sing_loop : do i = n_e+1, 2*n_e
-               if (abs(R(i,i)) < R_s) then
-                  R_s = abs(R(i,i))
+               if (abs(this%R(i,i)) < R_s) then
+                  R_s = abs(this%R(i,i))
                   i_s = i
                end if
             end do sing_loop
@@ -588,11 +586,11 @@ contains
             u_bound(i_s+1:) = 0._RD
 
             do i = i_s-1, 1, -1
-               beta = R(i,i_s)
-               do j = i+1, i_s-1
-                  beta = beta + R(i,j)*u_bound(j)
+               beta = 0._RD
+               do j = i+1, i_s
+                  beta = beta + this%R(i,j)*u_bound(j)
                end do
-               u_bound(i) = -beta/R(i,i)
+               u_bound(i) = -beta/this%R(i,i)
             end do
 
          end associate
@@ -634,11 +632,11 @@ contains
          ${T}$, intent(in)  :: v(:)
          ${T}$, intent(out) :: u(:)
 
-         ${T}$   :: M(2*this%n_e,2*this%n_e)
-         integer :: ipiv(2*this%n_e)
-         integer :: info
-         ${T}$   :: B(2*this%n_e, 1)
+         integer :: i
+         ${T}$   :: v_(SIZE(v))
          ${T}$   :: u_bound(2*this%n_e)
+         ${T}$   :: beta
+         integer :: j
 
          @:CHECK_BOUNDS(SIZE(v), this%n_e)
 
@@ -657,30 +655,26 @@ contains
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
-            ! Set up the reduced 2x2-block matrix and rhs matrix
+            ! Apply row scales and swaps to v
 
-            M(:n_i,:n_e) = this%B_i
-            M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
-            M(n_i+n_e+1:,:n_e) = 0._RD
+            do i = 1, n_e
+               v_(i) = v(i)*this%scl_i(i)
+               v_(n_e+i) = v(n_e+i)*this%scl_o(i)
+            end do
 
-            M(:n_i,n_e+1:) = 0._RD
-            M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
-            M(n_i+n_e+1:,n_e+1:) = this%B_o
+            v_(this%i_piv) = v_
 
-            B(:n_i,1) = v(:n_i)/this%scl_i
-            B(n_i+1:n_i+n_e,1) = 0._RD
-            B(n_i+n_e+1:,1) = v(n_i+1:)/this%scl_o
+            ! Use backsubstitution to solve for u_bound
 
-            ! Solve for the solution at the two boundaries using LU
-            ! decomposition
+            u_bound(2*n_e) = v_(2*n_e)/this%R(2*n_e,2*n_e)
 
-            call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
-            @:ASSERT(info >= 0, 'negative return from XGETRF')
-
-            call XGETRS('N', 2*n_e, 1, M, 2*n_e, ipiv, B, 2*n_e, info)
-            @:ASSERT(info >= 0, 'negative return from XGETRS')
-
-            u_bound = B(:,1)
+            do i = 2*n_e-1, 1, -1
+               beta = 0._RD
+               do j = i+1, 2*n_e
+                  beta = beta + this%R(i,j)*u_bound(j)
+               end do
+               u_bound(i) = v_(i) - beta/this%R(i,i)
+            end do
 
          end associate
 
