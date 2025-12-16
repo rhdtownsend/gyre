@@ -85,7 +85,8 @@ contains
       type(ext_ct)               :: discrim(SIZE(omega_re),SIZE(omega_im))
       type(isect_t), allocatable :: is(:)
 
-      ! Search for roots by finding zero-contour intersections and then solving
+      ! Search for roots by finding zero-contour intersections as
+      ! initial guesses, and then solve for modes
 
       ! The code below could be simplified using OMP IF clauses, but
       ! they seem to mess up inner parallel regions (all the code ends
@@ -137,7 +138,7 @@ contains
       complex(RD) :: omega
 
       @:CHECK_BOUNDS(SIZE(discrim, 1), SIZE(omega_re))
-      @:CHECK_BOUNDS(SIZE(discrim, 2), SIZE(omega_re))
+      @:CHECK_BOUNDS(SIZE(discrim, 2), SIZE(omega_im))
 
       ! Evaluate the discriminant at the frequency scan points
 
