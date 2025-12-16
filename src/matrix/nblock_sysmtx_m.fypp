@@ -47,6 +47,7 @@ module nblock_sysmtx_m
          ${T}$, allocatable           :: E_r(:,:,:)  ! Right equation blocks
          ${T}$, allocatable           :: scl_i(:)    ! Inner boundary scales
          ${T}$, allocatable           :: scl_o(:)    ! Outer boundary scales
+         ${T}$, allocatable           :: R(:,:)      ! Reduced system matrix
          type(ext_${S}$), allocatable :: scl(:)      ! Block scales
       contains
          private
@@ -100,6 +101,8 @@ contains
          allocate(sm%scl_o(n_o))
 
          allocate(sm%scl(n))
+
+         allocate(sm%R(2*n_e,2*n_e))
 
          sm%n = n
          sm%n_e = n_e
@@ -163,38 +166,6 @@ contains
 
             !$OMP PARALLEL PRIVATE(l)
 
-            ! Build the boundary blocks, and row-scale to unity
-
-            !$OMP SINGLE
-
-            call eval_B(this%B_i, this%B_o, this%scl_i, this%scl_o)
-
-            do i = 1, n_i
-               scl = 0._RD
-               do s = 1, n_e
-                  scl = MAX(scl, abs(this%B_i(i,s)))
-               end do
-               this%scl_i(i) = this%scl_i(i)*scl
-               scl = 1._RD/scl
-               do s = 1, n_e
-                  this%B_i(i,s) = this%B_i(i,s)*scl
-               end do
-            end do
-
-            do i = 1, n_o
-               scl = 0._RD
-               do s = 1, n_e
-                  scl = MAX(scl, abs(this%B_o(i,s)))
-               end do
-               this%scl_o(i) = this%scl_o(i)*scl
-               scl = 1._RD/scl
-               do s = 1, n_e
-                  this%B_o(i,s) = this%B_o(i,s)*scl
-               end do
-            end do
-
-            !$OMP END SINGLE
-
             ! Build and factorize the equation blocks using the cyclic
             ! structured (SLU) algorithm by [Wri1994]. The
             ! factorization is done in place: E_l(:,:,1) and
@@ -207,24 +178,24 @@ contains
 
             l = 1
 
-            factor_loop : do
+            level_loop : do
 
-               if (l >= n) exit factor_loop
+               if (l >= n) exit level_loop
 
-               ! Reduce pairs of blocks to single blocks
+               ! Factorize pairs of blocks
 
                !$OMP DO SCHEDULE(DYNAMIC) PRIVATE(M, i, s, scl, rscl, piv, i_piv, alpha)
-               reduce_loop : do k = 1, n-l, 2*l
-
-                  ! Set up matrices (see expressions following
-                  ! eqn. 2.5 of Wright 1994). On the first pass
-                  ! through, E_l and E_r are evaluated using eval_E,
-                  ! and then row-scaled to unity
+               factor_loop : do k = 1, n-l, 2*l
 
                   associate( &
                      M_U => M(:,:n_e), &
                      M_G => M(:,n_e+1:2*n_e), &
                      M_E => M(:,2*n_e+1:))
+
+                     ! Set up matrices (see expressions following
+                     ! eqn. 2.5 of Wright 1994). On the first pass
+                     ! through, E_l and E_r are evaluated using eval_E,
+                     ! and then row-scaled to unity
 
                      if (l == 1) then
 
@@ -257,9 +228,7 @@ contains
                         rscl(i) = 1._RD/scl
                      end do
 
-                     ! Reduce the upper block of M_U to row echelon form
-
-                     ! Outer loop over columns
+                     ! Reduce M_U to row echelon form
 
                      do j = 1, n_e
 
@@ -275,7 +244,7 @@ contains
                            end if
                         end do
 
-                        @:ASSERT_DEBUG(piv /= 0._RD, 'singular matrix')
+                        @:ASSERT_DEBUG(piv /= 0._RD, 'zero pivot')
 
                         ! If necessary, swap rows to place the pivot
                         ! on the diagonal
@@ -317,10 +286,9 @@ contains
 
                      end do
 
-                     ! Convert the upper block of M_U to reduced row
-                     ! echelon form, and store This is skipped if
-                     ! partial is .TRUE., since we won't need these
-                     ! data
+                     ! Eliminate elements above the diagonal of M_U,
+                     ! and store. This is skipped if partial is
+                     ! .TRUE., since we won't need these data
 
                      if (.NOT. partial_) then
 
@@ -345,7 +313,7 @@ contains
 
                   end associate
 
-               end do reduce_loop
+               end do factor_loop
                !$OMP END DO
 
                ! If this is the first level and n is odd, we need
@@ -361,9 +329,89 @@ contains
 
                l = 2*l
 
-            end do factor_loop
+            end do level_loop
 
             !$OMP END PARALLEL
+
+            ! Build and factorize the final (2*n_e,2*n_e) system matrix
+            ! (eqn. 2.8 of Wright 1994)
+
+            associate(R => this%R)
+
+               ! Set up the matrix
+
+               call eval_B(R(:n_i,:n_e), R(n_i+n_e+1:,n_e+1:), this%scl_i, this%scl_o)
+
+               R(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
+               R(n_i+n_e+1:,:n_e) = 0._RD
+
+               R(:n_i,n_e+1:) = 0._RD
+               R(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
+
+               ! Determine row scalings for implicit pivoting
+
+               do i = 1, 2*n_e
+                  scl = 0._RD
+                  do s = 1, 2*n_e
+                     scl = MAX(scl, abs(R(i,s)))
+                  end do
+                  rscl(i) = 1._RD/scl
+               end do
+
+               ! Reduce the matrix to row echelon form
+
+               column_R_loop: do j = 1, 2*n_e
+
+                  ! Find the pivot
+
+                  piv = 0._RD
+
+                  do i = j, 2*n_e
+                     scl = abs(R(i,j))*rscl(i)
+                     if (scl > piv) then
+                        piv = scl
+                        i_piv = i
+                     end if
+                  end do
+
+                  ! If the pivot is zero, then skip to the next column
+
+                  if (piv == 0._RD) then
+                     print *,'skip due to zero piv'
+                     cycle column_R_loop
+                  end if
+
+                  ! If necessary, swap rows to place the pivot
+                  ! on the diagonal
+
+                  if (i_piv /= j) then
+
+                     do s = j, 2*n_e
+                        alpha = R(i_piv,s)
+                        R(i_piv,s) = R(j,s)
+                        R(j,s) = alpha
+                     end do
+
+                     scl = rscl(i_piv)
+                     rscl(i_piv) = rscl(j)
+                     rscl(j) = scl
+
+                     this%scl(1) = -this%scl(1)
+
+                  end if
+
+                  ! Eliminate elements below the diagonal
+
+                  do i = j+1, 2*n_e
+                     alpha = R(i,j)/R(j,j)
+                     do s = j, 2*n_e
+                        R(i,s) = R(i,s) - alpha*R(j,s)
+                     end do
+                  end do
+
+               end do column_R_loop
+
+            end associate
 
          end associate
 
@@ -408,11 +456,11 @@ contains
                l = 2*l
             end do
 
-            recon_loop : do
+            level_loop : do
 
                l = l/2
 
-               if (l == 0) exit recon_loop
+               if (l == 0) exit level_loop
 
                !$OMP PARALLEL DO SCHEDULE (DYNAMIC) PRIVATE (i_a, i_b, i_c)
                backsub_loop : do k = 1, n-l, 2*l
@@ -421,14 +469,12 @@ contains
                   i_b = i_a + l*n_e
                   i_c = MIN(i_b + l*n_e, n_e*n+1)
 
-                  u(i_b:i_b+n_e-1) = ZERO
-
-                  call XGEMV_inplace('N', n_e, n_e, -ONE, this%E_l(1,1,k+l), n_e, u(i_a), 1, ZERO, u(i_b), 1)
-                  call XGEMV_inplace('N', n_e, n_e, -ONE, this%E_r(1,1,k+l), n_e, u(i_c), 1, ONE, u(i_b), 1)
+                  u(i_b:i_b+n_e-1) = -MATMUL(this%E_l(:,:,k+l), u(i_a:i_a+n_e-1)) - &
+                     MATMUL(this%E_r(:,:,k+l), u(i_c:i_c+n_e-1))
 
                end do backsub_loop
 
-            end do recon_loop
+            end do level_loop
 
          end associate
 
@@ -475,32 +521,7 @@ contains
 
          ! Evaluate the determinant
 
-         associate (n_e => this%n_e, n_i => this%n_i)
-
-            ! Set up the reduced 2x2-block matrix
-
-            M(:n_i,:n_e) = this%B_i
-            M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
-            M(n_i+n_e+1:,:n_e) = 0._RD
-
-            M(:n_i,n_e+1:) = 0._RD
-            M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
-            M(n_i+n_e+1:,n_e+1:) = this%B_o
-
-            ! Factorize it
-
-            call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
-            @:ASSERT(info >= 0, 'negative return from XGETRF')
-
-            ! Add together all the contributions to the determinant
-
-            det = product([ext_${S}$(diagonal(M)),ext_${S}$(this%scl_i),this%scl,ext_${S}$(this%scl_o)])
-
-            do i = 1,2*n_e
-               if(ipiv(i) /= i) det = -det
-            end do
-
-         end associate
+         det = product([ext_${S}$(diagonal(this%R)),ext_${S}$(this%scl_i),this%scl,ext_${S}$(this%scl_o)])
 
          ! Finish
 
@@ -534,20 +555,12 @@ contains
          end interface
          ${T}$, intent(out) :: u(:)
 
-         logical, parameter :: USE_SVD = .TRUE.
-         ${T}$, parameter   :: ZERO = 0._RD
-         ${T}$, parameter   :: ONE = 1._RD
-
-         ${T}$    :: M(2*this%n_e,2*this%n_e)
-         real(RD) :: sigma(2*this%n_e)
-         ${T}$    :: sU(2*this%n_e,2*this%n_e)
-         ${T}$    :: sV_H(2*this%n_e,2*this%n_e)
-         integer  :: ipiv(2*this%n_e)
-         integer  :: info
-         integer  :: i_s
-         real(RD) :: M_s
+         real(RD) :: R_s
          integer  :: i
+         integer  :: i_s
          ${T}$    :: u_bound(2*this%n_e)
+         integer  :: j
+         ${T}$    :: beta
 
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
 
@@ -556,68 +569,31 @@ contains
          call this%build_and_factor_(eval_B, eval_E)
 
          ! Evaluate the solution vector u of the homogeneous linear system
-         ! S u = 0. It is assumed that the nullity nul(S) >= 1; if nul(S) =
-         ! 0, then this routine will return the vector which minimizes the
-         ! norm of S u. When nul(S) > 1, the routine returns the null
-         ! vector associated with the smallest eigenvalue.
+         ! S u = 0. It is assumed that the nullity nul(S) == 1
 
-         associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+         associate (n => this%n, n_e => this%n_e, n_i => this%n_i, R => this%R)
 
-            ! Set up the reduced 2x2-block matrix
+            R_s = HUGE(0._RD)
 
-            M(:n_i,:n_e) = this%B_i
-            M(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
-            M(n_i+n_e+1:,:n_e) = 0._RD
+            sing_loop : do i = n_e+1, 2*n_e
+               if (abs(R(i,i)) < R_s) then
+                  R_s = abs(R(i,i))
+                  i_s = i
+               end if
+            end do sing_loop
 
-            M(:n_i,n_e+1:) = 0._RD
-            M(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
-            M(n_i+n_e+1:,n_e+1:) = this%B_o
+            ! Use backsubstitution to solve for u_bound
 
-            ! Solve for the solution at the two boundaries
+            u_bound(i_s) = 1._RD
+            u_bound(i_s+1:) = 0._RD
 
-            if (USE_SVD) then
-
-               ! Use singular value decomposition
-
-               call sing_decompose(M, sigma, sU, sV_H)
-
-               #:if T == 'real(RD)'
-               u_bound = sV_H(2*n_e,:)
-               #:elif T == 'complex(RD)'
-                  u_bound = CONJG(sV_H(2*n_e,:))
-               #:else
-                  #:stop f'invalid type {T}'
-               #:endif
-
-            else
-
-               ! Use LU decomposition
-
-               call XGETRF(2*n_e, 2*n_e, M, 2*n_e, ipiv, info)
-               @:ASSERT(info >= 0, 'negative return from XGETRF')
-
-               ! Locate the smallest element on the diagonal of the outer
-               ! block (this will be taken to be the singular element)
-
-               i_s = 0
-               M_s = HUGE(0._RD)
-
-               sing_loop : do i = n_e+1, 2*n_e
-                  if (abs(M(i,i)) < M_s) then
-                     M_s = abs(M(i,i))
-                     i_s = i
-                  end if
-               end do sing_loop
-
-               u_bound(:i_s-1) = -M(:i_s-1,i_s)
-
-               call XTRSM_inplace('L', 'U', 'N', 'N', i_s-1, 1, &
-                  ONE, M(1,1), 2*n_e, u_bound(1), 2*n_e)
-
-               u_bound(i_s) = 1._RD
-               u_bound(i_s+1:) = 0._RD
-
-            endif
+            do i = i_s-1, 1, -1
+               beta = R(i,i_s)
+               do j = i+1, i_s-1
+                  beta = beta + R(i,j)*u_bound(j)
+               end do
+               u_bound(i) = -beta/R(i,i)
+            end do
 
          end associate
 
