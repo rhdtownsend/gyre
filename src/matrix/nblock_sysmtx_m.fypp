@@ -40,15 +40,13 @@ module nblock_sysmtx_m
 
       type, extends(sysmtx_${S}$) :: nblock_sysmtx_${S}$
          private
-         ${T}$, allocatable           :: B_i(:,:)    ! Inner boundary conditions
-         ${T}$, allocatable           :: B_o(:,:)    ! Outer boundary conditions
-         ${T}$, allocatable           :: E_l(:,:,:)  ! Left equation blocks
-         ${T}$, allocatable           :: E_r(:,:,:)  ! Right equation blocks
-         ${T}$, allocatable           :: scl_i(:)    ! Inner boundary scales
-         ${T}$, allocatable           :: scl_o(:)    ! Outer boundary scales
-         ${T}$, allocatable           :: R(:,:)      ! Reduced system matrix
-         integer, allocatable         :: i_piv(:)    ! Pivoting info for R
-         type(ext_${S}$), allocatable :: scl(:)      ! Block scales
+         ${T}$, allocatable           :: G(:,:,:)  ! Left factor blocks
+         ${T}$, allocatable           :: E(:,:,:)  ! Right factor blocks
+         ${T}$, allocatable           :: scl_i(:)  ! Inner boundary scales
+         ${T}$, allocatable           :: scl_o(:)  ! Outer boundary scales
+         ${T}$, allocatable           :: R(:,:)    ! Reduced system matrix
+         integer, allocatable         :: i_piv(:)  ! Pivoting info for R
+         type(ext_${S}$), allocatable :: scl(:)    ! Block scales
       contains
          private
          procedure         :: build_and_factor_ => build_and_factor_${S}$_
@@ -91,11 +89,8 @@ contains
 
          ! Construct the nblock_sysmtx_t
 
-         allocate(sm%E_l(n_e,n_e,n))
-         allocate(sm%E_r(n_e,n_e,n))
-
-         allocate(sm%B_i(n_i,n_e))
-         allocate(sm%B_o(n_o,n_e))
+         allocate(sm%G(n_e,n_e,n))
+         allocate(sm%E(n_e,n_e,n))
 
          allocate(sm%scl_i(n_i))
          allocate(sm%scl_o(n_o))
@@ -184,9 +179,9 @@ contains
                factor_loop : do k = 1, n-l, 2*l
 
                   associate( &
-                     M_U => M(:,:n_e), &
-                     M_G => M(:,n_e+1:2*n_e), &
-                     M_E => M(:,2*n_e+1:))
+                     U_1 => M(:n_e,:n_e), U_2 => M(n_e+1:,:n_e), &
+                     G_1 => M(:n_e,n_e+1:2*n_e), G_2 => M(n_e+1:,n_e+1:2*n_e), &
+                     E_1 => M(:n_e,2*n_e+1:), E_2 => M(n_e+1:,2*n_e+1:))
 
                      ! Set up matrices (see expressions following
                      ! eqn. 2.5 of Wright 1994). On the first pass
@@ -195,22 +190,22 @@ contains
 
                      if (l == 1) then
 
-                        call eval_E(k, M_G(:n_e,:), M_U(:n_e,:), this%scl(k))
-                        call eval_E(k+1, M_U(n_e+1:,:), M_E(n_e+1:,:), this%scl(k+1))
+                        call eval_E(k, G_1, U_1, this%scl(k))
+                        call eval_E(k+1, U_2, E_2, this%scl(k+1))
 
-                        M_G(n_e+1:,:) = 0._RD
-                        M_E(:n_e,:) = 0._RD
+                        G_2 = 0._RD
+                        E_1 = 0._RD
 
                      else
 
-                        M_G(:n_e,:) = this%E_l(:,:,k)
-                        M_G(n_e+1:,:) = 0._RD
+                        G_1 = this%G(:,:,k)
+                        G_2 = 0._RD
 
-                        M_U(:n_e,:) = this%E_r(:,:,k)
-                        M_U(n_e+1:,:) = this%E_l(:,:,k+l)
+                        U_1 = this%E(:,:,k)
+                        U_2 = this%G(:,:,k+l)
 
-                        M_E(:n_e,:) = 0._RD
-                        M_E(n_e+1:,:) = this%E_r(:,:,k+l)
+                        E_1 = 0._RD
+                        E_2 = this%E(:,:,k+l)
 
                      end if
 
@@ -224,7 +219,8 @@ contains
                         rscl(i) = 1._RD/scl
                      end do
 
-                     ! Reduce M_U to row echelon form
+                     ! Reduce the first n_e columns of M to row
+                     ! echelon form
 
                      do j = 1, n_e
 
@@ -233,7 +229,7 @@ contains
                         piv = 0._RD
 
                         do i = j, 2*n_e
-                           scl = abs(M_U(i,j))*rscl(i)
+                           scl = abs(M(i,j))*rscl(i)
                            if (scl > piv) then
                               piv = scl
                               i_piv = i
@@ -261,7 +257,8 @@ contains
 
                         end if
 
-                        ! Scale the row so that the diagonal element is unity
+                        ! Scale the row so that the diagonal element
+                        ! is unity
 
                         this%scl(k) = this%scl(k)*M(j,j)
 
@@ -284,9 +281,9 @@ contains
 
                      end do
 
-                     ! Eliminate elements above the diagonal of M_U,
-                     ! and store. This is skipped if partial is
-                     ! .TRUE., since we won't need these data
+                     ! Eliminate elements above the diagonal, and
+                     ! store. This is skipped if partial is .TRUE.,
+                     ! since we won't need these data
 
                      if (.NOT. partial_) then
 
@@ -299,15 +296,15 @@ contains
                            end do
                         end do
 
-                        this%E_l(:,:,k+l) = M_G(:n_e,:)
-                        this%E_r(:,:,k+l) = M_E(:n_e,:)
+                        this%G(:,:,k+l) = G_1
+                        this%E(:,:,k+l) = E_1
 
                      end if
 
-                     ! Prepare for the next block
+                     ! Prepare for the next level
 
-                     this%E_l(:,:,k) = M_G(n_e+1:,:)
-                     this%E_r(:,:,k) = M_E(n_e+1:,:)
+                     this%G(:,:,k) = G_2
+                     this%E(:,:,k) = E_2
 
                   end associate
 
@@ -319,7 +316,7 @@ contains
 
                !$OMP SINGLE
                if (l == 1 .AND. MOD(n, 2) /= 0) then
-                  call eval_E(n, this%E_l(:,:,n), this%E_r(:,:,n), this%scl(n))
+                  call eval_E(n, this%G(:,:,n), this%E(:,:,n), this%scl(n))
                end if
                !$OMP END SINGLE
 
@@ -338,11 +335,11 @@ contains
 
             call eval_B(this%R(:n_i,:n_e), this%R(n_i+n_e+1:,n_e+1:), this%scl_i, this%scl_o)
 
-               this%R(n_i+1:n_i+n_e,:n_e) = this%E_l(:,:,1)
+               this%R(n_i+1:n_i+n_e,:n_e) = this%G(:,:,1)
                this%R(n_i+n_e+1:,:n_e) = 0._RD
 
                this%R(:n_i,n_e+1:) = 0._RD
-               this%R(n_i+1:n_i+n_e,n_e+1:) = this%E_r(:,:,1)
+               this%R(n_i+1:n_i+n_e,n_e+1:) = this%E(:,:,1)
 
                ! Determine row scalings for implicit pivoting
 
@@ -395,6 +392,9 @@ contains
                   this%scl(1) = -this%scl(1)
 
                end if
+
+               ! (Note that, unlike before for M, we don't scale the
+               ! row so that the diagonal element is unity)
 
                ! Eliminate elements below the diagonal
 
@@ -467,8 +467,8 @@ contains
                   i_b = i_a + l*n_e
                   i_c = MIN(i_b + l*n_e, n_e*n+1)
 
-                  u(i_b:i_b+n_e-1) = -MATMUL(this%E_l(:,:,k+l), u(i_a:i_a+n_e-1)) - &
-                     MATMUL(this%E_r(:,:,k+l), u(i_c:i_c+n_e-1))
+                  u(i_b:i_b+n_e-1) = -MATMUL(this%G(:,:,k+l), u(i_a:i_a+n_e-1)) - &
+                     MATMUL(this%E(:,:,k+l), u(i_c:i_c+n_e-1))
 
                end do backsub_loop
 
@@ -702,14 +702,13 @@ contains
          call hi%write_attr('n_i', this%n_i)
          call hi%write_attr('n_o', this%n_o)
 
-         call hi%write_dset('B_i', this%B_i)
          call hi%write_dset('scl_i', this%scl_i)
-
-         call hi%write_dset('B_o', this%B_o)
          call hi%write_dset('scl_o', this%scl_o)
 
-         call hi%write_dset('E_l', this%E_l)
-         call hi%write_dset('E_r', this%E_r)
+         call hi%write_dset('G', this%G)
+         call hi%write_dset('E', this%E)
+
+         call hi%write_dset('R', this%R)
 
          call hi%write_dset('scl_f', FRACTION(this%scl))
          call hi%write_dset('scl_e', EXPONENT(this%scl))
