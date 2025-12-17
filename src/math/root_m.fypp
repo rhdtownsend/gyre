@@ -293,6 +293,8 @@ contains
             relative_tol_ = .FALSE.
          endif
 
+         @:ASSERT(x_a /= x_b, 'invalid initial bracket')
+
          ! Narrow the bracket [x_a,x_b] on a root of the function
          ! using Brent's method [based on the ALGOL 60 routine 'zero'
          ! published in [Bre1973]

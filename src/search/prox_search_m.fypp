@@ -21,7 +21,7 @@ module prox_search_m
 
    ! Uses
 
-   use forum_m, only: RD
+   use forum_m, only: RD, sort_indices
 
    use bvp_m
    use constants_m
@@ -44,6 +44,16 @@ module prox_search_m
 
    implicit none (type, external)
 
+   ! Derived-type definitions
+
+   type :: prox_t
+      complex(RD)  :: omega_a
+      complex(RD)  :: omega_b
+      type(mode_t) :: md
+      integer      :: id
+      logical      :: active
+   end type prox_t
+
    ! Interfaces
 
    interface prox_search
@@ -59,49 +69,44 @@ module prox_search_m
 
 contains
 
-   subroutine prox_search_1_(bp, omega_in, id_in, omega_min, omega_max, nm_p, process_mode)
+   subroutine prox_search_1_(bp, omega, id, omega_min, omega_max, nm_p, process_mode)
 
       class(bvp_ct), target, intent(inout) :: bp
-      complex(RD), intent(in)              :: omega_in(:)
-      integer, intent(in)                  :: id_in(:)
+      complex(RD), intent(in)              :: omega(:)
+      integer, intent(in)                  :: id(:)
       real(RD), intent(in)                 :: omega_min
       real(RD), intent(in)                 :: omega_max
       type(num_par_t), intent(in)          :: nm_p
       interface
-         subroutine process_mode(md)
+         subroutine process_mode(md, culled)
             use mode_m
             implicit none (type, external)
             type(mode_t), intent(in) :: md
+            logical, intent(out)     :: culled
          end subroutine process_mode
       end interface
 
-      integer                  :: n_in
-      complex(RD), allocatable :: omega_in_a(:)
-      complex(RD), allocatable :: omega_in_b(:)
-      complex(RD)              :: domega
-      integer                  :: i
+      integer     :: i
+      complex(RD) :: domega
+      complex(RD) :: omega_a(SIZE(omega))
+      complex(RD) :: omega_b(SIZE(omega))
 
-      @:CHECK_BOUNDS(SIZE(id_in), SIZE(omega_in))
+      @:CHECK_BOUNDS(SIZE(id), SIZE(omega))
 
       ! Convert initial frequencies into pairs
 
-      n_in = SIZE(omega_in)
+      in_loop : do i = 1, SIZE(omega)
 
-      allocate(omega_in_a(n_in))
-      allocate(omega_in_b(n_in))
+         domega = sqrt(EPSILON(0._RD))*abs(omega(i))*CMPLX(0._RD, 1._RD, KIND=RD)
 
-      in_loop : do i = 1, n_in
-
-         domega = sqrt(EPSILON(0._RD))*abs(omega_in(i))*CMPLX(0._RD, 1._RD, KIND=RD)
-
-         omega_in_a(i) = omega_in(i) + domega
-         omega_in_b(i) = omega_in(i) - domega
+         omega_a(i) = omega(i) + domega
+         omega_b(i) = omega(i) - domega
 
       end do in_loop
 
-      ! Search for modes
+      ! Search for roots via proximity, and then solve for modes
 
-      call prox_search_2_(bp, omega_in_a, omega_in_b, id_in, omega_min, omega_max, nm_p, process_mode)
+      call prox_search_2_(bp, omega_a, omega_b, id, omega_min, omega_max, nm_p, process_mode)
 
       ! Finish
 
@@ -111,168 +116,195 @@ contains
 
    !****
 
-   subroutine prox_search_2_(bp, omega_in_a, omega_in_b, id_in, omega_min, omega_max, nm_p, process_mode)
+   subroutine prox_search_2_(bp, omega_a, omega_b, id, omega_min, omega_max, nm_p, process_mode)
 
       class(bvp_ct), intent(inout) :: bp
-      complex(RD), intent(in)      :: omega_in_a(:)
-      complex(RD), intent(in)      :: omega_in_b(:)
-      integer, intent(in)          :: id_in(:)
+      complex(RD), intent(in)      :: omega_a(:)
+      complex(RD), intent(in)      :: omega_b(:)
+      integer, intent(in)          :: id(:)
       real(RD), intent(in)         :: omega_min
       real(RD), intent(in)         :: omega_max
       type(num_par_t), intent(in)  :: nm_p
       interface
-         subroutine process_mode(md)
+         subroutine process_mode(md, culled)
             use mode_m
             implicit none (type, external)
             type(mode_t), intent(in) :: md
+            logical, intent(out)     :: culled
          end subroutine process_mode
       end interface
 
-      complex(RD), allocatable :: omega_def(:)
-      integer                  :: c_beg
-      integer                  :: c_end
-      integer                  :: c_rate
-      integer                  :: i
-      integer                  :: n_iter
-      integer                  :: n_iter_def
-      real(RD)                 :: omega_r
-      type(ext_ct)             :: discrim_a
-      type(ext_ct)             :: discrim_b
-      type(ext_ct)             :: z_a
-      type(ext_ct)             :: z_b
-      type(ext_ct)             :: f_z_a
-      type(ext_ct)             :: f_z_b
-      logical                  :: apply_deflate
-      integer                  :: stat
-      type(ext_ct)             :: z_root
-      type(ext_ct)             :: f_z_root
-      type(wave_t)             :: wv
-      type(mode_t)             :: md
-      real(RD)                 :: chi
+      type(prox_t) :: pr(SIZE(omega_a))
 
-      @:CHECK_BOUNDS(SIZE(id_in), SIZE(omega_in_a))
-      @:CHECK_BOUNDS(SIZE(omega_in_b), SIZE(omega_in_a))
+      @:CHECK_BOUNDS(SIZE(omega_b), SIZE(omega_a))
+      @:CHECK_BOUNDS(SIZE(id), SIZE(omega_a))
 
-      ! Initialize the frequency deflation array
+      ! Search for roots via proximity, and then solve for modes
 
-      allocate(omega_def(0))
+      ! The code below could be simplified using OMP IF clauses, but
+      ! they seem to mess up inner parallel regions (all the code ends
+      ! up running on one core)
 
-      ! Process each input frequency pair to find modes
+      if (nm_p%parallel_scan .AND. .NOT. nm_p%deflate_roots) then
 
-      if (check_log_level('INFO')) then
+         !$OMP PARALLEL FIRSTPRIVATE(bp)
+         call setup_prox_(omega_a, omega_b, id, pr)
+         call find_modes_(bp, omega_min, omega_max, nm_p, pr)
+         !$OMP END PARALLEL
 
-         write(OUTPUT_UNIT, 100) 'Root Solving'
-100      format(A)
+      else
 
-         write(OUTPUT_UNIT, 110) 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110      format(1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
-
-      endif
-
-      call SYSTEM_CLOCK(c_beg, c_rate)
-
-      in_loop : do i = 1, SIZE(omega_in_a)
-
-         n_iter = 0
-         n_iter_def = 0
-
-         ! Set up the initial points
-
-         omega_r = real(0.5_RD*(omega_in_a(i) + omega_in_b(i)))
-
-         call eval_discrim(bp, state_ct(omega_in_a(i), omega_r=omega_r), discrim_a)
-         call eval_discrim(bp, state_ct(omega_in_b(i), omega_r=omega_r), discrim_b)
-
-         z_a = ext_ct(omega_in_a(i))
-         z_b = ext_ct(omega_in_b(i))
-         f_z_a = discrim_a
-         f_z_b = discrim_b
-
-         ! If necessary, do a preliminary root find using the deflated
-         ! discriminant
-
+         call setup_prox_(omega_a, omega_b, id, pr)
          if (nm_p%deflate_roots) then
-
-            apply_deflate = .TRUE.
-
-            call narrow_bracket(eval_discrim_z_, z_a, z_b, ext_rt(0._RD), nm_p, &
-               stat, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
-            if (stat /= STAT_OK) then
-               call report_stat_(stat, 'deflate narrow')
-               cycle in_loop
-            endif
-
-            ! If necessary, reset z_a and z_b so they are not
-            ! coincident; and then save the revised discriminant values
-
-            if (z_b == z_a) then
-               z_b = z_a*(1._RD + EPSILON(0._RD)*(z_a/abs(z_a)))
-            endif
-
-            call expand_bracket(eval_discrim_z_, z_a, z_b, ext_rt(0._RD), &
-               stat, f_z_a=f_z_a, f_z_b=f_z_b)
-            if (stat /= STAT_OK) then
-               call report_stat_(stat, 'deflate re-expand')
-               cycle in_loop
-            endif
-
+            call find_modes_deflate_(bp, omega_min, omega_max, nm_p, pr)
          else
+            call find_modes_(bp, omega_min, omega_max, nm_p, pr)
+         end if
 
-            n_iter_def = 0
+      end if
 
-         endif
-
-         ! Find the discriminant root
-
-         apply_deflate = .FALSE.
-
-         call solve_root(eval_discrim_z_, z_a, z_b, ext_rt(0._RD), nm_p, &
-            z_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
-            f_z_a=f_z_a, f_z_b=f_z_b, f_z_root=f_z_root)
-         if (stat /= STAT_OK) then
-            call report_stat_(stat, 'solve')
-            cycle in_loop
-         endif
-
-         chi = real(abs(f_z_root)/max(abs(discrim_a), abs(discrim_b)))
-
-         ! Construct the mode_t
-
-         select type (bp)
-         type is (nad_bvp_t)
-            wv = wave_t(bp, state_ct(cmplx(z_root), omega_r=omega_r), id_in(i), chi, n_iter_def+n_iter)
-         type is (tnad_bvp_t)
-            wv = wave_t(bp, state_ct(cmplx(z_root), omega_r=omega_r), id_in(i), chi, n_iter_def+n_iter)
-         class default
-            @:ABORT('Invalid bp class')
-         end select
-
-         md = mode_t(wv)
-
-         ! Process it
-
-         call process_mode(md)
-
-         ! Store the frequency in the deflation array
-
-         omega_def = [omega_def,cmplx(z_root)]
-
-      end do in_loop
-
-      call SYSTEM_CLOCK(c_end)
-
-      if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
-130      format(2X,A,1X,F10.3,1X,A/)
-      endif
+      call process_modes_(bp, pr, process_mode)
 
       ! Finish
 
       return
 
+   end subroutine prox_search_2_
+
+   !****
+
+   subroutine setup_prox_(omega_a, omega_b, id, pr)
+
+      complex(RD), intent(in)   :: omega_a(:)
+      complex(RD), intent(in)   :: omega_b(:)
+      integer, intent(in)       :: id(:)
+      type(prox_t), intent(out) :: pr(:)
+
+      integer :: i
+
+      @:CHECK_BOUNDS(SIZE(omega_b), SIZE(omega_a))
+      @:CHECK_BOUNDS(SIZE(id), SIZE(omega_a))
+      @:CHECK_BOUNDS(SIZE(pr), SIZE(omega_a))
+
+      ! Set up the prox array
+
+      !$OMP BARRIER
+      ! (necessary because gfortran appears to re-initialize pr on
+      ! subroutine entry)
+
+      !$OMP DO
+      do i = 1, SIZE(omega_a)
+
+         pr(i)%omega_a = omega_a(i)
+         pr(i)%omega_b = omega_b(i)
+
+         pr(i)%id = id(i)
+
+         pr(i)%active = .TRUE.
+
+      end do
+      !$OMP END DO
+
+      ! Finish
+
+      return
+
+   end subroutine setup_prox_
+
+   !****
+
+   subroutine find_modes_(bp, omega_min, omega_max, nm_p, pr)
+
+      class(bvp_ct), intent(inout) :: bp
+      real(RD), intent(in)         :: omega_min
+      real(RD), intent(in)         :: omega_max
+      type(num_par_t), intent(in)  :: nm_p
+      type(prox_t), intent(inout)  :: pr(:)
+
+      integer      :: c_beg
+      integer      :: c_end
+      integer      :: c_rate
+      integer      :: i
+      real(RD)     :: omega_r
+      type(ext_ct) :: z_a
+      type(ext_ct) :: z_b
+      type(ext_ct) :: f_z_a
+      type(ext_ct) :: f_z_b
+      type(ext_ct) :: z_root
+      type(ext_ct) :: f_z_root
+      integer      :: stat
+      integer      :: n_iter
+      complex(RD)  :: omega_root
+      real(RD)     :: chi
+      type(wave_t) :: wv
+
+      ! Find modes from a list of proximate root candidates
+
+      !$OMP SINGLE
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Finding modes'
+100      format(A)
+      endif
+      !$OMP END SINGLE
+
+      call SYSTEM_CLOCK(c_beg, c_rate)
+
+      !$OMP DO PRIVATE(omega_r, z_a, z_b, f_z_a, f_z_b, z_root, f_z_root, stat, n_iter, omega_root, chi, wv)
+      cand_loop : do i = 1, SIZE(pr)
+
+         if (.NOT. pr(i)%active) cycle cand_loop
+
+         ! Solve for the root
+
+         omega_r = real(0.5_RD*(pr(i)%omega_a + pr(i)%omega_b))
+
+         z_a = ext_ct(pr(i)%omega_a)
+         z_b = ext_ct(pr(i)%omega_b)
+         call eval_discrim_(z_a, f_z_a, stat)
+         call eval_discrim_(z_b, f_z_b, stat)
+
+         call solve_root(eval_discrim_, z_a, z_b, ext_rt(0._RD), nm_p, &
+            z_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
+            f_z_a=f_z_a, f_z_b=f_z_b, f_z_root=f_z_root)
+         if (stat /= STAT_OK) then
+            call report_stat_(stat, 'solve')
+            pr(i)%active = .FALSE.
+            cycle cand_loop
+         endif
+
+         omega_root = cmplx(z_root)
+         chi = real(abs(f_z_root)/max(abs(f_z_a), abs(f_z_b)))
+
+         ! Construct the mode
+
+         select type (bp)
+         type is (nad_bvp_t)
+            wv = wave_t(bp, state_ct(omega_root, omega_r=omega_r), pr(i)%id, chi, n_iter)
+         type is (tnad_bvp_t)
+            wv = wave_t(bp, state_ct(omega_root, omega_r=omega_r), pr(i)%id, chi, n_iter)
+         class default
+            @:ABORT('invalid bp class')
+         end select
+
+         pr(i)%md = mode_t(wv)
+
+      end do cand_loop
+      !$OMP END DO
+         
+      call SYSTEM_CLOCK(c_end)
+
+      !$OMP SINGLE
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
+130      format(2X,A,1X,F10.3,1X,A/)
+      endif
+      !$OMP END SINGLE
+
+      ! Finish
+
    contains
 
-      subroutine eval_discrim_z_(z, discrim, stat)
+      subroutine eval_discrim_(z, discrim, stat)
 
          type(ext_ct), intent(in)  :: z
          type(ext_ct), intent(out) :: discrim
@@ -290,10 +322,6 @@ contains
 
             call eval_discrim(bp, state_ct(omega, omega_r=omega_r), discrim)
 
-            if (apply_deflate) then
-               discrim = discrim*PRODUCT(omega/(omega - omega_def))
-            end if
-
             stat = STAT_OK
 
          else
@@ -306,7 +334,7 @@ contains
 
          return
 
-      end subroutine eval_discrim_z_
+      end subroutine eval_discrim_
 
       !****
 
@@ -326,12 +354,11 @@ contains
 
          if (check_log_level('INFO')) then
 
-            write(OUTPUT_UNIT, 110) 'n_iter_def :', n_iter_def
             write(OUTPUT_UNIT, 110) 'n_iter     :', n_iter
 110         format(3X,A,1X,I0)
 
-            write(OUTPUT_UNIT, 120) 'omega_in_a :', cmplx(omega_in_a(i))
-            write(OUTPUT_UNIT, 120) 'omega_in_b :', cmplx(omega_in_b(i))
+            write(OUTPUT_UNIT, 120) 'omega_a :', pr(i)%omega_a
+            write(OUTPUT_UNIT, 120) 'omega_b :', pr(i)%omega_b
 120         format(3X,A,1X,2E24.16)
 
          end if
@@ -342,6 +369,260 @@ contains
 
       end subroutine report_stat_
 
-   end subroutine prox_search_2_
+   end subroutine find_modes_
+
+   !****
+
+   subroutine find_modes_deflate_(bp, omega_min, omega_max, nm_p, pr)
+
+      class(bvp_ct), intent(inout) :: bp
+      real(RD), intent(in)         :: omega_min
+      real(RD), intent(in)         :: omega_max
+      type(num_par_t), intent(in)  :: nm_p
+      type(prox_t), intent(inout)  :: pr(:)
+
+      integer      :: c_beg
+      integer      :: c_end
+      integer      :: c_rate
+      integer      :: i
+      real(RD)     :: omega_r
+      logical      :: deflate
+      type(ext_ct) :: z_a
+      type(ext_ct) :: z_b
+      type(ext_ct) :: f_z_a
+      type(ext_ct) :: f_z_b
+      type(ext_ct) :: z_root
+      type(ext_ct) :: f_z_root
+      integer      :: stat
+      integer      :: n_iter
+      integer      :: n_iter_def
+      complex(RD)  :: omega_root
+      real(RD)     :: chi
+      type(wave_t) :: wv
+
+      ! Find modes from a list of proximate root candidates. This is
+      ! the deflation-enabled version (which isn't parallelized)
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Finding modes'
+100      format(A)
+      endif
+
+      call SYSTEM_CLOCK(c_beg, c_rate)
+
+      cand_loop : do i = 1, SIZE(pr)
+
+         if (.NOT. pr(i)%active) cycle cand_loop
+
+         ! Solve for the root with deflation
+
+         omega_r = real(0.5_RD*(pr(i)%omega_a + pr(i)%omega_b))
+
+         deflate = .TRUE.
+
+         z_a = ext_ct(pr(i)%omega_a)
+         z_b = ext_ct(pr(i)%omega_b)
+
+         n_iter = 0
+
+         call narrow_bracket(eval_discrim_, z_a, z_b, ext_rt(0._RD), nm_p, &
+            stat, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
+         if (stat /= STAT_OK) then
+            call report_stat_(stat, 'deflate narrow')
+            pr(i)%active = .FALSE.
+            cycle cand_loop
+         endif
+
+         ! If necessary, reset z_a and z_b so they are not
+         ! coincident; and then save the revised discriminant values
+
+         if (z_b == z_a) then
+            z_b = z_a*(1._RD + EPSILON(0._RD)*(z_a/abs(z_a)))
+         endif
+
+         call expand_bracket(eval_discrim_, z_a, z_b, ext_rt(0._RD), &
+            stat, f_z_a=f_z_a, f_z_b=f_z_b)
+         if (stat /= STAT_OK) then
+            call report_stat_(stat, 'deflate re-expand')
+            pr(i)%active = .FALSE.
+            cycle cand_loop
+         endif
+
+         ! Now solve for the root without deflation
+
+         deflate = .FALSE.
+
+         call solve_root(eval_discrim_, z_a, z_b, ext_rt(0._RD), nm_p, &
+            z_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
+            f_z_a=f_z_a, f_z_b=f_z_b, f_z_root=f_z_root)
+         if (stat /= STAT_OK) then
+            call report_stat_(stat, 'deflate solve')
+            pr(i)%active = .TRUE.
+            cycle cand_loop
+         endif
+
+         omega_root = cmplx(z_root)
+         chi = real(abs(f_z_root)/max(abs(f_z_a), abs(f_z_b)))
+
+         ! Construct the mode
+
+         select type (bp)
+         type is (nad_bvp_t)
+            wv = wave_t(bp, state_ct(omega_root, omega_r=omega_r), pr(i)%id, chi, n_iter+n_iter_def)
+         type is (tnad_bvp_t)
+            wv = wave_t(bp, state_ct(omega_root, omega_r=omega_r), pr(i)%id, chi, n_iter+n_iter_def)
+         class default
+            @:ABORT('invalid bp class')
+         end select
+
+         pr(i)%md = mode_t(wv)
+
+      end do cand_loop
+         
+      call SYSTEM_CLOCK(c_end)
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
+130      format(2X,A,1X,F10.3,1X,A/)
+      endif
+
+      ! Finish
+
+   contains
+
+      subroutine eval_discrim_(z, discrim, stat)
+
+         type(ext_ct), intent(in)  :: z
+         type(ext_ct), intent(out) :: discrim
+         integer, intent(out)      :: stat
+
+         complex(RD) :: omega
+
+         ! Evaluate the frequency from z
+
+         omega = cmplx(z)
+
+         ! Evaluate the discriminant
+
+         if (REAL(omega) >= omega_min .AND. REAL(omega) <= omega_max) then
+
+            call eval_discrim(bp, state_ct(omega, omega_r=omega_r), discrim)
+
+            if (deflate) then
+               discrim = discrim/PRODUCT(pr(:i-1)%md%omega, MASK=pr(:i-1)%active)
+            end if
+
+            stat = STAT_OK
+
+         else
+
+            stat = STAT_OMEGA_DOMAIN
+
+         endif
+
+         ! Finish
+
+         return
+
+      end subroutine eval_discrim_
+
+      !****
+
+      subroutine report_stat_(stat, stage_str)
+
+         integer, intent(in)      :: stat
+         character(*), intent(in) :: stage_str
+
+         ! Report the status
+
+         if (check_log_level('WARN')) then
+
+            write(OUTPUT_UNIT, 100) 'Failed during ', stage_str, ' : ', stat_str(stat)
+100         format(4A)
+
+         endif
+
+         if (check_log_level('INFO')) then
+
+            write(OUTPUT_UNIT, 110) 'n_iter     :', n_iter + n_iter_def
+110         format(3X,A,1X,I0)
+
+            write(OUTPUT_UNIT, 120) 'omega_a :', pr(i)%omega_a
+            write(OUTPUT_UNIT, 120) 'omega_b :', pr(i)%omega_b
+120         format(3X,A,1X,2E24.16)
+
+         end if
+
+         ! Finish
+
+         return
+
+      end subroutine report_stat_
+
+   end subroutine find_modes_deflate_
+
+   !****
+
+   subroutine process_modes_(bp, pr, process_mode)
+
+      class(bvp_ct), intent(inout) :: bp
+      type(prox_t), intent(inout)  :: pr(:)
+      interface
+         subroutine process_mode(md, culled)
+            use mode_m
+            implicit none (type, external)
+            type(mode_t), intent(in) :: md
+            logical, intent(out)     :: culled
+         end subroutine process_mode
+      end interface
+
+      integer              :: c_beg
+      integer              :: c_end
+      integer              :: c_rate
+      integer              :: i
+      integer, allocatable :: j(:)
+      logical              :: culled
+
+      ! Process active prox_cand's
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Processing modes'
+100      format(A)
+         write(OUTPUT_UNIT, 110) 'id', 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
+110      format(1X,A3,1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
+      end if
+
+      call SYSTEM_CLOCK(c_beg, c_rate)
+
+      ! Process the modes, in id-order
+
+      j = sort_indices(pr%md%id)
+
+      process_loop: do i = 1, COUNT(pr%active)
+
+         associate(md => pr(j(i))%md)
+
+            call process_mode(md, culled)
+
+            if (check_log_level('INFO') .AND. .NOT. culled) then
+               write(OUTPUT_UNIT, 120) md%id, md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+                  md%omega, md%chi, md%n_iter
+120            format(1X,I3,1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
+            endif
+
+         end associate
+
+      end do process_loop
+
+      call SYSTEM_CLOCK(c_end)
+
+      write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
+130   format(2X,A,1X,F10.3,1X,A/)
+
+      ! Finish
+
+      return
+
+   end subroutine process_modes_
 
 end module prox_search_m

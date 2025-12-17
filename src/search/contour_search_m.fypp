@@ -75,10 +75,11 @@ contains
       integer, intent(in)          :: i
       type(num_par_t), intent(in)  :: nm_p
       interface
-         subroutine process_mode(md)
+         subroutine process_mode(md, culled)
             use mode_m
             implicit none (type, external)
             type(mode_t), intent(in) :: md
+            logical, intent(out)     :: culled
          end subroutine process_mode
       end interface
 
