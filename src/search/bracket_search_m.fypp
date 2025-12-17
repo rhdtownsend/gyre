@@ -124,7 +124,7 @@ contains
 
       class(bvp_rt), intent(inout) :: bp
       real(RD), intent(in)         :: omega(:)
-      type(ext_rt), intent(out)    :: discrim(:)
+      type(ext_rt), intent(inout)  :: discrim(:)
 
       integer  :: c_beg
       integer  :: c_end
@@ -183,9 +183,9 @@ contains
 
    subroutine setup_bracket_(omega, discrim, br)
 
-      real(RD), intent(in)         :: omega(:)
-      type(ext_rt), intent(in)     :: discrim(:)
-      type(bracket_t), intent(out) :: br(:)
+      real(RD), intent(in)           :: omega(:)
+      type(ext_rt), intent(in)       :: discrim(:)
+      type(bracket_t), intent(inout) :: br(:)
 
       integer :: i
 
@@ -193,10 +193,6 @@ contains
       @:CHECK_BOUNDS(SIZE(br), SIZE(omega)-1)
 
       ! Set up the bracket array
-
-      !$OMP BARRIER
-      ! (necessary because gfortran appears to re-initialize pr on
-      ! subroutine entry)
 
       !$OMP DO
       bracket_loop : do i = 1, SIZE(br)
