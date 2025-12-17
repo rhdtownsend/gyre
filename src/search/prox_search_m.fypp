@@ -175,10 +175,10 @@ contains
 
    subroutine setup_prox_(omega_a, omega_b, id, pr)
 
-      complex(RD), intent(in)   :: omega_a(:)
-      complex(RD), intent(in)   :: omega_b(:)
-      integer, intent(in)       :: id(:)
-      type(prox_t), intent(out) :: pr(:)
+      complex(RD), intent(in)     :: omega_a(:)
+      complex(RD), intent(in)     :: omega_b(:)
+      integer, intent(in)         :: id(:)
+      type(prox_t), intent(inout) :: pr(:)
 
       integer :: i
 
@@ -187,10 +187,6 @@ contains
       @:CHECK_BOUNDS(SIZE(pr), SIZE(omega_a))
 
       ! Set up the prox array
-
-      !$OMP BARRIER
-      ! (necessary because gfortran appears to re-initialize pr on
-      ! subroutine entry)
 
       !$OMP DO
       do i = 1, SIZE(omega_a)
