@@ -68,10 +68,11 @@ check_output ()
 
     # Do the test
 
-    h5diff $h5diff_flags $file_a $file_b
+    h5diff -q $h5diff_flags $file_a $file_b
     retval=$?
 
     if [ $retval -ne 0 ]; then
+	h5diff -r $h5diff_flags $file_a $file_b
 	echo " ...failed: $file_a and $file_b differ"
     fi
 
