@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=num poly anapoly fgong losc mesa
+SUBDIRS=num poly anapoly fgong losc mesa wdec
 
 # Rules
 
