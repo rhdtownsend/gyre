@@ -412,12 +412,16 @@ contains
 
          ! Solve for the root with deflation
 
-         omega_r = real(0.5_RD*(pr(i)%omega_a + pr(i)%omega_b))
+         deflate = .FALSE.
 
-         deflate = .TRUE.
+         omega_r = real(0.5_RD*(pr(i)%omega_a + pr(i)%omega_b))
 
          z_a = ext_ct(pr(i)%omega_a)
          z_b = ext_ct(pr(i)%omega_b)
+         call eval_discrim_(z_a, f_z_a, stat)
+         call eval_discrim_(z_b, f_z_b, stat)
+
+         deflate = .TRUE.
 
          n_iter = 0
 
@@ -436,8 +440,7 @@ contains
             z_b = z_a*(1._RD + EPSILON(0._RD)*(z_a/abs(z_a)))
          endif
 
-         call expand_bracket(eval_discrim_, z_a, z_b, ext_rt(0._RD), &
-            stat, f_z_a=f_z_a, f_z_b=f_z_b)
+         call expand_bracket(eval_discrim_, z_a, z_b, ext_rt(0._RD), stat)
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'deflate re-expand')
             pr(i)%active = .FALSE.
@@ -450,7 +453,7 @@ contains
 
          call solve_root(eval_discrim_, z_a, z_b, ext_rt(0._RD), nm_p, &
             z_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
-            f_z_a=f_z_a, f_z_b=f_z_b, f_z_root=f_z_root)
+            f_z_root=f_z_root)
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'deflate solve')
             pr(i)%active = .TRUE.
