@@ -1,5 +1,6 @@
 ! Module  : block_sysmtx_m
-! Purpose : system matrix (block storage)
+! Purpose : system matrix (block storage, legacy implementation using
+!           LAPACK/BLAS)
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !

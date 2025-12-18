@@ -26,8 +26,9 @@ module sysmtx_factory_m
    use sysmtx_m
    use band_sysmtx_m
    use block_sysmtx_m
-   use nblock_sysmtx_m
    use num_par_m
+   use pblock_sysmtx_m
+   use sblock_sysmtx_m
 
    use ISO_FORTRAN_ENV
 
@@ -73,8 +74,10 @@ contains
             allocate(sm, SOURCE=band_sysmtx_${S}$(n, n_e, n_i, n_o))
          case ('BLOCK')
             allocate(sm, SOURCE=block_sysmtx_${S}$(n, n_e, n_i, n_o))
-         case ('NBLOCK')
-            allocate(sm, SOURCE=nblock_sysmtx_${S}$(n, n_e, n_i, n_o))
+         case ('PARALLEL_BLOCK')
+            allocate(sm, SOURCE=pblock_sysmtx_${S}$(n, n_e, n_i, n_o))
+         case ('SERIAL_BLOCK')
+            allocate(sm, SOURCE=sblock_sysmtx_${S}$(n, n_e, n_i, n_o))
          case default
             @:ABORT('invalid matrix_type')
          end select

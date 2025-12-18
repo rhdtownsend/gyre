@@ -1,5 +1,5 @@
-! Module  : nblock_sysmtx_m
-! Purpose : system matrix (block storage, new impl.)
+! Module  : pblock_sysmtx_m
+! Purpose : system matrix (block storage, parallel implementation)
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -17,7 +17,7 @@
 
 #:include 'gyre.inc'
 
-module nblock_sysmtx_m
+module pblock_sysmtx_m
 
    ! Uses
 
@@ -38,7 +38,7 @@ module nblock_sysmtx_m
 
       ! Derived-type definitions
 
-      type, extends(sysmtx_${S}$) :: nblock_sysmtx_${S}$
+      type, extends(sysmtx_${S}$) :: pblock_sysmtx_${S}$
          private
          ${T}$, allocatable           :: G(:,:,:)  ! Left factor blocks
          ${T}$, allocatable           :: E(:,:,:)  ! Right factor blocks
@@ -55,17 +55,17 @@ module nblock_sysmtx_m
          procedure, public :: solve_hom => solve_hom_${S}$_
          procedure, public :: solve_inhom => solve_inhom_${S}$_
          procedure, public :: dump => dump_${S}$_
-      end type nblock_sysmtx_${S}$
+      end type pblock_sysmtx_${S}$
 
       ! Interfaces
 
-      interface nblock_sysmtx_${S}$
-         module procedure nblock_sysmtx_${S}$_
-      end interface nblock_sysmtx_${S}$
+      interface pblock_sysmtx_${S}$
+         module procedure pblock_sysmtx_${S}$_
+      end interface pblock_sysmtx_${S}$
 
       ! Access specifiers
 
-      public :: nblock_sysmtx_${S}$
+      public :: pblock_sysmtx_${S}$
 
    #:endfor
 
@@ -77,17 +77,17 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function nblock_sysmtx_${S}$_(n, n_e, n_i, n_o) result(sm)
+      function pblock_sysmtx_${S}$_(n, n_e, n_i, n_o) result(sm)
 
          integer, intent(in)       :: n
          integer, intent(in)       :: n_e
          integer, intent(in)       :: n_i
          integer, intent(in)       :: n_o
-         type(nblock_sysmtx_${S}$) :: sm
+         type(pblock_sysmtx_${S}$) :: sm
 
          @:CHECK_BOUNDS(n_i+n_o, n_e)
 
-         ! Construct the nblock_sysmtx_t
+         ! Construct the pblock_sysmtx_t
 
          allocate(sm%G(n_e,n_e,n))
          allocate(sm%E(n_e,n_e,n))
@@ -109,13 +109,13 @@ contains
 
          return
 
-      end function nblock_sysmtx_${S}$_
+      end function pblock_sysmtx_${S}$_
 
       !****
 
       subroutine build_and_factor_${S}$_(this, eval_B, eval_E, partial)
 
-         class(nblock_sysmtx_${S}$), intent(inout) :: this
+         class(pblock_sysmtx_${S}$), intent(inout) :: this
          interface
             subroutine eval_B(B_i, B_o, scl_i, scl_o)
                use forum_m, only: RD
@@ -138,12 +138,12 @@ contains
          logical, intent(in), optional :: partial
 
          logical  :: partial_
-         integer  :: i
-         real(RD) :: scl
-         integer  :: s
          integer  :: l
          integer  :: k
          ${T}$    :: M(2*this%n_e,3*this%n_e)
+         integer  :: i
+         real(RD) :: scl
+         integer  :: s
          real(RD) :: rscl(2*this%n_e)
          integer  :: j
          real(RD) :: piv
@@ -423,7 +423,7 @@ contains
 
       subroutine backsub_${S}$_(this, u_bound, u)
 
-         class(nblock_sysmtx_${S}$), intent(in) :: this
+         class(pblock_sysmtx_${S}$), intent(in) :: this
          ${T}$, intent(in)                      :: u_bound(:)
          ${T}$, intent(out)                     :: u(:)
 
@@ -486,7 +486,7 @@ contains
 
       subroutine eval_det_${S}$_(this, eval_B, eval_E, det)
 
-         class(nblock_sysmtx_${S}$), intent(inout) :: this
+         class(pblock_sysmtx_${S}$), intent(inout) :: this
          interface
             subroutine eval_B(B_i, B_o, scl_i, scl_o)
                use forum_m, only: RD
@@ -531,7 +531,7 @@ contains
 
       subroutine solve_hom_${S}$_(this, eval_B, eval_E, u)
 
-         class(nblock_sysmtx_${S}$), intent(inout) :: this
+         class(pblock_sysmtx_${S}$), intent(inout) :: this
          interface
             subroutine eval_B(B_i, B_o, scl_i, scl_o)
                use forum_m, only: RD
@@ -609,7 +609,7 @@ contains
 
       subroutine solve_inhom_${S}$_(this, eval_B, eval_E, v, u)
 
-         class(nblock_sysmtx_${S}$), intent(inout) :: this
+         class(pblock_sysmtx_${S}$), intent(inout) :: this
          interface
             subroutine eval_B(B_i, B_o, scl_i, scl_o)
                use forum_m, only: RD
@@ -692,10 +692,10 @@ contains
 
       subroutine dump_${S}$_(this, hi)
 
-         class(nblock_sysmtx_${S}$), intent(in) :: this
+         class(pblock_sysmtx_${S}$), intent(in) :: this
          type(hdf5io_t), intent(inout)          :: hi
 
-         ! Dump the nblock_sysmtx_t to the hgroup
+         ! Dump the pblock_sysmtx_t to the hgroup
 
          call hi%write_attr('n', this%n)
          call hi%write_attr('n_e', this%n_e)
@@ -721,5 +721,5 @@ contains
 
    #:endfor
 
-end module nblock_sysmtx_m
+end module pblock_sysmtx_m
 
