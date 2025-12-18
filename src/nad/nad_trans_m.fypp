@@ -160,6 +160,7 @@ contains
       do i = 1, n_s
 
          if (ml%is_vacuum(pt(i))) then
+            @:ASSERT(this%set /= LAGP_SET, 'LAGP invalid at zero pressure')
             this%coeff(i,J_V_2) = HUGE(0._RD)
             this%coeff(i,J_DV_2) = HUGE(0._RD)
             this%coeff(i,J_DU) = -HUGE(0._RD)
