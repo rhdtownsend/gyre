@@ -335,21 +335,21 @@ contains
 
             call eval_B(this%R(:n_i,:n_e), this%R(n_i+n_e+1:,n_e+1:), this%scl_i, this%scl_o)
 
-               this%R(n_i+1:n_i+n_e,:n_e) = this%G(:,:,1)
-               this%R(n_i+n_e+1:,:n_e) = 0._RD
+            this%R(n_i+1:n_i+n_e,:n_e) = this%G(:,:,1)
+            this%R(n_i+n_e+1:,:n_e) = 0._RD
 
-               this%R(:n_i,n_e+1:) = 0._RD
-               this%R(n_i+1:n_i+n_e,n_e+1:) = this%E(:,:,1)
+            this%R(:n_i,n_e+1:) = 0._RD
+            this%R(n_i+1:n_i+n_e,n_e+1:) = this%E(:,:,1)
 
-               ! Determine row scalings for implicit pivoting
+            ! Determine row scalings for implicit pivoting
 
-               do i = 1, 2*n_e
-                  scl = 0._RD
-                  do s = 1, 2*n_e
-                     scl = MAX(scl, abs(this%R(i,s)))
-                  end do
-                  rscl(i) = 1._RD/scl
+            do i = 1, 2*n_e
+               scl = 0._RD
+               do s = 1, 2*n_e
+                  scl = MAX(scl, abs(this%R(i,s)))
                end do
+               rscl(i) = 1._RD/scl
+            end do
 
             ! Reduce the matrix to row echelon form
 
@@ -507,11 +507,6 @@ contains
             end subroutine eval_E
          end interface
          type(ext_${S}$), intent(out) :: det
-
-         ${T}$   :: M(2*this%n_e,2*this%n_e)
-         integer :: ipiv(2*this%n_e)
-         integer :: info
-         integer :: i
 
          ! Build and factorize the sysmtx
 
