@@ -226,6 +226,7 @@ contains
       type(ext_ct) :: z_b
       type(ext_ct) :: f_z_a
       type(ext_ct) :: f_z_b
+      type(ext_rt) :: f_z_max
       type(ext_ct) :: z_root
       type(ext_ct) :: f_z_root
       integer      :: stat
@@ -250,7 +251,7 @@ contains
 
          if (.NOT. pr(i)%active) cycle cand_loop
 
-         ! Solve for the root
+         ! Initialize root-finding variables
 
          omega_r = real(0.5_RD*(pr(i)%omega_a + pr(i)%omega_b))
 
@@ -258,6 +259,10 @@ contains
          z_b = ext_ct(pr(i)%omega_b)
          call eval_discrim_(z_a, f_z_a, stat)
          call eval_discrim_(z_b, f_z_b, stat)
+
+         f_z_max = MAX(abs(f_z_a), abs(f_z_b))
+
+         ! Solve for the root
 
          call solve_root(eval_discrim_, z_a, z_b, ext_rt(0._RD), nm_p, &
             z_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
@@ -269,7 +274,7 @@ contains
          endif
 
          omega_root = cmplx(z_root)
-         chi = real(abs(f_z_root)/max(abs(f_z_a), abs(f_z_b)))
+         chi = real(abs(f_z_root)/f_z_max)
 
          ! Construct the mode
 
@@ -382,11 +387,11 @@ contains
       integer      :: c_rate
       integer      :: i
       real(RD)     :: omega_r
-      logical      :: deflate
       type(ext_ct) :: z_a
       type(ext_ct) :: z_b
       type(ext_ct) :: f_z_a
       type(ext_ct) :: f_z_b
+      type(ext_rt) :: f_z_max
       type(ext_ct) :: z_root
       type(ext_ct) :: f_z_root
       integer      :: stat
@@ -410,9 +415,7 @@ contains
 
          if (.NOT. pr(i)%active) cycle cand_loop
 
-         ! Solve for the root with deflation
-
-         deflate = .FALSE.
+         ! Initialize root-finding variables
 
          omega_r = real(0.5_RD*(pr(i)%omega_a + pr(i)%omega_b))
 
@@ -421,39 +424,45 @@ contains
          call eval_discrim_(z_a, f_z_a, stat)
          call eval_discrim_(z_b, f_z_b, stat)
 
-         deflate = .TRUE.
+         f_z_max = MAX(abs(f_z_a), abs(f_z_b))
+
+         ! Solve for the root with deflation
+
+         f_z_a = f_z_a*f_deflate_(pr(i)%omega_a)
+         f_z_b = f_z_b*f_deflate_(pr(i)%omega_b)
 
          n_iter = 0
 
-         call narrow_bracket(eval_discrim_, z_a, z_b, ext_rt(0._RD), nm_p, &
-            stat, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max)
+         call narrow_bracket(eval_discrim_deflate_, z_a, z_b, ext_rt(0._RD), nm_p, &
+            stat, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max, &
+            f_z_a=f_z_a, f_z_b=f_z_b)
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'deflate narrow')
             pr(i)%active = .FALSE.
             cycle cand_loop
          endif
 
-         ! If necessary, reset z_a and z_b so they are not
-         ! coincident; and then save the revised discriminant values
+         ! If necessary, reset z_a and z_b so they are not coincident;
 
          if (z_b == z_a) then
             z_b = z_a*(1._RD + EPSILON(0._RD)*(z_a/abs(z_a)))
          endif
 
-         call expand_bracket(eval_discrim_, z_a, z_b, ext_rt(0._RD), stat)
+         ! Expand and calculate non-deflated discriminant values
+
+         call expand_bracket(eval_discrim_, z_a, z_b, ext_rt(0._RD), stat, &
+            f_z_a=f_z_a, f_z_b=f_z_b)
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'deflate re-expand')
             pr(i)%active = .FALSE.
             cycle cand_loop
          endif
 
-         ! Now solve for the root without deflation
-
-         deflate = .FALSE.
+         ! Solve for the root without deflation
 
          call solve_root(eval_discrim_, z_a, z_b, ext_rt(0._RD), nm_p, &
             z_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
-            f_z_root=f_z_root)
+            f_z_a=f_z_a, f_z_b=f_z_b, f_z_root=f_z_root)
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'deflate solve')
             pr(i)%active = .TRUE.
@@ -461,7 +470,7 @@ contains
          endif
 
          omega_root = cmplx(z_root)
-         chi = real(abs(f_z_root)/max(abs(f_z_a), abs(f_z_b)))
+         chi = real(abs(f_z_root)/f_z_max)
 
          ! Construct the mode
 
@@ -507,10 +516,6 @@ contains
 
             call eval_discrim(bp, state_ct(omega, omega_r=omega_r), discrim)
 
-            if (deflate) then
-               discrim = discrim/PRODUCT(pr(:i-1)%md%omega, MASK=pr(:i-1)%active)
-            end if
-
             stat = STAT_OK
 
          else
@@ -524,6 +529,59 @@ contains
          return
 
       end subroutine eval_discrim_
+
+      !****
+
+      subroutine eval_discrim_deflate_(z, discrim, stat)
+
+         type(ext_ct), intent(in)  :: z
+         type(ext_ct), intent(out) :: discrim
+         integer, intent(out)      :: stat
+
+         complex(RD) :: omega
+
+         ! Evaluate the frequency from z
+
+         omega = cmplx(z)
+
+         ! Evaluate the root-deflated discriminant
+
+         if (REAL(omega) >= omega_min .AND. REAL(omega) <= omega_max) then
+
+            call eval_discrim(bp, state_ct(omega, omega_r=omega_r), discrim)
+
+            discrim = discrim*f_deflate_(omega)
+
+            stat = STAT_OK
+
+         else
+
+            stat = STAT_OMEGA_DOMAIN
+
+         endif
+
+         ! Finish
+
+         return
+
+      end subroutine eval_discrim_deflate_
+
+      !****
+
+      function f_deflate_(omega) result(f)
+
+         complex(RD), intent(in) :: omega
+         complex(RD)             :: f
+
+         ! Root deflation function
+
+         f = omega/PRODUCT((pr(:i-1)%md%omega-omega), MASK=pr(:i-1)%active)
+
+         ! Finish
+
+         return
+
+      end function f_deflate_
 
       !****
 
