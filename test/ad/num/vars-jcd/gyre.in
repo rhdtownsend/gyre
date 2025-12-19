@@ -2,8 +2,8 @@
 /
 
 &model
-  model_type = 'POLY'
-  file = 'poly.h5'
+  model_type = 'ANAPOLY_5'
+  theta_s = 0.1
 /
 
 &mode
@@ -50,17 +50,25 @@
 /
 
 &scan
-        grid_type = 'LINEAR'
-        freq_min = 0.9
-        freq_max = 10.1
-        n_freq = 30
+  grid_type = 'LINEAR'
+  freq_min = 1
+  freq_max = 15
+  n_freq = 30
+  tag_list = 'l=0r,l=0'
 /
 
 &scan
-        grid_type = 'INVERSE'
-        freq_min = 0.9
-        freq_max = 10.1
-        n_freq = 30
+  grid_type = 'LINEAR'
+  freq_min = 5
+  freq_max = 15
+  n_freq = 30
+/
+
+&scan
+  grid_type = 'INVERSE'
+  freq_min = 5
+  freq_max = 15
+  n_freq = 30
 /
 
 &grid
