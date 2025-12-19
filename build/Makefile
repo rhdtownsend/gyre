@@ -13,7 +13,7 @@ LIB_TARGETS = libgyre
 INC_FILES = gyre_m.mod gyre.inc
 
 ifeq ($(FRONTENDS),yes)
-   BIN_TARGETS += gyre gyre_tides
+   BIN_TARGETS += gyre gyre_tides gyre_map
 endif
 
 ifeq ($(TOOLS),yes)
@@ -35,6 +35,10 @@ endif
 gyre_SRCS = gyre.fypp
 gyre_USES = $(libgyre_SRCS)
 gyre_LIBS = libgyre
+
+gyre_map_SRCS = gyre_map.fypp
+gyre_map_USES = $(libgyre_SRCS)
+gyre_map_LIBS = libgyre
 
 gyre_tides_SRCS = gyre_tides.fypp
 gyre_tides_USES = $(libgyre_SRCS)

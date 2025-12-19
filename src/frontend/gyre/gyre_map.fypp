@@ -19,390 +19,349 @@
 
 program gyre_map
 
-  ! Uses
-
-  use kinds_m
-  use hgroup_m
-  use order_m
-  use parallel_m
-  use system_m
-
-  use bvp_m
-  use constants_m
-  use context_m
-  use discrim_func_m
-  use ext_m
-  use grid_m
-  use grid_factory_m
-  use grid_par_m
-  use mode_m
-  use mode_par_m
-  use model_m
-  use model_factory_m
-  use model_par_m
-  use nad_bvp_m
-  use num_par_m
-  use osc_par_m
-  use scan_par_m, only : scan_par_t
-  use scan_m
-  use state_m
-  use status_m
-  use util_m
-  use version_m
-
-  use ISO_FORTRAN_ENV
-
-  ! No implicit typing
-
-  implicit none (type, external)
-
-  ! Variables
-
-  character(:), allocatable     :: filename
-  integer                       :: unit
-  type(model_par_t)             :: ml_p
-  type(mode_par_t), allocatable :: md_p(:)
-  type(osc_par_t), allocatable  :: os_p(:)
-  type(num_par_t), allocatable  :: nm_p(:)
-  type(grid_par_t), allocatable :: gr_p(:)
-  type(scan_par_t), allocatable :: sc_p_re(:)
-  type(scan_par_t), allocatable :: sc_p_im(:)
-  character(FILENAME_LEN)       :: map_filename
-  class(model_t), pointer       :: ml => null()
-  type(osc_par_t)               :: os_p_sel
-  type(num_par_t)               :: nm_p_sel
-  type(grid_par_t)              :: gr_p_sel
-  type(scan_par_t), allocatable :: sc_p_re_sel(:)
-  type(scan_par_t), allocatable :: sc_p_im_sel(:)
-  type(context_t), pointer      :: cx => null()
-  real(RD), allocatable         :: omega_re(:)
-  real(RD), allocatable         :: omega_im(:)
-  real(RD)                      :: omega_min
-  real(RD)                      :: omega_max
-  type(grid_t)                  :: gr
-  type(nad_bvp_t), target       :: bp
-  integer                       :: n_omega_re
-  integer                       :: n_omega_im
-  type(c_discrim_func_t)        :: df
-  type(c_state_t)               :: st
-  complex(RD), allocatable      :: discrim_map_f(:,:)
-  integer, allocatable          :: discrim_map_e(:,:)
-  integer, allocatable          :: k_part(:)
-  integer                       :: k
-  integer                       :: i(2)
-  $if ($MPI)
-  integer                       :: p
-  $endif
-  complex(RD)                   :: omega
-  type(c_ext_t)                 :: discrim
-  integer                       :: status
-  integer                       :: i_percent
-  integer                       :: n_percent
-  type(hgroup_t)                :: hg
-
-  ! Read command-line arguments
-
-  @:ASSERT(n_arg() == 1, 'Syntax: gyre_map <filename>')
-
-  call get_arg(1, filename)
-
-  ! Initialize
+   ! Uses
+
+   use forum_m, only: RD, n_arg, get_arg, hdf5io_t, CREATE_FILE
+
+   use gyre_m, read_out_par_ => read_out_par
+
+   use ISO_FORTRAN_ENV
+   #:if OMP
+      use omp_lib
+   #:endif
 
-  call init_parallel()
+   ! No implicit typing
 
-  call set_log_level($str($LOG_LEVEL))
+   implicit none (type, external)
 
-  if (check_log_level('INFO')) then
+   ! Variables
 
-     write(OUTPUT_UNIT, 100) form_header('gyre_map ['//VERSION//']', '-')
-100  format(A)
+   character(:), allocatable     :: filename
+   integer                       :: unit
+   type(model_par_t)             :: ml_p
+   type(mode_par_t), allocatable :: md_p(:)
+   type(osc_par_t), allocatable  :: os_p(:)
+   type(num_par_t), allocatable  :: nm_p(:)
+   type(grid_par_t), allocatable :: gr_p(:)
+   type(rot_par_t), allocatable  :: rt_p(:)
+   type(scan_par_t), allocatable :: sc_p(:)
+   character(FILENAME_LEN)       :: map_filename
+   class(model_t), pointer       :: ml => null()
+   type(osc_par_t)               :: os_p_sel
+   type(rot_par_t)               :: rt_p_sel
+   type(num_par_t)               :: nm_p_sel
+   type(grid_par_t)              :: gr_p_sel
+   type(scan_par_t), allocatable :: sc_p_sel(:)
+   type(context_t), pointer      :: cx => null()
+   real(RD), allocatable         :: omega_re(:)
+   real(RD), allocatable         :: omega_im(:)
+   real(RD)                      :: omega_min
+   real(RD)                      :: omega_max
+   type(grid_t)                  :: gr
+   class(bvp_ct), allocatable    :: bp
+   integer                       :: n_omega_re
+   integer                       :: n_omega_im
+   complex(RD), allocatable      :: discrim_map_f(:,:)
+   integer, allocatable          :: discrim_map_e(:,:)
+   integer                       :: i_re
+   integer                       :: i_im
+   complex(RD)                   :: omega
+   type(ext_ct)                  :: discrim
+   integer                       :: status
+   type(hdf5io_t)                :: hi
 
-     if (check_log_level('DEBUG')) then
-        write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
-        write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
-110     format(A,1X,A)
-     endif
+   ! Read command-line arguments
 
-     write(OUTPUT_UNIT, 120) 'OpenMP Threads   :', OMP_SIZE_MAX
-120  format(A,1X,I0)
+   @:ASSERT(n_arg() == 1, 'Syntax: gyre_map <filename>')
 
-     write(OUTPUT_UNIT, 110) 'Input filename   :', filename
+   call get_arg(1, filename)
 
-     write(OUTPUT_UNIT, *)
+   ! Initialize
 
-  endif
+   !   call init_parallel()
 
-  ! Process arguments
+   call init_math()
 
-  open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
+   call set_log_level('${LOG_LEVEL}$')
 
-  call read_constants(unit)
+   if (check_log_level('INFO')) then
 
-  call read_model_par(unit, ml_p)
-  call read_mode_par(unit, md_p)
-  call read_osc_par(unit, os_p)
-  call read_num_par(unit, nm_p)
-  call read_grid_par(unit, gr_p)
-  call read_scan_par(unit, 're', sc_p_re)
-  call read_scan_par(unit, 'im', sc_p_im)
-  call read_out_par(unit, map_filename)
+      write(OUTPUT_UNIT, 100) form_header('gyre_mpa ['//VERSION//']', '-')
+100   format(A)
 
-  @:ASSERT(SIZE(md_p) == 1, 'Must be exactly one mode parameter')
+      if (check_log_level('DEBUG')) then
+         write(OUTPUT_UNIT, 110) 'Compiler         :', COMPILER_VERSION()
+         write(OUTPUT_UNIT, 110) 'Compiler options :', COMPILER_OPTIONS()
+110      format(A,1X,A)
+      endif
 
-  ! Initialize the model
+#:if OMP
+      write(OUTPUT_UNIT, 120) 'OpenMP Threads   :',  omp_get_max_threads()
+120   format(A,1X,I0)
+#:endif
 
-  if (check_log_level('INFO')) then
-     write(OUTPUT_UNIT, 100) form_header('Model Init', '-')
-  endif
+      write(OUTPUT_UNIT, 110) 'Input filename   :', filename
 
-  ml => model_t(ml_p)
+   endif
 
-  ! Select parameters according to tags
+   ! Process arguments
 
-  if (check_log_level('INFO')) then
+   open(NEWUNIT=unit, FILE=filename, STATUS='OLD')
 
-     write(OUTPUT_UNIT, 100) form_header('Mode Init', '-')
+   call read_constants(unit)
 
-     write(OUTPUT_UNIT, 100) 'Mode parameters'
+   call read_model_par(unit, ml_p)
+   call read_mode_par(unit, md_p)
+   call read_osc_par(unit, os_p)
+   call read_rot_par(unit, rt_p)
+   call read_num_par(unit, nm_p)
+   call read_grid_par(unit, gr_p)
+   call read_scan_par(unit, sc_p)
+   print *,'go read out'
+   call read_out_par(unit, map_filename)
+   print *,'done read out'
 
-     write(OUTPUT_UNIT, 130) 'l :', md_p(1)%l
-     write(OUTPUT_UNIT, 130) 'm :', md_p(1)%m
-130  format(3X,A,1X,I0)
+   @:ASSERT(SIZE(md_p) == 1, 'Must be exactly one mode parameter')
 
-     write(OUTPUT_UNIT, *)
+   ! Initialize the model
 
-  endif
+   if (check_log_level('INFO')) then
+      write(OUTPUT_UNIT, 100) form_header('Model Init', '-')
+   endif
 
-  call select_par(os_p, md_p(1)%tag, os_p_sel)
-  call select_par(nm_p, md_p(1)%tag, nm_p_sel)
-  call select_par(gr_p, md_p(1)%tag, gr_p_sel)
-  call select_par(sc_p_re, md_p(1)%tag, sc_p_re_sel)
-  call select_par(sc_p_im, md_p(1)%tag, sc_p_im_sel)
+   ml => model_t(ml_p)
 
-  ! Create the context
+   ! Allocate the context (will be initialized later on)
 
-  allocate(cx, SOURCE=context_t(ml, gr_p_sel, md_p(1), os_p_sel))
+   allocate(cx)
 
-  ! Set up the frequency arrays
+   ! Select parameters according to tags
 
-  call build_scan(cx, md_p(1), os_p_sel, sc_p_re_sel, omega_re)
-  call build_scan(cx, md_p(1), os_p_sel, sc_p_im_sel, omega_im)
+   if (check_log_level('INFO')) then
 
-  ! Set frequency bounds
+      write(OUTPUT_UNIT, 100) form_header('Mode Init', '-')
 
-  if (nm_p_sel%restrict_roots) then
-     omega_min = MINVAL(omega_re)
-     omega_max = MAXVAL(omega_re)
-  else
-     omega_min = -HUGE(0._RD)
-     omega_max = HUGE(0._RD)
-  endif
+      write(OUTPUT_UNIT, 100) 'Mode parameters'
 
-  ! Create the grid
+      write(OUTPUT_UNIT, 130) 'l :', md_p(1)%l
+      write(OUTPUT_UNIT, 130) 'm :', md_p(1)%m
+130   format(3X,A,1X,I0)
 
-  gr = grid_t(cx, omega_re, gr_p_sel)
+      write(OUTPUT_UNIT, *)
 
-  ! Set up the bvp
+   endif
 
-  bp = nad_bvp_t(cx, gr, md_p(1), nm_p_sel, os_p_sel)
+   call select_par(os_p, md_p(1)%tag, os_p_sel)
+   call select_par(rt_p, md_p(1)%tag, rt_p_sel)
+   call select_par(nm_p, md_p(1)%tag, nm_p_sel)
+   call select_par(gr_p, md_p(1)%tag, gr_p_sel)
+   call select_par(sc_p, md_p(1)%tag, sc_p_sel)
 
-  ! Set up the discriminant function
+   ! Create the scaffold grid
 
-  st = c_state_t(omega=0._RD, omega_r=0._RD)
-  df = c_discrim_func_t(bp, st, omega_min, omega_max)
+   gr = grid_t(ml, gr_p_sel)
 
-  ! Map the discriminant
+   ! Set up the context
 
-  if (check_log_level('INFO')) then
-     write(OUTPUT_UNIT, 100) form_header('Discriminant Mapping', '-')
-  endif
+   cx = context_t(ml, gr, md_p(1), os_p_sel, rt_p_sel)
 
-  n_omega_re = SIZE(omega_re)
-  n_omega_im = SIZE(omega_im)
+   ! Set up the frequency arrays
 
-  allocate(discrim_map_f(n_omega_re,n_omega_im))
-  allocate(discrim_map_e(n_omega_re,n_omega_im))
+   call build_scan(cx, md_p(1), os_p_sel, sc_p_sel, 'REAL', omega_re)
+   call build_scan(cx, md_p(1), os_p_sel, sc_p_sel, 'IMAG', omega_im)
 
-  allocate(k_part(MPI_SIZE+1))
+   ! Set frequency bounds and perform checks
 
-  call partition_tasks(n_omega_re*n_omega_im, 1, k_part)
+   if (nm_p_sel%restrict_roots) then
+      omega_min = MINVAL(omega_re)
+      omega_max = MAXVAL(omega_re)
+   else
+      omega_min = -HUGE(0._RD)
+      omega_max = HUGE(0._RD)
+   endif
 
-  n_percent = 0
+   call check_scan(cx, gr, omega_re, md_p(1), os_p_sel)
 
-  do k = k_part(MPI_RANK+1), k_part(MPI_RANK+2)-1
+   ! Refine the grid
 
-     i = index_nd(k, [n_omega_re,n_omega_im])
+   call refine_grid(gr, cx, omega_re, gr_p_sel, os_p_sel)
 
-     omega = CMPLX(omega_re(i(1)), omega_im(i(2)), KIND=RD)
+   ! Set up the bvp
 
-     if (MPI_RANK == 0) then
-        i_percent = FLOOR(100._RD*REAL(k-k_part(MPI_RANK+1))/REAL(k_part(MPI_RANK+2)-k_part(MPI_RANK+1)-1))
-        if (i_percent > n_percent) then
-           print *,'Percent complete: ', i_percent
-           n_percent = i_percent
-        end if
-     endif
+   bp = nad_bvp_t(cx, gr, md_p(1), nm_p_sel, os_p_sel)
 
-     call df%eval(c_ext_t(omega), discrim, status)
-     @:ASSERT(status == STATUS_OK, 'Invalid status')
+   ! Map the discriminant
 
-     discrim_map_f(i(1),i(2)) = FRACTION(discrim)
-     discrim_map_e(i(1),i(2)) = EXPONENT(discrim)
+   if (check_log_level('INFO')) then
+      write(OUTPUT_UNIT, 100) form_header('Discriminant Mapping', '-')
+   endif
 
-  end do
+   n_omega_re = SIZE(omega_re)
+   n_omega_im = SIZE(omega_im)
 
-  $if ($MPI)
+   allocate(discrim_map_f(n_omega_re,n_omega_im))
+   allocate(discrim_map_e(n_omega_re,n_omega_im))
 
-  do p = 1,MPI_SIZE
-     call bcast_seq(discrim_map_f, k_part(p), k_part(p+1)-1, p-1)
-     call bcast_seq(discrim_map_e, k_part(p), k_part(p+1)-1, p-1)
-  end do
+   !$OMP PARALLEL FIRSTPRIVATE(bp) PRIVATE(i_im, i_re)
 
-  $endif
+   do i_im = 1, n_omega_im
 
-  ! Write out the map
+      !$OMP DO PRIVATE(omega, discrim)
+      do i_re = 1, n_omega_re
 
-  if (MPI_RANK == 0) then
+         omega = CMPLX(omega_re(i_re), omega_im(i_im), KIND=RD)
 
-     hg = hgroup_t(map_filename, CREATE_FILE)
+         call eval_discrim(bp, state_ct(omega, omega_r=0._RD), discrim)
 
-     call write_dset(hg, 'omega_re', omega_re)
-     call write_dset(hg, 'omega_im', omega_im)
+         discrim_map_f(i_re,i_im) = FRACTION(discrim)
+         discrim_map_e(i_re,i_im) = EXPONENT(discrim)
 
-     call write_dset(hg, 'discrim_map_f', discrim_map_f)
-     call write_dset(hg, 'discrim_map_e', discrim_map_e)
+      end do
+      !$OMP END DO
 
-     call hg%final()
+   end do
 
-  end if
+   !$OMP END PARALLEL
 
-  ! Clean up
+   !  Write out the map
 
-  deallocate(cx)
+   hi = hdf5io_t(map_filename, CREATE_FILE)
 
-  deallocate(ml)
+   call hi%write_dset('omega_re', omega_re)
+   call hi%write_dset('omega_im', omega_im)
 
-  ! Finish
+   call hi%write_dset('discrim_map_f', discrim_map_f)
+   call hi%write_dset('discrim_map_e', discrim_map_e)
 
-  call final_parallel()
+   call hi%final()
+
+   ! Clean up
+
+   deallocate(cx)
+
+   deallocate(ml)
+
+   ! Finish
+
+!   call final_parallel()
 
 contains
 
-  subroutine read_scan_par (unit, axis, sc_p)
+!    subroutine read_scan_par (unit, axis, sc_p)
 
-    integer, intent(in)                        :: unit
-    character(*), intent(in)                   :: axis
-    type(scan_par_t), allocatable, intent(out) :: sc_p(:)
+!       integer, intent(in)                        :: unit
+!       character(*), intent(in)                   :: axis
+!       type(scan_par_t), allocatable, intent(out) :: sc_p(:)
 
-    integer                             :: n_sc_p
-    integer                             :: i
-    real(RD)                            :: freq_min
-    real(RD)                            :: freq_max
-    integer                             :: n_freq
-    character(LEN(sc_p%freq_min_units)) :: freq_min_units
-    character(LEN(sc_p%freq_max_units)) :: freq_max_units
-    character(LEN(sc_p%freq_frame))     :: freq_frame
-    character(LEN(sc_p%grid_type))      :: grid_type
-    character(LEN(sc_p%grid_frame))     :: grid_frame
-    character(LEN(sc_p%tag_list))       :: tag_list
+!       integer                             :: n_sc_p
+!       integer                             :: i
+!       real(RD)                            :: freq_min
+!       real(RD)                            :: freq_max
+!       integer                             :: n_freq
+!       character(LEN(sc_p%freq_min_units)) :: freq_min_units
+!       character(LEN(sc_p%freq_max_units)) :: freq_max_units
+!       character(LEN(sc_p%freq_frame))     :: freq_frame
+!       character(LEN(sc_p%grid_type))      :: grid_type
+!       character(LEN(sc_p%grid_frame))     :: grid_frame
+!       character(LEN(sc_p%tag_list))       :: tag_list
 
-    namelist /re_scan/ freq_min, freq_max, n_freq, &
-         freq_min_units, freq_max_units, freq_frame, &
-         grid_type, grid_frame, tag_list
+!       namelist /re_scan/ freq_min, freq_max, n_freq, &
+!          freq_min_units, freq_max_units, freq_frame, &
+!          grid_type, grid_frame, tag_list
 
-    namelist /im_scan/ freq_min, freq_max, n_freq, &
-         freq_min_units, freq_max_units, freq_frame, &
-         grid_type, grid_frame, tag_list
+!       namelist /im_scan/ freq_min, freq_max, n_freq, &
+!          freq_min_units, freq_max_units, freq_frame, &
+!          grid_type, grid_frame, tag_list
 
-    ! Count the number of scan namelists
+!       ! Count the number of scan namelists
 
-    rewind(unit)
+!       rewind(unit)
 
-    n_sc_p = 0
+!       n_sc_p = 0
 
-    count_loop : do
-       select case (axis)
-       case ('re')
-          read(unit, NML=re_scan, END=100)
-       case ('im')
-          read(unit, NML=im_scan, END=100)
-       case default
-          @:ABORT('Invalid axis')
-       end select
-       n_sc_p = n_sc_p + 1
-    end do count_loop
+!       count_loop : do
+!          select case (axis)
+!          case ('re')
+!             read(unit, NML=re_scan, END=100)
+!          case ('im')
+!             read(unit, NML=im_scan, END=100)
+!          case default
+!             @:ABORT('Invalid axis')
+!          end select
+!          n_sc_p = n_sc_p + 1
+!       end do count_loop
 
-100 continue
+! 100   continue
 
-    ! Read scan parameters
+!       ! Read scan parameters
 
-    rewind(unit)
+!       rewind(unit)
 
-    allocate(sc_p(n_sc_p))
+!       allocate(sc_p(n_sc_p))
 
-    read_loop : do i = 1, n_sc_p
+!       read_loop : do i = 1, n_sc_p
 
-       freq_min = 1._RD
-       freq_max = 10._RD
-       n_freq = 10
+!          freq_min = 1._RD
+!          freq_max = 10._RD
+!          n_freq = 10
 
-       freq_min_units = 'NONE'
-       freq_max_units = 'NONE'
-       freq_frame = 'INERTIAL'
+!          freq_min_units = 'NONE'
+!          freq_max_units = 'NONE'
+!          freq_frame = 'INERTIAL'
 
-       grid_type = 'LINEAR'
-       grid_frame = 'INERTIAL'
+!          grid_type = 'LINEAR'
+!          grid_frame = 'INERTIAL'
 
-       tag_list = ''
+!          tag_list = ''
 
-       select case (axis)
-       case ('re')
-          read(unit, NML=re_scan)
-       case ('im')
-          read(unit, NML=im_scan)
-       case default
-          @:ABORT('Invalid axis')
-       end select
+!          select case (axis)
+!          case ('re')
+!             read(unit, NML=re_scan)
+!          case ('im')
+!             read(unit, NML=im_scan)
+!          case default
+!             @:ABORT('Invalid axis')
+!          end select
 
-       ! Initialize the scan_par
+!          ! Initialize the scan_par
 
-       sc_p(i) = scan_par_t(freq_min=freq_min, &
-                            freq_max=freq_max, &
-                            n_freq=n_freq, &
-                            freq_min_units=freq_min_units, &
-                            freq_max_units=freq_max_units, &
-                            freq_frame=freq_frame, &
-                            grid_type=grid_type, &
-                            grid_frame=grid_frame, &
-                            tag_list=tag_list)
+!          sc_p(i) = scan_par_t(freq_min=freq_min, &
+!                               freq_max=freq_max, &
+!                               n_freq=n_freq, &
+!                               freq_min_units=freq_min_units, &
+!                               freq_max_units=freq_max_units, &
+!                               freq_frame=freq_frame, &
+!                               grid_type=grid_type, &
+!                               grid_frame=grid_frame, &
+!                               tag_list=tag_list)
 
-    end do read_loop
+!       end do read_loop
 
-    ! Finish
+!       ! Finish
 
-    return
+!       return
 
-  end subroutine read_scan_par
+!    end subroutine read_scan_par
 
-  !****
+   !****
 
-  subroutine read_out_par (unit, map_filename)
+   subroutine read_out_par (unit, map_filename)
 
-    integer, intent(in)       :: unit
-    character(*), intent(out) :: map_filename
+      integer, intent(in)       :: unit
+      character(*), intent(out) :: map_filename
 
-    namelist /output/ map_filename
+      namelist /output/ map_filename
 
-    ! Read output parameters
+      ! Read output parameters
 
-    rewind(unit)
+      rewind(unit)
 
-    read(unit, NML=output)
+      read(unit, NML=output)
 
-    ! Finish
+      ! Finish
 
-    return
+      return
 
-  end subroutine read_out_par
+   end subroutine read_out_par
 
-end program gyre_map
+end program

@@ -72,6 +72,7 @@ module gyre_m
 
    use constants_m
    use context_m
+   use discrim_m
    use ext_m
    use math_m
    use search_m
