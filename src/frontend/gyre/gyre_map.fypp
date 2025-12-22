@@ -26,8 +26,8 @@ program gyre_map
    use gyre_m, read_out_par_ => read_out_par
 
    use ISO_FORTRAN_ENV
-   #:if OMP
-      use omp_lib
+   #:if defined('OMP')
+   use omp_lib
    #:endif
 
    ! No implicit typing
@@ -95,10 +95,10 @@ program gyre_map
 110      format(A,1X,A)
       endif
 
-#:if OMP
+      #:if defined('OMP')
       write(OUTPUT_UNIT, 120) 'OpenMP Threads   :',  omp_get_max_threads()
 120   format(A,1X,I0)
-#:endif
+      #:endif
 
       write(OUTPUT_UNIT, 110) 'Input filename   :', filename
 
