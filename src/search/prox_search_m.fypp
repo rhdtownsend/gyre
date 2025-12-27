@@ -47,11 +47,14 @@ module prox_search_m
    ! Derived-type definitions
 
    type :: prox_t
-      complex(RD)  :: omega_a
-      complex(RD)  :: omega_b
-      type(mode_t) :: md
-      integer      :: id
-      logical      :: active
+      complex(RD) :: omega_a
+      complex(RD) :: omega_b
+      complex(RD) :: omega_root
+      real(RD)    :: omega_r
+      real(RD)    :: chi
+      integer     :: n_iter
+      integer     :: id
+      logical     :: active
    end type prox_t
 
    ! Interfaces
@@ -148,22 +151,22 @@ contains
       if (nm_p%parallel_scan .AND. .NOT. nm_p%deflate_roots) then
 
          !$OMP PARALLEL FIRSTPRIVATE(bp)
-         call setup_prox_(omega_a, omega_b, id, pr)
-         call find_modes_(bp, omega_min, omega_max, nm_p, pr)
+         call setup_proxs_(omega_a, omega_b, id, pr)
+         call find_roots_(bp, omega_min, omega_max, nm_p, pr)
+         call process_modes_(bp, pr, process_mode)
          !$OMP END PARALLEL
 
       else
 
-         call setup_prox_(omega_a, omega_b, id, pr)
+         call setup_proxs_(omega_a, omega_b, id, pr)
          if (nm_p%deflate_roots) then
-            call find_modes_deflate_(bp, omega_min, omega_max, nm_p, pr)
+            call find_roots_deflate_(bp, omega_min, omega_max, nm_p, pr)
          else
-            call find_modes_(bp, omega_min, omega_max, nm_p, pr)
+            call find_roots_(bp, omega_min, omega_max, nm_p, pr)
          end if
+         call process_modes_(bp, pr, process_mode)
 
       end if
-
-      call process_modes_(bp, pr, process_mode)
 
       ! Finish
 
@@ -173,7 +176,7 @@ contains
 
    !****
 
-   subroutine setup_prox_(omega_a, omega_b, id, pr)
+   subroutine setup_proxs_(omega_a, omega_b, id, pr)
 
       complex(RD), intent(in)     :: omega_a(:)
       complex(RD), intent(in)     :: omega_b(:)
@@ -205,11 +208,11 @@ contains
 
       return
 
-   end subroutine setup_prox_
+   end subroutine setup_proxs_
 
    !****
 
-   subroutine find_modes_(bp, omega_min, omega_max, nm_p, pr)
+   subroutine find_roots_(bp, omega_min, omega_max, nm_p, pr)
 
       class(bvp_ct), intent(inout) :: bp
       real(RD), intent(in)         :: omega_min
@@ -231,25 +234,22 @@ contains
       type(ext_ct) :: f_z_root
       integer      :: stat
       integer      :: n_iter
-      complex(RD)  :: omega_root
-      real(RD)     :: chi
-      type(wave_t) :: wv
 
-      ! Find modes from a list of proximate root candidates
+      ! Find roots from a list of proximate root candidates
 
       !$OMP SINGLE
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 100) 'Finding modes'
+         write(OUTPUT_UNIT, 100) 'Finding roots'
 100      format(A)
       endif
       !$OMP END SINGLE
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      !$OMP DO PRIVATE(omega_r, z_a, z_b, f_z_a, f_z_b, z_root, f_z_root, stat, n_iter, omega_root, chi, wv)
-      cand_loop : do i = 1, SIZE(pr)
+      !$OMP DO PRIVATE(omega_r, z_a, z_b, f_z_a, f_z_b, z_root, f_z_root, stat, n_iter)
+      prox_loop : do i = 1, SIZE(pr)
 
-         if (.NOT. pr(i)%active) cycle cand_loop
+         if (.NOT. pr(i)%active) cycle prox_loop
 
          ! Initialize root-finding variables
 
@@ -270,26 +270,15 @@ contains
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'solve')
             pr(i)%active = .FALSE.
-            cycle cand_loop
+            cycle prox_loop
          endif
 
-         omega_root = cmplx(z_root)
-         chi = real(abs(f_z_root)/f_z_max)
+         pr(i)%omega_root = cmplx(z_root)
+         pr(i)%omega_r = omega_r
+         pr(i)%n_iter = n_iter
+         pr(i)%chi = real(abs(f_z_root)/f_z_max)
 
-         ! Construct the mode
-
-         select type (bp)
-         type is (nad_bvp_t)
-            wv = wave_t(bp, state_ct(omega_root, omega_r=omega_r), pr(i)%id, chi, n_iter)
-         type is (tnad_bvp_t)
-            wv = wave_t(bp, state_ct(omega_root, omega_r=omega_r), pr(i)%id, chi, n_iter)
-         class default
-            @:ABORT('invalid bp class')
-         end select
-
-         pr(i)%md = mode_t(wv)
-
-      end do cand_loop
+      end do prox_loop
       !$OMP END DO
          
       call SYSTEM_CLOCK(c_end)
@@ -370,11 +359,11 @@ contains
 
       end subroutine report_stat_
 
-   end subroutine find_modes_
+   end subroutine find_roots_
 
    !****
 
-   subroutine find_modes_deflate_(bp, omega_min, omega_max, nm_p, pr)
+   subroutine find_roots_deflate_(bp, omega_min, omega_max, nm_p, pr)
 
       class(bvp_ct), intent(inout) :: bp
       real(RD), intent(in)         :: omega_min
@@ -397,23 +386,20 @@ contains
       integer      :: stat
       integer      :: n_iter
       integer      :: n_iter_def
-      complex(RD)  :: omega_root
-      real(RD)     :: chi
-      type(wave_t) :: wv
 
-      ! Find modes from a list of proximate root candidates. This is
+      ! Find roots from a list of proximate root candidates. This is
       ! the deflation-enabled version (which isn't parallelized)
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 100) 'Finding modes'
+         write(OUTPUT_UNIT, 100) 'Finding roots'
 100      format(A)
       endif
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      cand_loop : do i = 1, SIZE(pr)
+      prox_loop : do i = 1, SIZE(pr)
 
-         if (.NOT. pr(i)%active) cycle cand_loop
+         if (.NOT. pr(i)%active) cycle prox_loop
 
          ! Initialize root-finding variables
 
@@ -439,7 +425,7 @@ contains
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'deflate narrow')
             pr(i)%active = .FALSE.
-            cycle cand_loop
+            cycle prox_loop
          endif
 
          ! If necessary, reset z_a and z_b so they are not coincident;
@@ -455,7 +441,7 @@ contains
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'deflate re-expand')
             pr(i)%active = .FALSE.
-            cycle cand_loop
+            cycle prox_loop
          endif
 
          ! Solve for the root without deflation
@@ -466,26 +452,14 @@ contains
          if (stat /= STAT_OK) then
             call report_stat_(stat, 'deflate solve')
             pr(i)%active = .TRUE.
-            cycle cand_loop
+            cycle prox_loop
          endif
 
-         omega_root = cmplx(z_root)
-         chi = real(abs(f_z_root)/f_z_max)
+         pr(i)%omega_root = cmplx(z_root)
+         pr(i)%n_iter = n_iter + n_iter_def
+         pr(i)%chi = real(abs(f_z_root)/f_z_max)
 
-         ! Construct the mode
-
-         select type (bp)
-         type is (nad_bvp_t)
-            wv = wave_t(bp, state_ct(omega_root, omega_r=omega_r), pr(i)%id, chi, n_iter+n_iter_def)
-         type is (tnad_bvp_t)
-            wv = wave_t(bp, state_ct(omega_root, omega_r=omega_r), pr(i)%id, chi, n_iter+n_iter_def)
-         class default
-            @:ABORT('invalid bp class')
-         end select
-
-         pr(i)%md = mode_t(wv)
-
-      end do cand_loop
+      end do prox_loop
          
       call SYSTEM_CLOCK(c_end)
 
@@ -575,7 +549,7 @@ contains
 
          ! Root deflation function
 
-         f = omega/PRODUCT((pr(:i-1)%md%omega-omega), MASK=pr(:i-1)%active)
+         f = omega/PRODUCT((pr(:i-1)%omega_root-omega), MASK=pr(:i-1)%active)
 
          ! Finish
 
@@ -616,7 +590,7 @@ contains
 
       end subroutine report_stat_
 
-   end subroutine find_modes_deflate_
+   end subroutine find_roots_deflate_
 
    !****
 
@@ -633,48 +607,66 @@ contains
          end subroutine process_mode
       end interface
 
-      integer              :: c_beg
-      integer              :: c_end
-      integer              :: c_rate
-      integer              :: i
-      integer, allocatable :: j(:)
-      logical              :: culled
+      integer      :: c_beg
+      integer      :: c_end
+      integer      :: c_rate
+      integer      :: i
+      type(wave_t) :: wv
+      type(mode_t) :: md
+      logical      :: culled
 
-      ! Process active prox_cand's
+      ! Process active proxs
 
+      !$OMP SINGLE
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, 100) 'Processing modes'
 100      format(A)
          write(OUTPUT_UNIT, 110) 'id', 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
 110      format(1X,A3,1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
       end if
+      !$OMP END SINGLE
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      ! Process the modes, in id-order
+      ! Process the modes in order
 
-      j = sort_indices(pr%md%id)
+      !$OMP DO ORDERED PRIVATE(wv, md, culled) SCHEDULE(static, 1)
+      prox_loop: do i = 1, COUNT(pr%active)
 
-      process_loop: do i = 1, COUNT(pr%active)
+         if (.NOT. pr(i)%active) cycle prox_loop
 
-         associate(md => pr(j(i))%md)
+         ! Construct the mode
 
-            call process_mode(md, culled)
+         select type (bp)
+         type is (nad_bvp_t)
+            wv = wave_t(bp, state_ct(pr(i)%omega_root, omega_r=pr(i)%omega_r), pr(i)%id, pr(i)%chi, pr(i)%n_iter)
+         type is (tnad_bvp_t)
+            wv = wave_t(bp, state_ct(pr(i)%omega_root, omega_r=pr(i)%omega_r), pr(i)%id, pr(i)%chi, pr(i)%n_iter)
+         class default
+            @:ABORT('invalid bp class')
+         end select
 
-            if (check_log_level('INFO') .AND. .NOT. culled) then
-               write(OUTPUT_UNIT, 120) md%id, md%l, md%m, md%n_pg, md%n_p, md%n_g, &
-                  md%omega, md%chi, md%n_iter
-120            format(1X,I3,1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
-            endif
+         md = mode_t(wv)
 
-         end associate
+         !$OMP ORDERED
+         call process_mode(md, culled)
 
-      end do process_loop
+         if (check_log_level('INFO') .AND. .NOT. culled) then
+            write(OUTPUT_UNIT, 120) md%id, md%l, md%m, md%n_pg, md%n_p, md%n_g, &
+               md%omega, md%chi, md%n_iter
+120         format(1X,I3,1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
+         endif
+         !$OMP END ORDERED
+
+      end do prox_loop
+      !$OMP END DO
 
       call SYSTEM_CLOCK(c_end)
 
+      !$OMP SINGLE
       write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
 130   format(2X,A,1X,F10.3,1X,A/)
+      !$OMP END SINGLE
 
       ! Finish
 
