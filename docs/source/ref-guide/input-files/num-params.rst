@@ -35,11 +35,13 @@ used. Allowable fields are:
 :nml_n:`n_iter_max` (default :nml_v:`50`)
   Maximum number of iterations in root-finding algorithm
 
-:nml_n:`matrix_type` (default :nml_v:`'BAND`')
+:nml_n:`matrix_type` (default :nml_v:`'PARALLEL_BLOCK`')
   Storage type of system matrix; one of
 
   - :nml_v:`'BAND'` : Band-structured
-  - :nml_v:`'BLOCK'` : Block-structured
+  - :nml_v:`'BLOCK'` : Block-structured (legacy)
+  - :nml_v:`'PARALLEL_BLOCK'` : Block-structured (parallel)
+  - :nml_v:`'SERIAL_BLOCK'` : Block-structured (serial)
 
 :nml_n:`deflate_roots` (default :nml_v:`.TRUE.`)
   Flag to use root deflation, which can avoid the same eigenfrequency
