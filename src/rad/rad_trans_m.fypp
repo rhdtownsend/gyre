@@ -178,10 +178,10 @@ contains
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
-      logical  :: from_
-      real(RD) :: G(this%n_e,this%n_e)
-      real(RD) :: H(this%n_e,this%n_e)
-      real(RD) :: dH(this%n_e,this%n_e)
+      logical               :: from_
+      real(RD), allocatable :: G(:,:)
+      real(RD), allocatable :: H(:,:)
+      real(RD), allocatable :: dH(:,:)
 
       @:CHECK_BOUNDS(SIZE(xA, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(xA, 2), this%n_e)
@@ -231,9 +231,9 @@ contains
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
-      logical  :: from_
-      real(RD) :: G(this%n_e,this%n_e)
-      real(RD) :: H(this%n_e,this%n_e)
+      logical               :: from_
+      real(RD), allocatable :: G(:,:)
+      real(RD), allocatable :: H(:,:)
 
       @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
 
@@ -285,9 +285,9 @@ contains
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
-      logical  :: from_
-      real(RD) :: G(this%n_e,this%n_e)
-      real(RD) :: H(this%n_e,this%n_e)
+      logical               :: from_
+      real(RD), allocatable :: G(:,:)
+      real(RD), allocatable :: H(:,:)
 
       @:CHECK_BOUNDS(SIZE(y), this%n_e)
 

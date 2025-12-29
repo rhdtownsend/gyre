@@ -198,10 +198,10 @@ contains
       class(state_ct), intent(in)    :: st
       logical, intent(in), optional  :: from
 
-      logical     :: from_
-      complex(RD) :: G(this%n_e,this%n_e)
-      complex(RD) :: H(this%n_e,this%n_e)
-      complex(RD) :: dH(this%n_e,this%n_e)
+      logical                  :: from_
+      complex(RD), allocatable :: G(:,:)
+      complex(RD), allocatable :: H(:,:)
+      complex(RD), allocatable :: dH(:,:)
 
       @:CHECK_BOUNDS(SIZE(xA, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(xA, 2), this%n_e)
@@ -249,9 +249,9 @@ contains
       class(state_ct), intent(in)    :: st
       logical, intent(in), optional  :: from
 
-      logical     :: from_
-      complex(RD) :: G(this%n_e,this%n_e)
-      complex(RD) :: H(this%n_e,this%n_e)
+      logical                  :: from_
+      complex(RD), allocatable :: G(:,:)
+      complex(RD), allocatable :: H(:,:)
 
       @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
 
@@ -299,9 +299,9 @@ contains
       class(state_ct), intent(in)    :: st
       logical, intent(in), optional  :: from
 
-      logical     :: from_
-      complex(RD) :: G(this%n_e,this%n_e)
-      complex(RD) :: H(this%n_e,this%n_e)
+      logical                  :: from_
+      complex(RD), allocatable :: G(:,:)
+      complex(RD), allocatable :: H(:,:)
 
       @:CHECK_BOUNDS(SIZE(y), this%n_e)
 
