@@ -155,17 +155,17 @@ contains
       n_re = SIZE(omega_re)
       n_im = SIZE(omega_im)
 
-      !$OMP DO PRIVATE(i, j, omega) SCHEDULE(dynamic)
-      discrim_loop: do k = 1, n_re*n_im
+      !$OMP DO PRIVATE(omega) COLLAPSE(2)
+      discrim_im_loop: do j = 1, n_im
+         discrim_re_loop: do i = 1, n_re
 
-         j = (k-1)/n_re + 1
-         i = k - (j-1)*n_re
+            omega = CMPLX(omega_re(i), omega_im(j), KIND=RD)
 
-         omega = CMPLX(omega_re(i), omega_im(j), KIND=RD)
+            call eval_discrim(bp, state_ct(omega, omega_r=omega_re(i)), discrim(i,j))
 
-         call eval_discrim(bp, state_ct(omega, omega_r=omega_re(i)), discrim(i,j))
-
-      end do discrim_loop
+         end do discrim_re_loop
+      end do discrim_im_loop
+      !$OMP END DO
 
       call SYSTEM_CLOCK(c_end)
 
