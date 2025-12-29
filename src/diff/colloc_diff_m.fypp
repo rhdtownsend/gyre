@@ -221,7 +221,8 @@ contains
          ${T}$, intent(out)                   :: E_r(:,:)
          type(ext_${S}$), intent(out)         :: scl
 
-         ${T}$ :: A(this%n_e,this%n_e)
+         ${T}$   :: A(this%n_e,this%n_e)
+         integer :: i
 
          ! Evaluate the RHS matrix
 
@@ -229,12 +230,19 @@ contains
 
          ! Build the GL2 difference equations
 
+         E_l = 0.5_RD*this%dx*A
+         E_r = 0.5_RD*this%dx*A
+
          if (this%reverse) then
-            E_l = 0.5_RD*this%dx*A - identity_matrix(this%n_e)
-            E_r = 0.5_RD*this%dx*A + identity_matrix(this%n_e)
+            do i = 1, this%n_e
+               E_l(i,i) = E_l(i,i) - 1._RD
+               E_r(i,i) = E_r(i,i) + 1._RD
+            end do
          else
-            E_l = 0.5_RD*this%dx*A + identity_matrix(this%n_e)
-            E_r = 0.5_RD*this%dx*A - identity_matrix(this%n_e)
+            do i = 1, this%n_e
+               E_l(i,i) = E_l(i,i) + 1._RD
+               E_r(i,i) = E_r(i,i) - 1._RD
+            end do
          endif
 
          scl = ext_${S}$(1._RD)
@@ -311,8 +319,8 @@ contains
          integer :: j_a
          integer :: j_b
          ${T}$   :: B(this%n_s*this%n_e,this%n_e)
+         integer :: k
          ${T}$   :: X(this%n_s*this%n_e,this%n_e)
-         ${T}$   :: K(this%n_e,this%n_e,this%n_s)
 
          @:CHECK_BOUNDS(SIZE(a_ij, 1), this%n_s)
          @:CHECK_BOUNDS(SIZE(a_ij, 2), this%n_s)
@@ -346,7 +354,9 @@ contains
                M(i_a:i_b,j_a:j_b) = -this%dx*a_ij(i,j)*A(:,:,i)
 
                if (i == j) then
-                  M(i_a:i_b,j_a:j_b) = M(i_a:i_b,j_a:j_b) + identity_matrix(this%n_e)
+                  do k = i_a, i_b
+                     M(k,k) = M(k,k) + 1._RD
+                  end do
                endif
 
             end do
@@ -359,26 +369,25 @@ contains
 
          X = linear_solve(M, B)
 
-         ! Extract the K matrices
+         ! Build the difference equations
+
+         E_a = 0._RD
 
          do i = 1, this%n_s
 
             i_a = (i-1)*this%n_e + 1
             i_b = (i-1)*this%n_e + this%n_e
 
-            K(:,:,i) = X(i_a:i_b,:)
+            E_a = E_a + this%dx*b_i(i)*X(i_a:i_b,:)
 
          end do
 
-         ! Build the difference equations
+         E_b = 0._RD
 
-         E_a = identity_matrix(this%n_e)
-
-         do i = 1, this%n_s
-            E_a = E_a + this%dx*b_i(i)*K(:,:,i)
-         enddo
-
-         E_b = -identity_matrix(this%n_e)
+         do k = 1, this%n_e
+            E_a(k,k) = E_a(k,k) + 1._RD
+            E_b(k,k) = E_b(k,k) - 1._RD
+         end do
 
          ! Finish
 
