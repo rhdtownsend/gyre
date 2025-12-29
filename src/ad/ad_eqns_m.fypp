@@ -248,7 +248,7 @@ contains
 
          ! Apply the radial scaling
 
-         A = A/x
+         A = A*(1._RD/x)
 
       end associate
 
