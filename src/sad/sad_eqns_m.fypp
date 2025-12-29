@@ -41,12 +41,11 @@ module sad_eqns_m
 
    ! Parameter definitions
 
-   integer, parameter :: J_V = 1
+   integer, parameter :: J_V_G = 1
    integer, parameter :: J_AS = 2
    integer, parameter :: J_U = 3
-   integer, parameter :: J_GAMMA_1 = 4
 
-   integer, parameter :: J_LAST = J_GAMMA_1
+   integer, parameter :: J_LAST = J_U
 
    ! Derived-type definitions
 
@@ -128,10 +127,9 @@ contains
 
          @:ASSERT(.NOT. ml%is_vacuum(pt(i)), 'attempt to stencil at vacuum point')
 
-         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
+         this%coeff(i,J_V_G) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2/ml%coeff(I_GAMMA_1, pt(i))
          this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
          this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
-         this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
 
       end do
 
@@ -167,10 +165,9 @@ contains
       ! Evaluate the RHS matrix
 
       associate ( &
-         V => this%coeff(i,J_V), &
+         V_g => this%coeff(i,J_V_G), &
          As => this%coeff(i,J_AS), &
          U => this%coeff(i,J_U), &
-         Gamma_1 => this%coeff(i,J_GAMMA_1), &
          x => this%pt(i)%x)
 
          l = this%l
@@ -181,7 +178,7 @@ contains
          A(1,1) = 3._RD - U - l
          A(1,2) = 1._RD
 
-         A(2,1) = lambda - As*U - U*V/Gamma_1
+         A(2,1) = lambda - As*U - U*V_g
          A(2,2) = - U - l + 2._RD
 
          ! Apply the variables transformation
