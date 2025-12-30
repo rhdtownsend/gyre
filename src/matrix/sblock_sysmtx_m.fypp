@@ -47,6 +47,7 @@ module sblock_sysmtx_m
          ${T}$, allocatable           :: R(:,:)    ! Reduced system matrix
          integer, allocatable         :: i_piv(:)  ! Pivoting info for R
          type(ext_${S}$), allocatable :: scl(:)    ! Block scales
+         ${T}$, allocatable           :: D(:)      ! Diagonal products
       contains
          private
          procedure         :: build_and_factor_ => build_and_factor_${S}$_
@@ -96,8 +97,10 @@ contains
          allocate(sm%scl_o(n_o))
 
          allocate(sm%scl(n))
+         allocate(sm%D(n))
 
          allocate(sm%R(2*n_e,2*n_e))
+
          allocate(sm%i_piv(2*n_e))
 
          sm%n = n
@@ -181,16 +184,19 @@ contains
 
                   ! Determine row scalings for implicit pivoting
 
-                  do i = 1, 2*n_e
-                     scl = 0._RD
-                     do s = 1, 3*n_e
-                        scl = MAX(scl, abs(M(i,s)))
+                  rscl = abs(M(:,1))
+
+                  do s = 2, 3*n_e
+                     do i = 1, 2*n_e
+                        rscl(i) = MAX(rscl(i), abs(M(i,s)))
                      end do
-                     rscl(i) = 1._RD/scl
                   end do
 
-                  ! Reduce the first n_e columns of M to row
-                  ! echelon form
+                  rscl = 1._RD/rscl
+
+                  ! Reduce the first n_e rows of M to row echelon form
+
+                  this%D(k) = 1._RD
 
                   do j = 1, n_e
 
@@ -223,14 +229,14 @@ contains
                         rscl(i_piv) = rscl(j)
                         rscl(j) = scl
 
-                        this%scl(k) = -this%scl(k)
+                        this%D(k) = -this%D(k)
 
                      end if
 
                      ! Scale the row so that the diagonal element
                      ! is unity
 
-                     this%scl(k) = this%scl(k)*M(j,j)
+                     this%D(k) = this%D(k)*M(j,j)
 
                      alpha = 1._RD/M(j,j)
 
@@ -239,13 +245,12 @@ contains
                      end do
                      
                      ! Eliminate elements below the diagonal (for
-                     ! efficiency, don't need to actually set these
-                     ! elements to zero)
+                     ! efficiency, don't actually set these elements
+                     ! to zero, since they won't be used)
 
-                     do i = j+1, 2*n_e
-                        alpha = M(i,j)
-                        do s = j+1, 3*n_e
-                           M(i,s) = M(i,s) - alpha*M(j,s)
+                     do s = j+1, 3*n_e
+                        do i = j+1, 2*n_e
+                           M(i,s) = M(i,s) - M(i,j)*M(j,s)
                         end do
                      end do
 
@@ -253,7 +258,7 @@ contains
 
                   ! Eliminate elements above the diagonal, and
                   ! store. This is skipped if partial is .TRUE.,
-                  ! since we won't need these data
+                  ! since these data aren't needed
 
                   if (.NOT. partial_) then
 
@@ -278,90 +283,100 @@ contains
 
                end do block_loop
 
-               ! Build and factorize the final (2*n_e,2*n_e) system matrix
-               ! (eqn. 2.8 of Wright 1994)
+            end associate
 
-               ! Set up the matrix
+            ! Build and factorize the final (2*n_e,2*n_e) system matrix
+            ! (eqn. 2.8 of Wright 1994)
 
-               call eval_B(this%R(:n_i,:n_e), this%R(n_i+n_e+1:,n_e+1:), this%scl_i, this%scl_o)
+            ! Set up the matrix
 
-               this%R(n_i+1:n_i+n_e,:n_e) = G_1
-               this%R(n_i+n_e+1:,:n_e) = 0._RD
+            call eval_B(this%R(:n_i,:n_e), this%R(n_i+n_e+1:,n_e+1:), this%scl_i, this%scl_o)
 
-               this%R(:n_i,n_e+1:) = 0._RD
-               this%R(n_i+1:n_i+n_e,n_e+1:) = U_1
+            this%R(n_i+1:n_i+n_e,:n_e) = M(:n_e,n_e+1:2*n_e)
+            this%R(n_i+n_e+1:,:n_e) = 0._RD
 
-               ! Determine row scalings for implicit pivoting
+            this%R(:n_i,n_e+1:) = 0._RD
+            this%R(n_i+1:n_i+n_e,n_e+1:) = M(:n_e,:n_e)
 
+            ! Determine row scalings for implicit pivoting
+
+            rscl = abs(this%R(:,1))
+
+            do s = 2, 2*n_e
                do i = 1, 2*n_e
-                  scl = 0._RD
-                  do s = 1, 2*n_e
-                     scl = MAX(scl, abs(this%R(i,s)))
-                  end do
-                  rscl(i) = 1._RD/scl
+                  rscl(i) = MAX(rscl(i), abs(this%R(i,s)))
                end do
+            end do
 
-               ! Reduce the matrix to row echelon form
+            rscl = 1._RD/rscl
 
-               column_R_loop: do j = 1, 2*n_e
+            ! Reduce the matrix to row echelon form
+
+            this%D(n) = 1._RD
+
+            column_R_loop: do j = 1, 2*n_e
 
                ! Find the pivot
 
-                  piv = 0._RD
+               piv = 0._RD
 
-                  do i = j, 2*n_e
-                     scl = abs(this%R(i,j))*rscl(i)
-                     if (scl > piv) then
-                        piv = scl
-                        i_piv = i
-                     end if
+               do i = j, 2*n_e
+                  scl = abs(this%R(i,j))*rscl(i)
+                  if (scl > piv) then
+                     piv = scl
+                     i_piv = i
+                  end if
+               end do
+
+               ! If the pivot is zero, then skip this column
+
+               if (piv == 0._RD) then
+                  this%i_piv(j) = j
+                  cycle column_R_loop
+               end if
+
+               ! If necessary, swap rows to place the pivot
+               ! on the diagonal
+
+               if (i_piv /= j) then
+
+                  do s = j, 2*n_e
+                     alpha = this%R(i_piv,s)
+                     this%R(i_piv,s) = this%R(j,s)
+                     this%R(j,s) = alpha
                   end do
 
-                  ! If the pivot is zero, then skip to the next column
+                  scl = rscl(i_piv)
+                  rscl(i_piv) = rscl(j)
+                  rscl(j) = scl
 
-                  if (piv == 0._RD) then
-                     this%i_piv(j) = j
-                     cycle column_R_loop
-                  end if
+                  this%D(n) = -this%D(n)
 
-                  ! If necessary, swap rows to place the pivot
-                  ! on the diagonal
+               end if
 
-                  if (i_piv /= j) then
+               ! (Unlike above, don't scale the row so that the
+               ! diagonal element is unity, because this element might
+               ! be zero)
 
-                     do s = j, 2*n_e
-                        alpha = this%R(i_piv,s)
-                        this%R(i_piv,s) = this%R(j,s)
-                        this%R(j,s) = alpha
-                     end do
+               this%D(n) = this%D(n)*this%R(j,j)
 
-                     scl = rscl(i_piv)
-                     rscl(i_piv) = rscl(j)
-                     rscl(j) = scl
+               ! Eliminate elements below the diagonal (for
+               ! efficiency, don't actually set these elements
+               ! to zero, since they won't be used)
 
-                     this%scl(1) = -this%scl(1)
+               alpha = 1._RD/this%R(j,j)
 
-                  end if
-
-                  ! (Note that, unlike before for M, we don't scale the
-                  ! row so that the diagonal element is unity)
-
-                  ! Eliminate elements below the diagonal
-
+               do s = j+1, 2*n_e
                   do i = j+1, 2*n_e
-                     alpha = this%R(i,j)/this%R(j,j)
-                     do s = j, 2*n_e
-                        this%R(i,s) = this%R(i,s) - alpha*this%R(j,s)
-                     end do
+                     this%R(i,s) = this%R(i,s) - alpha*this%R(i,j)*this%R(j,s)
                   end do
+               end do
 
-                  ! Store the pivot information
+               ! Store the pivot information
 
-                  this%i_piv(j) = i_piv
+               this%i_piv(j) = i_piv
 
-               end do column_R_loop
-
-            end associate
+            end do column_R_loop
 
          end associate
 
@@ -447,7 +462,7 @@ contains
 
          ! Evaluate the determinant
 
-         det = product([ext_${S}$(diagonal(this%R)),ext_${S}$(this%scl_i),this%scl,ext_${S}$(this%scl_o)])
+         det = product([ext_${S}$(this%D),ext_${S}$(this%scl_i),this%scl,ext_${S}$(this%scl_o)])
 
          ! Finish
 
