@@ -197,6 +197,8 @@ contains
          pr(i)%omega_a = omega_a(i)
          pr(i)%omega_b = omega_b(i)
 
+         pr(i)%omega_r = real(0.5_RD*(pr(i)%omega_a + pr(i)%omega_b))
+
          pr(i)%id = id(i)
 
          pr(i)%active = .TRUE.
@@ -253,7 +255,7 @@ contains
 
          ! Initialize root-finding variables
 
-         omega_r = real(0.5_RD*(pr(i)%omega_a + pr(i)%omega_b))
+         omega_r = pr(i)%omega_r
 
          z_a = ext_ct(pr(i)%omega_a)
          z_b = ext_ct(pr(i)%omega_b)
@@ -274,7 +276,6 @@ contains
          endif
 
          pr(i)%omega_root = cmplx(z_root)
-         pr(i)%omega_r = omega_r
          pr(i)%n_iter = n_iter
          pr(i)%chi = real(abs(f_z_root)/f_z_max)
 
@@ -403,7 +404,7 @@ contains
 
          ! Initialize root-finding variables
 
-         omega_r = real(0.5_RD*(pr(i)%omega_a + pr(i)%omega_b))
+         omega_r = pr(i)%omega_r
 
          z_a = ext_ct(pr(i)%omega_a)
          z_b = ext_ct(pr(i)%omega_b)
