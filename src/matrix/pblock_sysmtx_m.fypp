@@ -279,24 +279,27 @@ contains
                         ! to zero, since they won't be used)
 
                         do s = j+1, 3*n_e
+                           alpha = M(j,s)
                            do i = j+1, 2*n_e
-                              M(i,s) = M(i,s) - M(i,j)*M(j,s)
+                              M(i,s) = M(i,s) - alpha*M(i,j)
                            end do
                         end do
 
                      end do
 
-                     ! Eliminate elements above the diagonal, and
-                     ! store. This is skipped if partial is .TRUE.,
+                     ! Eliminate elements above the diagonal (for
+                     ! efficiency, don't actually set the elements to
+                     ! zero, since they won't be used), and store G_1
+                     ! and E_1. This is skipped if partial is .TRUE.,
                      ! since these data aren't needed
 
                      if (.NOT. partial_) then
 
                         do j = 1, n_e
-                           do i = 1, j-1
-                              alpha = M(i,j)
-                              do s = j, 3*n_e
-                                 M(i,s) = M(i,s) - alpha*M(j,s)
+                           do s = j+1, 3*n_e
+                              alpha = M(j,s)
+                              do i = 1, j-1
+                                 M(i,s) = M(i,s) - alpha*M(i,j)
                               end do
                            end do
                         end do
