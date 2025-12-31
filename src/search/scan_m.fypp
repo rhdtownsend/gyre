@@ -311,7 +311,7 @@ contains
          associate(m => md_p%m)
 
             ! Determine the range of omega
-         
+
             omega_min = MINVAL(omega)
             omega_max = MAXVAL(omega)
 
@@ -348,7 +348,7 @@ contains
          end associate
 
       end if
-               
+
       ! Finish
 
       return

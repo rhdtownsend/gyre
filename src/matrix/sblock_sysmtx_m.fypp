@@ -243,7 +243,7 @@ contains
                      do s = j, 3*n_e
                         M(j,s) = alpha*M(j,s)
                      end do
-                     
+
                      ! Eliminate elements below the diagonal (for
                      ! efficiency, don't actually set the elements to
                      ! zero, since they won't be used)
@@ -284,7 +284,7 @@ contains
                   end if
 
                   ! Prepare for the next block
- 
+
                   G_1 = G_2
                   U_1 = E_2
 
@@ -672,4 +672,3 @@ contains
    #:endfor
 
 end module sblock_sysmtx_m
-

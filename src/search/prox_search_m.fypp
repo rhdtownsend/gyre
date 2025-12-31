@@ -281,7 +281,7 @@ contains
 
       end do prox_loop
       !$OMP END DO
-         
+
       call SYSTEM_CLOCK(c_end)
 
       !$OMP SINGLE
@@ -461,7 +461,7 @@ contains
          pr(i)%chi = real(abs(f_z_root)/f_z_max)
 
       end do prox_loop
-         
+
       call SYSTEM_CLOCK(c_end)
 
       if (check_log_level('INFO')) then

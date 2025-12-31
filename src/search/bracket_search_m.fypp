@@ -86,7 +86,7 @@ contains
             logical, intent(out)     :: culled
          end subroutine process_mode
       end interface
- 
+
       type(ext_rt)    :: discrim(SIZE(omega))
       type(bracket_t) :: br(SIZE(omega)-1)
 

@@ -253,4 +253,4 @@ contains
 
    end subroutine read_out_par
 
-end program
+end program gyre_map
