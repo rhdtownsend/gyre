@@ -228,7 +228,7 @@ contains
 
                      this%D(k+l) = 1._RD
 
-                     do j = 1, n_e
+                     reduce_loop: do j = 1, n_e
 
                         ! Find the pivot
 
@@ -302,7 +302,7 @@ contains
 
                         end if
 
-                     end do
+                     end do reduce_loop
 
                      ! Store data for backsubstitution
 
@@ -369,11 +369,12 @@ contains
 
             this%D(1) = 1._RD
 
-            column_R_loop: do j = 1, 2*n_e
+            reduce_R_loop: do j = 1, 2*n_e
 
                ! Find the pivot
 
                piv = 0._RD
+               i_piv = j
 
                do i = j, 2*n_e
                   scl = abs(this%R(i,j))*rscl(i)
@@ -386,8 +387,9 @@ contains
                ! If the pivot is zero, then skip this column
 
                if (piv == 0._RD) then
-                  this%i_piv(j) = j
-                  cycle column_R_loop
+                  this%i_piv(j) = i_piv
+                  this%D(1) = 0._RD
+                  cycle reduce_R_loop
                end if
 
                ! If necessary, swap rows to place the pivot
@@ -431,7 +433,7 @@ contains
 
                this%i_piv(j) = i_piv
 
-            end do column_R_loop
+            end do reduce_R_loop
 
          end associate
 
