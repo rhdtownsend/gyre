@@ -290,10 +290,13 @@ contains
       type(mode_par_t), intent(in) :: md_p
       type(osc_par_t), intent(in)  :: os_p
 
-      real(RD) :: omega_c(gr%n)
-      real(RD) :: omega_c_prev(gr%n)
+      real(RD) :: omega_min
+      real(RD) :: omega_max
+      real(RD) :: mOmega_rot_min
+      real(RD) :: mOmega_rot_max
       integer  :: j
-      integer  :: i
+      real(RD) :: mOmega_rot
+      real(RD) :: omega_c(4)
 
       ! Check the frequency scan to remove any points with leaky
       ! boundary conditions
@@ -305,28 +308,47 @@ contains
 
       if (SIZE(omega) >= 1) then
 
-         !$OMP PARALLEL DO
-         do j = 1, gr%n
-            omega_c(j) = omega(1) - md_p%m*cx%Omega_rot(gr%pt(j))
-         end do
+         associate(m => md_p%m)
 
-         @:ASSERT(ALL(omega_c > 0._RD) .OR. ALL(omega_c < 0._RD), 'critical layer encountered')
+            ! Determine the range of omega
+         
+            omega_min = MINVAL(omega)
+            omega_max = MAXVAL(omega)
 
-         do i = 2, SIZE(omega)
+            ! For m = 0, a simple check suffices
 
-            omega_c_prev = omega_c
+            if (m == 0) then
+               @:ASSERT(omega_min*omega_max > 0, 'critical layer encountered')
+               return
+            end if
 
-            !$OMP PARALLEL DO
+            ! Determine the range of m*Omega_rot
+
+            mOmega_rot_min = HUGE(0._RD)
+            mOmega_rot_max = -HUGE(0._RD)
+
             do j = 1, gr%n
-               omega_c(j) = omega(i) - md_p%m*cx%Omega_rot(gr%pt(j))
+               mOmega_rot = m*cx%Omega_rot(gr%pt(j))
+               mOmega_rot_min = MIN(mOmega_rot, mOmega_rot_min)
+               mOmega_rot_max = MAX(mOmega_rot, mOmega_rot_max)
             end do
 
-            @:ASSERT(ALL(SIGN(1._RD, omega_c) == SIGN(1._RD, omega_c_prev)), 'transition between prograde and retrograde')
+            ! Evaluate omega_c at the corners of the rectangle defined
+            ! by the ranges in omega and m*Omega_rot
 
-         end do
+            omega_c(1) = omega_min - mOmega_rot_min
+            omega_c(2) = omega_max - mOmega_rot_min
+            omega_c(3) = omega_min - mOmega_rot_max
+            omega_c(4) = omega_max - mOmega_rot_max
 
-      endif
+            ! Check that all omega_c have the same sign
 
+            @:ASSERT(ALL(omega_c < 0._RD) .OR. ALL(omega_c > 0._RD), 'critical layer encountered')
+
+         end associate
+
+      end if
+               
       ! Finish
 
       return
