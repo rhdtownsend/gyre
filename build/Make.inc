@@ -152,7 +152,7 @@ ifeq ($(DEBUG),yes)
              -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
              -finline-limit=0 -fbacktrace
 else
-   FFLAGS += -O2 -fno-backtrace
+   FFLAGS += -O3 -fno-backtrace
 endif
 
 ifeq ($(OMP),yes)
