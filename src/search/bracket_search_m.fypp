@@ -239,7 +239,7 @@ contains
       integer      :: stat
       integer      :: n_iter
 
-      ! Find modes within discriminant brackets
+      ! Find discriminant roots within brackets
 
       !$OMP SINGLE
       if (check_log_level('INFO')) then
