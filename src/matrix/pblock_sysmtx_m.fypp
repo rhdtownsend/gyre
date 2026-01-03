@@ -653,7 +653,7 @@ contains
          ${T}$, intent(out) :: u(:)
 
          integer :: i
-         ${T}$   :: v_(SIZE(v))
+         ${T}$   :: v_(2*this%n_e)
          ${T}$   :: u_bound(2*this%n_e)
          ${T}$   :: beta
          integer :: j
@@ -673,14 +673,15 @@ contains
          ! boundary conditions). These components are supplied in
          ! v(:n_i) and v(n_i+1:), respectively.
 
-         associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+         associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_o => this%n_o)
 
-            ! Apply row scales and swaps to v
+            ! Set up the rhs vector
 
-            do i = 1, n_e
-               v_(i) = v(i)*this%scl_i(i)
-               v_(n_e+i) = v(n_e+i)*this%scl_o(i)
-            end do
+            v_(:n_i) = v(:n_i)/this%scl_i
+            v_(n_i+1:2*n_e-n_o) = 0._RD
+            v_(2*n_e-n_o+1:) = v(n_i+1:)/this%scl_o
+
+            ! Apply swaps
 
             v_(this%i_piv) = v_
 
