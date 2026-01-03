@@ -141,8 +141,8 @@ contains
          logical, intent(in), optional :: partial
 
          logical  :: partial_
-         ${T}$    :: M(2*this%n_e,3*this%n_e)
          integer  :: k
+         ${T}$    :: M(2*this%n_e,3*this%n_e)
          integer  :: i
          real(RD) :: scl
          integer  :: s
@@ -203,6 +203,7 @@ contains
                      ! Find the pivot
 
                      piv = 0._RD
+                     i_piv = j
 
                      do i = j, 2*n_e
                         scl = abs(M(i,j))*rscl(i)
@@ -459,11 +460,6 @@ contains
             end subroutine eval_E
          end interface
          type(ext_${S}$), intent(out) :: det
-
-         ${T}$   :: M(2*this%n_e,2*this%n_e)
-         integer :: ipiv(2*this%n_e)
-         integer :: info
-         integer :: i
 
          ! Build and factorize the sysmtx
 

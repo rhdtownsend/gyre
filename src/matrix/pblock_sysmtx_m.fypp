@@ -233,6 +233,7 @@ contains
                         ! Find the pivot
 
                         piv = 0._RD
+                        i_piv = j
 
                         do i = j, 2*n_e
                            scl = abs(M(i,j))*rscl(i)
