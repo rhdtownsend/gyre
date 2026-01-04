@@ -97,11 +97,11 @@ contains
          allocate(sm%scl_o(n_o))
 
          allocate(sm%scl(n))
-         allocate(sm%D(n))
 
          allocate(sm%R(2*n_e,2*n_e))
-
          allocate(sm%i_piv(2*n_e))
+
+         allocate(sm%D(n))
 
          sm%n = n
          sm%n_e = n_e
@@ -116,7 +116,7 @@ contains
 
       !****
 
-      subroutine build_and_factor_${S}$_(this, eval_B, eval_E, partial)
+      subroutine build_and_factor_${S}$_(this, eval_B, eval_E, full)
 
          class(sblock_sysmtx_${S}$), intent(inout) :: this
          interface
@@ -138,11 +138,13 @@ contains
                type(ext_${S}$), intent(out) :: scl
             end subroutine eval_E
          end interface
-         logical, intent(in), optional :: partial
+         logical, intent(in), optional :: full
 
-         logical  :: partial_
+         logical  :: full_
          integer  :: k
-         ${T}$    :: M(2*this%n_e,3*this%n_e)
+         ${T}$    :: G(2*this%n_e,this%n_e)
+         ${T}$    :: U(2*this%n_e,this%n_e)
+         ${T}$    :: E(2*this%n_e,this%n_e)
          integer  :: i
          real(RD) :: scl
          integer  :: s
@@ -151,26 +153,41 @@ contains
          real(RD) :: piv
          integer  :: i_piv
          ${T}$    :: alpha
+         ${T}$    :: R(2*this%n_e,2*this%n_e)
 
-         if(PRESENT(partial)) then
-            partial_ = partial
+         if(PRESENT(full)) then
+            full_ = full
          else
-            partial_ = .FALSE.
+            full_ = .FALSE.
          end if
 
          ! Build and factorize the sysmtx
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_o => this%n_o)
 
-            ! Build and factorize the equation blocks using a serial
-            ! version of the structured (SLU) algorithm by [Wri1994]
+            ! Build and factorize the equation blocks using the cyclic
+            ! version of the structured (SLU) algorithm by Wright
+            ! (1994, Numer. Math., 67, 521)
 
             associate( &
-               U_1 => M(:n_e,:n_e), U_2 => M(n_e+1:,:n_e), &
-               G_1 => M(:n_e,n_e+1:2*n_e), G_2 => M(n_e+1:,n_e+1:2*n_e), &
-               E_1 => M(:n_e,2*n_e+1:), E_2 => M(n_e+1:,2*n_e+1:))
+               G_1 => G(:n_e,:), G_2 => G(n_e+1:,:), &
+               U_1 => U(:n_e,:), U_2 => U(n_e+1:,:), &
+               E_1 => E(:n_e,:), E_2 => E(n_e+1:,:), &
+               rscl_1 => rscl(:n_e), rscl_2 => rscl(n_e+1:))
 
                call eval_E(1, G_1, U_1, this%scl(1))
+
+               ! Determine row scalings for pivoting (first block)
+
+               rscl_1 = 0._RD
+
+               do s = 1, n_e
+                  do i = 1, n_e
+                     rscl_1(i) = MAX(rscl_1(i), abs(G_1(i,s)), abs(U_1(i,s)))
+                  end do
+               end do
+
+               rscl_1 = 1._RD/rscl_1
 
                block_loop : do k = 1, n-1
 
@@ -182,31 +199,31 @@ contains
                   G_2 = 0._RD
                   E_1 = 0._RD
 
-                  ! Determine row scalings for implicit pivoting
+                  ! Determine row scalings for pivoting
 
-                  rscl = abs(M(:,1))
+                  rscl_2 = 0._RD
 
-                  do s = 2, 3*n_e
-                     do i = 1, 2*n_e
-                        rscl(i) = MAX(rscl(i), abs(M(i,s)))
+                  do s = 1, n_e
+                     do i = 1, n_e
+                        rscl_2(i) = MAX(rscl_2(i), abs(U_2(i,s)), abs(E_2(i,s)))
                      end do
                   end do
 
-                  rscl = 1._RD/rscl
+                  rscl_2 = 1._RD/rscl_2
 
-                  ! Reduce the first n_e rows of M to row echelon form
+                  ! Reduce U to row echelon form
 
                   this%D(k) = 1._RD
 
                   reduce_loop: do j = 1, n_e
 
-                     ! Find the pivot
+                     ! Find the pivot row
 
                      piv = 0._RD
                      i_piv = j
 
                      do i = j, 2*n_e
-                        scl = abs(M(i,j))*rscl(i)
+                        scl = abs(U(i,j))*rscl(i)
                         if (scl > piv) then
                            piv = scl
                            i_piv = i
@@ -220,10 +237,20 @@ contains
 
                      if (i_piv /= j) then
 
-                        do s = j, 3*n_e
-                           alpha = M(i_piv,s)
-                           M(i_piv,s) = M(j,s)
-                           M(j,s) = alpha
+                        do s = 1, n_e
+
+                           alpha = G(i_piv,s)
+                           G(i_piv,s) = G(j,s)
+                           G(j,s) = alpha
+
+                           alpha = U(i_piv,s)
+                           U(i_piv,s) = U(j,s)
+                           U(j,s) = alpha
+
+                           alpha = E(i_piv,s)
+                           E(i_piv,s) = E(j,s)
+                           E(j,s) = alpha
+
                         end do
 
                         scl = rscl(i_piv)
@@ -237,37 +264,38 @@ contains
                      ! Scale the row so that the diagonal element
                      ! is unity
 
-                     this%D(k) = this%D(k)*M(j,j)
+                     this%D(k) = this%D(k)*U(j,j)
 
-                     alpha = 1._RD/M(j,j)
+                     alpha = 1._RD/U(j,j)
 
-                     do s = j, 3*n_e
-                        M(j,s) = alpha*M(j,s)
+                     do s = 1, n_e
+                        G(j,s) = alpha*G(j,s)
+                        U(j,s) = alpha*U(j,s)
+                        E(j,s) = alpha*E(j,s)
                      end do
 
-                     ! Eliminate elements below the diagonal (for
-                     ! efficiency, don't actually set the elements to
-                     ! zero, since they won't be used)
+                     ! Eliminate elements below the diagonal
 
-                     do s = j+1, 3*n_e
-                        alpha = M(j,s)
-                        do i = j+1, 2*n_e
-                           M(i,s) = M(i,s) - alpha*M(i,j)
+                     do i = j+1, 2*n_e
+                        alpha = U(i,j)
+                        do s = 1, n_e
+                           G(i,s) = G(i,s) - alpha*G(j,s)
+                           U(i,s) = U(i,s) - alpha*U(j,s)
+                           E(i,s) = E(i,s) - alpha*E(j,s)
                         end do
                      end do
 
-                     ! Eliminate elements above the diagonal (for
-                     ! efficiency, don't actually set the elements to
-                     ! zero, since they won't be used). This is
-                     ! skipped if partial is .TRUE., since these data
-                     ! aren't needed
+                     ! Eliminate elements above the diagonal. This is
+                     ! skipped if full is not .TRUE.
 
-                     if (.NOT. partial_) then
+                     if (full_) then
 
-                        do s = j+1, 3*n_e
-                           alpha = M(j,s)
-                           do i = 1, j-1
-                              M(i,s) = M(i,s) - alpha*M(i,j)
+                        do i = 1, j-1
+                           alpha = U(i,j)
+                           do s = 1, n_e
+                              G(i,s) = G(i,s) - alpha*G(j,s)
+                              U(i,s) = U(i,s) - alpha*U(j,s)
+                              E(i,s) = E(i,s) - alpha*E(j,s)
                            end do
                         end do
 
@@ -277,10 +305,10 @@ contains
 
                   ! Store data for backsubstitution
 
-                  if (.NOT. partial_) then
+                  if (full_) then
 
-                     this%G(:,:,k+1) = G_1
-                     this%E(:,:,k+1) = E_1
+                     this%G(:,:,k) = G_1
+                     this%E(:,:,k) = E_1
 
                   end if
 
@@ -289,7 +317,12 @@ contains
                   G_1 = G_2
                   U_1 = E_2
 
+                  rscl_1 = rscl_2
+
                end do block_loop
+
+               this%G(:,:,n) = G_2
+               this%E(:,:,n) = E_2
 
             end associate
 
@@ -298,95 +331,104 @@ contains
 
             ! Set up the matrix
 
-            call eval_B(this%R(:n_i,:n_e), this%R(n_i+n_e+1:,n_e+1:), this%scl_i, this%scl_o)
+            associate( &
+               R_1 => R(:n_e,:), R_2 => R(n_e+1:,:), &
+               rscl_1 => rscl(:n_e), rscl_2 => rscl(n_e+1:))
 
-            this%R(n_i+1:n_i+n_e,:n_e) = M(:n_e,n_e+1:2*n_e)
-            this%R(n_i+n_e+1:,:n_e) = 0._RD
+               R_1(:,:n_e) = this%G(:,:,n)
+               R_1(:,n_e+1:) = this%E(:,:,n)
 
-            this%R(:n_i,n_e+1:) = 0._RD
-            this%R(n_i+1:n_i+n_e,n_e+1:) = M(:n_e,:n_e)
+               call eval_B(R_2(:n_i,:n_e), R_2(n_i+1:,n_e+1:), this%scl_i, this%scl_o)
 
-            ! Determine row scalings for implicit pivoting
+               R_2(:n_i,n_e+1:) = 0._RD
+               R_2(n_i+1:,:n_e) = 0._RD
 
-            rscl = abs(this%R(:,1))
+               ! Determine row scalings for pivoting (boundary block)
 
-            do s = 2, 2*n_e
-               do i = 1, 2*n_e
-                  rscl(i) = MAX(rscl(i), abs(this%R(i,s)))
+               rscl_2 = 0._RD
+
+               do s = 1, 2*n_e
+                  do i = 1, n_e
+                     rscl_2(i) = MAX(rscl_2(i), abs(R_2(i,s)))
+                  end do
                end do
-            end do
 
-            rscl = 1._RD/rscl
+               rscl_2 = 1._RD/rscl_2
 
-            ! Reduce the matrix to row echelon form
+               ! Reduce the matrix to row echelon form
 
-            this%D(n) = 1._RD
+               this%D(n) = 1._RD
 
-            reduce_R_loop: do j = 1, 2*n_e
+               reduce_R_loop: do j = 1, 2*n_e
 
-               ! Find the pivot
+                  ! Find the pivot
 
-               piv = 0._RD
-               i_piv = j
+                  piv = 0._RD
+                  i_piv = j
 
-               do i = j, 2*n_e
-                  scl = abs(this%R(i,j))*rscl(i)
-                  if (scl > piv) then
-                     piv = scl
-                     i_piv = i
+                  do i = j, 2*n_e
+                     scl = abs(R(i,j))*rscl(i)
+                     if (scl > piv) then
+                        piv = scl
+                        i_piv = i
+                     end if
+                  end do
+
+                  ! If the pivot is zero, then skip this column
+
+                  if (piv == 0._RD) then
+                     this%i_piv(j) = i_piv
+                     this%D(n) = 0._RD
+                     cycle reduce_R_loop
                   end if
-               end do
 
-               ! If the pivot is zero, then skip this column
+                  ! If necessary, swap rows to place the pivot
+                  ! on the diagonal
 
-               if (piv == 0._RD) then
-                  this%i_piv(j) = i_piv
-                  this%D(n) = 0._RD
-                  cycle reduce_R_loop
-               end if
+                  if (i_piv /= j) then
 
-               ! If necessary, swap rows to place the pivot
-               ! on the diagonal
+                     do s = 1, 2*n_e
+                        alpha = R(i_piv,s)
+                        R(i_piv,s) = R(j,s)
+                        R(j,s) = alpha
+                     end do
 
-               if (i_piv /= j) then
+                     scl = rscl(i_piv)
+                     rscl(i_piv) = rscl(j)
+                     rscl(j) = scl
 
-                  do s = j, 2*n_e
-                     alpha = this%R(i_piv,s)
-                     this%R(i_piv,s) = this%R(j,s)
-                     this%R(j,s) = alpha
-                  end do
+                     this%D(n) = -this%D(n)
 
-                  scl = rscl(i_piv)
-                  rscl(i_piv) = rscl(j)
-                  rscl(j) = scl
+                  end if
 
-                  this%D(n) = -this%D(n)
+                  ! (Unlike above, don't scale the row so that the
+                  ! diagonal element is unity, because this element might
+                  ! be zero)
 
-               end if
+                  this%D(n) = this%D(n)*R(j,j)
 
-               ! (Unlike above, don't scale the row so that the
-               ! diagonal element is unity, because this element might
-               ! be zero)
+                  ! Eliminate elements below the diagonal
 
-               this%D(n) = this%D(n)*this%R(j,j)
-
-               ! Eliminate elements below the diagonal (for
-               ! efficiency, don't actually set these elements
-               ! to zero, since they won't be used)
-
-               alpha = 1._RD/this%R(j,j)
-
-               do s = j+1, 2*n_e
                   do i = j+1, 2*n_e
-                     this%R(i,s) = this%R(i,s) - alpha*this%R(i,j)*this%R(j,s)
+                     alpha = R(i,j)/R(j,j)
+                     do s = 1, 2*n_e
+                        R(i,s) = R(i,s) - alpha*R(j,s)
+                     end do
                   end do
-               end do
 
-               ! Store the pivot information
+                  ! Store the pivot information
 
-               this%i_piv(j) = i_piv
+                  this%i_piv(j) = i_piv
 
-            end do reduce_R_loop
+               end do reduce_R_loop
+
+               ! Store data for backsubstitution
+
+               if (full_) then
+                  this%R = R
+               end if
+
+            end associate
 
          end associate
 
@@ -421,7 +463,7 @@ contains
 
                associate(u_1 => u(:n_e), u_k => u(n_e*(k-1)+1:n_e*k), u_k1 => u(n_e*k+1:n_e*(k+1)))
 
-                  u_k = -MATMUL(this%G(:,:,k), u_1) - MATMUL(this%E(:,:,k), u_k1)
+                  u_k = -MATMUL(this%G(:,:,k-1), u_1) - MATMUL(this%E(:,:,k-1), u_k1)
 
                end associate
 
@@ -463,7 +505,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E, partial=.TRUE.)
+         call this%build_and_factor_(eval_B, eval_E)
 
          ! Evaluate the determinant
 
@@ -512,7 +554,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_(eval_B, eval_E, full=.TRUE.)
 
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) == 1
@@ -592,7 +634,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_(eval_B, eval_E, full=.TRUE.)
 
          ! Evaluate the solution vector v of the inhomogeneous linear
          ! system S u = v. It is assumed that the right-hand side
