@@ -269,8 +269,9 @@ contains
          call solve_root(eval_discrim_, z_a, z_b, ext_rt(0._RD), nm_p, &
             z_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
             f_z_a=f_z_a, f_z_b=f_z_b, f_z_root=f_z_root)
+
          if (stat /= STAT_OK) then
-            call report_stat_(stat, 'solve')
+            call report_stat_(stat, 'solve_root', n_iter, pr(i)%omega_a, pr(i)%omega_b)
             pr(i)%active = .FALSE.
             cycle prox_loop
          endif
@@ -329,10 +330,13 @@ contains
 
       !****
 
-      subroutine report_stat_(stat, stage_str)
+      subroutine report_stat_(stat, stage_str, n_iter, omega_a, omega_b)
 
          integer, intent(in)      :: stat
          character(*), intent(in) :: stage_str
+         integer, intent(in)      :: n_iter
+         complex(RD), intent(in)  :: omega_a
+         complex(RD), intent(in)  :: omega_b
 
          ! Report the status
 
@@ -348,8 +352,8 @@ contains
             write(OUTPUT_UNIT, 110) 'n_iter     :', n_iter
 110         format(3X,A,1X,I0)
 
-            write(OUTPUT_UNIT, 120) 'omega_a :', pr(i)%omega_a
-            write(OUTPUT_UNIT, 120) 'omega_b :', pr(i)%omega_b
+            write(OUTPUT_UNIT, 120) 'omega_a :', omega_a
+            write(OUTPUT_UNIT, 120) 'omega_b :', omega_b
 120         format(3X,A,1X,2E24.16)
 
          end if
@@ -418,13 +422,12 @@ contains
          f_z_a = f_z_a*f_deflate_(pr(i)%omega_a)
          f_z_b = f_z_b*f_deflate_(pr(i)%omega_b)
 
-         n_iter = 0
-
          call narrow_bracket(eval_discrim_deflate_, z_a, z_b, ext_rt(0._RD), nm_p, &
             stat, n_iter=n_iter_def, n_iter_max=nm_p%n_iter_max, &
             f_z_a=f_z_a, f_z_b=f_z_b)
+
          if (stat /= STAT_OK) then
-            call report_stat_(stat, 'deflate narrow')
+            call report_stat_(stat, 'narrow_bracket', n_iter_def, pr(i)%omega_a, pr(i)%omega_b)
             pr(i)%active = .FALSE.
             cycle prox_loop
          endif
@@ -440,7 +443,7 @@ contains
          call expand_bracket(eval_discrim_, z_a, z_b, ext_rt(0._RD), stat, &
             f_z_a=f_z_a, f_z_b=f_z_b)
          if (stat /= STAT_OK) then
-            call report_stat_(stat, 'deflate re-expand')
+            call report_stat_(stat, 'expand_bracket', 0, pr(i)%omega_a, pr(i)%omega_b)
             pr(i)%active = .FALSE.
             cycle prox_loop
          endif
@@ -451,7 +454,7 @@ contains
             z_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max-n_iter_def, &
             f_z_a=f_z_a, f_z_b=f_z_b, f_z_root=f_z_root)
          if (stat /= STAT_OK) then
-            call report_stat_(stat, 'deflate solve')
+            call report_stat_(stat, 'solve_root', n_iter, pr(i)%omega_a, pr(i)%omega_b)
             pr(i)%active = .TRUE.
             cycle prox_loop
          endif
@@ -560,10 +563,13 @@ contains
 
       !****
 
-      subroutine report_stat_(stat, stage_str)
+      subroutine report_stat_(stat, stage_str, n_iter, omega_a, omega_b)
 
          integer, intent(in)      :: stat
          character(*), intent(in) :: stage_str
+         integer, intent(in)      :: n_iter
+         complex(RD), intent(in)  :: omega_a
+         complex(RD), intent(in)  :: omega_b
 
          ! Report the status
 
@@ -579,8 +585,8 @@ contains
             write(OUTPUT_UNIT, 110) 'n_iter     :', n_iter + n_iter_def
 110         format(3X,A,1X,I0)
 
-            write(OUTPUT_UNIT, 120) 'omega_a :', pr(i)%omega_a
-            write(OUTPUT_UNIT, 120) 'omega_b :', pr(i)%omega_b
+            write(OUTPUT_UNIT, 120) 'omega_a :', omega_a
+            write(OUTPUT_UNIT, 120) 'omega_b :', omega_b
 120         format(3X,A,1X,2E24.16)
 
          end if

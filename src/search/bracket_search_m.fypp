@@ -54,6 +54,7 @@ module bracket_search_m
       type(ext_rt) :: discrim_b
       real(RD)     :: chi
       integer      :: n_iter
+      integer      :: id
       logical      :: active
    end type bracket_t
 
@@ -196,7 +197,7 @@ contains
 
       ! Set up the bracket array
 
-      !$OMP DO
+      !$OMP DO ORDERED
       bracket_loop : do i = 1, SIZE(br)
 
          br(i)%omega_a = omega(i)
@@ -206,6 +207,13 @@ contains
          br(i)%discrim_b = discrim(i+1)
 
          br(i)%active = discrim(i)*discrim(i+1) <= ext_rt(0._RD)
+
+         !$OMP ORDERED
+         if (br(i)%active) then
+            id_m = id_m + 1
+            br(i)%id = id_m
+         end if
+         !$OMP END ORDERED
 
       end do bracket_loop
       !$OMP END DO
@@ -265,8 +273,9 @@ contains
          call solve_root(eval_discrim_, x_a, x_b, ext_rt(0._RD), nm_p, &
             x_root, stat, n_iter=n_iter, n_iter_max=nm_p%n_iter_max, &
             f_x_a=f_x_a, f_x_b=f_x_b, f_x_root=f_x_root)
+
          if (stat /= STAT_OK) then
-            call report_stat_(stat, 'solve')
+            call report_stat_(stat, 'solve_root', n_iter, br(i)%omega_a, br(i)%omega_b)
             br(i)%active = .FALSE.
             cycle bracket_loop
          endif
@@ -323,10 +332,13 @@ contains
 
       end subroutine eval_discrim_
 
-      subroutine report_stat_(stat, stage_str)
+      subroutine report_stat_(stat, stage_str, n_iter, omega_a, omega_b)
 
          integer, intent(in)      :: stat
          character(*), intent(in) :: stage_str
+         integer, intent(in)      :: n_iter
+         real(RD), intent(in)     :: omega_a
+         real(RD), intent(in)     :: omega_b
 
          ! Report the status
 
@@ -342,8 +354,8 @@ contains
             write(OUTPUT_UNIT, 110) 'n_iter  :', n_iter
 110         format(3X,A,1X,I0)
 
-            write(OUTPUT_UNIT, 120) 'omega_a :', br(i)%omega_a
-            write(OUTPUT_UNIT, 120) 'omega_b :', br(i)%omega_b
+            write(OUTPUT_UNIT, 120) 'omega_a :', omega_a
+            write(OUTPUT_UNIT, 120) 'omega_b :', omega_b
 120         format(3X,A,1X,E24.16)
 
          end if
@@ -399,13 +411,13 @@ contains
 
          if (.NOT. br(i)%active) cycle bracket_loop
 
-         ! Construct the mode. The id gets set when the mode is processed
+         ! Construct the mode
 
          select type (bp)
          type is (ad_bvp_t)
-            wv = wave_t(bp, state_rt(br(i)%omega_root), 0, br(i)%chi, br(i)%n_iter)
+            wv = wave_t(bp, state_rt(br(i)%omega_root), br(i)%id, br(i)%chi, br(i)%n_iter)
          type is (rad_bvp_t)
-            wv = wave_t(bp, state_rt(br(i)%omega_root), 0, br(i)%chi, br(i)%n_iter)
+            wv = wave_t(bp, state_rt(br(i)%omega_root), br(i)%id, br(i)%chi, br(i)%n_iter)
          class default
             @:ABORT('invalid bp class')
          end select
@@ -415,9 +427,6 @@ contains
          ! Process the mode
 
          !$OMP ORDERED
-         id_m = id_m + 1
-         md%id = id_m
-
          call process_mode(md, culled)
 
          if (check_log_level('INFO') .AND. .NOT. culled) then
