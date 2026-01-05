@@ -211,9 +211,6 @@ contains
                         rscl_1 = 1._RD/rscl_1
                         rscl_2 = 1._RD/rscl_2
 
-                        this%rscl(:,k) = rscl_1
-                        this%rscl(:,k+l) = rscl_2
-
                      else
 
                         G_1 = this%G(:,:,k)
@@ -249,10 +246,7 @@ contains
                            end if
                         end do
 
-                        if (piv == 0._RD) then
-                           this%D(k) = 0._RD
-                           cycle reduce_loop
-                        end if
+                        @:ASSERT(piv /= 0, 'zero pivot')
 
                         ! If necessary, swap rows to place the pivot
                         ! on the diagonal
@@ -308,10 +302,14 @@ contains
                         this%G(:,:,k+l) = G_1
                         this%E(:,:,k+l) = E_1
 
+                        this%rscl(:,k+l) = rscl_1
+
                      end if
 
                      this%G(:,:,k) = G_2
                      this%E(:,:,k) = E_2
+
+                     this%rscl(:,k) = rscl_2
 
                   end do block_loop
                   !$OMP END DO
