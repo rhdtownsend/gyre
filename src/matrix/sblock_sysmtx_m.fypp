@@ -44,7 +44,6 @@ module sblock_sysmtx_m
          ${T}$, allocatable           :: U(:,:,:)  ! Middle factor blocks
          ${T}$, allocatable           :: E(:,:,:)  ! Right factor blocks
          ${T}$, allocatable           :: R(:,:)    ! Reduced system matrix
-         real(RD), allocatable        :: rscl(:)   ! Row scalings for pivoting
          type(ext_${S}$), allocatable :: scl(:)    ! Block scales
          ${T}$, allocatable           :: D(:)      ! Diagonal products
       contains
@@ -92,11 +91,9 @@ contains
          allocate(sm%G(n_e,n_e,n-1))
          allocate(sm%U(n_e,n_e,n-1))
          allocate(sm%E(n_e,n_e,n-1))
+         allocate(sm%R(2*n_e,2*n_e))
 
          allocate(sm%scl(n))
-         allocate(sm%rscl(n_e))
-
-         allocate(sm%R(2*n_e,2*n_e))
 
          allocate(sm%D(n))
 
@@ -166,8 +163,8 @@ contains
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_o => this%n_o)
 
-         ! First, build and factorize the sliced matrix (eqn. 2.4 of
-         ! Wright 1994, and subsequent steps)
+            ! First, build and factorize the sliced matrix (eqn. 2.4
+            ! of Wright 1994, and subsequent steps)
 
             associate( &
                G_1 => G(:n_e,:), G_2 => G(n_e+1:,:), &
@@ -640,10 +637,6 @@ contains
          ! n_o last rows (corresponding to the inner and outer
          ! boundary conditions). These components are supplied in
          ! v(:n_i) and v(n_i+1:), respectively.
-
-
-         ! Evaluate the solution vector u of the homogeneous linear system
-         ! S u = 0. It is assumed that the nullity nul(S) == 1
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
