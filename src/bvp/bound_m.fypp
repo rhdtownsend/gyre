@@ -40,7 +40,7 @@ module bound_m
 
       abstract interface
 
-         subroutine build_${S}$_(this, st, B, scl)
+         subroutine build_${S}$_(this, st, B)
             use forum_m, only: RD
             use state_m
             import bound_${S}$
@@ -48,7 +48,6 @@ module bound_m
             class(bound_${S}$), intent(in) :: this
             class(state_${S}$), intent(in) :: st
             ${T}$, intent(out)             :: B(:,:)
-            ${T}$, intent(out)             :: scl(:)
          end subroutine build_${S}$_
 
       end interface

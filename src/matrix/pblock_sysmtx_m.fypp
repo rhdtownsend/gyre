@@ -42,8 +42,6 @@ module pblock_sysmtx_m
          private
          ${T}$, allocatable           :: G(:,:,:)  ! Left factor blocks
          ${T}$, allocatable           :: E(:,:,:)  ! Right factor blocks
-         ${T}$, allocatable           :: scl_i(:)  ! Inner boundary scales
-         ${T}$, allocatable           :: scl_o(:)  ! Outer boundary scales
          ${T}$, allocatable           :: R(:,:)    ! Reduced system matrix
          integer, allocatable         :: i_piv(:)  ! Pivoting info for R
          real(RD), allocatable        :: rscl(:,:) ! Row scalings for pivoting
@@ -94,9 +92,6 @@ contains
          allocate(sm%G(n_e,n_e,n))
          allocate(sm%E(n_e,n_e,n))
 
-         allocate(sm%scl_i(n_i))
-         allocate(sm%scl_o(n_o))
-
          allocate(sm%scl(n))
          allocate(sm%rscl(n_e,n))
 
@@ -122,13 +117,11 @@ contains
 
          class(pblock_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD
@@ -388,7 +381,7 @@ contains
                R_1(:,:n_e) = this%G(:,:,1)
                R_1(:,n_e+1:) = this%E(:,:,1)
 
-               call eval_B(R_2(:n_i,:n_e), R_2(n_i+1:,n_e+1:), this%scl_i, this%scl_o)
+               call eval_B(R_2(:n_i,:n_e), R_2(n_i+1:,n_e+1:))
 
                R_2(:n_i,n_e+1:) = 0._RD
                R_2(n_i+1:,:n_e) = 0._RD
@@ -559,13 +552,11 @@ contains
 
          class(pblock_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD
@@ -585,7 +576,7 @@ contains
 
          ! Evaluate the determinant
 
-         det = product([ext_${S}$(this%D),ext_${S}$(this%scl_i),this%scl,ext_${S}$(this%scl_o)])
+         det = product([ext_${S}$(this%D),this%scl])
 
          ! Finish
 
@@ -599,13 +590,11 @@ contains
 
          class(pblock_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD
@@ -677,13 +666,11 @@ contains
 
          class(pblock_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD
@@ -723,9 +710,9 @@ contains
 
             ! Set up the rhs vector
 
-            v_(:n_i) = v(:n_i)/this%scl_i
+            v_(:n_i) = v(:n_i)
             v_(n_i+1:2*n_e-n_o) = 0._RD
-            v_(2*n_e-n_o+1:) = v(n_i+1:)/this%scl_o
+            v_(2*n_e-n_o+1:) = v(n_i+1:)
 
             ! Apply swaps
 
@@ -768,9 +755,6 @@ contains
          call hi%write_attr('n_e', this%n_e)
          call hi%write_attr('n_i', this%n_i)
          call hi%write_attr('n_o', this%n_o)
-
-         call hi%write_dset('scl_i', this%scl_i)
-         call hi%write_dset('scl_o', this%scl_o)
 
          call hi%write_dset('G', this%G)
          call hi%write_dset('E', this%E)

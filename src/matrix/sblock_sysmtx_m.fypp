@@ -327,13 +327,11 @@ contains
 
          class(sblock_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
          end interface
          logical, intent(in), optional  :: full
@@ -374,15 +372,10 @@ contains
                R_1(:,:n_e) = this%G(:,:,n)
                R_1(:,n_e+1:) = this%E(:,:,n)
 
-               call eval_B(R_2(:n_i,:n_e), R_2(n_i+1:,n_e+1:), scl_i, scl_o)
+               call eval_B(R_2(:n_i,:n_e), R_2(n_i+1:,n_e+1:))
 
                R_2(:n_i,n_e+1:) = 0._RD
                R_2(n_i+1:,:n_e) = 0._RD
-
-               if (PRESENT(f)) then
-                  f_2(:n_i) = f_2(:n_i)/scl_i
-                  f_2(n_i+1:) = f_2(n_i+1:)/scl_o
-               end if
 
                ! Determine row scalings for pivoting
 
@@ -534,13 +527,11 @@ contains
 
          class(sblock_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD
@@ -576,13 +567,11 @@ contains
 
          class(sblock_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD
@@ -655,13 +644,11 @@ contains
 
          class(sblock_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD

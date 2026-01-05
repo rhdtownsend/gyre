@@ -184,23 +184,20 @@ contains
 
    !****
 
-   subroutine build_i (this, st, B, scl)
+   subroutine build_i (this, st, B)
 
       class(sad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
       real(RD), intent(out)          :: B(:,:)
-      real(RD), intent(out)          :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_i)
 
       ! Evaluate the inner boundary conditions
 
       select case (this%type_i)
       case (REGULAR_TYPE)
-         call this%build_regular_i_(st, B, scl)
+         call this%build_regular_i_(st, B)
       case default
          @:ABORT('invalid type_i')
       end select
@@ -217,19 +214,16 @@ contains
 
    !****
 
-   subroutine build_regular_i_(this, st, B, scl)
+   subroutine build_regular_i_(this, st, B)
 
       class(sad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
       real(RD), intent(out)          :: B(:,:)
-      real(RD), intent(out)          :: scl(:)
 
       real(RD) :: l
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_i)
 
       ! Evaluate the inner boundary conditions (regular-enforcing)
 
@@ -240,8 +234,6 @@ contains
       B(1,1) = l
       B(1,2) = -1._RD
 
-      scl = 1._RD
-
       ! Finish
 
       return
@@ -250,23 +242,20 @@ contains
 
    !****
 
-   subroutine build_o(this, st, B, scl)
+   subroutine build_o(this, st, B)
 
       class(sad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
       real(RD), intent(out)          :: B(:,:)
-      real(RD), intent(out)          :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_o)
 
       ! Evaluate the outer boundary conditions
 
       select case (this%type_o)
       case (VACUUM_TYPE)
-         call this%build_vacuum_o_(st, B, scl)
+         call this%build_vacuum_o_(st, B)
       case default
          @:ABORT('invalid type_o')
       end select
@@ -283,19 +272,16 @@ contains
 
    !****
 
-   subroutine build_vacuum_o_(this, st, B, scl)
+   subroutine build_vacuum_o_(this, st, B)
 
       class(sad_bound_t), intent(in) :: this
       class(state_rt), intent(in)    :: st
       real(RD), intent(out)          :: B(:,:)
-      real(RD), intent(out)          :: scl(:)
 
       integer :: l
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_o)
 
       ! Evaluate the outer boundary conditions (vacuum)
 
@@ -308,8 +294,6 @@ contains
 
          B(1,1) = l + 1._RD - U
          B(1,2) = 1._RD
-
-         scl = 1._RD
 
       end associate
 

@@ -50,13 +50,11 @@ module sysmtx_m
             implicit none (type, external)
             class(sysmtx_${S}$), intent(inout) :: this
             interface
-               subroutine eval_B(B_i, B_o, scl_i, scl_o)
+               subroutine eval_B(B_i, B_o)
                   use forum_m, only: RD
                   implicit none (type, external)
                   ${T}$, intent(out) :: B_i(:,:)
                   ${T}$, intent(out) :: B_o(:,:)
-                  ${T}$, intent(out) :: scl_i(:)
-                  ${T}$, intent(out) :: scl_o(:)
                end subroutine eval_B
                subroutine eval_E(k, E_l, E_r, scl)
                   use forum_m, only: RD
@@ -78,13 +76,11 @@ module sysmtx_m
             implicit none (type, external)
             class(sysmtx_${S}$), intent(inout) :: this
             interface
-               subroutine eval_B(B_i, B_o, scl_i, scl_o)
+               subroutine eval_B(B_i, B_o)
                   use forum_m, only: RD
                   implicit none (type, external)
                   ${T}$, intent(out) :: B_i(:,:)
                   ${T}$, intent(out) :: B_o(:,:)
-                  ${T}$, intent(out) :: scl_i(:)
-                  ${T}$, intent(out) :: scl_o(:)
                end subroutine eval_B
                subroutine eval_E(k, E_l, E_r, scl)
                   use forum_m, only: RD
@@ -106,13 +102,11 @@ module sysmtx_m
             implicit none (type, external)
             class(sysmtx_${S}$), intent(inout) :: this
             interface
-               subroutine eval_B(B_i, B_o, scl_i, scl_o)
+               subroutine eval_B(B_i, B_o)
                   use forum_m, only: RD
                   implicit none (type, external)
                   ${T}$, intent(out) :: B_i(:,:)
                   ${T}$, intent(out) :: B_o(:,:)
-                  ${T}$, intent(out) :: scl_i(:)
-                  ${T}$, intent(out) :: scl_o(:)
                end subroutine eval_B
                subroutine eval_E(k, E_l, E_r, scl)
                   use forum_m, only: RD

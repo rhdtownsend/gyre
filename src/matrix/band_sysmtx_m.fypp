@@ -198,13 +198,11 @@ contains
 
          class(band_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD
@@ -233,15 +231,15 @@ contains
 
             ! Build the boundary blocks, and row-scale to unity
 
-            call eval_B(B_i, B_o, this%scl_i, this%scl_o)
+            call eval_B(B_i, B_o)
             do i = 1, n_i
                scl = MAXVAL(abs(B_i(i,:)))
-               this%scl_i(i) = this%scl_i(i)*scl
+               this%scl_i(i) = scl
                call this%set_row_(i, 1, B_i(i,:)/scl)
             end do
             do i = 1, n_o
                scl = MAXVAL(abs(B_o(i,:)))
-               this%scl_o(i) = this%scl_o(i)*scl
+               this%scl_o(i) = scl
                call this%set_row_(n_e*n+n_i+i, n_e*n+1, B_o(i,:)/scl)
             end do
 
@@ -283,13 +281,11 @@ contains
 
          class(band_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD
@@ -332,13 +328,11 @@ contains
 
          class(band_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD
@@ -431,13 +425,11 @@ contains
 
          class(band_sysmtx_${S}$), intent(inout) :: this
          interface
-            subroutine eval_B(B_i, B_o, scl_i, scl_o)
+            subroutine eval_B(B_i, B_o)
                use forum_m, only: RD
                implicit none (type, external)
                ${T}$, intent(out) :: B_i(:,:)
                ${T}$, intent(out) :: B_o(:,:)
-               ${T}$, intent(out) :: scl_i(:)
-               ${T}$, intent(out) :: scl_o(:)
             end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD

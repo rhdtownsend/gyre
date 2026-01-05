@@ -281,22 +281,21 @@ contains
 
    !****
 
-   subroutine build_i(this, st, B, scl)
+   subroutine build_i(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       ! Evaluate the inner boundary conditions
 
       select case (this%type_i)
       case (REGULAR_TYPE)
-         call this%build_regular_i_(st, B, scl)
+         call this%build_regular_i_(st, B)
       case (ZERO_R_TYPE)
-         call this%build_zero_r_i_(st, B, scl)
+         call this%build_zero_r_i_(st, B)
       case (ZERO_H_TYPE)
-         call this%build_zero_h_i_(st, B, scl)
+         call this%build_zero_h_i_(st, B)
       case default
          @:ABORT('invalid type_i')
       end select
@@ -313,12 +312,11 @@ contains
 
    !****
 
-   subroutine build_regular_i_(this, st, B, scl)
+   subroutine build_regular_i_(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       real(RD)    :: Omega_rot
       complex(RD) :: omega_c
@@ -326,8 +324,6 @@ contains
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_i)
 
       ! Evaluate the inner boundary conditions (regular-enforcing)
 
@@ -366,8 +362,6 @@ contains
          B(3,5) = 1._RD
          B(3,6) = 0._RD
 
-         scl = 1._RD
-
       end associate
 
       ! Finish
@@ -378,17 +372,14 @@ contains
 
    !****
 
-   subroutine build_zero_r_i_(this, st, B, scl)
+   subroutine build_zero_r_i_(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_i)
 
       ! Evaluate the inner boundary conditions (zero
       ! radial displacement/gravity)
@@ -419,8 +410,6 @@ contains
          B(3,5) = 1._RD
          B(3,6) = 0._RD
 
-         scl = 1._RD
-
       end associate
 
       ! Finish
@@ -431,17 +420,14 @@ contains
 
    !****
 
-   subroutine build_zero_h_i_(this, st, B, scl)
+   subroutine build_zero_h_i_(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_i)
 
       ! Evaluate the inner boundary conditions (zero
       ! horizontal displacement/gravity)
@@ -472,8 +458,6 @@ contains
          B(3,5) = 1._RD
          B(3,6) = 0._RD
 
-         scl = 1._RD
-
       end associate
 
       ! Finish
@@ -484,30 +468,29 @@ contains
 
    !****
 
-   subroutine build_o(this, st, B, scl)
+   subroutine build_o(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       ! Evaluate the outer boundary conditions
 
       select case (this%type_o)
       case (VACUUM_TYPE)
-         call this%build_vacuum_o_(st, B, scl)
+         call this%build_vacuum_o_(st, B)
       case (ZERO_R_TYPE)
-         call this%build_zero_r_o_(st, B, scl)
+         call this%build_zero_r_o_(st, B)
       case (ZERO_H_TYPE)
-         call this%build_zero_h_o_(st, B, scl)
+         call this%build_zero_h_o_(st, B)
       case (DZIEM_TYPE)
-         call this%build_dziem_o_(st, B, scl)
+         call this%build_dziem_o_(st, B)
       case (ISOTHRM_TYPE)
-         call this%build_decomp_o_(st, B, scl)
+         call this%build_decomp_o_(st, B)
       case (UNNO_TYPE)
-         call this%build_decomp_o_(st, B, scl)
+         call this%build_decomp_o_(st, B)
       case (JCD_TYPE)
-         call this%build_jcd_o_(st, B, scl)
+         call this%build_jcd_o_(st, B)
       case default
          @:ABORT('invalid type_o')
       end select
@@ -524,12 +507,11 @@ contains
 
    !****
 
-   subroutine build_vacuum_o_(this, st, B, scl)
+   subroutine build_vacuum_o_(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       real(RD)    :: Omega_rot
       complex(RD) :: omega_c
@@ -539,8 +521,6 @@ contains
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_o)
 
       ! Evaluate the outer boundary conditions (vacuum)
 
@@ -587,8 +567,6 @@ contains
          B(3,5) = 4._RD*f_rht
          B(3,6) = -1._RD
 
-         scl = 1._RD
-
       end associate
 
       ! Finish
@@ -599,12 +577,11 @@ contains
 
    !****
 
-   subroutine build_zero_r_o_(this, st, B, scl)
+   subroutine build_zero_r_o_(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       real(RD)    :: Omega_rot
       complex(RD) :: omega_c
@@ -614,8 +591,6 @@ contains
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_o)
 
       ! Evaluate the outer boundary conditions (zero radial
       ! displacement)
@@ -663,8 +638,6 @@ contains
          B(3,5) = 4._RD*f_rht
          B(3,6) = -1._RD
 
-         scl = 1._RD
-
       end associate
 
       ! Finish
@@ -675,12 +648,11 @@ contains
 
    !****
 
-   subroutine build_zero_h_o_(this, st, B, scl)
+   subroutine build_zero_h_o_(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       real(RD)    :: Omega_rot
       complex(RD) :: omega_c
@@ -690,8 +662,6 @@ contains
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_o)
 
       ! Evaluate the outer boundary conditions (zero horizontal
       ! displacement)
@@ -739,8 +709,6 @@ contains
          B(3,5) = 4._RD*f_rht
          B(3,6) = -1._RD
 
-         scl = 1._RD
-
       end associate
 
       ! Finish
@@ -751,12 +719,11 @@ contains
 
    !****
 
-   subroutine build_dziem_o_(this, st, B, scl)
+   subroutine build_dziem_o_(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       real(RD)    :: Omega_rot
       complex(RD) :: omega_c
@@ -767,8 +734,6 @@ contains
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_o)
 
       ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
@@ -817,8 +782,6 @@ contains
          B(3,5) = 4._RD*f_rht
          B(3,6) = -1._RD
 
-         scl = 1._RD
-
       end associate
 
       ! Finish
@@ -829,12 +792,11 @@ contains
 
    !****
 
-   subroutine build_decomp_o_(this, st, B, scl)
+   subroutine build_decomp_o_(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       real(RD)    :: Omega_rot
       complex(RD) :: omega_c
@@ -856,8 +818,6 @@ contains
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_o)
 
       ! Evaluate the outer boundary conditions, based on a local
       ! eigendecomposition
@@ -931,8 +891,6 @@ contains
          B(3,5) = 4._RD*f_rht
          B(3,6) = -1._RD
 
-         scl = 1._RD
-
       end associate
 
       ! Finish
@@ -963,12 +921,11 @@ contains
 
    !****
 
-   subroutine build_jcd_o_(this, st, B, scl)
+   subroutine build_jcd_o_(this, st, B)
 
       class(nad_bound_t), intent(in) :: this
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
-      complex(RD), intent(out)       :: scl(:)
 
       real(RD)    :: Omega_rot
       complex(RD) :: omega_c
@@ -982,8 +939,6 @@ contains
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      @:CHECK_BOUNDS(SIZE(scl), this%n_o)
 
       ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
@@ -1039,8 +994,6 @@ contains
          B(3,4) = alpha_grv*(0._RD)
          B(3,5) = 4._RD*f_rht
          B(3,6) = -1._RD
-
-         scl = 1._RD
 
       end associate
 
