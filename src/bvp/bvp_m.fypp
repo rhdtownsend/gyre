@@ -53,8 +53,6 @@ module bvp_m
          integer, public                  :: n_o
       contains
          private
-         procedure         :: eval_B_${S}$_
-         procedure         :: eval_E_${S}$_
          procedure, public :: eval_det => eval_det_${S}$_
          procedure, public :: solve_hom => solve_hom_${S}$_
          procedure, public :: solve_inhom => solve_inhom_${S}$_
@@ -125,59 +123,6 @@ contains
 
       !****
 
-      subroutine eval_B_${S}$_(this, st, B_i, B_o)
-
-         class(bvp_${S}$), intent(inout) :: this
-         class(state_${S}$), intent(in)  :: st
-         ${T}$, intent(out)              :: B_i(:,:)
-         ${T}$, intent(out)              :: B_o(:,:)
-
-         @:CHECK_BOUNDS(SIZE(B_i, 1), this%n_i)
-         @:CHECK_BOUNDS(SIZE(B_i, 2), this%n_e)
-
-         @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
-         @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
-
-         ! Evaluate boundary conditions
-
-         call this%bd%build_i(st, B_i)
-         call this%bd%build_o(st, B_o)
-
-         ! Finish
-
-         return
-
-      end subroutine eval_B_${S}$_
-
-      !****
-
-      subroutine eval_E_${S}$_(this, st, j, E_l, E_r, scl)
-
-         class(bvp_${S}$), intent(inout) :: this
-         class(state_${S}$), intent(in)  :: st
-         integer, intent(in)             :: j
-         ${T}$, intent(out)              :: E_l(:,:)
-         ${T}$, intent(out)              :: E_r(:,:)
-         type(ext_${S}$), intent(out)    :: scl
-
-         @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
-         @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
-
-         @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
-         @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
-
-         ! Evaluate equation blocks
-
-         call this%df(j)%build(st, E_l, E_r, scl)
-
-         ! Finish
-
-         return
-
-      end subroutine eval_E_${S}$_
-
-      !****
-
       subroutine eval_det_${S}$_(this, st, det)
 
          class(bvp_${S}$), intent(inout) :: this
@@ -199,7 +144,14 @@ contains
             ${T}$, intent(out) :: B_i(:,:)
             ${T}$, intent(out) :: B_o(:,:)
 
-            call this%eval_B_${S}$_(st, B_i, B_o)
+            @:CHECK_BOUNDS(SIZE(B_i, 1), this%n_i)
+            @:CHECK_BOUNDS(SIZE(B_i, 2), this%n_e)
+
+            @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
+            @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
+ 
+            call this%bd%build_i(st, B_i)
+            call this%bd%build_o(st, B_o)
 
          end subroutine eval_B_
 
@@ -210,7 +162,13 @@ contains
             ${T}$, intent(out)           :: E_r(:,:)
             type(ext_${S}$), intent(out) :: scl
 
-            call this%eval_E_${S}$_(st, k, E_l, E_r, scl)
+            @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
+            @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
+
+            @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
+            @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
+
+            call this%df(k)%build(st, E_l, E_r, scl)
 
          end subroutine eval_E_
 
@@ -246,7 +204,14 @@ contains
             ${T}$, intent(out) :: B_i(:,:)
             ${T}$, intent(out) :: B_o(:,:)
 
-            call this%eval_B_${S}$_(st, B_i, B_o)
+            @:CHECK_BOUNDS(SIZE(B_i, 1), this%n_i)
+            @:CHECK_BOUNDS(SIZE(B_i, 2), this%n_e)
+
+            @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
+            @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
+ 
+            call this%bd%build_i(st, B_i)
+            call this%bd%build_o(st, B_o)
 
          end subroutine eval_B_
 
@@ -257,7 +222,13 @@ contains
             ${T}$, intent(out)           :: E_r(:,:)
             type(ext_${S}$), intent(out) :: scl
 
-            call this%eval_E_${S}$_(st, k, E_l, E_r, scl)
+            @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
+            @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
+
+            @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
+            @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
+  
+            call this%df(k)%build(st, E_l, E_r, scl)
 
          end subroutine eval_E_
 
@@ -298,7 +269,14 @@ contains
             ${T}$, intent(out) :: B_i(:,:)
             ${T}$, intent(out) :: B_o(:,:)
 
-            call this%eval_B_${S}$_(st, B_i, B_o)
+            @:CHECK_BOUNDS(SIZE(B_i, 1), this%n_i)
+            @:CHECK_BOUNDS(SIZE(B_i, 2), this%n_e)
+
+            @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
+            @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
+ 
+            call this%bd%build_i(st, B_i)
+            call this%bd%build_o(st, B_o)
 
          end subroutine eval_B_
 
@@ -309,7 +287,13 @@ contains
             ${T}$, intent(out)           :: E_r(:,:)
             type(ext_${S}$), intent(out) :: scl
 
-            call this%eval_E_${S}$_(st, k, E_l, E_r, scl)
+            @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
+            @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
+
+            @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
+            @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
+
+            call this%df(k)%build(st, E_l, E_r, scl)
 
          end subroutine eval_E_
 
