@@ -1,5 +1,5 @@
 ! Module  : sblock_sysmtx_m
-! Purpose : system matrix (block storage, serial implementation)
+! Purpose : system matrix (structured LU, serial implementation)
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -41,6 +41,7 @@ module sblock_sysmtx_m
       type, extends(sysmtx_${S}$) :: sblock_sysmtx_${S}$
          private
          ${T}$, allocatable           :: G(:,:,:)  ! Left factor blocks
+         ${T}$, allocatable           :: U(:,:,:)  ! Middle factor blocks
          ${T}$, allocatable           :: E(:,:,:)  ! Right factor blocks
          ${T}$, allocatable           :: R(:,:)    ! Reduced system matrix
          real(RD), allocatable        :: rscl(:)   ! Row scalings for pivoting
@@ -48,8 +49,7 @@ module sblock_sysmtx_m
          ${T}$, allocatable           :: D(:)      ! Diagonal products
       contains
          private
-         procedure         :: build_and_factor_E_ => build_and_factor_E_${S}$_
-         procedure         :: build_and_factor_B_ => build_and_factor_B_${S}$_
+         procedure         :: build_and_factor_ => build_and_factor_${S}$_
          procedure         :: backsub_ => backsub_${S}$_
          procedure, public :: eval_det => eval_det_${S}$_
          procedure, public :: solve_hom => solve_hom_${S}$_
@@ -89,8 +89,9 @@ contains
 
          ! Construct the sblock_sysmtx_t
 
-         allocate(sm%G(n_e,n_e,n))
-         allocate(sm%E(n_e,n_e,n))
+         allocate(sm%G(n_e,n_e,n-1))
+         allocate(sm%U(n_e,n_e,n-1))
+         allocate(sm%E(n_e,n_e,n-1))
 
          allocate(sm%scl(n))
          allocate(sm%rscl(n_e))
@@ -112,10 +113,16 @@ contains
 
       !****
 
-      subroutine build_and_factor_E_${S}$_(this, eval_E, full)
+      subroutine build_and_factor_${S}$_(this, eval_B, eval_E, full, f)
 
          class(sblock_sysmtx_${S}$), intent(inout) :: this
          interface
+            subroutine eval_B(B_i, B_o)
+               use forum_m, only: RD
+               implicit none (type, external)
+               ${T}$, intent(out) :: B_i(:,:)
+               ${T}$, intent(out) :: B_o(:,:)
+            end subroutine eval_B
             subroutine eval_E(k, E_l, E_r, scl)
                use forum_m, only: RD
                use ext_m
@@ -126,7 +133,8 @@ contains
                type(ext_${S}$), intent(out) :: scl
             end subroutine eval_E
          end interface
-         logical, intent(in), optional :: full
+         logical, intent(in), optional  :: full
+         ${T}$, intent(inout), optional :: f(:)
 
          logical  :: full_
          integer  :: k
@@ -142,16 +150,24 @@ contains
          integer  :: i_piv
          ${T}$    :: alpha
 
-         if(PRESENT(full)) then
+         if (PRESENT(full)) then
             full_ = full
          else
             full_ = .FALSE.
          end if
 
-         ! Build and factorize the equation blocks (steps following
-         ! eqn. 2.4 of Wright 1994)
+         if (PRESENT(f)) then
+            @:CHECK_BOUNDS(SIZE(f), 2*this%n_e)
+         end if
+
+         ! Build and factorize the sysmtx using a serial version of
+         ! the structured LU algorithm by Wright (1994, Numer. Math.,
+         ! 67, 521)
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_o => this%n_o)
+
+         ! First, build and factorize the sliced matrix (eqn. 2.4 of
+         ! Wright 1994, and subsequent steps)
 
             associate( &
                G_1 => G(:n_e,:), G_2 => G(n_e+1:,:), &
@@ -159,42 +175,55 @@ contains
                E_1 => E(:n_e,:), E_2 => E(n_e+1:,:), &
                rscl_1 => rscl(:n_e), rscl_2 => rscl(n_e+1:))
 
-               call eval_E(1, G_1, U_1, this%scl(1))
-
-               ! Determine row scalings for pivoting (first block)
-
-               rscl_1 = 0._RD
-
-               do s = 1, n_e
-                  do i = 1, n_e
-                     rscl_1(i) = MAX(rscl_1(i), abs(G_1(i,s)), abs(U_1(i,s)))
-                  end do
-               end do
-
-               rscl_1 = 1._RD/rscl_1
-
-               ! Process pairs of blocks
-
                block_loop : do k = 1, n-1
 
-                  call eval_E(k+1, U_2, E_2, this%scl(k+1))
+                  ! Prepare submatrices
 
-                  G_2 = 0._RD
-                  E_1 = 0._RD
+                  if (k == 1) then
 
-                  ! Determine row scalings for pivoting
+                     call eval_E(1, G_1, U_1, this%scl(1))
+                     call eval_E(2, U_2, E_2, this%scl(2))
 
-                  rscl_2 = 0._RD
+                     G_2 = 0._RD
+                     E_1 = 0._RD
 
-                  do s = 1, n_e
-                     do i = 1, n_e
-                        rscl_2(i) = MAX(rscl_2(i), abs(U_2(i,s)), abs(E_2(i,s)))
+                     rscl_1 = 0._RD
+                     rscl_2 = 0._RD
+
+                     do s = 1, n_e
+                        do i = 1, n_e
+                           rscl_1(i) = MAX(rscl_1(i), abs(G_1(i,s)), abs(U_1(i,s)))
+                           rscl_2(i) = MAX(rscl_2(i), abs(U_2(i,s)), abs(E_2(i,s)))
+                        end do
                      end do
-                  end do
 
-                  rscl_2 = 1._RD/rscl_2
+                     rscl_1 = 1._RD/rscl_1
+                     rscl_2 = 1._RD/rscl_2
 
-                  ! Reduce U to row echelon form
+                  else
+
+                     G_1 = G_2
+                     U_1 = E_2
+
+                     call eval_E(k+1, U_2, E_2, this%scl(k+1))
+
+                     G_2 = 0._RD
+                     E_1 = 0._RD
+
+                     rscl_1 = rscl_2
+                     rscl_2 = 0._RD
+
+                     do s = 1, n_e
+                        do i = 1, n_e
+                           rscl_2(i) = MAX(rscl_2(i), abs(U_2(i,s)), abs(E_2(i,s)))
+                        end do
+                     end do
+
+                     rscl_2 = 1._RD/rscl_2
+
+                  end if
+
+                  ! Reduce U to upper-triangular form
 
                   this%D(k) = 1._RD
 
@@ -213,7 +242,10 @@ contains
                         end if
                      end do
 
-                     @:ASSERT_DEBUG(piv /= 0._RD, 'zero pivot')
+                     if (piv == 0._RD) then
+                        this%D(k) = 0._RD
+                        cycle reduce_loop
+                     end if
 
                      ! If necessary, swap rows to place the pivot
                      ! on the diagonal
@@ -244,23 +276,10 @@ contains
 
                      end if
 
-                     ! Scale the row so that the diagonal element
-                     ! is unity
-
-                     this%D(k) = this%D(k)*U(j,j)
-
-                     alpha = 1._RD/U(j,j)
-
-                     do s = 1, n_e
-                        G(j,s) = alpha*G(j,s)
-                        U(j,s) = alpha*U(j,s)
-                        E(j,s) = alpha*E(j,s)
-                     end do
-
                      ! Eliminate elements below the diagonal
 
                      do i = j+1, 2*n_e
-                        alpha = U(i,j)
+                        alpha = U(i,j)/U(j,j)
                         do s = 1, n_e
                            G(i,s) = G(i,s) - alpha*G(j,s)
                            U(i,s) = U(i,s) - alpha*U(j,s)
@@ -268,118 +287,47 @@ contains
                         end do
                      end do
 
-                     ! Eliminate elements above the diagonal. This is
-                     ! skipped if full is not .TRUE.
+                     ! Update the diagonal product
 
-                     if (full_) then
-
-                        do i = 1, j-1
-                           alpha = U(i,j)
-                           do s = 1, n_e
-                              G(i,s) = G(i,s) - alpha*G(j,s)
-                              U(i,s) = U(i,s) - alpha*U(j,s)
-                              E(i,s) = E(i,s) - alpha*E(j,s)
-                           end do
-                        end do
-
-                     end if
+                     this%D(k) = this%D(k)*U(j,j)
 
                   end do reduce_loop
 
-                  ! Store data for backsubstitution
+                  ! If necessary, store data
 
                   if (full_) then
 
+                     this%U(:,:,k) = U_1
                      this%G(:,:,k) = G_1
                      this%E(:,:,k) = E_1
 
                   end if
 
-                  ! Prepare for the next block
-
-                  G_1 = G_2
-                  U_1 = E_2
-
-                  rscl_1 = rscl_2
-
                end do block_loop
 
-               ! Store final values
+               ! Store final values in the boundary matrix
 
-               this%G(:,:,n) = G_2
-               this%E(:,:,n) = E_2
-
-               this%rscl = rscl_2
+               this%R(:n_e,:n_e) = G_2
+               this%R(:n_e,n_e+1:) = E_2
 
             end associate
 
-         end associate
-
-         ! Finish
-
-         return
-
-      end subroutine build_and_factor_E_${S}$_
-
-      !****
-
-      subroutine build_and_factor_B_${S}$_(this, eval_B, full, f)
-
-         class(sblock_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-         end interface
-         logical, intent(in), optional  :: full
-         ${T}$, intent(inout), optional :: f(:)
-
-         logical  :: full_
-         ${T}$    :: R(2*this%n_e,2*this%n_e)
-         ${T}$    :: scl_i(this%n_i)
-         ${T}$    :: scl_o(this%n_o)
-         integer  :: s
-         integer  :: i
-         real(RD) :: scl
-         real(RD) :: rscl(2*this%n_e)
-         integer  :: j
-         real(RD) :: piv
-         integer  :: i_piv
-         ${T}$    :: alpha
-
-         if(PRESENT(full)) then
-            full_ = full
-         else
-            full_ = .FALSE.
-         end if
-
-         if(PRESENT(f)) then
-            @:CHECK_BOUNDS(SIZE(f), 2*this%n_e)
-         end if
-
-         ! Build and factorize the boundary blocks (eqn. 2.8 of Wright 1994)
-
-         associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_o => this%n_o)
+            ! Next, build and factorize the boundary matrix (eqn. 2.8 of
+            ! Wright 1994)
 
             associate( &
-               R_1 => R(:n_e,:), R_2 => R(n_e+1:,:), &
+               R => this%R, R_2 => this%R(n_e+1:,:), &
                rscl_1 => rscl(:n_e), rscl_2 => rscl(n_e+1:), &
                f_1 => f(:n_e), f_2 => f(n_e+1:))
 
-               R_1(:,:n_e) = this%G(:,:,n)
-               R_1(:,n_e+1:) = this%E(:,:,n)
+               ! Prepare the boundary matrix
 
                call eval_B(R_2(:n_i,:n_e), R_2(n_i+1:,n_e+1:))
 
                R_2(:n_i,n_e+1:) = 0._RD
                R_2(n_i+1:,:n_e) = 0._RD
 
-               ! Determine row scalings for pivoting
-
-               rscl_1 = this%rscl
+               rscl_1 = rscl_2
 
                rscl_2 = 0._RD
 
@@ -391,11 +339,11 @@ contains
 
                rscl_2 = 1._RD/rscl_2
 
-               ! Reduce R to row echelon form
+               ! Reduce it to upper-triangular form
 
                this%D(n) = 1._RD
 
-               reduce_loop: do j = 1, 2*n_e
+               reduce_R_loop: do j = 1, 2*n_e
 
                   ! Find the pivot
 
@@ -410,12 +358,9 @@ contains
                      end if
                   end do
 
-                  ! If the pivot is zero, then skip this column
-
                   if (piv == 0._RD) then
                      this%D(n) = 0._RD
-                     print *,'skip col'
-                     cycle reduce_loop
+                     cycle reduce_R_loop
                   end if
 
                   ! If necessary, swap rows to place the pivot
@@ -443,12 +388,6 @@ contains
 
                   end if
 
-                  ! (Unlike above, don't scale the row so that the
-                  ! diagonal element is unity, because this element might
-                  ! be zero)
-
-                  this%D(n) = this%D(n)*R(j,j)
-
                   ! Eliminate elements below the diagonal
 
                   do i = j+1, 2*n_e
@@ -464,13 +403,11 @@ contains
 
                   end do
 
-               end do reduce_loop
+                  ! Update the diagonal product
 
-               ! Store data for backsubstitution
+                  this%D(n) = this%D(n)*R(j,j)
 
-               if (full_) then
-                  this%R = R
-               end if
+               end do reduce_R_loop
 
             end associate
 
@@ -480,7 +417,7 @@ contains
 
          return
 
-      end subroutine build_and_factor_B_${S}$_
+      end subroutine build_and_factor_${S}$_
 
       !****
 
@@ -491,6 +428,9 @@ contains
          ${T}$, intent(out)                     :: u(:)
 
          integer :: k
+         integer :: i
+         integer :: j
+         ${T}$   :: beta
 
          @:CHECK_BOUNDS(SIZE(u_bound), 2*this%n_e)
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
@@ -503,15 +443,29 @@ contains
             u(:n_e) = u_bound(:n_e)
             u(n_e*n+1:) = u_bound(n_e+1:)
 
-            backsub_loop : do k = n, 2, -1
+            block_loop: do k = n-1, 1, -1
 
-               associate(u_1 => u(:n_e), u_k => u(n_e*(k-1)+1:n_e*k), u_k1 => u(n_e*k+1:n_e*(k+1)))
+               associate(u_1 => u(:n_e), u_k => u(n_e*k+1:n_e*(k+1)), u_k1 => u(n_e*(k+1)+1:n_e*(k+2)))
 
-                  u_k = -MATMUL(this%G(:,:,k-1), u_1) - MATMUL(this%E(:,:,k-1), u_k1)
+                  do i = n_e, 1, -1
+
+                     beta = 0._RD
+
+                     do j = i+1, n_e
+                        beta = beta + this%U(i,j,k)*u_k(j)
+                     end do
+
+                     do j = 1, n_e
+                        beta = beta + this%G(i,j,k)*u_1(j) + this%E(i,j,k)*u_k1(j)
+                     end do
+
+                     u_k(i) = -beta/this%U(i,i,k)
+
+                  end do
 
                end associate
 
-            end do backsub_loop
+            end do block_loop
 
          end associate
 
@@ -545,14 +499,15 @@ contains
          end interface
          type(ext_${S}$), intent(out) :: det
 
+         ! Evaluate the determinant of the sysmtx
+
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_E_(eval_E)
-         call this%build_and_factor_B_(eval_B)
+         call this%build_and_factor_(eval_B, eval_E)
 
-         ! Evaluate the determinant
+         ! Evaluate the determinant as the product of the diagonal
+         ! elements
 
-!         det = product([ext_${S}$(this%D),ext_${S}$(this%scl_i),this%scl,ext_${S}$(this%scl_o)])
          det = product([ext_${S}$(this%D),this%scl])
 
          ! Finish
@@ -594,15 +549,17 @@ contains
 
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
 
-         ! Build and factorize the sysmtx
-
-         call this%build_and_factor_E_(eval_E, full=.TRUE.)
-         call this%build_and_factor_B_(eval_B, full=.TRUE.)
-
-         ! Evaluate the solution vector u of the homogeneous linear system
-         ! S u = 0. It is assumed that the nullity nul(S) == 1
+         ! Evaluate the solution vector u of the homogeneous linear
+         ! system S u = 0. It is assumed that the nullity nul(S) == 1
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+
+            ! Build and factorize the sysmtx
+
+            call this%build_and_factor_(eval_B, eval_E, full=.TRUE.)
+
+            ! Find the (most) singular element on the diagonal of the
+            ! boundary matrix
 
             R_s = HUGE(0._RD)
 
@@ -619,11 +576,15 @@ contains
             u_bound(i_s+1:) = 0._RD
 
             do i = i_s-1, 1, -1
+
                beta = 0._RD
+
                do j = i+1, i_s
                   beta = beta + this%R(i,j)*u_bound(j)
                end do
+
                u_bound(i) = -beta/this%R(i,i)
+
             end do
 
          end associate
@@ -673,14 +634,6 @@ contains
 
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
 
-         ! Build and factorize the sysmtx
-
-         f(:this%n_e) = 0._RD
-         f(this%n_e+1:) = v
-
-         call this%build_and_factor_E_(eval_E, full=.TRUE.)
-         call this%build_and_factor_B_(eval_B, full=.TRUE., f=f)
-
          ! Evaluate the solution vector v of the inhomogeneous linear
          ! system S u = v. It is assumed that the right-hand side
          ! vector v has non-zero components in only the n_i first and
@@ -688,18 +641,35 @@ contains
          ! boundary conditions). These components are supplied in
          ! v(:n_i) and v(n_i+1:), respectively.
 
+
+         ! Evaluate the solution vector u of the homogeneous linear system
+         ! S u = 0. It is assumed that the nullity nul(S) == 1
+
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
+
+            ! Set up the right-hand side vector for the boundary matrix
+
+            f(:this%n_e) = 0._RD
+            f(this%n_e+1:) = v
+
+            ! Build and factorize the sysmtx
+
+            call this%build_and_factor_(eval_B, eval_E, full=.TRUE., f=f)
 
             ! Use backsubstitution to solve for u_bound
 
             u_bound(2*n_e) = f(2*n_e)/this%R(2*n_e,2*n_e)
 
             do i = 2*n_e-1, 1, -1
+
                beta = 0._RD
+
                do j = i+1, 2*n_e
                   beta = beta + this%R(i,j)*u_bound(j)
                end do
+
                u_bound(i) = (f(i) - beta)/this%R(i,i)
+
             end do
 
          end associate
@@ -728,10 +698,8 @@ contains
          call hi%write_attr('n_i', this%n_i)
          call hi%write_attr('n_o', this%n_o)
 
-!         call hi%write_dset('scl_i', this%scl_i)
-!         call hi%write_dset('scl_o', this%scl_o)
-
          call hi%write_dset('G', this%G)
+         call hi%write_dset('U', this%U)
          call hi%write_dset('E', this%E)
 
          call hi%write_dset('R', this%R)
