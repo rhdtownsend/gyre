@@ -239,10 +239,7 @@ contains
                         end if
                      end do
 
-                     if (piv == 0._RD) then
-                        this%D(k) = 0._RD
-                        cycle reduce_loop
-                     end if
+                     @:ASSERT(piv /= 0, 'zero pivot')
 
                      ! If necessary, swap rows to place the pivot
                      ! on the diagonal
