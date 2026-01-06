@@ -362,10 +362,16 @@ contains
                   ! Eliminate elements below the diagonal
 
                   do i = j+1, n_e
+
                      alpha = R(i,j)/R(j,j)
                      do s = 1, n_e
                         R(i,s) = R(i,s) - alpha*R(j,s)
                      end do
+
+                     if (PRESENT(f)) then
+                        f(i) = f(i) - alpha*f(j)
+                     end if
+
                   end do
 
                   ! Update the diagonal product
@@ -600,7 +606,7 @@ contains
          ${T}$   :: beta
          integer :: j
 
-         @:CHECK_BOUNDS(SIZE(v), this%n_o)
+         @:CHECK_BOUNDS(SIZE(v), this%n_e)
 
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
 
@@ -608,14 +614,14 @@ contains
          ! system S u = v. It is assumed that the right-hand side
          ! vector v has non-zero components in only the n_o last rows
          ! (corresponding to the outer boundary conditions). These
-         ! components are supplied in v
+         ! components are supplied in v(n_i+1:)
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
             ! Set up the right-hand side vector for the boundary matrix
 
             f(:n_i) = 0._RD
-            f(n_i+1:) = v
+            f(n_i+1:) = v(n_i+1:)
 
             ! Build and factorize the sysmtx
 
