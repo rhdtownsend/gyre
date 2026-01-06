@@ -105,7 +105,8 @@ libgyre_SRCS = adhoc_angular_m.fypp ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp
    prox_search_m.fypp qad_eval_m.fypp 							\
    rad_bound_m.fypp rad_bvp_m.fypp rad_diff_m.fypp rad_eqns_m.fypp 			\
    rad_match_m.fypp rad_trans_m.fypp resp_m.fypp					\
-   root_m.fypp rot_par_m.fypp sad_bound_m.fypp sad_bvp_m.fypp sad_diff_m.fypp		\
+   root_m.fypp rot_par_m.fypp rowpp_sysmtx_m.fypp 					\
+   sad_bound_m.fypp sad_bvp_m.fypp sad_diff_m.fypp					\
    sad_eqns_m.fypp sad_match_m.fypp sad_trans_m.fypp					\
    sblock_sysmtx_m.fypp scan_m.fypp scan_par_m.fypp search_m.fypp special_m.fypp	\
    sph_angular_m.fypp state_m.fypp status_m.fypp					\
@@ -114,7 +115,7 @@ libgyre_SRCS = adhoc_angular_m.fypp ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp
    tidal_resp_m.fypp tidal_context_m.fypp tide_par_m.fypp				\
    tnad_bvp_m.fypp tnad_diff_m.fypp tnad_eqns_m.fypp					\
    trapz_diff_m.fypp txt_writer_m.fypp util_m.fypp version_m.fypp			\
-   wave_m.fypp wdec_file_m.fypp writer_m.fypp
+   wave_m.fypp wdec_file_m.fypp writer_m.fypp \
 
 libgyre_mesa_SRCS = gyre_mesa_m.fypp
 libgyre_mesa_USES = $(libgyre_SRCS)
