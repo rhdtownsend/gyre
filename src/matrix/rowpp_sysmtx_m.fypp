@@ -40,13 +40,13 @@ module rowpp_sysmtx_m
 
       type, extends(sysmtx_${S}$) :: rowpp_sysmtx_${S}$
          private
-         ${T}$, allocatable           :: U(:,:,:) ! Upper-triangular blocks
-         ${T}$, allocatable           :: S(:,:,:) ! Super-diagonal infill blocks
-         type(ext_${S}$), allocatable :: scl(:)   ! Block scales
-         ${T}$, allocatable           :: D(:)     ! Diagonal products
+         ${T}$, allocatable                          :: U(:,:,:) ! Upper-triangular blocks
+         ${T}$, allocatable                          :: S(:,:,:) ! Super-diagonal infill blocks
+         type(ext_${S}$), allocatable                :: scl(:)   ! Block scales
+         ${T}$, allocatable                          :: D(:)     ! Diagonal products
+         procedure(build_and_factor_${S}$_), pointer :: build_and_factor_${S}$_
       contains
          private
-         procedure         :: build_and_factor_ => build_and_factor_${S}$_
          procedure         :: backsub_ => backsub_${S}$_
          procedure, public :: eval_det => eval_det_${S}$_
          procedure, public :: solve_hom => solve_hom_${S}$_
@@ -55,6 +55,34 @@ module rowpp_sysmtx_m
       end type rowpp_sysmtx_${S}$
 
       ! Interfaces
+
+      abstract interface
+         subroutine build_and_factor_${S}$_(this, eval_B, eval_E, full, f)
+            use forum_m, only: RD
+            import rowpp_sysmtx_${S}$
+            implicit none (type, external)
+            class(rowpp_sysmtx_${S}$), intent(inout) :: this
+            interface
+               subroutine eval_B(B_i, B_o)
+                  use forum_m, only: RD
+                  implicit none (type, external)
+                  ${T}$, intent(out) :: B_i(:,:)
+                  ${T}$, intent(out) :: B_o(:,:)
+               end subroutine eval_B
+               subroutine eval_E(k, E_l, E_r, scl)
+                  use forum_m, only: RD
+                  use ext_m
+                  implicit none (type, external)
+                  integer, intent(in)          :: k
+                  ${T}$, intent(out)           :: E_l(:,:)
+                  ${T}$, intent(out)           :: E_r(:,:)
+                  type(ext_${S}$), intent(out) :: scl
+               end subroutine eval_E
+            end interface
+            logical, intent(in), optional  :: full
+            ${T}$, intent(inout), optional :: f(:)
+         end subroutine build_and_factor_${S}$_
+      end interface
 
       interface rowpp_sysmtx_${S}$
          module procedure rowpp_sysmtx_${S}$_
@@ -98,6 +126,16 @@ contains
          sm%n_i = n_i
          sm%n_o = n_o
 
+         if (n_e == 2 .AND. n_i == 1) then
+            sm%build_and_factor_${S}$_ => build_and_factor_2_1_${S}$_
+         elseif (n_e == 4 .AND. n_i == 2) then
+            sm%build_and_factor_${S}$_ => build_and_factor_4_2_${S}$_
+         elseif (n_e == 6 .AND. n_i == 3) then
+            sm%build_and_factor_${S}$_ => build_and_factor_6_3_${S}$_
+         else
+            sm%build_and_factor_${S}$_ => build_and_factor_gen_${S}$_
+         end if
+
          ! Finish
 
          return
@@ -106,125 +144,230 @@ contains
 
       !****
 
-      subroutine build_and_factor_${S}$_(this, eval_B, eval_E, full, f)
+      #:for I, N_E, N_I, N_O in [ &
+         ['2_1', 2, 1, 1], &
+         ['4_2', 4, 2, 2], &
+         ['6_3', 6, 3, 3], &
+         ['gen', 'this%n_e', 'this%n_i', 'this%n_o']]
 
-         class(rowpp_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
-         logical, intent(in), optional  :: full
-         ${T}$, intent(inout), optional :: f(:)
+         subroutine build_and_factor_${I}$_${S}$_(this, eval_B, eval_E, full, f)
 
-         logical  :: full_
-         ${T}$    :: B_i(this%n_i,this%n_e)
-         ${T}$    :: B_o(this%n_i,this%n_e)
-         integer  :: k
-         ${T}$    :: P(this%n_i+this%n_e,this%n_e)
-         ${T}$    :: Q(this%n_i+this%n_e,this%n_e)
-         integer  :: i
-         real(RD) :: scl
-         integer  :: s
-         real(RD) :: rscl(this%n_i+this%n_e)
-         integer  :: j
-         real(RD) :: piv
-         integer  :: i_piv
-         ${T}$    :: alpha
-         ${T}$    :: R(this%n_e,this%n_e)
-         real(RD) :: rscl_R(this%n_e)
+            class(rowpp_sysmtx_${S}$), intent(inout) :: this
+            interface
+               subroutine eval_B(B_i, B_o)
+                  use forum_m, only: RD
+                  implicit none (type, external)
+                  ${T}$, intent(out) :: B_i(:,:)
+                  ${T}$, intent(out) :: B_o(:,:)
+               end subroutine eval_B
+               subroutine eval_E(k, E_l, E_r, scl)
+                  use forum_m, only: RD
+                  use ext_m
+                  implicit none (type, external)
+                  integer, intent(in)          :: k
+                  ${T}$, intent(out)           :: E_l(:,:)
+                  ${T}$, intent(out)           :: E_r(:,:)
+                  type(ext_${S}$), intent(out) :: scl
+               end subroutine eval_E
+            end interface
+            logical, intent(in), optional  :: full
+            ${T}$, intent(inout), optional :: f(:)
 
-         if (PRESENT(full)) then
-            full_ = full
-         else
-            full_ = .FALSE.
-         end if
+            logical  :: full_
+            ${T}$    :: B_i(${N_I}$,${N_E}$)
+            ${T}$    :: B_o(${N_O}$,${N_E}$)
+            integer  :: k
+            ${T}$    :: P(${N_I}$+${N_E}$,${N_E}$)
+            ${T}$    :: Q(${N_I}$+${N_E}$,${N_E}$)
+            integer  :: i
+            real(RD) :: scl
+            integer  :: s
+            real(RD) :: rscl(${N_I}$+${N_E}$)
+            integer  :: j
+            real(RD) :: piv
+            integer  :: i_piv
+            ${T}$    :: alpha
+            ${T}$    :: R(${N_E}$,${N_E}$)
+            real(RD) :: rscl_R(${N_E}$)
 
-         if (PRESENT(f)) then
-            @:CHECK_BOUNDS(SIZE(f), this%n_e)
-         end if
+            if (PRESENT(full)) then
+               full_ = full
+            else
+               full_ = .FALSE.
+            end if
 
-         ! Build and factorize the sysmtx using simple Guassian elimination
-         ! with row partial piviting
+            if (PRESENT(f)) then
+               @:CHECK_BOUNDS(SIZE(f), ${N_E}$)
+            end if
 
-         associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_o => this%n_o)
+            ! Build and factorize the sysmtx using simple Guassian elimination
+            ! with row partial piviting
 
-            ! First, build and factorize the first n blocks
+            associate (n => this%n, n_e => ${N_E}$, n_i => ${N_I}$, n_o => ${N_O}$)
 
-            associate( &
-               P_1 => P(:n_i,:), P_2 => P(n_i+1:,:), &
-               Q_1 => Q(:n_i,:), Q_2 => Q(n_i+1:,:), &
-               rscl_1 => rscl(:n_i), rscl_2 => rscl(n_i+1:))
+               ! First, build and factorize the first n blocks
 
-               block_loop : do k = 1, n
+               associate( &
+                  P_1 => P(:n_i,:), P_2 => P(n_i+1:,:), &
+                  Q_1 => Q(:n_i,:), Q_2 => Q(n_i+1:,:), &
+                  rscl_1 => rscl(:n_i), rscl_2 => rscl(n_i+1:))
 
-                  ! Prepare submatrices
+                  block_loop : do k = 1, n
 
-                  if (k == 1) then
+                     ! Prepare submatrices
 
-                     call eval_B(B_i, B_o)
+                     if (k == 1) then
 
-                     P_1 = B_i
-                     Q_1 = 0._RD
+                        call eval_B(B_i, B_o)
 
-                     call eval_E(k, P_2, Q_2, this%scl(1))
+                        P_1 = B_i
+                        Q_1 = 0._RD
 
-                     rscl = 0._RD
+                        call eval_E(k, P_2, Q_2, this%scl(1))
 
-                     do s = 1, n_e
-                        do i = 1, n_i+n_e
-                           rscl(i) = MAX(rscl(i), abs(P(i,s)), abs(Q(i,s)))
+                        rscl = 0._RD
+
+                        do s = 1, n_e
+                           do i = 1, n_i+n_e
+                              rscl(i) = MAX(rscl(i), abs(P(i,s)), abs(Q(i,s)))
+                           end do
                         end do
-                     end do
 
-                     rscl = 1._RD/rscl
+                        rscl = 1._RD/rscl
 
-                  else
+                     else
 
-                     P_1 = Q(n_e+1:,:)
-                     Q_1 = 0._RD
+                        P_1 = Q(n_e+1:,:)
+                        Q_1 = 0._RD
 
-                     call eval_E(k, P_2, Q_2, this%scl(k))
+                        call eval_E(k, P_2, Q_2, this%scl(k))
 
-                     rscl_1 = rscl(n_e+1:)
+                        rscl_1 = rscl(n_e+1:)
 
-                     rscl_2 = 0._RD
+                        rscl_2 = 0._RD
 
-                     do s = 1, n_e
-                        do i = 1, n_e
-                           rscl_2(i) = MAX(rscl_2(i), abs(P_2(i,s)), abs(Q_2(i,s)))
+                        do s = 1, n_e
+                           do i = 1, n_e
+                              rscl_2(i) = MAX(rscl_2(i), abs(P_2(i,s)), abs(Q_2(i,s)))
+                           end do
                         end do
+
+                        rscl_2 = 1._RD/rscl_2
+
+                     end if
+
+                     ! Reduce P to upper-triangular form
+
+                     this%D(k) = 1._RD
+
+                     reduce_loop: do j = 1, n_e
+
+                        ! Find the pivot row
+
+                        piv = 0._RD
+                        i_piv = j
+
+                        do i = j, n_i+n_e
+                           scl = abs(P(i,j))*rscl(i)
+                           if (scl > piv) then
+                              piv = scl
+                              i_piv = i
+                           end if
+                        end do
+
+                        @:ASSERT(piv /= 0, 'zero pivot')
+
+                        ! If necessary, swap rows to place the pivot
+                        ! on the diagonal
+
+                        if (i_piv /= j) then
+
+                           do s = 1, n_e
+
+                              alpha = P(i_piv,s)
+                              P(i_piv,s) = P(j,s)
+                              P(j,s) = alpha
+
+                              alpha = Q(i_piv,s)
+                              Q(i_piv,s) = Q(j,s)
+                              Q(j,s) = alpha
+
+                           end do
+
+                           scl = rscl(i_piv)
+                           rscl(i_piv) = rscl(j)
+                           rscl(j) = scl
+
+                           this%D(k) = -this%D(k)
+
+                        end if
+
+                        ! Eliminate elements below the diagonal
+
+                        do i = j+1, n_i+n_e
+
+                           alpha = P(i,j)/P(j,j)
+
+                           do s = 1, n_e
+                              P(i,s) = P(i,s) - alpha*P(j,s)
+                              Q(i,s) = Q(i,s) - alpha*Q(j,s)
+                           end do
+
+                        end do
+
+                        ! Update the diagonal product
+
+                        this%D(k) = this%D(k)*P(j,j)
+
+                     end do reduce_loop
+
+                     ! If necessary, store data
+
+                     if (full_) then
+
+                        this%U(:,:,k) = P(:n_e,:)
+                        this%S(:,:,k) = Q(:n_e,:)
+
+                     end if
+
+                  end do block_loop
+
+               end associate
+
+               ! Next, build and factorize the final block
+
+               associate( &
+                  R_1 => R(:n_i,:), R_2 => R(n_i+1:,:), &
+                  rscl_1 => rscl_R(:n_i), rscl_2 => rscl_R(n_i+1:))
+
+                  R_1 = Q(n_e+1:,:)
+                  R_2 = B_o
+
+                  rscl_1 = rscl(n_e+1:)
+
+                  rscl_2 = 0._RD
+
+                  do s = 1, n_e
+                     do i = 1, n_o
+                        rscl_2(i) = MAX(rscl_2(i), abs(R_2(i,s)))
                      end do
+                  end do
 
-                     rscl_2 = 1._RD/rscl_2
+                  rscl_2 = 1._RD/rscl_2
 
-                  end if
+                  ! Reduce R to upper-triangular form
 
-                  ! Reduce P to upper-triangular form
+                  this%D(n+1) = 1._RD
 
-                  this%D(k) = 1._RD
-
-                  reduce_loop: do j = 1, n_e
+                  reduce_R_loop: do j = 1, n_e
 
                      ! Find the pivot row
 
                      piv = 0._RD
                      i_piv = j
 
-                     do i = j, n_i+n_e
-                        scl = abs(P(i,j))*rscl(i)
+                     do i = j, n_e
+                        scl = abs(R(i,j))*rscl_R(i)
                         if (scl > piv) then
                            piv = scl
                            i_piv = i
@@ -240,13 +383,9 @@ contains
 
                         do s = 1, n_e
 
-                           alpha = P(i_piv,s)
-                           P(i_piv,s) = P(j,s)
-                           P(j,s) = alpha
-
-                           alpha = Q(i_piv,s)
-                           Q(i_piv,s) = Q(j,s)
-                           Q(j,s) = alpha
+                           alpha = R(i_piv,s)
+                           R(i_piv,s) = R(j,s)
+                           R(j,s) = alpha
 
                         end do
 
@@ -254,147 +393,54 @@ contains
                         rscl(i_piv) = rscl(j)
                         rscl(j) = scl
 
-                        this%D(k) = -this%D(k)
+                        this%D(n+1) = -this%D(n+1)
+
+                        if (PRESENT(f)) then
+                           alpha = f(i_piv)
+                           f(i_piv) = f(j)
+                           f(j) = alpha
+                        end if
 
                      end if
 
                      ! Eliminate elements below the diagonal
 
-                     do i = j+1, n_i+n_e
+                     do i = j+1, n_e
 
-                        alpha = P(i,j)/P(j,j)
-
+                        alpha = R(i,j)/R(j,j)
                         do s = 1, n_e
-                           P(i,s) = P(i,s) - alpha*P(j,s)
-                           Q(i,s) = Q(i,s) - alpha*Q(j,s)
+                           R(i,s) = R(i,s) - alpha*R(j,s)
                         end do
+
+                        if (PRESENT(f)) then
+                           f(i) = f(i) - alpha*f(j)
+                        end if
 
                      end do
 
                      ! Update the diagonal product
 
-                     this%D(k) = this%D(k)*P(j,j)
+                     this%D(n+1) = this%D(n+1)*R(j,j)
 
-                  end do reduce_loop
+                  end do reduce_R_loop
 
                   ! If necessary, store data
 
                   if (full_) then
 
-                     this%U(:,:,k) = P(:n_e,:)
-                     this%S(:,:,k) = Q(:n_e,:)
+                     this%U(:,:,n+1) = R
 
                   end if
 
-               end do block_loop
+               end associate
 
             end associate
 
-            ! Next, build and factorize the final block
+            ! Finish
 
-            associate( &
-               R_1 => R(:n_i,:), R_2 => R(n_i+1:,:), &
-               rscl_1 => rscl_R(:n_i), rscl_2 => rscl_R(n_i+1:))
+         end subroutine build_and_factor_${I}$_${S}$_
 
-               R_1 = Q(n_e+1:,:)
-               R_2 = B_o
-
-               rscl_1 = rscl(n_e+1:)
-
-               rscl_2 = 0._RD
-
-               do s = 1, n_e
-                  do i = 1, n_o
-                     rscl_2(i) = MAX(rscl_2(i), abs(R_2(i,s)))
-                  end do
-               end do
-
-               rscl_2 = 1._RD/rscl_2
-
-               ! Reduce R to upper-triangular form
-
-               this%D(n+1) = 1._RD
-
-               reduce_R_loop: do j = 1, n_e
-
-                  ! Find the pivot row
-
-                  piv = 0._RD
-                  i_piv = j
-
-                  do i = j, n_e
-                     scl = abs(R(i,j))*rscl_R(i)
-                     if (scl > piv) then
-                        piv = scl
-                        i_piv = i
-                     end if
-                  end do
-
-                  @:ASSERT(piv /= 0, 'zero pivot')
-
-                  ! If necessary, swap rows to place the pivot
-                  ! on the diagonal
-
-                  if (i_piv /= j) then
-
-                     do s = 1, n_e
-
-                        alpha = R(i_piv,s)
-                        R(i_piv,s) = R(j,s)
-                        R(j,s) = alpha
-
-                     end do
-
-                     scl = rscl(i_piv)
-                     rscl(i_piv) = rscl(j)
-                     rscl(j) = scl
-
-                     this%D(n+1) = -this%D(n+1)
-
-                     if (PRESENT(f)) then
-                        alpha = f(i_piv)
-                        f(i_piv) = f(j)
-                        f(j) = alpha
-                     end if
-
-                  end if
-
-                  ! Eliminate elements below the diagonal
-
-                  do i = j+1, n_e
-
-                     alpha = R(i,j)/R(j,j)
-                     do s = 1, n_e
-                        R(i,s) = R(i,s) - alpha*R(j,s)
-                     end do
-
-                     if (PRESENT(f)) then
-                        f(i) = f(i) - alpha*f(j)
-                     end if
-
-                  end do
-
-                  ! Update the diagonal product
-
-                  this%D(n+1) = this%D(n+1)*R(j,j)
-
-               end do reduce_R_loop
-
-               ! If necessary, store data
-
-               if (full_) then
-
-                  this%U(:,:,n+1) = R
-
-               end if
-
-            end associate
-
-         end associate
-
-         ! Finish
-
-      end subroutine build_and_factor_${S}$_
+      #:endfor
 
       !****
 
@@ -479,7 +525,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_${S}$_(eval_B, eval_E)
 
          ! Evaluate the determinant as the product of the diagonal
          ! elements
@@ -532,7 +578,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(eval_B, eval_E, full=.TRUE.)
+            call this%build_and_factor_${S}$_(eval_B, eval_E, full=.TRUE.)
 
             ! Find the (most) singular element on the diagonal of the
             ! final U block
@@ -625,7 +671,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(eval_B, eval_E, full=.TRUE., f=f)
+            call this%build_and_factor_${S}$_(eval_B, eval_E, full=.TRUE., f=f)
 
             ! Use backsubstitution to solve for u_bound
 
