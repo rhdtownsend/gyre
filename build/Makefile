@@ -115,7 +115,7 @@ libgyre_SRCS = adhoc_angular_m.fypp ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp
    tidal_resp_m.fypp tidal_context_m.fypp tide_par_m.fypp				\
    tnad_bvp_m.fypp tnad_diff_m.fypp tnad_eqns_m.fypp					\
    trapz_diff_m.fypp txt_writer_m.fypp util_m.fypp version_m.fypp			\
-   wave_m.fypp wdec_file_m.fypp writer_m.fypp \
+   wave_m.fypp wdec_file_m.fypp writer_m.fypp
 
 libgyre_mesa_SRCS = gyre_mesa_m.fypp
 libgyre_mesa_USES = $(libgyre_SRCS)
