@@ -149,7 +149,7 @@ contains
 
             @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
             @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
- 
+
             call this%bd%build_i(st, B_i)
             call this%bd%build_o(st, B_o)
 
@@ -209,7 +209,7 @@ contains
 
             @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
             @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
- 
+
             call this%bd%build_i(st, B_i)
             call this%bd%build_o(st, B_o)
 
@@ -227,7 +227,7 @@ contains
 
             @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
             @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
-  
+
             call this%df(k)%build(st, E_l, E_r, scl)
 
          end subroutine eval_E_
@@ -274,7 +274,7 @@ contains
 
             @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
             @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
- 
+
             call this%bd%build_i(st, B_i)
             call this%bd%build_o(st, B_o)
 
