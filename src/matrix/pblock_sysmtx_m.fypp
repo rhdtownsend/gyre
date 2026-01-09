@@ -47,7 +47,7 @@ module pblock_sysmtx_m
          real(RD), allocatable                       :: rscl(:,:) ! Row scalings for pivoting
          type(ext_${S}$), allocatable                :: scl(:)    ! Block scales
          ${T}$, allocatable                          :: D(:)      ! Diagonal products
-         procedure(build_and_factor_${S}$_), pointer :: build_and_factor_${S}$_
+         procedure(build_and_factor_${S}$_), pointer :: build_and_factor_
       contains
          private
          procedure         :: backsub_ => backsub_${S}$_
@@ -133,13 +133,13 @@ contains
          sm%n_o = n_o
 
          if (n_e == 2 .AND. n_i == 1) then
-            sm%build_and_factor_${S}$_ => build_and_factor_2_1_${S}$_
+            sm%build_and_factor_ => build_and_factor_2_1_${S}$_
          elseif (n_e == 4 .AND. n_i == 2) then
-            sm%build_and_factor_${S}$_ => build_and_factor_4_2_${S}$_
+            sm%build_and_factor_ => build_and_factor_4_2_${S}$_
          elseif (n_e == 6 .AND. n_i == 3) then
-            sm%build_and_factor_${S}$_ => build_and_factor_6_3_${S}$_
+            sm%build_and_factor_ => build_and_factor_6_3_${S}$_
          else
-            sm%build_and_factor_${S}$_ => build_and_factor_gen_${S}$_
+            sm%build_and_factor_ => build_and_factor_gen_${S}$_
          end if
 
          ! Finish
@@ -613,7 +613,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_${S}$_(eval_B, eval_E)
+         call this%build_and_factor_(eval_B, eval_E)
 
          ! Evaluate the determinant as the product of the diagonal
          ! elements
@@ -666,7 +666,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_${S}$_(eval_B, eval_E, full=.TRUE.)
+            call this%build_and_factor_(eval_B, eval_E, full=.TRUE.)
 
             ! Find the (most) singular element on the diagonal of the
             ! boundary matrix
@@ -760,7 +760,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_${S}$_(eval_B, eval_E, full=.TRUE., f=f)
+            call this%build_and_factor_(eval_B, eval_E, full=.TRUE., f=f)
 
             ! Use backsubstitution to solve for u_bound
 
