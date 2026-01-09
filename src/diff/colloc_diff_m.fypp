@@ -39,10 +39,6 @@ module colloc_diff_m
 
    ! Parameter definitions
 
-   integer, parameter :: GL2_SCHEME = 1
-   integer, parameter :: GL4_SCHEME = 2
-   integer, parameter :: GL6_SCHEME = 3
-
    real(RD), parameter :: GL2_C_I(1) = [0.5_RD]
 
    real(RD), parameter :: GL4_A_IJ(2,2) = RESHAPE([ &
@@ -84,17 +80,15 @@ module colloc_diff_m
 
       type, extends(diff_${S}$) :: colloc_diff_${S}$
          private
-         class(eqns_${S}$), allocatable :: eq
-         real(RD)                       :: dx
-         integer                        :: n_s
-         integer                        :: scheme
-         logical                        :: reverse
+         class(eqns_${S}$), allocatable   :: eq
+         real(RD)                         :: dx
+         integer                          :: n_s
+         integer                          :: scheme
+         logical                          :: reverse
+         procedure(build_${S}$_), pointer :: build_
       contains
          private
          procedure, public :: build => build_${S}$_
-         procedure         :: build_GL2_${S}$_
-         procedure         :: build_GL4_${S}$_
-         procedure         :: build_GL6_${S}$_
          procedure         :: build_irk_${S}$_
       end type colloc_diff_${S}$
 
@@ -135,15 +129,15 @@ contains
 
          select case (scheme)
          case ('GL2')
-            df%scheme = GL2_SCHEME
+            df%build_ => build_GL2_${S}$_
             df%n_s = 1
             c_i = GL2_C_I
          case ('GL4')
-            df%scheme = GL4_SCHEME
+            df%build_ => build_GL4_${S}$_
             df%n_s = 2
             c_i = GL4_C_I
          case ('GL6')
-            df%scheme = GL6_SCHEME
+            df%build_ => build_GL6_${S}$_
             df%n_s = 3
             c_i = GL6_C_I
          case default
@@ -186,24 +180,9 @@ contains
          ${T}$, intent(out)                   :: E_r(:,:)
          type(ext_${S}$), intent(out)         :: scl
 
-         @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
-         @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
-
-         @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
-         @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
-
          ! Build the difference equations
 
-         select case (this%scheme)
-         case (GL2_SCHEME)
-            call this%build_GL2_${S}$_(st, E_l, E_r, scl)
-         case (GL4_SCHEME)
-            call this%build_GL4_${S}$_(st, E_l, E_r, scl)
-         case (GL6_SCHEME)
-            call this%build_GL6_${S}$_(st, E_l, E_r, scl)
-         case default
-            @:ABORT('invalid scheme')
-         end select
+         call this%build_(st, E_l, E_r, scl)
 
          ! Finish
 

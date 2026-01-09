@@ -40,10 +40,6 @@ module magnus_diff_m
 
    ! Parameter definitions
 
-   integer, parameter :: GL2_SCHEME = 1
-   integer, parameter :: GL4_SCHEME = 2
-   integer, parameter :: GL6_SCHEME = 3
-
    real(RD), parameter :: GL2_C_I(1) = [0.5_RD]
 
    real(RD), parameter :: GL4_C_I(2) = [ &
@@ -55,24 +51,33 @@ module magnus_diff_m
       0.5_RD, &
       0.5_RD+sqrt(15._RD)/10._RD]
 
-   #:for S in DTYPE_SUFFIXES
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
       ! Derived-type definitions
 
       type, extends(diff_${S}$) :: magnus_diff_${S}$
          private
-         class(eqns_${S}$), allocatable :: eq
-         real(RD)                       :: dx
-         integer                        :: scheme
+         class(eqns_${S}$), allocatable         :: eq
+         real(RD)                               :: dx
+         procedure(eval_dOmega_${S}$_), pointer :: eval_dOmega_
       contains
          private
          procedure, public :: build => build_${S}$_
-         procedure         :: dOmega_GL2_${S}$_
-         procedure         :: dOmega_GL4_${S}$_
-         procedure         :: dOmega_GL6_${S}$_
       end type magnus_diff_${S}$
 
       ! Interfaces
+
+      abstract interface
+         subroutine eval_dOmega_${S}$_(this, st, dOmega)
+            use forum_m, only: RD
+            use state_m, only: state_${S}$
+            import magnus_diff_${S}$
+            implicit none (type, external)
+            class(magnus_diff_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in)       :: st
+            ${T}$, intent(out)                   :: dOmega(:,:)
+         end subroutine eval_dOmega_${S}$_
+      end interface
 
       interface magnus_diff_${S}$
          module procedure magnus_diff_${S}$_
@@ -109,13 +114,13 @@ contains
 
          select case (scheme)
          case ('GL2')
-            df%scheme = GL2_SCHEME
+            df%eval_dOmega_ => eval_dOmega_GL2_${S}$_
             c_i = GL2_C_I
          case ('GL4')
-            df%scheme = GL4_SCHEME
+            df%eval_dOmega_ => eval_dOmega_GL4_${S}$_
             c_i = GL4_C_I
          case ('GL6')
-            df%scheme = GL6_SCHEME
+            df%eval_dOmega_ => eval_dOmega_GL6_${S}$_
             c_i = GL6_C_I
          case default
             @:ABORT('invalid scheme')
@@ -172,16 +177,7 @@ contains
 
          ! Evaluate the Magnus slope matrix
 
-         select case (this%scheme)
-         case (GL2_SCHEME)
-            dOmega = this%dOmega_GL2_${S}$_(st)
-         case (GL4_SCHEME)
-            dOmega = this%dOmega_GL4_${S}$_(st)
-         case (GL6_SCHEME)
-            dOmega = this%dOmega_GL6_${S}$_(st)
-         case default
-            @:ABORT('invalid scheme')
-         end select
+         call this%eval_dOmega_(st, dOmega)
 
          ! Decompose it
 
@@ -257,40 +253,40 @@ contains
 
       !****
 
-      function dOmega_GL2_${S}$_(this, st) result(dOmega)
+      subroutine eval_dOmega_GL2_${S}$_(this, st, dOmega)
 
          class(magnus_diff_${S}$), intent(in) :: this
          class(state_${S}$), intent(in)       :: st
-         ${T}$                                :: dOmega(this%n_e,this%n_e)
+         ${T}$, intent(out)                   :: dOmega(:,:)
 
          ${T}$ :: A(this%n_e,this%n_e)
 
+         @:CHECK_BOUNDS(SIZE(dOmega, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(dOmega, 2), this%n_e)
+
          ! Evaluate the GL2 Magnus slope matrix
 
-         ! Calculate the RHS matrix
-
-         call this%eq%eval_A(1, st, A(:,:))
-
-         ! Set up the slope matrix
-
-         dOmega = A
+         call this%eq%eval_A(1, st, dOmega)
 
          ! Finish
 
          return
 
-      end function dOmega_GL2_${S}$_
+      end subroutine eval_dOmega_GL2_${S}$_
 
       !****
 
-      function dOmega_GL4_${S}$_(this, st) result(dOmega)
+      subroutine eval_dOmega_GL4_${S}$_(this, st, dOmega)
 
          class(magnus_diff_${S}$), intent(in) :: this
          class(state_${S}$), intent(in)       :: st
-         ${T}$                                :: dOmega(this%n_e,this%n_e)
+         ${T}$, intent(out)                   :: dOmega(:,:)
 
          ${T}$ :: A(this%n_e,this%n_e,2)
          ${T}$ :: dalpha(this%n_e,this%n_e,2)
+
+         @:CHECK_BOUNDS(SIZE(dOmega, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(dOmega, 2), this%n_e)
 
          ! Evaluate the GL4 Magnus slope matrix
 
@@ -312,19 +308,22 @@ contains
 
          return
 
-      end function dOmega_GL4_${S}$_
+      end subroutine eval_dOmega_GL4_${S}$_
 
       !****
 
-      function dOmega_GL6_${S}$_(this, st) result(dOmega)
+      subroutine eval_dOmega_GL6_${S}$_(this, st, dOmega)
 
          class(magnus_diff_${S}$), intent(in) :: this
          class(state_${S}$), intent(in)       :: st
-         ${T}$                                :: dOmega(this%n_e,this%n_e)
+         ${T}$, intent(out)                   :: dOmega(:,:)
 
          ${T}$ :: A(this%n_e,this%n_e,3)
          ${T}$ :: dalpha(this%n_e,this%n_e,3)
          ${T}$ :: dC(this%n_e,this%n_e,2)
+
+         @:CHECK_BOUNDS(SIZE(dOmega, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(dOmega, 2), this%n_e)
 
          ! Evaluate the GL6 Magnus slope matrix
 
@@ -351,7 +350,7 @@ contains
 
          return
 
-      end function dOmega_GL6_${S}$_
+      end subroutine eval_dOmega_GL6_${S}$_
 
    #:endfor
 
