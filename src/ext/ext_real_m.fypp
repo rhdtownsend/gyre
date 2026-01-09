@@ -53,7 +53,7 @@ module ext_real_m
    ! Parameter definitions
 
    type(ext_rt), parameter :: ZERO_RT = ext_rt(0._RD, 0)
-   type(ext_rt), parameter :: ONE_rRT = ext_rt(1._RD, 0)
+   type(ext_rt), parameter :: ONE_RT = ext_rt(1._RD, 0)
 
    real(RD), parameter :: RADIX_RD = REAL(RADIX(1._RD), RD)
 
