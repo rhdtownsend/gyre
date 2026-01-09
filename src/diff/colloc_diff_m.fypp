@@ -245,7 +245,7 @@ contains
             end do
          endif
 
-         scl = ext_${S}$(1._RD)
+         scl = ONE_${S}$
 
          ! Finish
 
@@ -269,7 +269,7 @@ contains
             call this%build_irk_${S}$_(st, GL4_A_IJ, GL4_B_I, E_l, E_r)
          endif
 
-         scl = ext_${S}$(1._RD)
+         scl = ONE_${S}$
 
          ! Finish
 
@@ -293,7 +293,7 @@ contains
             call this%build_irk_${S}$_(st, GL6_A_IJ, GL6_B_I, E_l, E_r)
          endif
 
-         scl = ext_${S}$(1._RD)
+         scl = ONE_${S}$
 
          ! Finish
 

@@ -31,10 +31,6 @@ module ext_real_m
 
    implicit none (type, external)
 
-   ! Parameter definitions
-
-   real(RD), parameter :: RADIX_RD = REAL(RADIX(1._RD), RD)
-
    ! Derived-type definitions
 
    type ext_rt
@@ -53,6 +49,13 @@ module ext_real_m
          generic, public       :: operator(${O}$) => op_${N}$_rx_rx_, op_${N}$_rx_r_, op_${N}$_r_rx_
       #:endfor
    end type ext_rt
+
+   ! Parameter definitions
+
+   type(ext_rt), parameter :: ZERO_RT = ext_rt(0._RD, 0)
+   type(ext_rt), parameter :: ONE_rRT = ext_rt(1._RD, 0)
+
+   real(RD), parameter :: RADIX_RD = REAL(RADIX(1._RD), RD)
 
    ! Interface blocks
 
@@ -107,6 +110,8 @@ module ext_real_m
 
    ! Access specifiers
 
+   public :: ZERO_RT
+   public :: ONE_RT
    public :: ext_rt
    public :: real
    public :: valid

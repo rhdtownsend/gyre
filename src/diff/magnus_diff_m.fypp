@@ -235,7 +235,7 @@ contains
                E_r_(i,i) = -1._RD
             end do
 
-            scl = ext_${S}$(1._RD)
+            scl = ONE_${S}$
 
          endif
 

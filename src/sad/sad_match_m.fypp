@@ -172,7 +172,7 @@ contains
          E_r(2,1) = -U_r
          E_r(2,2) = 1._RD
 
-         scl = ext_rt(1._RD)
+         scl = ONE_RT
 
       end associate
 

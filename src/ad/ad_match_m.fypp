@@ -204,7 +204,7 @@ contains
          E_r(4,3) = 0._RD
          E_r(4,4) = 1._RD
 
-         scl = ext_rt(1._RD)
+         scl = ONE_RT
 
       end associate
 

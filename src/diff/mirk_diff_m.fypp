@@ -135,7 +135,7 @@ contains
             E_l = -identity_matrix(this%n_e)
             E_r =  identity_matrix(this%n_e)
 
-            scl = ext_${S}$(1._RD)
+            scl = ONE_${S}$
 
          else
 
@@ -152,7 +152,7 @@ contains
             E_r =  identity_matrix(this%n_e) - this%dx*A(:,:,3)/6._RD - &
                this%dx*A(:,:,2)/3._RD + this%dx**2*MATMUL(A(:,:,2), A(:,:,3))/12._RD
 
-            scl = ext_${S}$(1._RD)
+            scl = ONE_${S}$
 
          endif
 

@@ -32,10 +32,6 @@ module ext_complex_m
 
    implicit none (type, external)
 
-   ! Parameter definitions
-
-   real(RD), parameter :: RADIX_RD = REAL(RADIX(1._RD), RD)
-
    ! Derived-type definitions
 
    type ext_ct
@@ -59,6 +55,13 @@ module ext_complex_m
             &                                        op_${N}$_cx_c_, op_${N}$_c_cx_
       #:endfor
    end type ext_ct
+
+   ! Parameter definitions
+
+   type(ext_ct), parameter :: ZERO_CT = ext_ct(CMPLX(0._RD, KIND=RD), 0)
+   type(ext_ct), parameter :: ONE_CT = ext_ct(CMPLX(1._RD, KIND=RD), 0)
+
+   real(RD), parameter :: RADIX_RD = REAL(RADIX(1._RD), RD)
 
    ! Interface blocks
 
@@ -128,6 +131,8 @@ module ext_complex_m
 
    ! Access specifiers
 
+   public :: ZERO_CT
+   public :: ONE_CT
    public :: ext_ct
    public :: ext_rt
    public :: real

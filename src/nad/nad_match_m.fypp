@@ -257,7 +257,7 @@ contains
          E_r(6,5) = 0._RD
          E_r(6,6) = 1._RD
 
-         scl = ext_ct(1._RD)
+         scl = ONE_CT
 
       end associate
 
