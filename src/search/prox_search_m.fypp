@@ -582,7 +582,7 @@ contains
 
          if (check_log_level('INFO')) then
 
-            write(OUTPUT_UNIT, 110) 'n_iter     :', n_iter + n_iter_def
+            write(OUTPUT_UNIT, 110) 'n_iter     :', n_iter
 110         format(3X,A,1X,I0)
 
             write(OUTPUT_UNIT, 120) 'omega_a :', omega_a
