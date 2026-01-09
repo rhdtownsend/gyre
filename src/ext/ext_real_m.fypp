@@ -54,11 +54,6 @@ module ext_real_m
       #:endfor
    end type ext_rt
 
-   type, abstract :: func_ext_rt
-   contains
-      procedure(eval_), deferred :: eval
-   end type func_ext_rt
-
    ! Interface blocks
 
    interface ext_rt
@@ -109,18 +104,6 @@ module ext_real_m
    interface scale
       module procedure scale_
    end interface scale
-
-   abstract interface
-      subroutine eval_(this, rx, f_rx, status)
-         import ext_rt
-         import func_ext_rt
-         implicit none (type, external)
-         class(func_ext_rt), intent(inout) :: this
-         type(ext_rt), intent(in)          :: rx
-         type(ext_rt), intent(out)         :: f_rx
-         integer, intent(out)              :: status
-      end subroutine eval_
-   end interface
 
    ! Access specifiers
 
