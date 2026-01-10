@@ -46,55 +46,51 @@ module nad_eqns_m
    integer, parameter :: P1_CONV_SCHEME = 1
    integer, parameter :: P4_CONV_SCHEME = 4
 
-   integer, parameter :: J_V = 1
-   integer, parameter :: J_V_G = 2
-   integer, parameter :: J_As = 3
-   integer, parameter :: J_U = 4
-   integer, parameter :: J_C_1 = 5
-   integer, parameter :: J_GAMMA_1 = 6
-   integer, parameter :: J_UPS_T = 7
-   integer, parameter :: J_NABLA_AD = 8
-   integer, parameter :: J_DNABLA_AD = 9
-   integer, parameter :: J_NABLA = 10
-   integer, parameter :: J_C_LUM = 11
-   integer, parameter :: J_DC_LUM = 12
-   integer, parameter :: J_C_RAD = 13
-   integer, parameter :: J_DC_RAD = 14
-   integer, parameter :: J_C_THN = 15
-   integer, parameter :: J_DC_THN = 16
-   integer, parameter :: J_C_THK = 17
-   integer, parameter :: J_C_EPS = 18
-   integer, parameter :: J_C_EGV = 19
-   integer, parameter :: J_KAP_RHO = 20
-   integer, parameter :: J_KAP_T = 21
-   integer, parameter :: J_OMEGA_ROT = 22
-   integer, parameter :: J_OMEGA_ROT_I = 23
-
-   integer, parameter :: J_LAST = J_OMEGA_ROT_I
-
    ! Derived-type definitions
 
    type, extends(eqns_ct) :: nad_eqns_t
       private
-      type(context_t), pointer   :: cx => null()
-      type(point_t), allocatable :: pt(:)
-      type(nad_trans_t)          :: tr
-      real(RD), allocatable      :: coeff(:,:)
-      real(RD)                   :: x_atm
-      real(RD)                   :: alpha_grv
-      real(RD)                   :: alpha_thm
-      real(RD)                   :: alpha_hfl
-      real(RD)                   :: alpha_omg
-      real(RD)                   :: alpha_gam
-      real(RD)                   :: alpha_pi
-      real(RD)                   :: alpha_kar
-      real(RD)                   :: alpha_kat
-      real(RD)                   :: alpha_rht
-      real(RD)                   :: alpha_egv
-      integer                    :: conv_scheme
+      type(context_t), pointer :: cx => null()
+      type(nad_trans_t)        :: tr
+      type(point_t)            :: pt
+      real(RD)                 :: V
+      real(RD)                 :: V_g
+      real(RD)                 :: As
+      real(RD)                 :: U
+      real(RD)                 :: c_1
+      real(RD)                 :: Gamma_1
+      real(RD)                 :: ups_T
+      real(RD)                 :: nabla_ad
+      real(RD)                 :: dnabla_ad
+      real(RD)                 :: nabla
+      real(RD)                 :: c_lum
+      real(RD)                 :: dc_lum
+      real(RD)                 :: c_rad
+      real(RD)                 :: dc_rad
+      real(RD)                 :: c_thn
+      real(RD)                 :: dc_thn
+      real(RD)                 :: c_thk
+      real(RD)                 :: c_eps
+      real(RD)                 :: c_egv
+      real(RD)                 :: kap_rho
+      real(RD)                 :: kap_T
+      real(RD)                 :: Omega_rot
+      real(RD)                 :: Omega_rot_i
+      real(RD)                 :: x
+      real(RD)                 :: x_atm
+      real(RD)                 :: alpha_grv
+      real(RD)                 :: alpha_thm
+      real(RD)                 :: alpha_hfl
+      real(RD)                 :: alpha_omg
+      real(RD)                 :: alpha_gam
+      real(RD)                 :: alpha_pi
+      real(RD)                 :: alpha_kar
+      real(RD)                 :: alpha_kat
+      real(RD)                 :: alpha_rht
+      real(RD)                 :: alpha_egv
+      integer                  :: conv_scheme
    contains
       private
-      procedure, public :: stencil
       procedure, public :: eval_A
    end type nad_eqns_t
 
@@ -114,20 +110,70 @@ module nad_eqns_m
 
 contains
 
-   function nad_eqns_t_(cx, md_p, os_p) result(eq)
+   function nad_eqns_t_(cx, pt, md_p, os_p) result(eq)
 
       type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt
       type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
       type(nad_eqns_t)                     :: eq
 
-      type(point_t)                        :: pt_o
+      class(model_t), pointer :: ml
+      type(point_t)           :: pt_o
 
       ! Construct the nad_eqns_t
 
       eq%cx => cx
 
-      eq%tr = nad_trans_t(cx, md_p, os_p)
+      eq%tr = nad_trans_t(cx, pt, md_p, os_p)
+
+      eq%pt = pt
+
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [ &
+         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_UPS_T, &
+         I_C_LUM,I_C_RAD,I_C_THN,I_C_THK,I_C_EPS,I_C_EGV, &
+         I_KAP_RHO,I_KAP_T])
+
+      @:ASSERT(.NOT. ml%is_vacuum(pt), 'vacuum point')
+
+      eq%V = ml%coeff(I_V_2, pt)*pt%x**2
+      eq%V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+      eq%As = ml%coeff(I_AS, pt)
+      eq%U = ml%coeff(I_U, pt)
+      eq%c_1 = ml%coeff(I_C_1, pt)
+      eq%Gamma_1 = ml%coeff(I_GAMMA_1, pt)
+      eq%nabla_ad = ml%coeff(I_NABLA_AD, pt)
+      eq%dnabla_ad = ml%dcoeff(I_NABLA_AD, pt)
+      eq%nabla = ml%coeff(I_NABLA, pt)
+      eq%ups_T = ml%coeff(I_UPS_T, pt)
+      eq%c_lum = ml%coeff(I_C_LUM, pt)
+      eq%dc_lum = ml%dcoeff(I_C_LUM, pt)
+      eq%c_rad = ml%coeff(I_C_RAD, pt)
+      eq%dc_rad = ml%dcoeff(I_C_RAD, pt)
+      eq%c_thn = ml%coeff(I_C_THN, pt)
+      eq%dc_thn = ml%dcoeff(I_C_THN, pt)
+      eq%c_thk = ml%coeff(I_C_THK, pt)
+      eq%c_eps = ml%coeff(I_C_EPS, pt)
+      eq%c_egv = ml%coeff(I_C_EGV, pt)
+      eq%kap_rho = ml%coeff(I_KAP_RHO, pt)
+      eq%kap_T = ml%coeff(I_KAP_T, pt)
+
+      eq%Omega_rot = cx%Omega_rot(pt)
+      eq%Omega_rot_i = cx%Omega_rot(cx%point_i())
+
+      ! Other initializations
+
+      eq%x = pt%x
+
+      eq%x_atm = os_p%x_atm
+      if (eq%x_atm < 0._RD) then
+         pt_o = cx%point_o()
+         eq%x_atm = pt_o%x
+      end if
 
       eq%alpha_grv = os_p%alpha_grv
       eq%alpha_thm = os_p%alpha_thm
@@ -157,12 +203,6 @@ contains
          @:ABORT('invalid conv_scheme')
       end select
 
-      eq%x_atm = os_p%x_atm
-      if (eq%x_atm < 0._RD) then
-         pt_o = cx%point_o()
-         eq%x_atm = pt_o%x
-      end if
-
       eq%n_e = 6
 
       ! Finish
@@ -173,81 +213,9 @@ contains
 
    !****
 
-   subroutine stencil(this, pt)
-
-      class(nad_eqns_t), intent(inout) :: this
-      type(point_t), intent(in)        :: pt(:)
-
-      class(model_t), pointer :: ml
-      integer                 :: n_s
-      integer                 :: i
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [ &
-         I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_NABLA,I_NABLA_AD,I_UPS_T, &
-         I_C_LUM,I_C_RAD,I_C_THN,I_C_THK,I_C_EPS,I_C_EGV, &
-         I_KAP_RHO,I_KAP_T])
-
-      n_s = SIZE(pt)
-
-      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-      allocate(this%coeff(n_s, J_LAST))
-
-      do i = 1, n_s
-
-         @:ASSERT(.NOT. ml%is_vacuum(pt(i)), 'attempt to stencil at vacuum point')
-
-         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
-         this%coeff(i,J_V_G) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2/ml%coeff(I_GAMMA_1, pt(i))
-         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
-         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
-         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
-         this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
-         this%coeff(i,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt(i))
-         this%coeff(i,J_DNABLA_AD) = ml%dcoeff(I_NABLA_AD, pt(i))
-         this%coeff(i,J_NABLA) = ml%coeff(I_NABLA, pt(i))
-         this%coeff(i,J_UPS_T) = ml%coeff(I_UPS_T, pt(i))
-         this%coeff(i,J_C_LUM) = ml%coeff(I_C_LUM, pt(i))
-         this%coeff(i,J_DC_LUM) = ml%dcoeff(I_C_LUM, pt(i))
-         this%coeff(i,J_C_RAD) = ml%coeff(I_C_RAD, pt(i))
-         this%coeff(i,J_DC_RAD) = ml%dcoeff(I_C_RAD, pt(i))
-         this%coeff(i,J_C_THN) = ml%coeff(I_C_THN, pt(i))
-         this%coeff(i,J_DC_THN) = ml%dcoeff(I_C_THN, pt(i))
-         this%coeff(i,J_C_THK) = ml%coeff(I_C_THK, pt(i))
-         this%coeff(i,J_C_EPS) = ml%coeff(I_C_EPS, pt(i))
-         this%coeff(i, J_C_EGV) = ml%coeff(I_C_EGV, pt(i))
-         this%coeff(i,J_KAP_RHO) = ml%coeff(I_KAP_RHO, pt(i))
-         this%coeff(i,J_KAP_T) = ml%coeff(I_KAP_T, pt(i))
-
-         this%coeff(i,J_OMEGA_ROT) = this%cx%Omega_rot(pt(i))
-
-      end do
-
-      this%coeff(:,J_OMEGA_ROT_I) = this%cx%Omega_rot(this%cx%point_i())
-
-      ! Set up stencil for the tr component
-
-      call this%tr%stencil(pt)
-
-      ! Store the stencil points for on-the-fly evaluations
-
-      this%pt = pt
-
-      ! Finish
-
-      return
-
-   end subroutine stencil
-
-   !****
-
-   subroutine eval_A(this, i, st, A)
+   subroutine eval_A(this, st, A)
 
       class(nad_eqns_t), intent(in) :: this
-      integer, intent(in)           :: i
       class(state_ct), intent(in)   :: st
       complex(RD), intent(out)      :: A(:,:)
 
@@ -272,33 +240,32 @@ contains
       ! Evaluate the RHS matrix
 
       associate ( &
-         V => this%coeff(i,J_V), &
-         V_g => this%coeff(i,J_V_G), &
-         As => this%coeff(i,J_AS), &
-         U => this%coeff(i,J_U), &
-         c_1 => this%coeff(i,J_C_1), &
-         Gamma_1 => this%coeff(i,J_GAMMA_1), &
-         nabla_ad => this%coeff(i,J_NABLA_AD), &
-         dnabla_ad => this%coeff(i,J_DNABLA_AD), &
-         nabla => this%coeff(i,J_NABLA), &
-         ups_T => this%coeff(i,J_UPS_T), &
-         c_lum => this%coeff(i,J_C_LUM), &
-         dc_lum => this%coeff(i,J_DC_LUM), &
-         c_rad => this%coeff(i,J_C_RAD), &
-         dc_rad => this%coeff(i,J_DC_RAD), &
-         c_thn => this%coeff(i,J_C_THN), &
-         dc_thn => this%coeff(i,J_DC_THN), &
-         c_thk => this%coeff(i,J_C_THK), &
-         c_eps => this%coeff(i,J_C_EPS), &
-         c_egv => this%coeff(i,J_C_EGV), &
-         kap_rho => this%coeff(i,J_KAP_RHO), &
-         kap_T => this%coeff(i,J_KAP_T), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
-         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
-         pt => this%pt(i), &
-         pt_i => this%cx%point_i(), &
-         x => this%pt(i)%x, &
+         V => this%V, &
+         V_g => this%V_g, &
+         As => this%As, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         Gamma_1 => this%Gamma_1, &
+         nabla_ad => this%nabla_ad, &
+         dnabla_ad => this%dnabla_ad, &
+         nabla => this%nabla, &
+         ups_T => this%ups_T, &
+         c_lum => this%c_lum, &
+         dc_lum => this%dc_lum, &
+         c_rad => this%c_rad, &
+         dc_rad => this%dc_rad, &
+         c_thn => this%c_thn, &
+         dc_thn => this%dc_thn, &
+         c_thk => this%c_thk, &
+         c_eps => this%c_eps, &
+         c_egv => this%c_egv, &
+         kap_rho => this%kap_rho, &
+         kap_T => this%kap_T, &
+         Omega_rot => this%Omega_rot, &
+         Omega_rot_i => this%Omega_rot_i, &
+         x => this%x, &
          x_atm => this%x_atm, &
+         pt => this%pt, &
          alpha_grv => this%alpha_grv, &
          alpha_thm => this%alpha_thm, &
          alpha_hfl => this%alpha_hfl, &
@@ -389,7 +356,7 @@ contains
 
          ! Apply the variables transformation
 
-         call this%tr%trans_eqns(A, i, st)
+         call this%tr%trans_eqns(A, st)
 
          ! Apply the radial scaling
 

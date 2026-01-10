@@ -45,24 +45,20 @@ module rad_trans_m
    integer, parameter :: MIX_SET = 3
    integer, parameter :: LAGP_SET = 4
 
-   integer, parameter :: J_V_2 = 1
-   integer, parameter :: J_DV_2 = 2
-   integer, parameter :: J_C_1 = 3
-   integer, parameter :: J_DC_1 = 4
-
-   integer, parameter :: J_LAST = J_DC_1
-
    ! Derived-type definitions
 
    type :: rad_trans_t
       private
       type(context_t), pointer :: cx => null()
-      real(RD), allocatable    :: coeff(:,:)
+      type(point_t)            :: pt
+      real(RD)                 :: V_2
+      real(RD)                 :: dV_2
+      real(RD)                 :: c_1
+      real(RD)                 :: dc_1
       integer                  :: set
       integer                  :: n_e
    contains
       private
-      procedure, public :: stencil
       procedure, public :: trans_eqns
       procedure, public :: trans_cond
       procedure, public :: trans_vars
@@ -93,16 +89,17 @@ module rad_trans_m
 
 contains
 
-   function rad_trans_t_(cx, md_p, os_p) result(tr)
+   function rad_trans_t_(cx, pt, md_p, os_p) result(tr)
 
       type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt
       type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
       type(rad_trans_t)                    :: tr
 
-      ! Construct the rad_trans_t
+      class(model_t), pointer :: ml
 
-      tr%cx => cx
+      ! Construct the rad_trans_t
 
       select case (os_p%variables_set)
       case ('GYRE')
@@ -119,6 +116,30 @@ contains
          @:ABORT('invalid variables_set')
       end select
 
+      tr%cx => cx
+
+      tr%pt = pt
+
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_V_2,I_U,I_C_1])
+
+      if (ml%is_vacuum(pt)) then
+         @:ASSERT(tr%set /= LAGP_SET, 'LAGP invalid at vacuum point')
+         tr%V_2 = HUGE(0._RD)
+         tr%dV_2 = HUGE(0._RD)
+      else
+         tr%V_2 = ml%coeff(I_V_2, pt)
+         tr%dV_2 = ml%dcoeff(I_V_2, pt)
+      endif
+
+      tr%c_1 = ml%coeff(I_C_1, pt)
+      tr%dc_1 = ml%dcoeff(I_C_1, pt)
+
+      ! Other initializations
+
       tr%n_e = 2
 
       ! Finish
@@ -129,52 +150,10 @@ contains
 
    !****
 
-   subroutine stencil(this, pt)
-
-      class(rad_trans_t), intent(inout) :: this
-      type(point_t), intent(in)         :: pt(:)
-
-      class(model_t), pointer :: ml
-      integer                 :: n_s
-      integer                 :: i
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [I_V_2,I_U,I_C_1])
-
-      n_s = SIZE(pt)
-
-      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-      allocate(this%coeff(n_s,J_LAST))
-
-      do i = 1, n_s
-         if (ml%is_vacuum(pt(i))) then
-            @:ASSERT(this%set /= LAGP_SET, 'LAGP invalid at vacuum points')
-            this%coeff(i,J_V_2) = HUGE(0._RD)
-            this%coeff(i,J_DV_2) = HUGE(0._RD)
-         else
-            this%coeff(i,J_V_2) = ml%coeff(I_V_2, pt(i))
-            this%coeff(i,J_DV_2) = ml%dcoeff(I_V_2, pt(i))
-         endif
-         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
-         this%coeff(i,J_DC_1) = ml%dcoeff(I_C_1, pt(i))
-      end do
-
-      ! Finish
-
-      return
-
-   end subroutine stencil
-
-   !****
-
-   subroutine trans_eqns(this, xA, i, st, from)
+   subroutine trans_eqns(this, xA, st, from)
 
       class(rad_trans_t), intent(in) :: this
       real(RD), intent(inout)        :: xA(:,:)
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -201,9 +180,9 @@ contains
          if (this%set /= SET .AND. &
             this%set /= DZIEM_SET .AND. &
             this%set /= MIX_SET) then
-            G = this%G_(i, st)
-            H = this%H_(i, st)
-            dH = this%dH_(i, st)
+            G = this%G_(st)
+            H = this%H_(st)
+            dH = this%dH_(st)
             xA = MATMUL(G, MATMUL(xA, H) - dH)
          endif
 
@@ -223,11 +202,10 @@ contains
 
    !****
 
-   subroutine trans_cond(this, C, i, st, from)
+   subroutine trans_cond(this, C, st, from)
 
       class(rad_trans_t), intent(in) :: this
       real(RD), intent(inout)        :: C(:,:)
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -252,7 +230,7 @@ contains
          if (this%set /= SET .AND. &
             this%set /= DZIEM_SET .AND. &
             this%set /= MIX_SET) then
-            H = this%H_(i, st)
+            H = this%H_(st)
             C = MATMUL(C, H)
          endif
 
@@ -263,7 +241,7 @@ contains
          if (this%set /= SET .AND. &
             this%set /= DZIEM_SET .AND. &
             this%set /= MIX_SET) then
-            G = this%G_(i, st)
+            G = this%G_(st)
             C = MATMUL(C, G)
          endif
 
@@ -277,11 +255,10 @@ contains
 
    !****
 
-   subroutine trans_vars(this, y, i, st, from)
+   subroutine trans_vars(this, y, st, from)
 
       class(rad_trans_t), intent(in) :: this
       real(RD), intent(inout)        :: y(:)
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -306,7 +283,7 @@ contains
          if (this%set /= SET .AND. &
             this%set /= DZIEM_SET .AND. &
             this%set /= MIX_SET) then
-            G = this%G_(i, st)
+            G = this%G_(st)
             y = MATMUL(G, y)
          endif
 
@@ -317,7 +294,7 @@ contains
          if (this%set /= SET .AND. &
             this%set /= DZIEM_SET .AND. &
             this%set /= MIX_SET) then
-            H = this%H_(i, st)
+            H = this%H_(st)
             y = MATMUL(H, y)
          endif
 
@@ -331,10 +308,9 @@ contains
 
    !****
 
-   function G_(this, i, st) result(G)
+   function G_(this, st) result(G)
 
       class(rad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: G(this%n_e,this%n_e)
 
@@ -343,9 +319,9 @@ contains
 
       select case (this%set)
       case (JCD_SET)
-         G = this%G_jcd_(i, st)
+         G = this%G_jcd_(st)
       case (LAGP_SET)
-         G = this%G_lagp_(i, st)
+         G = this%G_lagp_(st)
       case default
          @:ABORT('invalid set')
       end select
@@ -358,10 +334,9 @@ contains
 
    !****
 
-   function G_jcd_(this, i, st) result(G)
+   function G_jcd_(this, st) result(G)
 
       class(rad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: G(this%n_e,this%n_e)
 
@@ -372,7 +347,7 @@ contains
 
       associate( &
          omega => st%omega, &
-         c_1 => this%coeff(i,J_C_1))
+         c_1 => this%c_1)
 
          omega_c = omega
 
@@ -394,10 +369,9 @@ contains
 
    !****
 
-   function G_lagp_(this, i, st) result(G)
+   function G_lagp_(this, st) result(G)
 
       class(rad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: G(this%n_e,this%n_e)
 
@@ -405,7 +379,7 @@ contains
       ! from GYRE's canonical form
 
       associate( &
-         V_2 => this%coeff(i,J_V_2))
+         V_2 => this%V_2)
 
          ! Set up the matrix
 
@@ -425,10 +399,9 @@ contains
 
    !****
 
-   function H_(this, i, st) result(H)
+   function H_(this, st) result(H)
 
       class(rad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: H(this%n_e,this%n_e)
 
@@ -437,9 +410,9 @@ contains
 
       select case (this%set)
       case (JCD_SET)
-         H = this%H_jcd_(i, st)
+         H = this%H_jcd_(st)
       case (LAGP_SET)
-         H = this%H_lagp_(i, st)
+         H = this%H_lagp_(st)
       case default
          @:ABORT('invalid vars')
       end select
@@ -452,10 +425,9 @@ contains
 
    !****
 
-   function H_jcd_(this, i, st) result(H)
+   function H_jcd_(this, st) result(H)
 
       class(rad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: H(this%n_e,this%n_e)
 
@@ -466,7 +438,7 @@ contains
 
       associate( &
          omega => st%omega, &
-         c_1 => this%coeff(i,J_C_1))
+         c_1 => this%c_1)
 
          omega_c = omega
 
@@ -488,10 +460,9 @@ contains
 
    !****
 
-   function H_lagp_(this, i, st) result(H)
+   function H_lagp_(this, st) result(H)
 
       class(rad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: H(this%n_e,this%n_e)
 
@@ -499,7 +470,7 @@ contains
       ! to GYRE's canonical form
 
       associate( &
-         V_2 => this%coeff(i,J_V_2))
+         V_2 => this%V_2)
 
          ! Set up the matrix
 
@@ -519,10 +490,9 @@ contains
 
    !****
 
-   function dH_(this, i, st) result(dH)
+   function dH_(this, st) result(dH)
 
       class(rad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: dH(this%n_e,this%n_e)
 
@@ -530,9 +500,9 @@ contains
 
       select case (this%set)
       case (JCD_SET)
-         dH = this%dH_jcd_(i, st)
+         dH = this%dH_jcd_(st)
       case (LAGP_SET)
-         dH = this%dH_lagp_(i, st)
+         dH = this%dH_lagp_(st)
       case default
          @:ABORT('invalid set')
       end select
@@ -545,10 +515,9 @@ contains
 
    !****
 
-   function dH_jcd_(this, i, st) result(dH)
+   function dH_jcd_(this, st) result(dH)
 
       class(rad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: dH(this%n_e,this%n_e)
 
@@ -559,8 +528,8 @@ contains
 
       associate( &
          omega => st%omega, &
-         c_1 => this%coeff(i,J_C_1), &
-         dc_1 => this%coeff(i,J_DC_1))
+         c_1 => this%c_1, &
+         dc_1 => this%dc_1)
 
          omega_c = omega
 
@@ -582,10 +551,9 @@ contains
 
    !****
 
-   function dH_lagp_(this, i, st) result(dH)
+   function dH_lagp_(this, st) result(dH)
 
       class(rad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: dH(this%n_e,this%n_e)
 
@@ -593,8 +561,8 @@ contains
       ! transformation matrix H
 
       associate( &
-         V_2 => this%coeff(i,J_V_2), &
-         dV_2 => this%coeff(i,J_DV_2))
+         V_2 => this%V_2, &
+         dV_2 => this%dV_2)
 
          ! Set up the matrix
 

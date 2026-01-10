@@ -1,4 +1,4 @@
-! Module  : sad_vars_m
+! Module  : sad_trans_m
 ! Purpose : static adiabatic variables transformations
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
@@ -50,7 +50,6 @@ module sad_trans_m
       integer                  :: n_e
    contains
       private
-      procedure, public :: stencil
       procedure, public :: trans_eqns
       procedure, public :: trans_cond
       procedure, public :: trans_vars
@@ -75,23 +74,28 @@ module sad_trans_m
 
 contains
 
-   function sad_trans_t_(cx, md_p, os_p) result(tr)
+   function sad_trans_t_(cx, pt, md_p, os_p) result(tr)
 
       type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt
       type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
       type(sad_trans_t)                    :: tr
 
       ! Construct the sad_trans_t
 
-      tr%cx => cx
-
       select case (os_p%variables_set)
       case ('GYRE')
          tr%set = SET
       case default
-         @:ABORT('Invalid variables_set')
+         @:ABORT('invalid variables_set')
       end select
+
+      tr%cx => cx
+
+      ! Store structure coefficients
+
+      ! Other initializations
 
       tr%n_e = 2
 
@@ -103,24 +107,10 @@ contains
 
    !****
 
-   subroutine stencil(this, pt)
-
-      class(sad_trans_t), intent(inout) :: this
-      type(point_t), intent(in)         :: pt(:)
-
-      ! Finish
-
-      return
-
-   end subroutine stencil
-
-   !****
-
-   subroutine trans_eqns(this, xA, i, st, from)
+   subroutine trans_eqns(this, xA, st, from)
 
       class(sad_trans_t), intent(in) :: this
       real(RD), intent(inout)        :: xA(:,:)
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -145,9 +135,9 @@ contains
          ! Convert from
 
          if (this%set /= SET) then
-            G = this%G_(i, st)
-            H = this%H_(i, st)
-            dH = this%dH_(i, st)
+            G = this%G_(st)
+            H = this%H_(st)
+            dH = this%dH_(st)
             xA = MATMUL(G, MATMUL(xA, H) - dH)
          endif
 
@@ -167,11 +157,10 @@ contains
 
    !****
 
-   subroutine trans_cond(this, C, i, st, from)
+   subroutine trans_cond(this, C, st, from)
 
       class(sad_trans_t), intent(in) :: this
       real(RD), intent(inout)        :: C(:,:)
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -194,7 +183,7 @@ contains
          ! Convert from
 
          if (this%set /= SET) then
-            H = this%H_(i, st)
+            H = this%H_(st)
             C = MATMUL(C, H)
          endif
 
@@ -203,7 +192,7 @@ contains
          ! Convert to
 
          if (this%set /= SET) then
-            G = this%G_(i, st)
+            G = this%G_(st)
             C = MATMUL(C, G)
          endif
 
@@ -217,11 +206,10 @@ contains
 
    !****
 
-   subroutine trans_vars(this, y, i, st, from)
+   subroutine trans_vars(this, y, st, from)
 
       class(sad_trans_t), intent(in) :: this
       real(RD), intent(inout)        :: y(:)
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -244,7 +232,7 @@ contains
          ! Convert from
 
          if (this%set /= SET) then
-            G = this%G_(i, st)
+            G = this%G_(st)
             y = MATMUL(G, y)
          endif
 
@@ -253,7 +241,7 @@ contains
          ! Convert to
 
          if (this%set /= SET) then
-            H = this%H_(i, st)
+            H = this%H_(st)
             y = MATMUL(H, y)
          endif
 
@@ -267,10 +255,9 @@ contains
 
    !****
 
-   function G_(this, i, st) result(G)
+   function G_(this, st) result(G)
 
       class(sad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: G(this%n_e,this%n_e)
 
@@ -290,10 +277,9 @@ contains
 
    !****
 
-   function H_(this, i, st) result(H)
+   function H_(this, st) result(H)
 
       class(sad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: H(this%n_e,this%n_e)
 
@@ -313,10 +299,9 @@ contains
 
    !****
 
-   function dH_(this, i, st) result(dH)
+   function dH_(this, st) result(dH)
 
       class(sad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_rt), intent(in)    :: st
       real(RD)                       :: dH(this%n_e,this%n_e)
 

@@ -30,7 +30,6 @@ module eqns_m
       type, abstract :: eqns_${S}$
          integer :: n_e
       contains
-         procedure(stencil_${S}$_), deferred :: stencil
          procedure(eval_A_${S}$_), deferred  :: eval_A
       end type eqns_${S}$
 
@@ -38,21 +37,12 @@ module eqns_m
 
       abstract interface
 
-         subroutine stencil_${S}$_(this, pt)
-            use point_m
-            import eqns_${S}$
-            implicit none (type, external)
-            class(eqns_${S}$), intent(inout) :: this
-            type(point_t), intent(in)        :: pt(:)
-         end subroutine stencil_${S}$_
-
-         subroutine eval_A_${S}$_(this, i, st, A)
+         subroutine eval_A_${S}$_(this, st, A)
             use forum_m, only: RD
             use state_m
             import eqns_${S}$
             implicit none (type, external)
             class(eqns_${S}$), intent(in)  :: this
-            integer, intent(in)            :: i
             class(state_${S}$), intent(in) :: st
             ${T}$, intent(out)             :: A(:,:)
          end subroutine eval_A_${S}$_

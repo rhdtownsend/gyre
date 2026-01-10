@@ -53,11 +53,16 @@ module nad_match_m
    type, extends(diff_ct) :: nad_match_t
       private
       type(context_t), pointer :: cx => null()
-      type(nad_trans_t)        :: tr
-      real(RD), allocatable    :: coeff(:,:)
+      type(nad_trans_t)        :: tr_a
+      type(nad_trans_t)        :: tr_b
+      real(RD)                 :: V_a
+      real(RD)                 :: V_b
+      real(RD)                 :: U_a
+      real(RD)                 :: U_b
+      real(RD)                 :: nabla_ad_a
+      real(RD)                 :: nabla_ad_b
    contains
       private
-      procedure         :: stencil_
       procedure, public :: build
    end type nad_match_t
 
@@ -86,6 +91,8 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(nad_match_t)                    :: mt
 
+      class(model_t), pointer :: ml
+
       @:ASSERT_DEBUG(pt_a%s+1 == pt_b%s, 'mismatched segments')
       @:ASSERT_DEBUG(pt_a%x == pt_b%x, 'mismatched abscissae')
 
@@ -93,9 +100,25 @@ contains
 
       mt%cx => cx
 
-      mt%tr = nad_trans_t(cx, md_p, os_p)
+      mt%tr_a = nad_trans_t(cx, pt_a, md_p, os_p)
+      mt%tr_b = nad_trans_t(cx, pt_b, md_p, os_p)
 
-      call mt%stencil_(pt_a, pt_b)
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_U])
+
+      mt%V_a = ml%coeff(I_V_2, pt_a)*pt_a%x**2
+      mt%V_b = ml%coeff(I_V_2, pt_b)*pt_b%x**2
+
+      mt%U_a = ml%coeff(I_U, pt_a)
+      mt%U_b = ml%coeff(I_U, pt_b)
+
+      mt%nabla_ad_a = ml%coeff(I_NABLA_AD, pt_a)
+      mt%nabla_ad_b = ml%coeff(I_NABLA_AD, pt_b)
+
+      ! Other initializations
 
       mt%n_e = 6
 
@@ -104,43 +127,6 @@ contains
       return
 
    end function nad_match_t_
-
-   !****
-
-   subroutine stencil_(this, pt_a, pt_b)
-
-      class(nad_match_t), intent(inout) :: this
-      type(point_t), intent(in)         :: pt_a
-      type(point_t), intent(in)         :: pt_b
-
-      class(model_t), pointer :: ml
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [I_V_2,I_U,I_NABLA_AD])
-
-      allocate(this%coeff(2,J_LAST))
-
-      this%coeff(1,J_V) = ml%coeff(I_V_2, pt_a)*pt_a%x**2
-      this%coeff(2,J_V) = ml%coeff(I_V_2, pt_b)*pt_b%x**2
-
-      this%coeff(1,J_U) = ml%coeff(I_U, pt_a)
-      this%coeff(2,J_U) = ml%coeff(I_U, pt_b)
-
-      this%coeff(1,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt_a)
-      this%coeff(2,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt_b)
-
-      ! Set up stencil for the tr component
-
-      call this%tr%stencil([pt_a,pt_b])
-
-      ! Finish
-
-      return
-
-   end subroutine stencil_
 
    !****
 
@@ -161,12 +147,12 @@ contains
       ! Build the difference equations
 
       associate( &
-         V_l => this%coeff(1,J_V), &
-         V_r => this%coeff(2,J_V), &
-         U_l => this%coeff(1,J_U), &
-         U_r => this%coeff(2,J_U), &
-         nabla_ad_l => this%coeff(1,J_NABLA_AD), &
-         nabla_ad_r => this%coeff(2,J_NABLA_AD))
+         V_l => this%V_a, &
+         V_r => this%V_b, &
+         U_l => this%U_a, &
+         U_r => this%U_b, &
+         nabla_ad_l => this%nabla_ad_a, &
+         nabla_ad_r => this%nabla_ad_b)
 
          ! Evaluate the match conditions (y_1, y_3, y_6 continuous, y_2,
          ! y_4, y_5 not)
@@ -263,8 +249,8 @@ contains
 
       ! Apply the variables transformation
 
-      call this%tr%trans_cond(E_l, 1, st)
-      call this%tr%trans_cond(E_r, 2, st)
+      call this%tr_a%trans_cond(E_l, st)
+      call this%tr_b%trans_cond(E_r, st)
 
       ! Finish
 

@@ -45,23 +45,19 @@ module sad_bound_m
    integer, parameter :: REGULAR_TYPE = 1
    integer, parameter :: VACUUM_TYPE = 1
 
-   integer, parameter :: J_U = 1
-
-   integer, parameter :: J_LAST = J_U
-
    ! Derived-type definitions
 
    type, extends(bound_rt) :: sad_bound_t
       private
       type(context_t), pointer :: cx => null()
-      type(sad_trans_t)        :: tr
-      real(RD), allocatable    :: coeff(:,:)
+      type(sad_trans_t)        :: tr_i
+      type(sad_trans_t)        :: tr_o
+      real(RD)                 :: U_o
       integer                  :: type_i
       integer                  :: type_o
       integer                  :: l
    contains
       private
-      procedure         :: stencil_
       procedure, public :: build_i
       procedure         :: build_regular_i_
       procedure, public :: build_o
@@ -97,10 +93,6 @@ contains
 
       ! Construct the sad_bound_t
 
-      bd%cx => cx
-
-      bd%tr = sad_trans_t(cx, md_p, os_p)
-
       ml => cx%model()
       pt_i = cx%point_i()
       pt_o = cx%point_o()
@@ -128,9 +120,18 @@ contains
          @:ABORT('invalid outer_bound')
       end select
 
-      bd%l = md_p%l
+      bd%cx => cx
 
-      call bd%stencil_(pt_i, pt_o)
+      bd%tr_i = sad_trans_t(cx, pt_i, md_p, os_p)
+      bd%tr_o = sad_trans_t(cx, pt_o, md_p, os_p)
+
+      ! Store structure coefficients
+
+      bd%U_o = ml%coeff(I_U, pt_o)
+
+      ! Other initializations
+
+      bd%l = md_p%l
 
       bd%n_i = 1
       bd%n_o = 1
@@ -142,45 +143,6 @@ contains
       return
 
    end function sad_bound_t_
-
-   !****
-
-   subroutine stencil_(this, pt_i, pt_o)
-
-      class(sad_bound_t), intent(inout) :: this
-      type(point_t), intent(in)         :: pt_i
-      type(point_t), intent(in)         :: pt_o
-
-      class(model_t), pointer :: ml
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [I_U])
-
-      allocate(this%coeff(2,J_LAST))
-
-      ! Inner boundary
-
-      ! Outer boundary
-
-      select case (this%type_o)
-      case (VACUUM_TYPE)
-         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
-      case default
-         @:ABORT('invalid type_o')
-      end select
-
-      ! Set up stencil for the tr component
-
-      call this%tr%stencil([pt_i,pt_o])
-
-      ! Finish
-
-      return
-
-   end subroutine stencil_
 
    !****
 
@@ -204,7 +166,7 @@ contains
 
       ! Apply the variables transformation
 
-      call this%tr%trans_cond(B, 1, st)
+      call this%tr_i%trans_cond(B, st)
 
       ! Finish
 
@@ -262,7 +224,7 @@ contains
 
       ! Apply the variables transformation
 
-      call this%tr%trans_cond(B, 2, st)
+      call this%tr_o%trans_cond(B, st)
 
       ! Finish
 
@@ -286,7 +248,7 @@ contains
       ! Evaluate the outer boundary conditions (vacuum)
 
       associate ( &
-         U => this%coeff(2,J_U))
+         U => this%U_o)
 
          l = this%l
 

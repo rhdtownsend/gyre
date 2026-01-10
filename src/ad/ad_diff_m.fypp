@@ -28,6 +28,7 @@ module ad_diff_m
    use context_m
    use diff_m
    use diff_factory_m
+   use eqns_m
    use ext_m
    use mode_par_m
    use num_par_m
@@ -77,17 +78,13 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(ad_diff_t)                      :: df
 
-      type(ad_eqns_t) :: eq
-
       ! Construct the ad_diff type
 
       if (pt_a%s == pt_b%s) then
 
          ! Regular subinterval; use difference equations
 
-         eq = ad_eqns_t(cx, md_p, os_p)
-
-         allocate(df%df, SOURCE=diff_rt(eq, pt_a, pt_b, nm_p))
+         allocate(df%df, SOURCE=diff_rt(eqns_factory_, pt_a, pt_b, nm_p))
 
       else
 
@@ -102,6 +99,31 @@ contains
       ! Finish
 
       return
+
+   contains
+
+      subroutine eqns_factory_(pt, eq)
+
+         type(point_t), intent(in)                :: pt(:)
+         class(eqns_rt), allocatable, intent(out) :: eq(:)
+
+         type(ad_eqns_t), allocatable :: eq_(:)
+         integer                      :: n
+         integer                      :: i
+
+         n = SIZE(pt)
+
+         allocate(eq_(n))
+
+         do i = 1, n
+            eq_(i) = ad_eqns_t(cx, pt(i), md_p, os_p)
+         end do
+
+         eq = eq_
+
+         return
+
+      end subroutine eqns_factory_
 
    end function ad_diff_t_
 

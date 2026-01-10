@@ -42,7 +42,7 @@ module trapz_diff_m
 
       type, extends(diff_${S}$) :: trapz_diff_${S}$
          private
-         class(eqns_${S}$), allocatable :: eq
+         class(eqns_${S}$), allocatable :: eq(:)
          real(RD), allocatable          :: w(:)
          real(RD)                       :: dx
          real(RD)                       :: x_m
@@ -72,32 +72,47 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function trapz_diff_${S}$_(eq, pt_a, pt_b, w) result(df)
+      function trapz_diff_${S}$_(eqns_factory, pt_a, pt_b, w) result(df)
 
-         class(eqns_${S}$), intent(in) :: eq
-         type(point_t), intent(in)     :: pt_a
-         type(point_t), intent(in)     :: pt_b
-         real(RD), intent(in)          :: w(:)
-         type(trapz_diff_${S}$)        :: df
+         interface
+            subroutine eqns_factory(pt, eq)
+               use point_m
+               use eqns_m
+               implicit none (type, external)
+               type(point_t), intent(in)                   :: pt(:)
+               class(eqns_${S}$), allocatable, intent(out) :: eq(:)
+            end subroutine eqns_factory
+         end interface
+         type(point_t), intent(in)      :: pt_a
+         type(point_t), intent(in)      :: pt_b
+         real(RD), intent(in), optional :: w(:)
+         type(trapz_diff_${S}$)         :: df
+
+         type(point_t) :: pt(2)
 
          @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
 
-         @:CHECK_BOUNDS(SIZE(w), eq%n_e)
-
          ! Construct the trapz_diff_t
-
-         df%w = w
 
          df%dx = pt_b%x - pt_a%x
          df%x_m = 0.5_RD*(pt_a%x + pt_b%x)
 
-         allocate(df%eq, SOURCE=eq)
+         pt = [pt_a,pt_b]
 
-         call df%eq%stencil([pt_a,pt_b])
+         call eqns_factory(pt, df%eq)
 
          df%origin = pt_a%x == 0._RD
 
-         df%n_e = eq%n_e
+         df%n_e = df%eq(1)%n_e
+         @:ASSERT_DEBUG(ALL(df%eq%n_e == df%n_e))
+
+         if (PRESENT(w)) then
+            @:CHECK_BOUNDS(SIZE(w), df%n_e)
+            df%w = w
+         else
+            allocate(df%w(df%n_e))
+            df%w = 0.5_RD
+         end if
 
          ! Finish
 
@@ -138,8 +153,8 @@ contains
 
             ! Evaluate the RHS matrix
 
-            call this%eq%eval_A(1, st, A(:,:,1))
-            call this%eq%eval_A(2, st, A(:,:,2))
+            call this%eq(1)%eval_A(st, A(:,:,1))
+            call this%eq(2)%eval_A(st, A(:,:,2))
 
             ! Build the difference equations
 

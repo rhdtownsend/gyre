@@ -52,25 +52,24 @@ module nad_bound_m
    integer, parameter :: UNNO_TYPE = 7
    integer, parameter :: JCD_TYPE = 8
 
-   integer, parameter :: J_V = 1
-   integer, parameter :: J_AS = 2
-   integer, parameter :: J_U = 3
-   integer, parameter :: J_C_1 = 4
-   integer, parameter :: J_GAMMA_1 = 5
-   integer, parameter :: J_NABLA_AD = 6
-   integer, parameter :: J_C_THN = 7
-   integer, parameter :: J_UPS_T = 8
-
-   integer, parameter :: J_LAST = J_UPS_T
-
    ! Derived-type definitions
 
    type, extends(bound_ct) :: nad_bound_t
       private
       type(context_t), pointer  :: cx => null()
-      type(point_t)             :: pt(2)
-      type(nad_trans_t)         :: tr
-      real(RD), allocatable     :: coeff(:,:)
+      type(nad_trans_t)         :: tr_i
+      type(nad_trans_t)         :: tr_o
+      real(RD)                  :: V_o
+      real(RD)                  :: As_o
+      real(RD)                  :: U_o
+      real(RD)                  :: c_1_i
+      real(RD)                  :: c_1_o
+      real(RD)                  :: Gamma_1_o
+      real(RD)                  :: nabla_ad_o
+      real(RD)                  :: c_thn_o
+      real(RD)                  :: ups_T_o
+      real(RD)                  :: Omega_rot_i
+      real(RD)                  :: Omega_rot_o
       real(RD)                  :: alpha_grv
       real(RD)                  :: alpha_gbc
       real(RD)                  :: alpha_rht
@@ -80,7 +79,6 @@ module nad_bound_m
       character(:), allocatable :: branch_o
    contains
       private
-      procedure         :: stencil_
       procedure, public :: build_i
       procedure         :: build_regular_i_
       procedure         :: build_zero_r_i_
@@ -122,10 +120,6 @@ contains
       type(point_t)           :: pt_o
 
       ! Construct the nad_bound_t
-
-      bd%cx => cx
-
-      bd%tr = nad_trans_t(cx, md_p, os_p)
 
       ml => cx%model()
       pt_i = cx%point_i()
@@ -180,6 +174,44 @@ contains
          @:ABORT('invalid outer_bound')
       end select
 
+      bd%cx => cx
+
+      bd%tr_i = nad_trans_t(cx, pt_i, md_p, os_p)
+      bd%tr_o = nad_trans_t(cx, pt_o, md_p, os_p)
+
+      ! Store structure coefficients
+
+      call check_model(ml, [I_V_2,I_U,I_C_1,I_GAMMA_1,I_NABLA_AD,I_C_THN,I_OMEGA_ROT])
+
+      bd%c_1_i = ml%coeff(I_C_1, pt_i)
+
+      select case (bd%type_o)
+      case (VACUUM_TYPE,ZERO_R_TYPE,ZERO_H_TYPE)
+         bd%V_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2
+      case (DZIEM_TYPE)
+         bd%V_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2
+      case (ISOTHRM_TYPE)
+         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_o, &
+            bd%As_o, bd%c_1_o, bd%Gamma_1_o)
+      case (UNNO_TYPE)
+         call eval_atmos_coeffs_unno(ml, pt_o, bd%V_o, &
+            bd%As_o, bd%c_1_o, bd%Gamma_1_o)
+         bd%U_o = ml%coeff(I_U, pt_o)
+      case (JCD_TYPE)
+         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_o, &
+            bd%As_o, bd%c_1_o, bd%Gamma_1_o)
+      end select
+
+      bd%U_o = ml%coeff(I_U, pt_o)
+      bd%c_1_o = ml%coeff(I_C_1, pt_o)
+      bd%nabla_ad_o = ml%coeff(I_NABLA_AD, pt_o)
+      bd%c_thn_o = ml%coeff(I_C_THN, pt_o)
+
+      bd%Omega_rot_i = cx%Omega_rot(pt_i)
+      bd%Omega_rot_o = cx%Omega_rot(pt_o)
+
+      ! Other initializations
+
       bd%alpha_grv = os_p%alpha_grv
       bd%alpha_gbc = os_p%alpha_gbc
       bd%alpha_rht = os_p%alpha_rht
@@ -195,8 +227,6 @@ contains
 
       bd%branch_o = os_p%outer_bound_branch
 
-      call bd%stencil_(pt_i, pt_o)
-
       bd%n_i = 3
       bd%n_o = 3
 
@@ -207,77 +237,6 @@ contains
       return
 
    end function nad_bound_t_
-
-   !****
-
-   subroutine stencil_(this, pt_i, pt_o)
-
-      class(nad_bound_t), intent(inout) :: this
-      type(point_t), intent(in)         :: pt_i
-      type(point_t), intent(in)         :: pt_o
-
-      class(model_t), pointer :: ml
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [I_V_2,I_U,I_C_1,I_GAMMA_1,I_NABLA_AD,I_C_THN])
-
-      allocate(this%coeff(2,J_LAST))
-
-      ! Inner boundary
-
-      select case (this%type_i)
-      case (REGULAR_TYPE)
-         this%coeff(1,J_C_1) = ml%coeff(I_C_1, pt_i)
-      case (ZERO_R_TYPE,ZERO_H_TYPE)
-      case default
-         @:ABORT('invalid type_i')
-      end select
-
-      ! Outer boundary
-
-      select case (this%type_o)
-      case (VACUUM_TYPE,ZERO_R_TYPE,ZERO_H_TYPE)
-         this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
-         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
-      case (DZIEM_TYPE)
-         this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
-         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
-         this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
-      case (ISOTHRM_TYPE)
-         call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V), &
-            this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
-         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
-      case (UNNO_TYPE)
-         call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V), &
-            this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
-         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
-      case (JCD_TYPE)
-         call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V), &
-            this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
-         this%coeff(2,J_U) = ml%coeff(I_U, pt_o)
-      case default
-         @:ABORT('invalid type_o')
-      end select
-
-      this%coeff(2,J_NABLA_AD) = ml%coeff(I_NABLA_AD, pt_o)
-      this%coeff(2,J_C_THN) = ml%coeff(I_C_THN, pt_o)
-
-      ! Set up stencil for the tr component
-
-      call this%tr%stencil([pt_i,pt_o])
-
-      ! Store the stencil points for on-the-fly evaluations
-
-      this%pt = [pt_i,pt_o]
-
-      ! Finish
-
-      return
-
-   end subroutine stencil_
 
    !****
 
@@ -302,7 +261,7 @@ contains
 
       ! Apply the variables transformation
 
-      call this%tr%trans_cond(B, 1, st)
+      call this%tr_i%trans_cond(B, st)
 
       ! Finish
 
@@ -318,7 +277,6 @@ contains
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
 
-      real(RD)    :: Omega_rot
       complex(RD) :: omega_c
       complex(RD) :: l_i
 
@@ -328,12 +286,10 @@ contains
       ! Evaluate the inner boundary conditions (regular-enforcing)
 
       associate( &
-         c_1 => this%coeff(1,J_C_1), &
-         pt => this%pt(1), &
+         c_1 => this%c_1_i, &
+         Omega_rot => this%Omega_rot_i, &
          alpha_grv => this%alpha_grv, &
          alpha_omg => this%alpha_omg)
-
-         Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -497,7 +453,7 @@ contains
 
       ! Apply the variables transformation
 
-      call this%tr%trans_cond(B, 2, st)
+      call this%tr_o%trans_cond(B, st)
 
       ! Finish
 
@@ -513,7 +469,6 @@ contains
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
 
-      real(RD)    :: Omega_rot
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: l_e
@@ -525,17 +480,15 @@ contains
       ! Evaluate the outer boundary conditions (vacuum)
 
       associate( &
-         V => this%coeff(2,J_V), &
-         U => this%coeff(2,J_U), &
-         nabla_ad => this%coeff(2,J_NABLA_AD), &
-         c_thn => this%coeff(2,J_C_THN), &
-         pt => this%pt(2), &
+         V => this%V_o, &
+         U => this%U_o, &
+         nabla_ad => this%nabla_ad_o, &
+         c_thn => this%c_thn_o, &
+         Omega_rot => this%Omega_rot_o, &
          alpha_grv => this%alpha_grv, &
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg)
-
-         Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
@@ -583,7 +536,6 @@ contains
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
 
-      real(RD)    :: Omega_rot
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: l_e
@@ -596,17 +548,15 @@ contains
       ! displacement)
 
       associate( &
-         V => this%coeff(2,J_V), &
-         U => this%coeff(2,J_U), &
-         nabla_ad => this%coeff(2,J_NABLA_AD), &
-         c_thn => this%coeff(2,J_C_THN), &
-         pt => this%pt(2), &
+         V => this%V_o, &
+         U => this%U_o, &
+         nabla_ad => this%nabla_ad_o, &
+         c_thn => this%c_thn_o, &
+         Omega_rot => this%Omega_rot_o, &
          alpha_grv => this%alpha_grv, &
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg)
-
-         Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
@@ -654,7 +604,6 @@ contains
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
 
-      real(RD)    :: Omega_rot
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: l_e
@@ -667,17 +616,15 @@ contains
       ! displacement)
 
       associate( &
-         V => this%coeff(2,J_V), &
-         U => this%coeff(2,J_U), &
-         nabla_ad => this%coeff(2,J_NABLA_AD), &
-         c_thn => this%coeff(2,J_C_THN), &
-         pt => this%pt(2), &
+         V => this%V_o, &
+         U => this%U_o, &
+         nabla_ad => this%nabla_ad_o, &
+         c_thn => this%c_thn_o, &
+         Omega_rot => this%Omega_rot_o, &
          alpha_grv => this%alpha_grv, &
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg)
-
-         Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
@@ -725,7 +672,6 @@ contains
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
 
-      real(RD)    :: Omega_rot
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: lambda
@@ -738,18 +684,16 @@ contains
       ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
       associate( &
-         V => this%coeff(2,J_V), &
-         U => this%coeff(2,J_U), &
-         c_1 => this%coeff(2,J_C_1), &
-         nabla_ad => this%coeff(2,J_NABLA_AD), &
-         c_thn => this%coeff(2,J_C_THN), &
-         pt => this%pt(2), &
+         V => this%V_o, &
+         U => this%U_o, &
+         c_1 => this%c_1_o, &
+         nabla_ad => this%nabla_ad_o, &
+         c_thn => this%c_thn_o, &
+         Omega_rot => this%Omega_rot_o, &
          alpha_grv => this%alpha_grv, &
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg)
-
-         Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
@@ -798,7 +742,6 @@ contains
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
 
-      real(RD)    :: Omega_rot
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: lambda
@@ -823,21 +766,19 @@ contains
       ! eigendecomposition
 
       associate( &
-         V => this%coeff(2,J_V), &
-         As => this%coeff(2,J_AS), &
-         U => this%coeff(2,J_U), &
-         c_1 => this%coeff(2,J_C_1), &
-         Gamma_1 => this%coeff(2,J_GAMMA_1), &
-         nabla_ad => this%coeff(2,J_NABLA_AD), &
-         c_thn => this%coeff(2,J_C_THN), &
-         pt => this%pt(2), &
+         V => this%V_o, &
+         As => this%As_o, &
+         U => this%U_o, &
+         c_1 => this%c_1_o, &
+         Gamma_1 => this%Gamma_1_o, &
+         nabla_ad => this%nabla_ad_o, &
+         c_thn => this%c_thn_o, &
+         Omega_rot => this%Omega_rot_o, &
          alpha_grv => this%alpha_grv, &
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg, &
          branch => this%branch_o)
-
-         Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
@@ -927,7 +868,6 @@ contains
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: B(:,:)
 
-      real(RD)    :: Omega_rot
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: lambda
@@ -943,21 +883,19 @@ contains
       ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
       associate( &
-         V => this%coeff(2,J_V), &
-         As => this%coeff(2,J_AS), &
-         U => this%coeff(2,J_U), &
-         c_1 => this%coeff(2,J_C_1), &
-         Gamma_1 => this%coeff(2,J_GAMMA_1), &
-         nabla_ad => this%coeff(2,J_NABLA_AD), &
-         c_thn => this%coeff(2,J_C_THN), &
-         pt => this%pt(2), &
+         V => this%V_o, &
+         As => this%As_o, &
+         U => this%U_o, &
+         c_1 => this%c_1_o, &
+         Gamma_1 => this%Gamma_1_o, &
+         nabla_ad => this%nabla_ad_o, &
+         c_thn => this%c_thn_o, &
+         Omega_rot => this%Omega_rot_o, &
          alpha_grv => this%alpha_grv, &
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg, &
          branch => this%branch_o)
-
-         Omega_rot = this%cx%Omega_rot(pt)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c

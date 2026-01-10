@@ -80,7 +80,7 @@ module colloc_diff_m
 
       type, extends(diff_${S}$) :: colloc_diff_${S}$
          private
-         class(eqns_${S}$), allocatable   :: eq
+         class(eqns_${S}$), allocatable   :: eq(:)
          real(RD)                         :: dx
          integer                          :: n_s
          integer                          :: scheme
@@ -112,13 +112,21 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function colloc_diff_${S}$_(eq, pt_a, pt_b, scheme) result(df)
+      function colloc_diff_${S}$_(eqns_factory, pt_a, pt_b, scheme) result(df)
 
-         class(eqns_${S}$), intent(in) :: eq
-         type(point_t), intent(in)     :: pt_a
-         type(point_t), intent(in)     :: pt_b
-         character(*), intent(in)      :: scheme
-         type(colloc_diff_${S}$)       :: df
+         interface
+            subroutine eqns_factory(pt, eq)
+               use point_m
+               use eqns_m
+               implicit none (type, external)
+               type(point_t), intent(in)                   :: pt(:)
+               class(eqns_${S}$), allocatable, intent(out) :: eq(:)
+            end subroutine eqns_factory
+         end interface
+         type(point_t), intent(in) :: pt_a
+         type(point_t), intent(in) :: pt_b
+         character(*), intent(in)  :: scheme
+         type(colloc_diff_${S}$)   :: df
 
          real(RD), allocatable      :: c_i(:)
          type(point_t), allocatable :: pt(:)
@@ -158,11 +166,10 @@ contains
             pt%x = pt_a%x + c_i*df%dx
          endif
 
-         allocate(df%eq, SOURCE=eq)
+         call eqns_factory(pt, df%eq)
 
-         call df%eq%stencil(pt)
-
-         df%n_e = eq%n_e
+         df%n_e = df%eq(1)%n_e
+         @:ASSERT_DEBUG(ALL(df%eq%n_e == df%n_e))
 
          ! Finish
 
@@ -205,7 +212,7 @@ contains
 
          ! Evaluate the RHS matrix
 
-         call this%eq%eval_A(1, st, A)
+         call this%eq(1)%eval_A(st, A)
 
          ! Build the GL2 difference equations
 
@@ -313,7 +320,7 @@ contains
          ! Evaluate the RHS matrices
 
          do i = 1, this%n_s
-            call this%eq%eval_A(i, st, A(:,:,i))
+            call this%eq(i)%eval_A(st, A(:,:,i))
          end do
 
          ! Calculate the intermediate-state matrices K

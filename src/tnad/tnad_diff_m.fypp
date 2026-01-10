@@ -27,16 +27,18 @@ module tnad_diff_m
    use diff_m
    use diff_factory_m
    use trapz_diff_m
+   use eqns_m
    use ext_m
    use math_m
    use mode_par_m
    use model_m
-   use tnad_eqns_m
+   use nad_eqns_m
    use nad_match_m
    use num_par_m
    use osc_par_m
    use point_m
    use state_m
+   use tnad_eqns_m
 
    use ISO_FORTRAN_ENV
 
@@ -50,7 +52,7 @@ module tnad_diff_m
       private
       type(context_t), pointer    :: cx => null()
       class(diff_ct), allocatable :: df
-      type(tnad_eqns_t)           :: eq
+      type(nad_eqns_t)            :: eq
       real(RD)                    :: Omega_rot
       real(RD)                    :: dx
    contains
@@ -95,13 +97,12 @@ contains
 
          ! Regular subinterval; use difference equations
 
-         eq = tnad_eqns_t(cx, md_p, os_p)
-
          select case (nm_p%diff_scheme)
          case ('TRAPZ')
-            allocate(df%df, SOURCE=trapz_diff_ct(eq, pt_a, pt_b, [0.5_RD,0.5_RD,0.5_RD,0.5_RD,0._RD,1._RD]))
+            allocate(df%df, SOURCE=trapz_diff_ct(eqns_factory_, pt_a, pt_b, &
+               [0.5_RD,0.5_RD,0.5_RD,0.5_RD,0._RD,1._RD]))
          case default
-            allocate(df%df, SOURCE=diff_ct(eq, pt_a, pt_b, nm_p))
+            allocate(df%df, SOURCE=diff_ct(eqns_factory_, pt_a, pt_b, nm_p))
          end select
 
          ! Set up midpoint eqns_t (used for regularization of Magnus
@@ -112,9 +113,7 @@ contains
          pt_m%s = pt_a%s
          pt_m%x = pt_a%x + 0.5_RD*df%dx
 
-         df%eq = eq
-
-         call df%eq%stencil([pt_m])
+         df%eq = nad_eqns_t(cx, pt_m, md_p, os_p)
 
          ! Set up midpoint Omega_rot (used for regularization of colloc
          ! schemes)
@@ -134,6 +133,32 @@ contains
       ! Finish
 
       return
+
+   contains
+
+      subroutine eqns_factory_(pt, eq)
+
+         type(point_t), intent(in)                :: pt(:)
+         class(eqns_ct), allocatable, intent(out) :: eq(:)
+
+         type(tnad_eqns_t), allocatable :: eq_(:)
+
+         integer :: n
+         integer :: i
+
+         n = SIZE(pt)
+
+         allocate(eq_(n))
+
+         do i = 1, n
+            eq_(i) = tnad_eqns_t(cx, pt(i), md_p, os_p)
+         end do
+
+         eq = eq_
+
+         return
+
+      end subroutine eqns_factory_
 
    end function tnad_diff_t_
 
@@ -175,7 +200,7 @@ contains
          ! Rescale by the uncoupled eigenvalues, in order to help the root
          ! finder
 
-         call this%eq%eval_A(1, st, A)
+         call this%eq%eval_A(st, A)
 
          lambda(1) = sqrt(A(2,1)*A(1,2))
          lambda(2) = sqrt(A(4,3)*A(3,4))

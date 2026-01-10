@@ -41,22 +41,17 @@ module ad_match_m
 
    implicit none (type, external)
 
-   ! Parameter definitions
-
-   integer, parameter :: J_U = 1
-
-   integer, parameter :: J_LAST = J_U
-
    ! Derived-type definitions
 
    type, extends(diff_rt) :: ad_match_t
       private
       type(context_t), pointer :: cx => null()
-      type(ad_trans_t)         :: tr
-      real(RD), allocatable    :: coeff(:,:)
+      type(ad_trans_t)         :: tr_a
+      type(ad_trans_t)         :: tr_b
+      real(RD)                 :: U_a
+      real(RD)                 :: U_b
    contains
       private
-      procedure         :: stencil_
       procedure, public :: build
    end type ad_match_t
 
@@ -85,16 +80,28 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(ad_match_t)                     :: mt
 
+      class(model_t), pointer :: ml
+
       @:ASSERT_DEBUG(pt_a%s+1 == pt_b%s, 'Mismatched segments')
       @:ASSERT_DEBUG(pt_a%x == pt_b%x, 'Mismatched abscissae')
 
-      ! Construct the ad_match type
+      ! Construct the ad_match_t
 
       mt%cx => cx
 
-      mt%tr = ad_trans_t(cx, md_p, os_p)
+      mt%tr_a = ad_trans_t(cx, pt_a, md_p, os_p)
+      mt%tr_b = ad_trans_t(cx, pt_b, md_p, os_p)
 
-      call mt%stencil_(pt_a, pt_b)
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_U])
+
+      mt%U_a = ml%coeff(I_U, pt_a)
+      mt%U_b = ml%coeff(I_U, pt_b)
+
+      ! Other initializations
 
       mt%n_e = 4
 
@@ -103,37 +110,6 @@ contains
       return
 
    end function ad_match_t_
-
-   !****
-
-   subroutine stencil_(this, pt_a, pt_b)
-
-      class(ad_match_t), intent(inout) :: this
-      type(point_t), intent(in)        :: pt_a
-      type(point_t), intent(in)        :: pt_b
-
-      class(model_t), pointer :: ml
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [I_U])
-
-      allocate(this%coeff(2,J_LAST))
-
-      this%coeff(1,J_U) = ml%coeff(I_U, pt_a)
-      this%coeff(2,J_U) = ml%coeff(I_U, pt_b)
-
-      ! Set up stencil for the tr component
-
-      call this%tr%stencil([pt_a,pt_b])
-
-      ! Finish
-
-      return
-
-   end subroutine stencil_
 
    !****
 
@@ -156,8 +132,8 @@ contains
       ! Calculate coefficients
 
       associate( &
-         U_l => this%coeff(1,J_U), &
-         U_r => this%coeff(2,J_U))
+         U_l => this%U_a, &
+         U_r => this%U_b)
 
          ! Evaluate the match conditions (y_1, y_3 continuous, y_2, y_4
          ! not)
@@ -210,8 +186,8 @@ contains
 
       ! Apply the variables transformation
 
-      call this%tr%trans_cond(E_l, 1, st)
-      call this%tr%trans_cond(E_r, 2, st)
+      call this%tr_a%trans_cond(E_l, st)
+      call this%tr_b%trans_cond(E_r, st)
 
       ! Finish
 

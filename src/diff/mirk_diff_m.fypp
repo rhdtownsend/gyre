@@ -46,7 +46,7 @@ module mirk_diff_m
 
       type, extends(diff_${S}$) :: mirk_diff_${S}$
          private
-         class(eqns_${S}$), allocatable :: eq
+         class(eqns_${S}$), allocatable :: eq(:)
          real(RD)                       :: dx
          logical                        :: origin
       contains
@@ -74,9 +74,17 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function mirk_diff_${S}$_(eq, pt_a, pt_b) result(df)
+      function mirk_diff_${S}$_(eqns_factory, pt_a, pt_b) result(df)
 
-         class(eqns_${S}$), intent(in) :: eq
+         interface
+            subroutine eqns_factory(pt, eq)
+               use point_m
+               use eqns_m
+               implicit none (type, external)
+               type(point_t), intent(in)                   :: pt(:)
+               class(eqns_${S}$), allocatable, intent(out) :: eq(:)
+            end subroutine eqns_factory
+         end interface
          type(point_t), intent(in)     :: pt_a
          type(point_t), intent(in)     :: pt_b
          type(mirk_diff_${S}$)         :: df
@@ -94,13 +102,12 @@ contains
          pt%s = pt_a%s
          pt%x = pt_a%x + C_I*df%dx
 
-         allocate(df%eq, SOURCE=eq)
-
-         call df%eq%stencil(pt)
+         call eqns_factory(pt, df%eq)
 
          df%origin = pt_a%x == 0._RD
 
-         df%n_e = eq%n_e
+         df%n_e = df%eq(1)%n_e
+         @:ASSERT_DEBUG(ALL(df%eq%n_e == df%n_e))
 
          ! Finish
 
@@ -141,9 +148,9 @@ contains
 
             ! Evaluate the RHS matrices
 
-            call this%eq%eval_A(1, st, A(:,:,1))
-            call this%eq%eval_A(2, st, A(:,:,2))
-            call this%eq%eval_A(3, st, A(:,:,3))
+            call this%eq(1)%eval_A(st, A(:,:,1))
+            call this%eq(2)%eval_A(st, A(:,:,2))
+            call this%eq(3)%eval_A(st, A(:,:,3))
 
             ! Build the difference equations
 

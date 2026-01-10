@@ -39,27 +39,20 @@ module rad_eqns_m
 
    implicit none (type, external)
 
-   ! Parameter definitions
-
-   integer, parameter :: J_V_G = 1
-   integer, parameter :: J_AS = 2
-   integer, parameter :: J_U = 3
-   integer, parameter :: J_C_1 = 4
-
-   integer, parameter :: J_LAST = J_C_1
-
    ! Derived-type definitions
 
    type, extends (eqns_rt) :: rad_eqns_t
       private
-      type(context_t), pointer   :: cx => null()
-      type(point_t), allocatable :: pt(:)
-      type(rad_trans_t)          :: tr
-      real(RD), allocatable      :: coeff(:,:)
-      real(RD)                   :: alpha_omg
+      type(context_t), pointer :: cx => null()
+      type(rad_trans_t)        :: tr
+      real(RD)                 :: V_g
+      real(RD)                 :: As
+      real(RD)                 :: U
+      real(RD)                 :: c_1
+      real(RD)                 :: x
+      real(RD)                 :: alpha_omg
    contains
       private
-      procedure, public :: stencil
       procedure, public :: eval_A
    end type rad_eqns_t
 
@@ -79,18 +72,38 @@ module rad_eqns_m
 
 contains
 
-   function rad_eqns_t_(cx, md_p, os_p) result(eq)
+   function rad_eqns_t_(cx, pt, md_p, os_p) result(eq)
 
       class(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)             :: pt
       type(mode_par_t), intent(in)          :: md_p
       type(osc_par_t), intent(in)           :: os_p
       type(rad_eqns_t)                      :: eq
+
+      class(model_t), pointer :: ml
 
       ! Construct the rad_eqns_t
 
       eq%cx => cx
 
-      eq%tr = rad_trans_t(cx, md_p, os_p)
+      eq%tr = rad_trans_t(cx, pt, md_p, os_p)
+
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
+
+      @:ASSERT(.NOT. ml%is_vacuum(pt), 'vacuum point')
+
+      eq%V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+      eq%As = ml%coeff(I_AS, pt)
+      eq%U = ml%coeff(I_U, pt)
+      eq%c_1 = ml%coeff(I_C_1, pt)
+
+      ! Other initializations
+
+      eq%x = pt%x
 
       select case (os_p%time_factor)
       case ('OSC')
@@ -111,57 +124,9 @@ contains
 
    !****
 
-   subroutine stencil (this, pt)
-
-      class(rad_eqns_t), intent(inout) :: this
-      type(point_t), intent(in)        :: pt(:)
-
-      class(model_t), pointer :: ml
-      integer :: n_s
-      integer :: i
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
-
-      n_s = SIZE(pt)
-
-      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-      allocate(this%coeff(n_s,J_LAST))
-
-      do i = 1, n_s
-
-         @:ASSERT(.NOT. ml%is_vacuum(pt(i)), 'Attempt to stencil at vacuum point')
-
-         this%coeff(i,J_V_G) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2/ml%coeff(I_GAMMA_1, pt(i))
-         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
-         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
-         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
-
-      end do
-
-      ! Set up stencil for the tr component
-
-      call this%tr%stencil(pt)
-
-      ! Store the stencil points for on-the-fly evaluations
-
-      this%pt = pt
-
-      ! Finish
-
-      return
-
-   end subroutine stencil
-
-   !****
-
-   subroutine eval_A(this, i, st, A)
+   subroutine eval_A(this, st, A)
 
       class(rad_eqns_t), intent(in) :: this
-      integer, intent(in)           :: i
       class(state_rt), intent(in)   :: st
       real(RD), intent(out)         :: A(:,:)
 
@@ -174,11 +139,11 @@ contains
 
       associate ( &
          omega => st%omega, &
-         V_g => this%coeff(i,J_V_G), &
-         As => this%coeff(i,J_AS), &
-         U => this%coeff(i,J_U), &
-         c_1 => this%coeff(i,J_C_1), &
-         x => this%pt(i)%x, &
+         V_g => this%V_g, &
+         As => this%As, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         x => this%x, &
          alpha_omg => this%alpha_omg)
 
          omega_c = omega
@@ -193,7 +158,7 @@ contains
 
          ! Apply the variables transformation
 
-         call this%tr%trans_eqns(A, i, st)
+         call this%tr%trans_eqns(A, st)
 
          ! Apply the radial scaling
 

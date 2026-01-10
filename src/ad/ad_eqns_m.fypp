@@ -39,33 +39,26 @@ module ad_eqns_m
 
    implicit none (type, external)
 
-   ! Parameter definitions
-
-   integer, parameter :: J_V_G = 1
-   integer, parameter :: J_AS = 2
-   integer, parameter :: J_U = 3
-   integer, parameter :: J_C_1 = 4
-   integer, parameter :: J_OMEGA_ROT = 5
-   integer, parameter :: J_OMEGA_ROT_I = 6
-
-   integer, parameter :: J_LAST = J_OMEGA_ROT_I
-
    ! Derived-type definitions
 
    type, extends(eqns_rt) :: ad_eqns_t
       private
-      type(context_t), pointer   :: cx => null()
-      type(point_t), allocatable :: pt(:)
-      type(ad_trans_t)           :: tr
-      real(RD), allocatable      :: coeff(:,:)
-      real(RD)                   :: x_atm
-      real(RD)                   :: alpha_grv
-      real(RD)                   :: alpha_omg
-      real(RD)                   :: alpha_gam
-      real(RD)                   :: alpha_pi
+      type(context_t), pointer :: cx => null()
+      type(ad_trans_t)         :: tr
+      real(RD)                 :: x
+      real(RD)                 :: V_g
+      real(RD)                 :: As
+      real(RD)                 :: U
+      real(RD)                 :: c_1
+      real(RD)                 :: Omega_rot
+      real(RD)                 :: Omega_rot_i
+      real(RD)                 :: x_atm
+      real(RD)                 :: alpha_grv
+      real(RD)                 :: alpha_omg
+      real(RD)                 :: alpha_gam
+      real(RD)                 :: alpha_pi
    contains
       private
-      procedure, public :: stencil
       procedure, public :: eval_A
    end type ad_eqns_t
 
@@ -85,30 +78,52 @@ module ad_eqns_m
 
 contains
 
-   function ad_eqns_t_(cx, md_p, os_p) result(eq)
+   function ad_eqns_t_(cx, pt, md_p, os_p) result(eq)
 
       type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt
       type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
       type(ad_eqns_t)                      :: eq
 
-      type(point_t) :: pt_o
+      class(model_t), pointer :: ml
+      type(point_t)           :: pt_o
 
       ! Construct the ad_eqns type
 
       eq%cx => cx
 
-      eq%tr = ad_trans_t(cx, md_p, os_p)
+      eq%tr = ad_trans_t(cx, pt, md_p, os_p)
 
-      eq%alpha_grv = os_p%alpha_grv
-      eq%alpha_gam = os_p%alpha_gam
-      eq%alpha_pi = os_p%alpha_pi
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
+
+      @:ASSERT(.NOT. ml%is_vacuum(pt), 'vacuum point')
+
+      eq%V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+      eq%As = ml%coeff(I_AS, pt)
+      eq%U = ml%coeff(I_U, pt)
+      eq%c_1 = ml%coeff(I_C_1, pt)
+
+      eq%Omega_rot = cx%Omega_rot(pt)
+      eq%Omega_rot_i = cx%Omega_rot(cx%point_i())
+
+      ! Other initializations
+
+      eq%x = pt%x
 
       eq%x_atm = os_p%x_atm
       if (eq%x_atm < 0._RD) then
          pt_o = cx%point_o()
          eq%x_atm = pt_o%x
       end if
+
+      eq%alpha_grv = os_p%alpha_grv
+      eq%alpha_gam = os_p%alpha_gam
+      eq%alpha_pi = os_p%alpha_pi
 
       select case (os_p%time_factor)
       case ('OSC')
@@ -129,61 +144,9 @@ contains
 
    !****
 
-   subroutine stencil(this, pt)
-
-      class(ad_eqns_t), intent(inout) :: this
-      type(point_t), intent(in)       :: pt(:)
-
-      class(model_t), pointer :: ml
-      integer                 :: n_s
-      integer                 :: i
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
-
-      n_s = SIZE(pt)
-
-      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-      allocate(this%coeff(n_s,J_LAST))
-
-      do i = 1, n_s
-
-         @:ASSERT(.NOT. ml%is_vacuum(pt(i)), 'Attempt to stencil at vacuum point')
-
-         this%coeff(i,J_V_G) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2/ml%coeff(I_GAMMA_1, pt(i))
-         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
-         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
-         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
-
-         this%coeff(i,J_OMEGA_ROT) = this%cx%Omega_rot(pt(i))
-
-      end do
-
-      this%coeff(:,J_OMEGA_ROT_I) = this%cx%Omega_rot(this%cx%point_i())
-
-      ! Set up stencil for the tr component
-
-      call this%tr%stencil(pt)
-
-      ! Store the stencil points for on-the-fly evaluations
-
-      this%pt = pt
-
-      ! Finish
-
-      return
-
-   end subroutine stencil
-
-   !****
-
-   subroutine eval_A(this, i, st, A)
+   subroutine eval_A(this, st, A)
 
       class(ad_eqns_t), intent(in) :: this
-      integer, intent(in)          :: i
       class(state_rt), intent(in)  :: st
       real(RD), intent(out)        :: A(:,:)
 
@@ -197,15 +160,13 @@ contains
       ! Evaluate the RHS matrix
 
       associate ( &
-         V_g => this%coeff(i,J_V_G), &
-         As => this%coeff(i,J_AS), &
-         U => this%coeff(i,J_U), &
-         c_1 => this%coeff(i,J_C_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
-         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
-         pt => this%pt(i), &
-         pt_i => this%cx%point_i(), &
-         x => this%pt(i)%x, &
+         V_g => this%V_g, &
+         As => this%As, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         Omega_rot => this%Omega_rot, &
+         Omega_rot_i => this%Omega_rot_i, &
+         x => this%x, &
          x_atm => this%x_atm, &
          alpha_grv => this%alpha_grv, &
          alpha_omg => this%alpha_omg, &
@@ -241,7 +202,7 @@ contains
 
          ! Apply the variables transformation
 
-         call this%tr%trans_eqns(A, i, st)
+         call this%tr%trans_eqns(A, st)
 
          ! Apply the radial scaling
 

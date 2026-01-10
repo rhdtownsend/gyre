@@ -50,27 +50,26 @@ module rad_bound_m
    integer, parameter :: UNNO_TYPE = 6
    integer, parameter :: JCD_TYPE = 7
 
-   integer, parameter :: J_V = 1
-   integer, parameter :: J_AS = 2
-   integer, parameter :: J_U = 3
-   integer, parameter :: J_C_1 = 4
-   integer, parameter :: J_GAMMA_1 = 5
-
-   integer, parameter :: J_LAST = J_GAMMA_1
-
    ! Derived-type definitions
 
    type, extends(bound_rt) :: rad_bound_t
       private
       type(context_t), pointer :: cx => null()
-      type(rad_trans_t)        :: tr
-      real(RD), allocatable    :: coeff(:,:)
+      type(rad_trans_t)        :: tr_i
+      type(rad_trans_t)        :: tr_o
+      type(point_t)            :: pt_i
+      type(point_t)            :: pt_o
+      real(RD)                 :: V_o
+      real(RD)                 :: As_o
+      real(RD)                 :: U_o
+      real(RD)                 :: c_1_i
+      real(RD)                 :: c_1_o
+      real(RD)                 :: Gamma_1_o
       real(RD)                 :: alpha_omg
       integer                  :: type_i
       integer                  :: type_o
    contains
       private
-      procedure         :: stencil_
       procedure, public :: build_i
       procedure         :: build_regular_i_
       procedure         :: build_zero_r_i_
@@ -110,10 +109,6 @@ contains
       type(point_t)           :: pt_o
 
       ! Construct the rad_bound_t
-
-      bd%cx => cx
-
-      bd%tr = rad_trans_t(cx, md_p, os_p)
 
       ml => cx%model()
       pt_i = cx%point_i()
@@ -163,6 +158,41 @@ contains
          @:ABORT('invalid outer_bound')
       end select
 
+      bd%cx => cx
+
+      bd%tr_i = rad_trans_t(cx, pt_i, md_p, os_p)
+      bd%tr_o = rad_trans_t(cx, pt_o, md_p, os_p)
+
+      ! Store structure coefficients
+
+      ! Store structore coefficients
+
+      call check_model(ml, [I_V_2,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
+
+      bd%c_1_i = ml%coeff(I_C_1, pt_i)
+
+      select case (bd%type_o)
+      case (VACUUM_TYPE,ZERO_R_TYPE)
+         bd%V_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2
+      case (DZIEM_TYPE)
+         bd%V_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2
+      case (ISOTHRM_TYPE)
+         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_o, &
+            bd%As_o, bd%c_1_o, bd%Gamma_1_o)
+      case (UNNO_TYPE)
+         call eval_atmos_coeffs_unno(ml, pt_o, bd%V_o, &
+            bd%As_o, bd%c_1_o, bd%Gamma_1_o)
+         bd%U_o = ml%coeff(I_U, pt_o)
+      case (JCD_TYPE)
+         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_o, &
+            bd%As_o, bd%c_1_o, bd%Gamma_1_o)
+      end select
+
+      bd%U_o = ml%coeff(I_U, pt_o)
+      bd%c_1_o = ml%coeff(I_C_1, pt_o)
+
+      ! Other initializations
+
       select case (os_p%time_factor)
       case ('OSC')
          bd%alpha_omg = 1._RD
@@ -171,8 +201,6 @@ contains
       case default
          @:ABORT('invalid time_factor')
       end select
-
-      call bd%stencil_(pt_i, pt_o)
 
       bd%n_i = 1
       bd%n_o = 1
@@ -184,64 +212,6 @@ contains
       return
 
    end function rad_bound_t_
-
-   !****
-
-   subroutine stencil_(this, pt_i, pt_o)
-
-      class(rad_bound_t), intent(inout) :: this
-      type(point_t), intent(in)         :: pt_i
-      type(point_t), intent(in)         :: pt_o
-
-      class(model_t), pointer :: ml
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [I_V_2,I_U,I_C_1,I_GAMMA_1])
-
-      allocate(this%coeff(2,J_LAST))
-
-      ! Inner boundary
-
-      select case (this%type_i)
-      case (REGULAR_TYPE)
-         this%coeff(1,J_C_1) = ml%coeff(I_C_1, pt_i)
-      case (ZERO_R_TYPE)
-      case default
-         @:ABORT('invalid type_i')
-      end select
-
-      ! Outer boundary
-
-      select case (this%type_o)
-      case (VACUUM_TYPE,ZERO_R_TYPE)
-      case (DZIEM_TYPE)
-         this%coeff(2,J_V) = ml%coeff(I_V_2, pt_o)*pt_o%x**2
-         this%coeff(2,J_C_1) = ml%coeff(I_C_1, pt_o)
-      case (ISOTHRM_TYPE)
-         call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V), &
-            this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
-      case (UNNO_TYPE)
-         call eval_atmos_coeffs_unno(ml, pt_o, this%coeff(2,J_V), &
-            this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
-      case (JCD_TYPE)
-         call eval_atmos_coeffs_isothrm(ml, pt_o, this%coeff(2,J_V), &
-            this%coeff(2,J_AS), this%coeff(2,J_C_1), this%coeff(2,J_GAMMA_1))
-      case default
-         @:ABORT('invalid type_o')
-      end select
-
-      ! Set up stencil for the tr component
-
-      call this%tr%stencil([pt_i,pt_o])
-
-      ! Finish
-
-      return
-
-   end subroutine stencil_
 
    !****
 
@@ -267,7 +237,7 @@ contains
 
       ! Apply the variables transformation
 
-      call this%tr%trans_cond(B, 1, st)
+      call this%tr_i%trans_cond(B, st)
 
       ! Finish
 
@@ -292,7 +262,7 @@ contains
 
       associate( &
          omega => st%omega, &
-         c_1 => this%coeff(1,J_C_1), &
+         c_1 => this%c_1_i, &
          alpha_omg => this%alpha_omg)
 
          omega_c = omega
@@ -367,7 +337,7 @@ contains
 
       ! Apply the variables transformation
 
-      call this%tr%trans_cond(B, 2, st)
+      call this%tr_o%trans_cond(B, st)
 
       ! Finish
 
@@ -441,8 +411,8 @@ contains
 
       associate( &
          omega => st%omega, &
-         V => this%coeff(2,J_V), &
-         c_1 => this%coeff(2,J_C_1), &
+         V => this%V_o, &
+         c_1 => this%c_1_o, &
          alpha_omg => this%alpha_omg)
 
          omega_c = omega
@@ -481,10 +451,10 @@ contains
 
       associate( &
          omega => st%omega, &
-         V => this%coeff(2,J_V), &
-         As => this%coeff(2,J_AS), &
-         c_1 => this%coeff(2,J_C_1), &
-         Gamma_1 => this%coeff(2,J_GAMMA_1), &
+         V => this%V_o, &
+         As => this%As_o, &
+         c_1 => this%c_1_o, &
+         Gamma_1 => this%Gamma_1_o, &
          alpha_omg => this%alpha_omg)
 
          omega_c = omega
@@ -533,10 +503,10 @@ contains
 
       associate( &
          omega => st%omega, &
-         V => this%coeff(2,J_V), &
-         As => this%coeff(2,J_AS), &
-         c_1 => this%coeff(2,J_C_1), &
-         Gamma_1 => this%coeff(2,J_GAMMA_1), &
+         V => this%V_o, &
+         As => this%As_o, &
+         c_1 => this%c_1_o, &
+         Gamma_1 => this%Gamma_1_o, &
          alpha_omg => this%alpha_omg)
 
          omega_c = omega

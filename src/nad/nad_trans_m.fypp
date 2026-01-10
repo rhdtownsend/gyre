@@ -44,30 +44,24 @@ module nad_trans_m
    integer, parameter :: JCD_SET = 2
    integer, parameter :: LAGP_SET = 3
 
-   integer, parameter :: J_V_2 = 1
-   integer, parameter :: J_DV_2 = 2
-   integer, parameter :: J_U = 3
-   integer, parameter :: J_DU = 4
-   integer, parameter :: J_C_1 = 5
-   integer, parameter :: J_DC_1 = 6
-   integer, parameter :: J_OMEGA_ROT = 7
-
-   integer, parameter :: J_LAST = J_OMEGA_ROT
-
    ! Derived-type definitions
 
    type :: nad_trans_t
       private
-      type(context_t), pointer   :: cx => null()
-      type(point_t), allocatable :: pt(:)
-      real(RD), allocatable      :: coeff(:,:)
-      integer                    :: set
-      integer                    :: l
-      integer                    :: m
-      integer                    :: n_e
+      type(context_t), pointer :: cx => null()
+      type(point_t)            :: pt
+      real(RD)                 :: V_2
+      real(RD)                 :: dV_2
+      real(RD)                 :: U
+      real(RD)                 :: dU
+      real(RD)                 :: c_1
+      real(RD)                 :: dc_1
+      real(RD)                 :: Omega_rot
+      integer                  :: set
+      integer                  :: l
+      integer                  :: n_e
    contains
       private
-      procedure, public :: stencil
       procedure, public :: trans_eqns
       procedure, public :: trans_cond
       procedure, public :: trans_vars
@@ -100,16 +94,17 @@ module nad_trans_m
 
 contains
 
-   function nad_trans_t_(cx, md_p, os_p) result(tr)
+   function nad_trans_t_(cx, pt, md_p, os_p) result(tr)
 
       type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt
       type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
       type(nad_trans_t)                    :: tr
 
-      ! Construct the nad_trans_t
+      class(model_t), pointer :: ml
 
-      tr%cx => cx
+      ! Construct the nad_trans_t
 
       select case (os_p%variables_set)
       case ('GYRE')
@@ -124,8 +119,36 @@ contains
          @:ABORT('invalid variables_set')
       end select
 
+      tr%cx => cx
+
+      tr%pt = pt
+
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
+
+      if (ml%is_vacuum(pt)) then
+         @:ASSERT(tr%set /= LAGP_SET, 'LAGP invalid at vacuum point')
+         tr%V_2 = HUGE(0._RD)
+         tr%dV_2 = HUGE(0._RD)
+         tr%dU = -HUGE(0._RD)
+      else
+         tr%V_2 = ml%coeff(I_V_2, pt)
+         tr%dV_2 = ml%dcoeff(I_V_2, pt)
+         tr%dU = ml%dcoeff(I_U, pt)
+      endif
+
+      tr%U = ml%coeff(I_U, pt)
+      tr%c_1 = ml%coeff(I_C_1, pt)
+      tr%dc_1 = ml%dcoeff(I_C_1, pt)
+
+      tr%Omega_rot = cx%Omega_rot(pt)
+
+      ! Other initializations
+
       tr%l = md_p%l
-      tr%m = md_p%m
 
       tr%n_e = 6
 
@@ -137,64 +160,10 @@ contains
 
    !****
 
-   subroutine stencil(this, pt)
-
-      class(nad_trans_t), intent(inout) :: this
-      type(point_t), intent(in)         :: pt(:)
-
-      class(model_t), pointer :: ml
-      integer                 :: n_s
-      integer                 :: i
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [I_V_2,I_U,I_C_1])
-
-      n_s = SIZE(pt)
-
-      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-      allocate(this%coeff(n_s,J_LAST))
-
-      do i = 1, n_s
-
-         if (ml%is_vacuum(pt(i))) then
-            @:ASSERT(this%set /= LAGP_SET, 'LAGP invalid at zero pressure')
-            this%coeff(i,J_V_2) = HUGE(0._RD)
-            this%coeff(i,J_DV_2) = HUGE(0._RD)
-            this%coeff(i,J_DU) = -HUGE(0._RD)
-         else
-            this%coeff(i,J_V_2) = ml%coeff(I_V_2, pt(i))
-            this%coeff(i,J_DV_2) = ml%dcoeff(I_V_2, pt(i))
-            this%coeff(i,J_DU) = ml%dcoeff(I_U, pt(i))
-         endif
-
-         this%coeff(i,J_U) = ml%coeff(I_U, pt(i))
-         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
-         this%coeff(i,J_DC_1) = ml%dcoeff(I_C_1, pt(i))
-
-         this%coeff(i,J_OMEGA_ROT) = this%cx%Omega_rot(pt(i))
-
-      end do
-
-      ! Store the stencil points for on-the-fly evaluations
-
-      this%pt = pt
-
-      ! Finish
-
-      return
-
-   end subroutine stencil
-
-   !****
-
-   subroutine trans_eqns(this, xA, i, st, from)
+   subroutine trans_eqns(this, xA, st, from)
 
       class(nad_trans_t), intent(in) :: this
       complex(RD), intent(inout)     :: xA(:,:)
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -219,9 +188,9 @@ contains
          ! Convert from
 
          if (this%set /= SET) then
-            G = this%G_(i, st)
-            H = this%H_(i, st)
-            dH = this%dH_(i, st)
+            G = this%G_(st)
+            H = this%H_(st)
+            dH = this%dH_(st)
             xA = MATMUL(G, MATMUL(xA, H) - dH)
          endif
 
@@ -241,11 +210,10 @@ contains
 
    !****
 
-   subroutine trans_cond(this, C, i, st, from)
+   subroutine trans_cond(this, C, st, from)
 
       class(nad_trans_t), intent(in) :: this
       complex(RD), intent(inout)     :: C(:,:)
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -268,7 +236,7 @@ contains
          ! Convert from
 
          if (this%set /= SET) then
-            H = this%H_(i, st)
+            H = this%H_(st)
             C = MATMUL(C, H)
          endif
 
@@ -277,7 +245,7 @@ contains
          ! Convert to
 
          if (this%set /= SET) then
-            G = this%G_(i, st)
+            G = this%G_(st)
             C = MATMUL(C, G)
          endif
 
@@ -291,11 +259,10 @@ contains
 
    !****
 
-   subroutine trans_vars(this, y, i, st, from)
+   subroutine trans_vars(this, y, st, from)
 
       class(nad_trans_t), intent(in) :: this
       complex(RD), intent(inout)     :: y(:)
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -318,7 +285,7 @@ contains
          ! Convert from
 
          if (this%set /= SET) then
-            G = this%G_(i, st)
+            G = this%G_(st)
             y = MATMUL(G, y)
          endif
 
@@ -327,7 +294,7 @@ contains
          ! Convert to
 
          if (this%set /= SET) then
-            H = this%H_(i, st)
+            H = this%H_(st)
             y = MATMUL(H, y)
          endif
 
@@ -341,10 +308,9 @@ contains
 
    !****
 
-   function G_(this, i, st) result(G)
+   function G_(this, st) result(G)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: G(this%n_e,this%n_e)
 
@@ -353,11 +319,11 @@ contains
 
       select case (this%set)
       case (DZIEM_SET)
-         G = this%G_dziem_(i, st)
+         G = this%G_dziem_(st)
       case (JCD_SET)
-         G = this%G_jcd_(i, st)
+         G = this%G_jcd_(st)
       case (LAGP_SET)
-         G = this%G_lagp_(i, st)
+         G = this%G_lagp_(st)
       case default
          @:ABORT('invalid set')
       end select
@@ -370,10 +336,9 @@ contains
 
    !****
 
-   function G_dziem_(this, i, st) result(G)
+   function G_dziem_(this, st) result(G)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: G(this%n_e,this%n_e)
 
@@ -432,10 +397,9 @@ contains
 
    !****
 
-   function G_jcd_(this, i, st) result(G)
+   function G_jcd_(this, st) result(G)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: G(this%n_e,this%n_e)
 
@@ -446,10 +410,9 @@ contains
       ! from the canonical form
 
       associate ( &
-         U => this%coeff(i,J_U), &
-         c_1 => this%coeff(i,J_C_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
-         pt => this%pt(i))
+         U => this%U, &
+         c_1 => this%c_1, &
+         Omega_rot => this%Omega_rot)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -557,10 +520,9 @@ contains
 
    !****
 
-   function G_lagp_(this, i, st) result(G)
+   function G_lagp_(this, st) result(G)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: G(this%n_e,this%n_e)
 
@@ -568,7 +530,7 @@ contains
       ! from the canonical form
 
       associate ( &
-         V_2 => this%coeff(i,J_V_2))
+         V_2 => this%V_2)
 
          ! Set up the matrix
 
@@ -624,10 +586,9 @@ contains
 
    !****
 
-   function H_(this, i, st) result(H)
+   function H_(this, st) result(H)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: H(this%n_e,this%n_e)
 
@@ -636,11 +597,11 @@ contains
 
       select case (this%set)
       case (DZIEM_SET)
-         H = this%H_dziem_(i, st)
+         H = this%H_dziem_(st)
       case (JCD_SET)
-         H = this%H_jcd_(i, st)
+         H = this%H_jcd_(st)
       case (LAGP_SET)
-         H = this%H_lagp_(i, st)
+         H = this%H_lagp_(st)
       case default
          @:ABORT('invalid set')
       end select
@@ -653,10 +614,9 @@ contains
 
    !****
 
-   function H_dziem_(this, i, st) result(H)
+   function H_dziem_(this, st) result(H)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: H(this%n_e,this%n_e)
 
@@ -715,10 +675,9 @@ contains
 
    !****
 
-   function H_jcd_(this, i, st) result(H)
+   function H_jcd_(this, st) result(H)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: H(this%n_e,this%n_e)
 
@@ -729,10 +688,9 @@ contains
       ! to the canonical form
 
       associate ( &
-         U => this%coeff(i,J_U), &
-         c_1 => this%coeff(i,J_C_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
-         pt => this%pt(i))
+         U => this%U, &
+         c_1 => this%c_1, &
+         Omega_rot => this%Omega_rot)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -840,10 +798,9 @@ contains
 
    !****
 
-   function H_lagp_(this, i, st) result(H)
+   function H_lagp_(this, st) result(H)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: H(this%n_e,this%n_e)
 
@@ -851,7 +808,7 @@ contains
       ! to the canonical form
 
       associate ( &
-         V_2 => this%coeff(i,J_V_2))
+         V_2 => this%V_2)
 
          ! Set up the matrix
 
@@ -907,10 +864,9 @@ contains
 
    !****
 
-   function dH_(this, i, st) result(dH)
+   function dH_(this, st) result(dH)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: dH(this%n_e,this%n_e)
 
@@ -920,9 +876,9 @@ contains
       case (DZIEM_SET)
          dH = 0._RD
       case (JCD_SET)
-         dH = this%dH_jcd_(i, st)
+         dH = this%dH_jcd_(st)
       case (LAGP_SET)
-         dH = this%dH_lagp_(i, st)
+         dH = this%dH_lagp_(st)
       case default
          @:ABORT('invalid set')
       end select
@@ -935,10 +891,9 @@ contains
 
    !****
 
-   function dH_jcd_(this, i, st) result(dH)
+   function dH_jcd_(this, st) result(dH)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: dH(this%n_e,this%n_e)
 
@@ -949,12 +904,11 @@ contains
       ! transformation matrix H
 
       associate ( &
-         c_1 => this%coeff(i,J_C_1), &
-         dc_1 => this%coeff(i,J_DC_1), &
-         U => this%coeff(i,J_U), &
-         dU => this%coeff(i,J_DU), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
-         pt => this%pt(i))
+         c_1 => this%c_1, &
+         dc_1 => this%dc_1, &
+         U => this%U, &
+         dU => this%dU, &
+         Omega_rot => this%Omega_rot)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -1065,10 +1019,9 @@ contains
 
    !****
 
-   function dH_lagp_(this, i, st) result(dH)
+   function dH_lagp_(this, st) result(dH)
 
       class(nad_trans_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: dH(this%n_e,this%n_e)
 
@@ -1078,8 +1031,8 @@ contains
       ! Calculate coefficients
 
       associate ( &
-         V_2 => this%coeff(i,J_V_2), &
-         dV_2 => this%coeff(i,J_DV_2))
+         V_2 => this%V_2, &
+         dV_2 => this%dV_2)
 
          ! Set up the matrix
 

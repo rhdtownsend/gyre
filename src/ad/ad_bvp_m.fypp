@@ -50,13 +50,13 @@ module ad_bvp_m
 
    type, extends(bvp_rt) :: ad_bvp_t
       private
-      type(context_t), pointer :: cx => null()
-      type(ad_trans_t)         :: tr
-      type(grid_t)             :: gr
-      type(qad_eval_t)         :: qe
-      type(mode_par_t)         :: md_p
-      type(num_par_t)          :: nm_p
-      type(osc_par_t)          :: os_p
+      type(context_t), pointer      :: cx => null()
+      type(ad_trans_t), allocatable :: tr(:)
+      type(grid_t)                  :: gr
+      type(qad_eval_t)              :: qe
+      type(mode_par_t)              :: md_p
+      type(num_par_t)               :: nm_p
+      type(osc_par_t)               :: os_p
    end type ad_bvp_t
 
    ! Interfaces
@@ -119,8 +119,12 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      bp%tr = ad_trans_t(cx, md_p, os_p)
-      call bp%tr%stencil(gr%pt)
+      allocate(bp%tr(gr%n))
+
+      !$OMP PARALLEL DO
+      do j = 1, gr%n
+         bp%tr(j) = ad_trans_t(cx, gr%pt(j), md_p, os_p)
+      end do
 
       if (os_p%quasiad_eigfuncs) then
          qad_os_p = os_p
@@ -160,7 +164,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
-         call bp%tr%trans_vars(y(:,j), j, st, from=.FALSE.)
+         call bp%tr(j)%trans_vars(y(:,j), st, from=.FALSE.)
       end do
 
       ! Construct the wave type
@@ -200,7 +204,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
-         call bp%tr%trans_vars(y(:,j), j, st, from=.FALSE.)
+         call bp%tr(j)%trans_vars(y(:,j), st, from=.FALSE.)
       end do
 
       ! Construct the wave type

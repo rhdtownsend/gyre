@@ -42,31 +42,24 @@ module tnad_eqns_m
 
    implicit none (type, external)
 
-   ! Parameter definitions
-
-   integer, parameter :: J_V = 1
-   integer, parameter :: J_As = 2
-   integer, parameter :: J_C_1 = 3
-   integer, parameter :: J_GAMMA_1 = 4
-   integer, parameter :: J_OMEGA_ROT = 5
-   integer, parameter :: J_OMEGA_ROT_I = 6
-
-   integer, parameter :: J_LAST = J_OMEGA_ROT_I
-
    ! Derived-type definitions
 
    type, extends(eqns_ct) :: tnad_eqns_t
       private
-      type(nad_eqns_t)           :: eq
-      type(context_t), pointer   :: cx => null()
-      type(point_t), allocatable :: pt(:)
-      type(nad_trans_t)          :: tr
-      real(RD), allocatable      :: coeff(:,:)
-      real(RD)                   :: alpha_omg
-      real(RD)                   :: alpha_trb
+      type(nad_eqns_t)         :: eq
+      type(context_t), pointer :: cx => null()
+      type(nad_trans_t)        :: tr
+      real(RD)                 :: V
+      real(RD)                 :: V_g
+      real(RD)                 :: As
+      real(RD)                 :: c_1
+      real(RD)                 :: Omega_rot
+      real(RD)                 :: Omega_rot_i
+      real(RD)                 :: x
+      real(RD)                 :: alpha_omg
+      real(RD)                 :: alpha_trb
    contains
       private
-      procedure, public :: stencil
       procedure, public :: eval_A
       procedure, public :: y_trb
       procedure, public :: F_trb
@@ -88,25 +81,47 @@ module tnad_eqns_m
 
 contains
 
-   function tnad_eqns_t_(cx, md_p, os_p) result(eq)
+   function tnad_eqns_t_(cx, pt, md_p, os_p) result(eq)
 
       type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt
       type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
       type(tnad_eqns_t)                    :: eq
 
-      type(osc_par_t) :: os_p_eq
+      type(osc_par_t)         :: os_p_eq
+      class(model_t), pointer :: ml
 
       ! Construct the tnad_eqns_t, as a decorator around nad_eqns_t
-
-      eq%cx => cx
 
       os_p_eq = os_p
       os_p_eq%variables_set = 'GYRE'
 
-      eq%eq = nad_eqns_t(cx, md_p, os_p_eq)
+      eq%eq = nad_eqns_t(cx, pt, md_p, os_p_eq)
 
-      eq%tr = nad_trans_t(cx, md_p, os_p)
+      eq%cx => cx
+
+      eq%tr = nad_trans_t(cx, pt, md_p, os_p)
+
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_V_2,I_AS,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
+
+      @:ASSERT(.NOT. ml%is_vacuum(pt), 'vacuum point')
+
+      eq%V = ml%coeff(I_V_2, pt)*pt%x**2
+      eq%V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+      eq%As = ml%coeff(I_AS, pt)
+      eq%c_1 = ml%coeff(I_C_1, pt)
+
+      eq%Omega_rot = cx%Omega_rot(pt)
+      eq%Omega_rot_i = cx%Omega_rot(cx%point_i())
+
+      ! Other initializations
+
+      eq%x = pt%x
 
       select case (os_p%time_factor)
       case ('OSC')
@@ -129,65 +144,9 @@ contains
 
    !****
 
-   subroutine stencil(this, pt)
-
-      class(tnad_eqns_t), intent(inout) :: this
-      type(point_t), intent(in)         :: pt(:)
-
-      class(model_t), pointer :: ml
-      integer                 :: n_s
-      integer                 :: i
-
-      ! Calculate coefficients at the stencil points
-
-      ml => this%cx%model()
-
-      call check_model(ml, [I_V_2,I_AS,I_C_1,I_GAMMA_1])
-
-      n_s = SIZE(pt)
-
-      if (ALLOCATED(this%coeff)) deallocate(this%coeff)
-      allocate(this%coeff(n_s, J_LAST))
-
-      do i = 1, n_s
-
-         @:ASSERT(.NOT. ml%is_vacuum(pt(i)), 'Attempt to stencil at vacuum point')
-
-         this%coeff(i,J_V) = ml%coeff(I_V_2, pt(i))*pt(i)%x**2
-         this%coeff(i,J_AS) = ml%coeff(I_AS, pt(i))
-         this%coeff(i,J_C_1) = ml%coeff(I_C_1, pt(i))
-         this%coeff(i,J_GAMMA_1) = ml%coeff(I_GAMMA_1, pt(i))
-
-         this%coeff(i,J_OMEGA_ROT) = this%cx%Omega_rot(pt(i))
-
-      end do
-
-      this%coeff(:,J_OMEGA_ROT_I) = this%cx%Omega_rot(this%cx%point_i())
-
-      ! Set up stencil for the eq component
-
-      call this%eq%stencil(pt)
-
-      ! Set up stencil for the tr component
-
-      call this%tr%stencil(pt)
-
-      ! Store the stencil points for on-the-fly evaluations
-
-      this%pt = pt
-
-      ! Finish
-
-      return
-
-   end subroutine stencil
-
-   !****
-
-   subroutine eval_A(this, i, st, A)
+   subroutine eval_A(this, st, A)
 
       class(tnad_eqns_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD), intent(out)       :: A(:,:)
 
@@ -204,15 +163,13 @@ contains
       ! Evaluate the RHS matrix
 
       associate ( &
-         V => this%coeff(i,J_V), &
-         Gamma_1 => this%coeff(i,J_GAMMA_1), &
-         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
-         pt_i => this%cx%point_i(), &
-         x => this%pt(i)%x)
+         V_g => this%V_g, &
+         Omega_rot_i => this%Omega_rot_i, &
+         x => this%x)
 
          ! Set up original (nad) eqns
 
-         call this%eq%eval_A(i, st, A)
+         call this%eq%eval_A(st, A)
 
          ! Build matrices to add turbulent correction to y_2 (through a
          ! virtual y_trb variable)
@@ -222,10 +179,10 @@ contains
 
          l_i = this%cx%l_e(Omega_rot_i, st)
 
-         F_trb = this%F_trb(i, st)
+         F_trb = this%F_trb(st)
 
          B(1,1) = -A(1,2)
-         B(2,1) = V/Gamma_1 - 2._RD
+         B(2,1) = V_g - 2._RD
          B(3,1) = -A(3,2)
          B(4,1) = -A(4,2)
          B(5,1) = -A(5,2)
@@ -246,7 +203,7 @@ contains
 
          ! Apply the variables transformation
 
-         call this%tr%trans_eqns(A, i, st)
+         call this%tr%trans_eqns(A, st)
 
          ! Apply the radial scaling
 
@@ -262,10 +219,9 @@ contains
 
    !****
 
-   function y_trb(this, i, st, y)
+   function y_trb(this, st, y)
 
       class(tnad_eqns_t), intent(inout) :: this
-      integer, intent(in)               :: i
       class(state_ct), intent(in)       :: st
       complex(RD), intent(in)           :: y(:)
       complex(RD)                       :: y_trb
@@ -282,18 +238,17 @@ contains
       ! the solution vector
 
       associate ( &
-         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
-         pt_i => this%cx%point_i())
+         Omega_rot_i => this%Omega_rot_i)
 
          ! Set up original (nad) eqns
 
-         call this%eq%eval_A(i, st, A)
+         call this%eq%eval_A(st, A)
 
          ! Evaluate y_trb
 
          l_i = this%cx%l_e(Omega_rot_i, st)
 
-         F_trb = this%F_trb(i, st)
+         F_trb = this%F_trb(st)
 
          C(1) = F_trb*((l_i - 1._RD) + A(1,1))
          C(2) = F_trb*A(1,2)
@@ -316,10 +271,9 @@ contains
 
    !****
 
-   function F_trb(this, i, st)
+   function F_trb(this, st)
 
       class(tnad_eqns_t), intent(in) :: this
-      integer, intent(in)            :: i
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: F_trb
 
@@ -334,19 +288,16 @@ contains
       ! Evaluate the turbulent viscosity factor i*sigma*nu/(g r)
 
       associate ( &
-         V => this%coeff(i,J_V), &
-         As => this%coeff(i,J_AS), &
-         c_1 => this%coeff(i,J_C_1), &
-         Gamma_1 => this%coeff(i,J_GAMMA_1), &
-         Omega_rot => this%coeff(i,J_OMEGA_ROT), &
-         Omega_rot_i => this%coeff(i,J_OMEGA_ROT_I), &
-         pt => this%pt(i), &
-         pt_i => this%cx%point_i(), &
-         x => this%pt(i)%x, &
+         V => this%V, &
+         As => this%As, &
+         c_1 => this%c_1, &
+         Omega_rot => this%Omega_rot, &
+         Omega_rot_i => this%Omega_rot_i, &
+         x => this%x, &
          alpha_omg => this%alpha_omg, &
          alpha_trb => this%alpha_trb)
 
-         if (pt%x > 0._RD .AND. As < 0._RD) then
+         if (x > 0._RD .AND. As < 0._RD) then
 
             omega_c = this%cx%omega_c(Omega_rot, st)
             omega_c_r = this%cx%omega_c(Omega_rot, st, use_omega_r=.TRUE.)

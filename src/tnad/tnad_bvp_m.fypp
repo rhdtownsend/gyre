@@ -50,13 +50,13 @@ module tnad_bvp_m
 
    type, extends(bvp_ct) :: tnad_bvp_t
       private
-      type(context_t), pointer :: cx => null()
-      type(grid_t)             :: gr
-      type(tnad_eqns_t)        :: eq
-      type(nad_trans_t)        :: tr
-      type(mode_par_t)         :: md_p
-      type(num_par_t)          :: nm_p
-      type(osc_par_t)          :: os_p
+      type(context_t), pointer       :: cx => null()
+      type(grid_t)                   :: gr
+      type(tnad_eqns_t), allocatable :: eq(:)
+      type(nad_trans_t), allocatable :: tr(:)
+      type(mode_par_t)               :: md_p
+      type(num_par_t)                :: nm_p
+      type(osc_par_t)                :: os_p
    end type tnad_bvp_t
 
    ! Interfaces
@@ -118,11 +118,19 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      bp%eq = tnad_eqns_t(cx, md_p, os_p)
-      call bp%eq%stencil(gr%pt)
+      allocate(bp%eq(gr%n))
 
-      bp%tr = nad_trans_t(cx, md_p, os_p)
-      call bp%tr%stencil(gr%pt)
+      !$OMP PARALLEL DO
+      do j = 1, gr%n
+         bp%eq (j) = tnad_eqns_t(cx, gr%pt(j), md_p, os_p)
+      end do
+
+      allocate(bp%tr(gr%n))
+
+      !$OMP PARALLEL DO
+      do j = 1, gr%n
+         bp%tr(j) = nad_trans_t(cx, gr%pt(j), md_p, os_p)
+      end do
 
       bp%md_p = md_p
       bp%nm_p = nm_p
@@ -154,7 +162,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
-         call bp%tr%trans_vars(y(:,j), j, st, from=.FALSE.)
+         call bp%tr(j)%trans_vars(y(:,j), st, from=.FALSE.)
       end do
 
       ! Construct the wave_t
@@ -192,7 +200,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
-         call bp%tr%trans_vars(y(:,j), j, st, from=.FALSE.)
+         call bp%tr(j)%trans_vars(y(:,j), st, from=.FALSE.)
       end do
 
       ! Construct the wave_t
@@ -229,7 +237,7 @@ contains
       do j = 1, bp%gr%n
 
          y_c(1,j) = y(1,j)
-         y_c(2,j) = y(2,j) - bp%eq%y_trb(j, st, y(:,j))
+         y_c(2,j) = y(2,j) - bp%eq(j)%y_trb(st, y(:,j))
          y_c(3:6,j) = y(3:6,j)
 
       end do

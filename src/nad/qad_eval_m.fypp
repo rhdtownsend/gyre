@@ -44,10 +44,10 @@ module qad_eval_m
 
    type :: qad_eval_t
       private
-      type(context_t), pointer :: cx => null()
-      type(nad_eqns_t)         :: eq
-      type(grid_t)             :: gr
-      integer, public          :: n
+      type(context_t), pointer      :: cx => null()
+      type(nad_eqns_t), allocatable :: eq(:)
+      type(grid_t)                  :: gr
+      integer, public               :: n
    contains
       private
       procedure, public :: y_qad
@@ -77,12 +77,18 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(qad_eval_t)                     :: qe
 
+      integer :: j
+
       ! Construct the qad_eval_t
 
       ! Initialize the equations
 
-      qe%eq = nad_eqns_t(cx, md_p, os_p)
-      call qe%eq%stencil(gr%pt)
+      allocate(qe%eq(gr%n))
+
+      !$OMP PARALLEL DO
+      do j = 1, gr%n
+         qe%eq(j) = nad_eqns_t(cx, gr%pt(j), md_p, os_p)
+      end do
 
       ! Other initializations
 
@@ -130,7 +136,7 @@ contains
       do j = 1, this%n
 
          if (this%gr%pt(j)%x /= 0._RD) then
-            call this%eq%eval_A(j, st, A)
+            call this%eq(j)%eval_A(st, A)
             A_5(:,j) = A(5,:)
             A_6(:,j) = A(6,:)
          else

@@ -26,6 +26,7 @@ module nad_diff_m
    use context_m
    use diff_m
    use diff_factory_m
+   use eqns_m
    use trapz_diff_m
    use ext_m
    use math_m
@@ -84,8 +85,7 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(nad_diff_t)                     :: df
 
-      type(nad_eqns_t)        :: eq
-      type(point_t)           :: pt_m
+      type(point_t) :: pt_m
 
       ! Construct the nad_diff_t
 
@@ -95,13 +95,12 @@ contains
 
          ! Regular subinterval; use difference equations
 
-         eq = nad_eqns_t(cx, md_p, os_p)
-
          select case (nm_p%diff_scheme)
          case ('TRAPZ')
-            allocate(df%df, SOURCE=trapz_diff_ct(eq, pt_a, pt_b, [0.5_RD,0.5_RD,0.5_RD,0.5_RD,0._RD,1._RD]))
+            allocate(df%df, SOURCE=trapz_diff_ct(eqns_factory_, pt_a, pt_b, &
+               [0.5_RD,0.5_RD,0.5_RD,0.5_RD,0._RD,1._RD]))
          case default
-            allocate(df%df, SOURCE=diff_ct(eq, pt_a, pt_b, nm_p))
+            allocate(df%df, SOURCE=diff_ct(eqns_factory_, pt_a, pt_b, nm_p))
          end select
 
          ! Set up midpoint eqns_t (used for regularization of Magnus
@@ -112,9 +111,7 @@ contains
          pt_m%s = pt_a%s
          pt_m%x = pt_a%x + 0.5_RD*df%dx
 
-         df%eq = eq
-
-         call df%eq%stencil([pt_m])
+         df%eq = nad_eqns_t(cx, pt_m, md_p, os_p)
 
          ! Set up midpoint Omega_rot (used for regularization of colloc
          ! schemes)
@@ -134,6 +131,31 @@ contains
       ! Finish
 
       return
+
+   contains
+
+      subroutine eqns_factory_(pt, eq)
+
+         type(point_t), intent(in)                :: pt(:)
+         class(eqns_ct), allocatable, intent(out) :: eq(:)
+
+         type(nad_eqns_t), allocatable :: eq_(:)
+         integer                       :: n
+         integer                       :: i
+
+         n = SIZE(pt)
+
+         allocate(eq_(n))
+
+         do i = 1, n
+            eq_(i) = nad_eqns_t(cx, pt(i), md_p, os_p)
+         end do
+
+         eq = eq_
+
+         return
+
+      end subroutine eqns_factory_
 
    end function nad_diff_t_
 
@@ -175,7 +197,7 @@ contains
          ! Rescale by the uncoupled eigenvalues, in order to help the root
          ! finder
 
-         call this%eq%eval_A(1, st, A)
+         call this%eq%eval_A(st, A)
 
          lambda(1) = sqrt(A(2,1)*A(1,2))
          lambda(2) = sqrt(A(4,3)*A(3,4))

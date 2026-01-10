@@ -60,9 +60,17 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function diff_${S}$_(eq, pt_a, pt_b, nm_p) result(df)
+      function diff_${S}$_(eqns_factory, pt_a, pt_b, nm_p) result(df)
 
-         class(eqns_${S}$), intent(in)  :: eq
+         interface
+            subroutine eqns_factory(pt, eq)
+               use point_m
+               use eqns_m
+               implicit none (type, external)
+               type(point_t), intent(in)                   :: pt(:)
+               class(eqns_${S}$), allocatable, intent(out) :: eq(:)
+            end subroutine eqns_factory
+         end interface
          type(point_t), intent(in)      :: pt_a
          type(point_t), intent(in)      :: pt_b
          type(num_par_t), intent(in)    :: nm_p
@@ -72,21 +80,21 @@ contains
 
          select case (nm_p%diff_scheme)
          case ('MAGNUS_GL2')
-            allocate(df, SOURCE=magnus_diff_${S}$(eq, pt_a, pt_b, 'GL2'))
+            allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL2'))
          case ('MAGNUS_GL4')
-            allocate(df, SOURCE=magnus_diff_${S}$(eq, pt_a, pt_b, 'GL4'))
+            allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL4'))
          case ('MAGNUS_GL6')
-            allocate(df, SOURCE=magnus_diff_${S}$(eq, pt_a, pt_b, 'GL6'))
+            allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL6'))
          case ('COLLOC_GL2')
-            allocate(df, SOURCE=colloc_diff_${S}$(eq, pt_a, pt_b, 'GL2'))
+            allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL2'))
          case ('COLLOC_GL4')
-            allocate(df, SOURCE=colloc_diff_${S}$(eq, pt_a, pt_b, 'GL4'))
+            allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL4'))
          case ('COLLOC_GL6')
-            allocate(df, SOURCE=colloc_diff_${S}$(eq, pt_a, pt_b, 'GL6'))
+            allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL6'))
          case ('TRAPZ')
-            allocate(df, SOURCE=trapz_diff_${S}$(eq, pt_a, pt_b, SPREAD(0.5_RD, DIM=1, NCOPIES=eq%n_e)))
+            allocate(df, SOURCE=trapz_diff_${S}$(eqns_factory, pt_a, pt_b))
          case ('MIRK')
-            allocate(df, SOURCE=mirk_diff_${S}$(eq, pt_a, pt_b))
+            allocate(df, SOURCE=mirk_diff_${S}$(eqns_factory, pt_a, pt_b))
          case default
             @:ABORT('invalid diff_scheme')
          end select

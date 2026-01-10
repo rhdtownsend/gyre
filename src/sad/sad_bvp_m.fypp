@@ -50,12 +50,12 @@ module sad_bvp_m
 
    type, extends(bvp_rt) :: sad_bvp_t
       private
-      type(context_t), pointer :: cx => null()
-      type(grid_t)             :: gr
-      type(sad_trans_t)        :: tr
-      type(mode_par_t)         :: md_p
-      type(num_par_t)          :: nm_p
-      type(osc_par_t)          :: os_p
+      type(context_t), pointer       :: cx => null()
+      type(grid_t)                   :: gr
+      type(sad_trans_t), allocatable :: tr(:)
+      type(mode_par_t)               :: md_p
+      type(num_par_t)                :: nm_p
+      type(osc_par_t)                :: os_p
    end type sad_bvp_t
 
    ! Interfaces
@@ -125,8 +125,12 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      bp%tr = sad_trans_t(cx, md_p, os_p)
-      call bp%tr%stencil(gr%pt)
+      allocate(bp%tr(gr%n))
+
+      !$OMP PARALLEL DO
+      do j = 1, gr%n
+         bp%tr(j) = sad_trans_t(cx, gr%pt(j), md_p, os_p)
+      end do
 
       bp%md_p = md_p
       bp%nm_p = nm_p
@@ -163,7 +167,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
-         call bp%tr%trans_vars(y(:,j), j, st, from=.FALSE.)
+         call bp%tr(j)%trans_vars(y(:,j), st, from=.FALSE.)
       end do
 
       ! Construct the wave_t
