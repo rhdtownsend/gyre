@@ -502,7 +502,7 @@ contains
          ! Evaluate the determinant as the product of the diagonal
          ! elements
 
-         det = product([ext_${S}$(this%D),this%scl])
+         det = product_${S}$(this%D)*product(this%scl)
 
          ! Finish
 

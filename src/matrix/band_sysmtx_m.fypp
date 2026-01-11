@@ -307,10 +307,8 @@ contains
 
          ! Evaluate the determinant
 
-         det = product([ &
-            ext_${S}$(this%A_b(this%n_l+this%n_u+1,:)), &
-            ext_${S}$(this%scl_i), &
-            this%scl,ext_${S}$(this%scl_o)])
+         det = product_${S}$(this%A_b(this%n_l+this%n_u+1,:))* &
+            product([ext_${S}$(this%scl_i),this%scl,ext_${S}$(this%scl_o)])
 
          do j = 1, SIZE(this%ipiv)
             if(this%ipiv(j) /= j) det = -det
