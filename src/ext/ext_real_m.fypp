@@ -116,6 +116,7 @@ module ext_real_m
    public :: real
    public :: valid
    public :: product
+   public :: product_rt
    public :: abs
    public :: exp
    public :: sqrt
@@ -570,14 +571,14 @@ contains
       ! Calculate the product of the elements of rx
 
       prod_rx%f = 1._RD
-      prod_rx%e = SUM(rx%e)
+      prod_rx%e = 0
 
       do i = 1,SIZE(rx)
 
          g = prod_rx%f*rx(i)%f
 
          prod_rx%f = FRACTION(g)
-         prod_rx = scale(prod_rx, EXPONENT(g))
+         prod_rx%e = prod_rx%e + rx(i)%e + EXPONENT(g)
 
       end do
 
@@ -586,6 +587,36 @@ contains
       return
 
    end function product_
+
+   !****
+
+   function product_rt(r) result(prod_rx)
+
+      real(RD), intent(in) :: r(:)
+      type(ext_rt)         :: prod_rx
+
+      integer  :: i
+      real(RD) :: g
+
+      ! Calculate the product of the elements of r
+
+      prod_rx%f = 1._RD
+      prod_rx%e = 0
+
+      do i = 1,SIZE(r)
+
+         g = prod_rx%f*r(i)
+
+         prod_rx%f = FRACTION(g)
+         prod_rx%e = prod_rx%e + EXPONENT(g)
+
+      end do
+
+      ! Finish
+
+      return
+
+   end function product_rt
 
    !****
 

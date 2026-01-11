@@ -142,6 +142,7 @@ module ext_complex_m
    public :: valid
    public :: conjg
    public :: product
+   public :: product_ct
    public :: abs
    public :: exp
    public :: sqrt
@@ -700,19 +701,22 @@ contains
 
       integer     :: i
       complex(RD) :: f
+      complex(RD) :: g
       integer     :: e
 
       ! Calculate the product of the elements of cx
 
       prod_cx%f = 1._RD
-      prod_cx%e = SUM(cx%e)
+      prod_cx%e = 0
 
       do i = 1,SIZE(cx)
 
-         call split_(prod_cx%f*cx(i)%f, f, e)
+         g = prod_cx%f*cx(i)%f
+
+         call split_(g, f, e)
 
          prod_cx%f = f
-         prod_cx = scale(prod_cx, e)
+         prod_cx%e = prod_cx%e + cx(i)%e + e
 
       end do
 
@@ -721,6 +725,40 @@ contains
       return
 
    end function product_
+
+   !****
+
+   function product_ct(c) result(prod_cx)
+
+      complex(RD), intent(in) :: c(:)
+      type(ext_ct)            :: prod_cx
+
+      integer     :: i
+      complex(RD) :: f
+      complex(RD) :: g
+      integer     :: e
+
+      ! Calculate the product of the elements of c
+
+      prod_cx%f = 1._RD
+      prod_cx%e = 0
+
+      do i = 1,SIZE(c)
+
+         g = prod_cx%f*c(i)
+
+         call split_(g, f, e)
+
+         prod_cx%f = f
+         prod_cx%e = prod_cx%e + e
+
+      end do
+
+      ! Finish
+
+      return
+
+   end function product_ct
 
    !****
 
