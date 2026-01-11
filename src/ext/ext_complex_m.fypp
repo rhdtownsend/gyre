@@ -35,9 +35,8 @@ module ext_complex_m
    ! Derived-type definitions
 
    type ext_ct
-      private
-      complex(RD) :: f  ! Fractional part
-      integer     :: e  ! Exponent
+      type(ext_rt) :: re ! Real part
+      type(ext_rt) :: im ! Imaginary part
    contains
       procedure       :: op_minus_cx_
       generic, public :: operator(-) => op_minus_cx_
@@ -58,8 +57,8 @@ module ext_complex_m
 
    ! Parameter definitions
 
-   type(ext_ct), parameter :: ZERO_CT = ext_ct(CMPLX(0._RD, KIND=RD), 0)
-   type(ext_ct), parameter :: ONE_CT = ext_ct(CMPLX(1._RD, KIND=RD), 0)
+   type(ext_ct), parameter :: ZERO_CT = ext_ct(ZERO_RT, ZERO_RT)
+   type(ext_ct), parameter :: ONE_CT = ext_ct(ONE_RT, ZERO_RT)
 
    real(RD), parameter :: RADIX_RD = REAL(RADIX(1._RD), RD)
 
@@ -93,14 +92,6 @@ module ext_complex_m
       module procedure conjg_
    end interface conjg
 
-   interface real_part
-      module procedure real_part_
-   end interface real_part
-
-   interface imag_part
-      module procedure imag_part_
-   end interface imag_part
-
    interface product
       module procedure product_
    end interface product
@@ -117,18 +108,6 @@ module ext_complex_m
       module procedure abs_
    end interface abs
 
-   interface fraction
-      module procedure fraction_
-   end interface fraction
-
-   interface exponent
-      module procedure exponent_
-   end interface exponent
-
-   interface scale
-      module procedure scale_
-   end interface scale
-
    ! Access specifiers
 
    public :: ZERO_CT
@@ -137,8 +116,6 @@ module ext_complex_m
    public :: ext_rt
    public :: real
    public :: cmplx
-   public :: real_part
-   public :: imag_part
    public :: valid
    public :: conjg
    public :: product
@@ -146,9 +123,6 @@ module ext_complex_m
    public :: abs
    public :: exp
    public :: sqrt
-   public :: fraction
-   public :: exponent
-   public :: scale
 
    ! Default access
 
@@ -163,7 +137,8 @@ contains
 
       ! Construct the ext_ct from the real r
 
-      call split_(CMPLX(r, KIND=RD), cx%f, cx%e)
+      cx%re = ext_rt(r)
+      cx%im = ZERO_RT
 
       ! Finish
 
@@ -181,7 +156,8 @@ contains
 
       ! Construct the ext_ct from the real/imaginary pair r, i
 
-      call split_(CMPLX(r, i, KIND=RD), cx%f, cx%e)
+      cx%re = ext_rt(r)
+      cx%im = ext_rt(i)
 
       ! Finish
 
@@ -194,11 +170,12 @@ contains
    elemental function ext_ct_c_(c) result(cx)
 
       complex(RD), intent(in) :: c
-      type(ext_ct)           :: cx
+      type(ext_ct)            :: cx
 
       ! Construct the ext_ct from the complex c
 
-      call split_(c, cx%f, cx%e)
+      cx%re = ext_rt(REAL(c))
+      cx%im = ext_rt(AIMAG(c))
 
       ! Finish
 
@@ -215,8 +192,8 @@ contains
 
       ! Construct the ext_ct from the ext_rt rx
 
-      call split_(CMPLX(FRACTION(rx), KIND=RD), cx%f, cx%e)
-      cx = scale(cx, EXPONENT(rx))
+      cx%re = rx
+      cx%im = ZERO_RT
 
       ! Finish
 
@@ -235,7 +212,8 @@ contains
       ! Construct the ext_ct from the ext_rt real/imaginary pair rx,
       ! ix
 
-      cx = ext_ct(rx) + ext_ct(0._RD, 1._RD)*ext_ct(ix)
+      cx%re = rx
+      cx%im = ix
 
       ! Finish
 
@@ -251,35 +229,10 @@ contains
       class(ext_ct), intent(in) :: that
       type(ext_ct)              :: cx
 
-      complex(RD) :: f
-      integer     :: e
-
       ! Evaluate the plus operator
 
-      if (this%f == 0._RD) then
-
-         cx%f = that%f
-         cx%e = that%e
-
-      elseif (that%f == 0._RD) then
-
-         cx%f = this%f
-         cx%e = this%e
-
-      else
-
-         if (this%e > that%e) then
-            f = this%f + cmplx(ext_ct(that%f, that%e - this%e))
-            e = this%e
-         else
-            f = cmplx(ext_ct(this%f, this%e - that%e)) + that%f
-            e = that%e
-         endif
-
-         call split_(f, cx%f, cx%e)
-         cx%e = cx%e + e
-
-      endif
+      cx%re = this%re + that%re
+      cx%im = this%im + that%im
 
       ! Finish
 
@@ -296,8 +249,8 @@ contains
 
       ! Evaluate the unary minus operator
 
-      cx%f = -this%f
-      cx%e = this%e
+      cx%re = -this%re
+      cx%im = -this%im
 
       ! Finish
 
@@ -318,30 +271,8 @@ contains
 
       ! Evaluate the minus operator
 
-      if (this%f == 0._RD) then
-
-         cx%f = -that%f
-         cx%e = that%e
-
-      elseif (that%f == 0._RD) then
-
-         cx%f = this%f
-         cx%e = this%e
-
-      else
-
-         if (this%e > that%e) then
-            f = this%f - cmplx(ext_ct(that%f, that%e - this%e))
-            e = this%e
-         else
-            f = cmplx(ext_ct(this%f, this%e - that%e)) - that%f
-            e = that%e
-         endif
-
-         call split_(f, cx%f, cx%e)
-         cx = scale(cx, e)
-
-      endif
+      cx%re = this%re - that%re
+      cx%im = this%im - that%im
 
       ! Finish
 
@@ -357,24 +288,10 @@ contains
       class(ext_ct), intent(in) :: that
       type(ext_ct)              :: cx
 
-      complex(RD) :: f
-      integer     :: e
-
       ! Evaluate the times operator
 
-      if (this%f == 0._RD .OR. that%f == 0._RD) then
-
-         cx = ext_ct(0._RD)
-
-      else
-
-         f = this%f*that%f
-         e = this%e + that%e
-
-         call split_(f, cx%f, cx%e)
-         cx = scale(cx, e)
-
-      endif
+      cx%re = this%re*that%re - this%im*that%im
+      cx%im = this%re*that%im + this%im*that%re
 
       ! Finish
 
@@ -390,24 +307,22 @@ contains
       class(ext_ct), intent(in) :: that
       type(ext_ct)              :: cx
 
-      complex(RD) :: f
-      integer     :: e
+      type(ext_rt) :: d
+      type(ext_rt) :: f
 
       ! Evaluate the divide operator
 
-      if (this%f == 0._RD .AND. that%f /= 0._RD) then
-
-         cx = ext_ct(0._RD)
-
+      if (abs(that%re) >= abs(that%im)) then
+         f = that%im/that%re
+         d = that%re + that%im*f
+         cx%re = (this%re + this%im*f)/d
+         cx%im = (this%im - this%re*f)/d
       else
-
-         f = this%f/that%f
-         e = this%e - that%e
-
-         call split_(f, cx%f, cx%e)
-         cx = scale(cx, e)
-
-      endif
+         f = that%re/that%im
+         d = that%re*f + that%im
+         cx%re = (this%re*f + this%im)/d
+         cx%im = (this%im*f - this%re)/d
+      end if
 
       ! Finish
 
@@ -425,7 +340,7 @@ contains
 
       ! Evaluate the equality operator
 
-      eq = this%e == that%e .AND. this%f == that%f
+      eq = this%re == that%re .AND. this%im == that%im
 
       ! Finish
 
@@ -564,8 +479,7 @@ contains
 
       ! Construct the ext_rt from the ext_ct
 
-      rx = ext_rt(REAL(cx%f))
-      rx = scale(rx, cx%e)
+      rx = cx%re
 
       ! Finish
 
@@ -601,22 +515,8 @@ contains
 
       ! Convert cx to complex
 
-      if (cx%f /= 0._RD) then
-
-         e_min = MINEXPONENT(0._RD)
-
-         if (cx%e >= e_min) then
-            c = cx%f*RADIX_RD**cx%e
-         else
-            c = (cx%f*RADIX_RD**MAX(cx%e-e_min, -DIGITS(0._RD)-1))*RADIX_RD**e_min
-         endif
-
-      else
-
-         c = 0._RD
-
-      endif
-
+      c = CMPLX(real(cx%re), real(cx%im), KIND=RD)
+      
       ! Finish
 
       return
@@ -625,48 +525,14 @@ contains
 
    !****
 
-   elemental function real_part_(cx) result(rx)
+   elemental function valid_(cx)
 
       type(ext_ct), intent(in) :: cx
-      type(ext_rt)             :: rx
-
-      ! Extract the real part of cx
-
-      rx = scale(ext_rt(REAL(cx%f)), cx%e)
-
-      ! Finish
-
-      return
-
-   end function real_part_
-
-   !****
-
-   elemental function imag_part_(cx) result(rx)
-
-      type(ext_ct), intent(in) :: cx
-      type(ext_rt)             :: rx
-
-      ! Extract the imaginary part of cx
-
-      rx = scale(ext_rt(AIMAG(cx%f)), cx%e)
-
-      ! Finish
-
-      return
-
-   end function imag_part_
-
-   !****
-
-   elemental function valid_(cx) result(valid)
-
-      type(ext_ct), intent(in) :: cx
-      logical                  :: valid
+      logical                  :: valid_
 
       ! Determine if cx is valid
 
-      valid = abs(REAL(cx%f)) >= RADIX_RD**(-1) .AND. abs(REAL(cx%f)) < 1._RD
+      valid_ = valid(cx%re) .AND. valid(cx%im)
 
       ! Finish
 
@@ -683,8 +549,7 @@ contains
 
       ! Calculate the complex conjugate of cx
 
-      conjg_cx%f = CONJG(cx%f)
-      conjg_cx%e = cx%e
+      conjg_cx = ext_ct(cx%re, -cx%im)
 
       ! Finish
 
@@ -700,23 +565,14 @@ contains
       type(ext_ct)             :: prod_cx
 
       integer     :: i
-      complex(RD) :: f
-      complex(RD) :: g
-      integer     :: e
 
       ! Calculate the product of the elements of cx
 
-      prod_cx%f = 1._RD
-      prod_cx%e = 0
+      prod_cx = ONE_CT
 
       do i = 1,SIZE(cx)
 
-         g = prod_cx%f*cx(i)%f
-
-         call split_(g, f, e)
-
-         prod_cx%f = f
-         prod_cx%e = prod_cx%e + cx(i)%e + e
+         prod_cx = prod_cx*cx(i)
 
       end do
 
@@ -740,17 +596,11 @@ contains
 
       ! Calculate the product of the elements of c
 
-      prod_cx%f = 1._RD
-      prod_cx%e = 0
+      prod_cx = ONE_CT
 
       do i = 1,SIZE(c)
 
-         g = prod_cx%f*c(i)
-
-         call split_(g, f, e)
-
-         prod_cx%f = f
-         prod_cx%e = prod_cx%e + e
+         prod_cx = prod_cx*c(i)
 
       end do
 
@@ -767,10 +617,19 @@ contains
       type(ext_ct), intent(in) :: cx
       type(ext_rt)             :: abs_cx
 
+      type(ext_rt) :: a_re
+      type(ext_rt) :: a_im
+
       ! Calculate the absolute value of cx
 
-      abs_cx = ext_rt(abs(cx%f))
-      abs_cx = scale(abs_cx, cx%e)
+      a_re = abs(cx%re)
+      a_im = abs(cx%im)
+
+      if (abs(cx%re) >= abs(cx%im)) then
+         abs_cx = a_re*sqrt(1._RD + (cx%im*cx%im)/(cx%re*cx%re))
+      else
+         abs_cx = a_im*sqrt(1._RD + (cx%re*cx%re)/(cx%im*cx%im))
+      end if
 
       ! Finish
 
@@ -785,14 +644,13 @@ contains
       type(ext_ct), intent(in) :: cx
       type(ext_ct)             :: exp_cx
 
-      type(ext_rt) :: exp_ex
+      real(RD)    :: f
+      integer     :: e
+      complex(RD) :: c
 
       ! Calculate the exponential of cx
 
-      exp_ex = exp(ext_rt(cx))
-
-      exp_cx%f = FRACTION(exp_ex)*exp((0._RD,1._RD)*AIMAG(cmplx(cx)))
-      exp_cx%e = EXPONENT(exp_ex)
+      exp_cx = exp(cx%re)*ext_ct(exp((0._RD,1._RD)*real(cx%im)))
 
       ! Finish
 
@@ -807,141 +665,63 @@ contains
       type(ext_ct), intent(in) :: cx
       type(ext_ct)             :: sqrt_cx
 
+      type(ext_rt) :: a_re
+      type(ext_rt) :: a_im
+      type(ext_rt) :: f
+      type(ext_rt) :: w
+
       ! Calculate the square root of cx
 
-      sqrt_cx = ext_ct(sqrt(cx%f))
+      if (cx%re == ZERO_RT .AND. cx%im == ZERO_RT) then
 
-      if (MOD(cx%e, 2) == 0) then
-         sqrt_cx = scale(sqrt_cx, cx%e/2)
+         sqrt_cx = ZERO_CT
+
       else
-         sqrt_cx = scale(sqrt_cx, (cx%e-1)/2)*sqrt(2._RD)
-      endif
+
+         a_re = abs(cx%re)
+         a_im = abs(cx%im)
+
+         if (a_re >= a_im) then
+
+            f = cx%im/cx%re
+
+            w = sqrt(a_re)*sqrt(0.5_RD*(1._RD + sqrt(1._RD + f*f)))
+
+         else
+
+            f = cx%re/cx%im
+
+            w = sqrt(a_im)*sqrt(0.5_RD*(f + sqrt(1._RD + f*f)))
+
+         end if
+
+         if (cx%re >= 0._RD) then
+
+            sqrt_cx%re = w
+            sqrt_cx%im = 0.5_RD*cx%im/w
+
+         else
+
+            if (cx%im >= 0._RD) then
+
+               sqrt_cx%re = 0.5_RD*a_im/w
+               sqrt_cx%im = w
+
+            else
+
+               sqrt_cx%re = 0.5_RD*a_im/w
+               sqrt_cx%im = -w
+
+            end if
+
+         end if
+
+      end if
 
       ! Finish
 
       return
 
    end function sqrt_
-
-   !****
-
-   elemental function fraction_(cx) result(fraction_cx)
-
-      type(ext_ct), intent(in) :: cx
-      complex(RD)              :: fraction_cx
-
-      ! Return the fraction part of cx
-
-      fraction_cx = cx%f
-
-      ! Finish
-
-      return
-
-   end function fraction_
-
-   !****
-
-   elemental function exponent_(cx) result(exponent_cx)
-
-      type(ext_ct), intent(in) :: cx
-      integer                  :: exponent_cx
-
-      ! Return the exponent part of cx
-
-      exponent_cx = cx%e
-
-      ! Finish
-
-      return
-
-   end function exponent_
-
-   !****
-
-   elemental function scale_(cx, de) result(scale_cx)
-
-      class(ext_ct), intent(in) :: cx
-      integer, intent(in)        :: de
-      type(ext_ct)              :: scale_cx
-
-      ! Scale cx by RADIX_RD**de
-
-      scale_cx%f = cx%f
-
-      if (scale_cx%f /= 0._RD) then
-         scale_cx%e = cx%e + de
-      else
-         scale_cx%e = 0
-      endif
-
-      ! Finish
-
-      return
-
-   end function scale_
-
-   !****
-
-   elemental subroutine split_(c, f, e)
-
-      complex(RD), intent(in)  :: c
-      complex(RD), intent(out) :: f
-      integer, intent(out)     :: e
-
-      real(RD)    :: c_r
-      real(RD)    :: c_i
-      real(RD)    :: f_r
-      real(RD)    :: f_i
-      integer     :: e_r
-      integer     :: e_i
-      integer     :: e_ref
-
-      ! Spit c into fraction and exponent parts
-
-      c_r = REAL(c)
-      c_i = AIMAG(c)
-
-      f_r = FRACTION(c_r)
-      f_i = FRACTION(c_i)
-
-      if (f_r == 0._RD .AND. f_i == 0._RD) then
-
-         f = 0._RD
-         e = 0
-
-      else
-
-         e_r = EXPONENT(c_r)
-         e_i = EXPONENT(c_i)
-
-         e_ref = MAXVAL([e_r,e_i], MASK=[f_r,f_i] /= 0._RD)
-
-         if (f_r /= 0._RD) then
-            if (e_r - e_ref < MINEXPONENT(0._RD)) then
-               f_r = 0
-            else
-               f_r = f_r*RADIX_RD**(e_r - e_ref)
-            endif
-         endif
-
-         if (f_i /= 0._RD) then
-            if (e_i - e_ref < MINEXPONENT(0._RD)) then
-               f_i = 0
-            else
-               f_i = f_i*RADIX_RD**(e_i - e_ref)
-            endif
-         endif
-
-         f = CMPLX(f_r, f_i, RD)
-         e = e_ref
-
-      endif
-
-      ! Finish
-
-      return
-
-   end subroutine split_
 
 end module ext_complex_m

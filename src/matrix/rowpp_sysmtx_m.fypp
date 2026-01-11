@@ -702,8 +702,20 @@ contains
          call hi%write_dset('U', this%U)
          call hi%write_dset('S', this%S)
 
-         call hi%write_dset('scl_f', FRACTION(this%scl))
-         call hi%write_dset('scl_e', EXPONENT(this%scl))
+         #:if T == 'complex(RD)'
+
+         call hi%write_dset('scl_re_f', fraction(this%scl%re))
+         call hi%write_dset('scl_re_e', exponent(this%scl%im))
+
+         call hi%write_dset('scl_im_f', fraction(this%scl%re))
+         call hi%write_dset('scl_im_e', exponent(this%scl%im))
+
+         #:else
+
+         call hi%write_dset('scl_re_f', fraction(this%scl))
+         call hi%write_dset('scl_re_e', exponent(this%scl))
+
+         #:endif
 
          ! Finish
 

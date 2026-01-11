@@ -290,9 +290,9 @@ contains
 
          select case (part)
          case ('re')
-            w = real(-real_part(discrim_a)/(real_part(discrim_b) - real_part(discrim_a)))
+            w = real(-discrim_a%re/(discrim_b%re - discrim_a%re))
          case ('im')
-            w = real(-imag_part(discrim_a)/(imag_part(discrim_b) - imag_part(discrim_a)))
+            w = real(-discrim_a%im/(discrim_b%im - discrim_a%im))
          case default
             @:ABORT('Invalid part')
          end select

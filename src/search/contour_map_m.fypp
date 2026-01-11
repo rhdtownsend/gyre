@@ -146,8 +146,8 @@ contains
 
             ! Evaluate cell codes
 
-            code_re = cell_code_(real_part(cm%f(i_re:i_re+1,i_im:i_im+1)))
-            code_im = cell_code_(imag_part(cm%f(i_re:i_re+1,i_im:i_im+1)))
+            code_re = cell_code_(cm%f(i_re:i_re+1,i_im:i_im+1)%re)
+            code_im = cell_code_(cm%f(i_re:i_re+1,i_im:i_im+1)%im)
 
             ! Add segments based on the codes
 
@@ -533,9 +533,9 @@ contains
 
          select case (part)
          case ('re')
-            w = real(-real_part(f_a)/(real_part(f_b) - real_part(f_a)))
+            w = real(-f_a%re/(f_b%re - f_a%re))
          case ('im')
-            w = real(-imag_part(f_a)/(imag_part(f_b) - imag_part(f_a)))
+            w = real(-f_a%im/(f_b%im - f_a%re))
          case default
             @:ABORT('invalid part')
          end select
@@ -814,8 +814,11 @@ contains
       call hi%write_dset('z_re', this%z_re)
       call hi%write_dset('z_im', this%z_im)
 
-      call hi%write_dset('f_f', fraction(this%f))
-      call hi%write_dset('f_e', exponent(this%f))
+      call hi%write_dset('f_re_f', fraction(this%f%re))
+      call hi%write_dset('f_re_e', exponent(this%f%re))
+
+      call hi%write_dset('f_im_f', fraction(this%f%im))
+      call hi%write_dset('f_im_e', exponent(this%f%im))
 
       ! Write path data
 
