@@ -204,6 +204,8 @@ contains
 
             associate (n => this%n, n_e => ${N_E}$, n_i => ${N_I}$, n_o => ${N_O}$)
 
+               call eval_B(B_i, B_o)
+
                ! First, build and factorize the first n blocks
 
                block_loop : do k = 1, n
@@ -212,8 +214,6 @@ contains
 
                   if (k == 1) then
 
-                     call eval_B(B_i, B_o)
-
                      M(:n_i,:n_e) = B_i
                      M(:n_i,n_e+1:) = 0._RD
 
@@ -221,7 +221,7 @@ contains
 
                      rscl = 0._RD
 
-                     do s = 1, 2*n_e
+                     do s = 1, n_e
                         do i = 1, n_i+n_e
                            rscl(i) = MAX(rscl(i), abs(M(i,s)))
                         end do
