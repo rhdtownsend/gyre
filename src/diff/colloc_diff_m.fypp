@@ -207,29 +207,36 @@ contains
          ${T}$, intent(out)                   :: E_r(:,:)
          type(ext_${S}$), intent(out)         :: scl
 
-         ${T}$   :: A(this%n_e,this%n_e)
-         integer :: i
+         integer  :: i
+         integer  :: j
+         real(RD) :: alpha
+         real(RD) :: beta
 
-         ! Evaluate the RHS matrix
+         ! Evaluate the RHS matrix (stored in E_l for efficiency)
 
-         call this%eq(1)%eval_A(st, A)
+         call this%eq(1)%eval_A(st, E_l)
 
          ! Build the GL2 difference equations
 
-         E_l = 0.5_RD*this%dx*A
-         E_r = 0.5_RD*this%dx*A
+         alpha = 0.5_RD*this%dx
 
          if (this%reverse) then
-            do i = 1, this%n_e
-               E_l(i,i) = E_l(i,i) - 1._RD
-               E_r(i,i) = E_r(i,i) + 1._RD
-            end do
+            beta = -1._RD
          else
+            beta = 1._RD
+         end if
+
+         do j = 1, this%n_e
+
             do i = 1, this%n_e
-               E_l(i,i) = E_l(i,i) + 1._RD
-               E_r(i,i) = E_r(i,i) - 1._RD
+               E_l(i,j) = alpha*E_l(i,j)
+               E_r(i,j) = E_l(i,j)
             end do
-         endif
+
+            E_l(j,j) = E_l(j,j) + beta
+            E_r(j,j) = E_r(j,j) - beta
+
+         end do
 
          scl = ONE_${S}$
 
