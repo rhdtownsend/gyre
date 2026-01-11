@@ -177,8 +177,7 @@ contains
             ${T}$    :: B_i(${N_I}$,${N_E}$)
             ${T}$    :: B_o(${N_O}$,${N_E}$)
             integer  :: k
-            ${T}$    :: P(${N_I}$+${N_E}$,${N_E}$)
-            ${T}$    :: Q(${N_I}$+${N_E}$,${N_E}$)
+            ${T}$    :: M(${N_I}$+${N_E}$,2*${N_E}$)
             integer  :: i
             real(RD) :: scl
             integer  :: s
@@ -207,167 +206,64 @@ contains
 
                ! First, build and factorize the first n blocks
 
-               associate( &
-                  P_1 => P(:n_i,:), P_2 => P(n_i+1:,:), &
-                  Q_1 => Q(:n_i,:), Q_2 => Q(n_i+1:,:), &
-                  rscl_1 => rscl(:n_i), rscl_2 => rscl(n_i+1:))
+               block_loop : do k = 1, n
 
-                  block_loop : do k = 1, n
+                  ! Prepare submatrices
 
-                     ! Prepare submatrices
+                  if (k == 1) then
 
-                     if (k == 1) then
+                     call eval_B(B_i, B_o)
 
-                        call eval_B(B_i, B_o)
+                     M(:n_i,:n_e) = B_i
+                     M(:n_i,n_e+1:) = 0._RD
 
-                        P_1 = B_i
-                        Q_1 = 0._RD
+                     call eval_E(k, M(n_i+1:,:n_e), M(n_i+1:,n_e+1:), this%scl(1))
 
-                        call eval_E(k, P_2, Q_2, this%scl(1))
+                     rscl = 0._RD
 
-                        rscl = 0._RD
-
-                        do s = 1, n_e
-                           do i = 1, n_i+n_e
-                              rscl(i) = MAX(rscl(i), abs(P(i,s)), abs(Q(i,s)))
-                           end do
+                     do s = 1, 2*n_e
+                        do i = 1, n_i+n_e
+                           rscl(i) = MAX(rscl(i), abs(M(i,s)))
                         end do
-
-                        rscl = 1._RD/rscl
-
-                     else
-
-                        P_1 = Q(n_e+1:,:)
-                        Q_1 = 0._RD
-
-                        call eval_E(k, P_2, Q_2, this%scl(k))
-
-                        rscl_1 = rscl(n_e+1:)
-
-                        rscl_2 = 0._RD
-
-                        do s = 1, n_e
-                           do i = 1, n_e
-                              rscl_2(i) = MAX(rscl_2(i), abs(P_2(i,s)), abs(Q_2(i,s)))
-                           end do
-                        end do
-
-                        rscl_2 = 1._RD/rscl_2
-
-                     end if
-
-                     ! Reduce P to upper-triangular form
-
-                     this%D(k) = 1._RD
-
-                     reduce_loop: do j = 1, n_e
-
-                        ! Find the pivot row
-
-                        piv = 0._RD
-                        i_piv = j
-
-                        do i = j, n_i+n_e
-                           scl = abs(P(i,j))*rscl(i)
-                           if (scl > piv) then
-                              piv = scl
-                              i_piv = i
-                           end if
-                        end do
-
-                        @:ASSERT(piv /= 0, 'zero pivot')
-
-                        ! If necessary, swap rows to place the pivot
-                        ! on the diagonal
-
-                        if (i_piv /= j) then
-
-                           do s = 1, n_e
-
-                              alpha = P(i_piv,s)
-                              P(i_piv,s) = P(j,s)
-                              P(j,s) = alpha
-
-                              alpha = Q(i_piv,s)
-                              Q(i_piv,s) = Q(j,s)
-                              Q(j,s) = alpha
-
-                           end do
-
-                           scl = rscl(i_piv)
-                           rscl(i_piv) = rscl(j)
-                           rscl(j) = scl
-
-                           this%D(k) = -this%D(k)
-
-                        end if
-
-                        ! Eliminate elements below the diagonal
-
-                        do i = j+1, n_i+n_e
-
-                           alpha = P(i,j)/P(j,j)
-
-                           do s = 1, n_e
-                              P(i,s) = P(i,s) - alpha*P(j,s)
-                              Q(i,s) = Q(i,s) - alpha*Q(j,s)
-                           end do
-
-                        end do
-
-                        ! Update the diagonal product
-
-                        this%D(k) = this%D(k)*P(j,j)
-
-                     end do reduce_loop
-
-                     ! If necessary, store data
-
-                     if (full_) then
-
-                        this%U(:,:,k) = P(:n_e,:)
-                        this%S(:,:,k) = Q(:n_e,:)
-
-                     end if
-
-                  end do block_loop
-
-               end associate
-
-               ! Next, build and factorize the final block
-
-               associate( &
-                  R_1 => R(:n_i,:), R_2 => R(n_i+1:,:), &
-                  rscl_1 => rscl_R(:n_i), rscl_2 => rscl_R(n_i+1:))
-
-                  R_1 = Q(n_e+1:,:)
-                  R_2 = B_o
-
-                  rscl_1 = rscl(n_e+1:)
-
-                  rscl_2 = 0._RD
-
-                  do s = 1, n_e
-                     do i = 1, n_o
-                        rscl_2(i) = MAX(rscl_2(i), abs(R_2(i,s)))
                      end do
-                  end do
 
-                  rscl_2 = 1._RD/rscl_2
+                     rscl = 1._RD/rscl
 
-                  ! Reduce R to upper-triangular form
+                  else
 
-                  this%D(n+1) = 1._RD
+                     M(:n_i,:n_e) = M(n_e+1:,n_e+1:)
+                     M(:n_i,n_e+1:) = 0._RD
 
-                  reduce_R_loop: do j = 1, n_e
+                     call eval_E(k, M(n_i+1:,:n_e), M(n_i+1:,n_e+1:), this%scl(k))
+
+                     rscl(:n_i) = rscl(n_e+1:)
+
+                     rscl(n_i+1:) = 0._RD
+
+                     do s = 1, 2*n_e
+                        do i = n_i+1, n_i+n_e
+                           rscl(i) = MAX(rscl(i), abs(M(i,s)))
+                        end do
+                     end do
+
+                     rscl(n_i+1:) = 1._RD/rscl(n_i+1:)
+
+                  end if
+
+                  ! Reduce the first n_e columns of M to
+                  ! upper-triangular form
+
+                  this%D(k) = 1._RD
+
+                  reduce_loop: do j = 1, n_e
 
                      ! Find the pivot row
 
                      piv = 0._RD
                      i_piv = j
 
-                     do i = j, n_e
-                        scl = abs(R(i,j))*rscl_R(i)
+                     do i = j, n_i+n_e
+                        scl = abs(M(i,j))*rscl(i)
                         if (scl > piv) then
                            piv = scl
                            i_piv = i
@@ -381,11 +277,11 @@ contains
 
                      if (i_piv /= j) then
 
-                        do s = 1, n_e
+                        do s = 1, 2*n_e
 
-                           alpha = R(i_piv,s)
-                           R(i_piv,s) = R(j,s)
-                           R(j,s) = alpha
+                           alpha = M(i_piv,s)
+                           M(i_piv,s) = M(j,s)
+                           M(j,s) = alpha
 
                         end do
 
@@ -393,46 +289,134 @@ contains
                         rscl(i_piv) = rscl(j)
                         rscl(j) = scl
 
-                        this%D(n+1) = -this%D(n+1)
-
-                        if (PRESENT(f)) then
-                           alpha = f(i_piv)
-                           f(i_piv) = f(j)
-                           f(j) = alpha
-                        end if
+                        this%D(k) = -this%D(k)
 
                      end if
 
                      ! Eliminate elements below the diagonal
+                     ! (optimization: don't actually set these
+                     ! elements to zero)
 
-                     do i = j+1, n_e
+                     do i = j+1, n_i+n_e
 
-                        alpha = R(i,j)/R(j,j)
-                        do s = 1, n_e
-                           R(i,s) = R(i,s) - alpha*R(j,s)
+                        alpha = M(i,j)/M(j,j)
+
+                        do s = j+1, 2*n_e
+                           M(i,s) = M(i,s) - alpha*M(j,s)
                         end do
-
-                        if (PRESENT(f)) then
-                           f(i) = f(i) - alpha*f(j)
-                        end if
 
                      end do
 
                      ! Update the diagonal product
 
-                     this%D(n+1) = this%D(n+1)*R(j,j)
+                     this%D(k) = this%D(k)*M(j,j)
 
-                  end do reduce_R_loop
+                  end do reduce_loop
 
                   ! If necessary, store data
 
                   if (full_) then
 
-                     this%U(:,:,n+1) = R
+                     this%U(:,:,k) = M(:n_e,:n_e)
+                     this%S(:,:,k) = M(:n_e,n_e+1:)
 
                   end if
 
-               end associate
+               end do block_loop
+
+               ! Next, build and factorize the final block
+
+               R(:n_i,:) = M(n_e+1:,n_e+1:)
+               R(n_i+1:,:) = B_o
+
+               rscl_R(:n_i) = rscl(n_e+1:)
+
+               rscl_R(n_i+1:) = 0._RD
+
+               do s = 1, n_e
+                  do i = n_i+1, n_e
+                     rscl_R(i) = MAX(rscl_R(i), abs(R(i,s)))
+                  end do
+               end do
+
+               rscl_R(n_i+1:) = 1._RD/rscl_R(n_i+1:)
+
+               ! Reduce R to upper-triangular form
+
+               this%D(n+1) = 1._RD
+
+               reduce_R_loop: do j = 1, n_e
+
+                  ! Find the pivot row
+
+                  piv = 0._RD
+                  i_piv = j
+
+                  do i = j, n_e
+                     scl = abs(R(i,j))*rscl_R(i)
+                     if (scl > piv) then
+                        piv = scl
+                        i_piv = i
+                     end if
+                  end do
+
+                  @:ASSERT(piv /= 0, 'zero pivot')
+
+                  ! If necessary, swap rows to place the pivot
+                  ! on the diagonal
+
+                  if (i_piv /= j) then
+
+                     do s = 1, n_e
+
+                        alpha = R(i_piv,s)
+                        R(i_piv,s) = R(j,s)
+                        R(j,s) = alpha
+
+                     end do
+
+                     scl = rscl_R(i_piv)
+                     rscl_R(i_piv) = rscl_R(j)
+                     rscl_R(j) = scl
+
+                     this%D(n+1) = -this%D(n+1)
+
+                     if (PRESENT(f)) then
+                        alpha = f(i_piv)
+                        f(i_piv) = f(j)
+                        f(j) = alpha
+                     end if
+
+                  end if
+
+                  ! Eliminate elements below the diagonal
+
+                  do i = j+1, n_e
+
+                     alpha = R(i,j)/R(j,j)
+                     do s = 1, n_e
+                        R(i,s) = R(i,s) - alpha*R(j,s)
+                     end do
+
+                     if (PRESENT(f)) then
+                        f(i) = f(i) - alpha*f(j)
+                     end if
+
+                  end do
+
+                  ! Update the diagonal product
+
+                  this%D(n+1) = this%D(n+1)*R(j,j)
+
+               end do reduce_R_loop
+
+               ! If necessary, store data
+
+               if (full_) then
+
+                  this%U(:,:,n+1) = R
+
+               end if
 
             end associate
 
