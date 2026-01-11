@@ -107,10 +107,10 @@ contains
 
    !****
 
-   subroutine trans_eqns(this, xA, st, from)
+   subroutine trans_eqns(this, A, st, from)
 
       class(sad_trans_t), intent(in) :: this
-      real(RD), intent(inout)        :: xA(:,:)
+      real(RD), intent(inout)        :: A(:,:)
       class(state_rt), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -119,8 +119,8 @@ contains
       real(RD), allocatable :: H(:,:)
       real(RD), allocatable :: dH(:,:)
 
-      @:CHECK_BOUNDS(SIZE(xA, 1), this%n_e)
-      @:CHECK_BOUNDS(SIZE(xA, 2), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
 
       if (PRESENT(from)) then
          from_ = from
@@ -138,7 +138,7 @@ contains
             G = this%G_(st)
             H = this%H_(st)
             dH = this%dH_(st)
-            xA = MATMUL(G, MATMUL(xA, H) - dH)
+            A = MATMUL(G, MATMUL(A, H) - dH)
          endif
 
       else
@@ -305,7 +305,7 @@ contains
       class(state_rt), intent(in)    :: st
       real(RD)                       :: dH(this%n_e,this%n_e)
 
-      ! Evaluate the derivative x dH/dx of the transformation matrix H
+      ! Evaluate the derivative dH/dx of the transformation matrix H
 
       select case (this%set)
       case default

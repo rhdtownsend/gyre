@@ -57,6 +57,7 @@ module nad_trans_m
       real(RD)                 :: c_1
       real(RD)                 :: dc_1
       real(RD)                 :: Omega_rot
+      real(RD)                 :: x
       integer                  :: set
       integer                  :: l
       integer                  :: n_e
@@ -148,6 +149,8 @@ contains
 
       ! Other initializations
 
+      tr%x = pt%x
+
       tr%l = md_p%l
 
       tr%n_e = 6
@@ -160,10 +163,10 @@ contains
 
    !****
 
-   subroutine trans_eqns(this, xA, st, from)
+   subroutine trans_eqns(this, A, st, from)
 
       class(nad_trans_t), intent(in) :: this
-      complex(RD), intent(inout)     :: xA(:,:)
+      complex(RD), intent(inout)     :: A(:,:)
       class(state_ct), intent(in)    :: st
       logical, intent(in), optional  :: from
 
@@ -172,8 +175,8 @@ contains
       complex(RD), allocatable :: H(:,:)
       complex(RD), allocatable :: dH(:,:)
 
-      @:CHECK_BOUNDS(SIZE(xA, 1), this%n_e)
-      @:CHECK_BOUNDS(SIZE(xA, 2), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
 
       if (PRESENT(from)) then
          from_ = from
@@ -191,7 +194,7 @@ contains
             G = this%G_(st)
             H = this%H_(st)
             dH = this%dH_(st)
-            xA = MATMUL(G, MATMUL(xA, H) - dH)
+            A = MATMUL(G, MATMUL(A, H) - dH)
          endif
 
       else
@@ -870,7 +873,7 @@ contains
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: dH(this%n_e,this%n_e)
 
-      ! Evaluate the derivative x dH/dx of the transformation matrix H
+      ! Evaluate the derivative dH/dx of the transformation matrix H
 
       select case (this%set)
       case (DZIEM_SET)
@@ -899,8 +902,9 @@ contains
 
       complex(RD) :: omega_c
       complex(RD) :: lambda
+      real(RD)    :: invx
 
-      ! Evaluate the derivative x dH/dx of the JCD-variables
+      ! Evaluate the derivative dH/dx of the JCD-variables
       ! transformation matrix H
 
       associate ( &
@@ -908,7 +912,8 @@ contains
          dc_1 => this%dc_1, &
          U => this%U, &
          dU => this%dU, &
-         Omega_rot => this%Omega_rot)
+         Omega_rot => this%Omega_rot, &
+         x => this%x)
 
          omega_c = this%cx%omega_c(Omega_rot, st)
 
@@ -919,93 +924,95 @@ contains
 
          ! Set up the matrix
 
+         invx = 1._RD/x
+
          if (this%l /= 0) then
 
-            dH(1,1) = 0._RD
-            dH(1,2) = 0._RD
-            dH(1,3) = 0._RD
-            dH(1,4) = 0._RD
-            dH(1,5) = 0._RD
-            dH(1,6) = 0._RD
+            dH(1,1) = invx*0._RD
+            dH(1,2) = invx*0._RD
+            dH(1,3) = invx*0._RD
+            dH(1,4) = invx*0._RD
+            dH(1,5) = invx*0._RD
+            dH(1,6) = invx*0._RD
 
-            dH(2,1) = 0._RD
-            dH(2,2) = c_1*dc_1*omega_c**2/lambda
-            dH(2,3) = 0._RD
-            dH(2,4) = 0._RD
-            dH(2,5) = 0._RD
-            dH(2,6) = 0._RD
+            dH(2,1) = invx*0._RD
+            dH(2,2) = invx*c_1*dc_1*omega_c**2/lambda
+            dH(2,3) = invx*0._RD
+            dH(2,4) = invx*0._RD
+            dH(2,5) = invx*0._RD
+            dH(2,6) = invx*0._RD
 
-            dH(3,1) = 0._RD
-            dH(3,2) = 0._RD
-            dH(3,3) = 0._RD
-            dH(3,4) = 0._RD
-            dH(3,5) = 0._RD
-            dH(3,6) = 0._RD
+            dH(3,1) = invx*0._RD
+            dH(3,2) = invx*0._RD
+            dH(3,3) = invx*0._RD
+            dH(3,4) = invx*0._RD
+            dH(3,5) = invx*0._RD
+            dH(3,6) = invx*0._RD
 
-            dH(4,1) = 0._RD
-            dH(4,2) = 0._RD
-            dH(4,3) = -U*dU
-            dH(4,4) = 0._RD
-            dH(4,5) = 0._RD
-            dH(4,6) = 0._RD
+            dH(4,1) = invx*0._RD
+            dH(4,2) = invx*0._RD
+            dH(4,3) = invx*(-U*dU)
+            dH(4,4) = invx*0._RD
+            dH(4,5) = invx*0._RD
+            dH(4,6) = invx*0._RD
 
-            dH(5,1) = 0._RD
-            dH(5,2) = 0._RD
-            dH(5,3) = 0._RD
-            dH(5,4) = 0._RD
-            dH(5,5) = 0._RD
-            dH(5,6) = 0._RD
+            dH(5,1) = invx*0._RD
+            dH(5,2) = invx*0._RD
+            dH(5,3) = invx*0._RD
+            dH(5,4) = invx*0._RD
+            dH(5,5) = invx*0._RD
+            dH(5,6) = invx*0._RD
 
-            dH(6,1) = 0._RD
-            dH(6,2) = 0._RD
-            dH(6,3) = 0._RD
-            dH(6,4) = 0._RD
-            dH(6,5) = 0._RD
-            dH(6,6) = 0._RD
+            dH(6,1) = invx*0._RD
+            dH(6,2) = invx*0._RD
+            dH(6,3) = invx*0._RD
+            dH(6,4) = invx*0._RD
+            dH(6,5) = invx*0._RD
+            dH(6,6) = invx*0._RD
 
          else
 
-            dH(1,1) = 0._RD
-            dH(1,2) = 0._RD
-            dH(1,3) = 0._RD
-            dH(1,4) = 0._RD
-            dH(1,5) = 0._RD
-            dH(1,6) = 0._RD
+            dH(1,1) = invx*0._RD
+            dH(1,2) = invx*0._RD
+            dH(1,3) = invx*0._RD
+            dH(1,4) = invx*0._RD
+            dH(1,5) = invx*0._RD
+            dH(1,6) = invx*0._RD
 
-            dH(2,1) = 0._RD
-            dH(2,2) = c_1*dc_1*omega_c**2
-            dH(2,3) = 0._RD
-            dH(2,4) = 0._RD
-            dH(2,5) = 0._RD
-            dH(2,6) = 0._RD
+            dH(2,1) = invx*0._RD
+            dH(2,2) = invx*c_1*dc_1*omega_c**2
+            dH(2,3) = invx*0._RD
+            dH(2,4) = invx*0._RD
+            dH(2,5) = invx*0._RD
+            dH(2,6) = invx*0._RD
 
-            dH(3,1) = 0._RD
-            dH(3,2) = 0._RD
-            dH(3,3) = 0._RD
-            dH(3,4) = 0._RD
-            dH(3,5) = 0._RD
-            dH(3,6) = 0._RD
+            dH(3,1) = invx*0._RD
+            dH(3,2) = invx*0._RD
+            dH(3,3) = invx*0._RD
+            dH(3,4) = invx*0._RD
+            dH(3,5) = invx*0._RD
+            dH(3,6) = invx*0._RD
 
-            dH(4,1) = 0._RD
-            dH(4,2) = 0._RD
-            dH(4,3) = -U*dU
-            dH(4,4) = 0._RD
-            dH(4,5) = 0._RD
-            dH(4,6) = 0._RD
+            dH(4,1) = invx*0._RD
+            dH(4,2) = invx*0._RD
+            dH(4,3) = invx*(-U*dU)
+            dH(4,4) = invx*0._RD
+            dH(4,5) = invx*0._RD
+            dH(4,6) = invx*0._RD
 
-            dH(5,1) = 0._RD
-            dH(5,2) = 0._RD
-            dH(5,3) = 0._RD
-            dH(5,4) = 0._RD
-            dH(5,5) = 0._RD
-            dH(5,6) = 0._RD
+            dH(5,1) = invx*0._RD
+            dH(5,2) = invx*0._RD
+            dH(5,3) = invx*0._RD
+            dH(5,4) = invx*0._RD
+            dH(5,5) = invx*0._RD
+            dH(5,6) = invx*0._RD
 
-            dH(6,1) = 0._RD
-            dH(6,2) = 0._RD
-            dH(6,3) = 0._RD
-            dH(6,4) = 0._RD
-            dH(6,5) = 0._RD
-            dH(6,6) = 0._RD
+            dH(6,1) = invx*0._RD
+            dH(6,2) = invx*0._RD
+            dH(6,3) = invx*0._RD
+            dH(6,4) = invx*0._RD
+            dH(6,5) = invx*0._RD
+            dH(6,6) = invx*0._RD
 
          end if
 
@@ -1025,58 +1032,61 @@ contains
       class(state_ct), intent(in)    :: st
       complex(RD)                    :: dH(this%n_e,this%n_e)
 
-      ! Evaluate the derivative x dH/dx of the LAGP-variables
+      real(RD) :: invx
+
+      ! Evaluate the derivative dH/dx of the LAGP-variables
       ! transformation matrix T
 
       ! Calculate coefficients
 
       associate ( &
          V_2 => this%V_2, &
-         dV_2 => this%dV_2)
+         dV_2 => this%dV_2, &
+         x => this%x)
 
          ! Set up the matrix
 
-         dH(1,1) = 0._RD
-         dH(1,2) = 0._RD
-         dH(1,3) = 0._RD
-         dH(1,4) = 0._RD
-         dH(1,5) = 0._RD
-         dH(1,6) = 0._RD
+         dH(1,1) = invx*0._RD
+         dH(1,2) = invx*0._RD
+         dH(1,3) = invx*0._RD
+         dH(1,4) = invx*0._RD
+         dH(1,5) = invx*0._RD
+         dH(1,6) = invx*0._RD
 
-         dH(2,1) = 0._RD
-         dH(2,2) = -dV_2/V_2
-         dH(2,3) = 0._RD
-         dH(2,4) = 0._RD
-         dH(2,5) = 0._RD
-         dH(2,6) = 0._RD
+         dH(2,1) = invx*0._RD
+         dH(2,2) = invx*(-dV_2/V_2)
+         dH(2,3) = invx*0._RD
+         dH(2,4) = invx*0._RD
+         dH(2,5) = invx*0._RD
+         dH(2,6) = invx*0._RD
 
-         dH(3,1) = 0._RD
-         dH(3,2) = 0._RD
-         dH(3,3) = 0._RD
-         dH(3,4) = 0._RD
-         dH(3,5) = 0._RD
-         dH(3,6) = 0._RD
+         dH(3,1) = invx*0._RD
+         dH(3,2) = invx*0._RD
+         dH(3,3) = invx*0._RD
+         dH(3,4) = invx*0._RD
+         dH(3,5) = invx*0._RD
+         dH(3,6) = invx*0._RD
 
-         dH(4,1) = 0._RD
-         dH(4,2) = 0._RD
-         dH(4,3) = 0._RD
-         dH(4,4) = 0._RD
-         dH(4,5) = 0._RD
-         dH(4,6) = 0._RD
+         dH(4,1) = invx*0._RD
+         dH(4,2) = invx*0._RD
+         dH(4,3) = invx*0._RD
+         dH(4,4) = invx*0._RD
+         dH(4,5) = invx*0._RD
+         dH(4,6) = invx*0._RD
 
-         dH(5,1) = 0._RD
-         dH(5,2) = 0._RD
-         dH(5,3) = 0._RD
-         dH(5,4) = 0._RD
-         dH(5,5) = 0._RD
-         dH(5,6) = 0._RD
+         dH(5,1) = invx*0._RD
+         dH(5,2) = invx*0._RD
+         dH(5,3) = invx*0._RD
+         dH(5,4) = invx*0._RD
+         dH(5,5) = invx*0._RD
+         dH(5,6) = invx*0._RD
 
-         dH(6,1) = 0._RD
-         dH(6,2) = 0._RD
-         dH(6,3) = 0._RD
-         dH(6,4) = 0._RD
-         dH(6,5) = 0._RD
-         dH(6,6) = 0._RD
+         dH(6,1) = invx*0._RD
+         dH(6,2) = invx*0._RD
+         dH(6,3) = invx*0._RD
+         dH(6,4) = invx*0._RD
+         dH(6,5) = invx*0._RD
+         dH(6,6) = invx*0._RD
 
       end associate
 
