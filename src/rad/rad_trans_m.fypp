@@ -565,7 +565,7 @@ contains
       real(RD)                       :: dH(this%n_e,this%n_e)
 
       real(RD) :: invx
-      
+
       ! Evaluate the derivative dH/dx of the LAGP-variables
       ! transformation matrix H
 
