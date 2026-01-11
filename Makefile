@@ -33,8 +33,8 @@ FPE ?= yes
 CRMATH ?= yes
 
 # Enable portable math (for bit-for-bit reproducibility; setting to
-# no may give a performance boost)
-PORTABLE ?= yes
+# yes may incur a small performance hit)
+PORTABLE ?= no
 
 # Use IEEE fortran features
 IEEE ?= yes

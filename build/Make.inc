@@ -161,8 +161,6 @@ endif
 
 ifeq ($(PORTABLE),yes)
    FFLAGS += -ffp-contract=off
-else
-   FFLAGS += -march=native
 endif
 
 # Rules
