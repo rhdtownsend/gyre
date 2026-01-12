@@ -570,8 +570,7 @@ contains
 
       ! Calculate the product of the elements of rx
 
-      prod_rx%f = 1._RD
-      prod_rx%e = 0
+      prod_rx = ONE_RT
 
       do i = 1,SIZE(rx)
 
@@ -600,8 +599,7 @@ contains
 
       ! Calculate the product of the elements of r
 
-      prod_rx%f = 1._RD
-      prod_rx%e = 0
+      prod_rx = ONE_RT
 
       do i = 1,SIZE(r)
 
