@@ -590,9 +590,6 @@ contains
       type(ext_ct)            :: prod_cx
 
       integer     :: i
-      complex(RD) :: f
-      complex(RD) :: g
-      integer     :: e
 
       ! Calculate the product of the elements of c
 
