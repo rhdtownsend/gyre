@@ -73,6 +73,8 @@ module nad_eqns_m
       real(RD)                 :: c_thk
       real(RD)                 :: c_eps
       real(RD)                 :: c_egv
+      real(RD)                 :: eps_rho
+      real(RD)                 :: eps_T
       real(RD)                 :: kap_rho
       real(RD)                 :: kap_T
       real(RD)                 :: Omega_rot
@@ -160,6 +162,11 @@ contains
       if (cx%angular_cache) then
          eq%lambda = cx%lambda(eq%Omega_rot, state_ct(0._RD))
          eq%l_i = cx%l_e(cx%Omega_rot_i, state_ct(0._RD))
+      end if
+
+      if (cx%epsilon_cache) then
+         eq%eps_rho = cx%eps_rho(state_ct(0._RD), pt)
+         eq%eps_T = cx%eps_T(state_ct(0._RD), pt)
       end if
 
       ! Other initializations
@@ -255,7 +262,8 @@ contains
          alpha_kat => this%cx%alpha_kat, &
          alpha_egv => this%cx%alpha_egv, &
          m => this%cx%m, &
-         angular_cache => this%cx%angular_cache)
+         angular_cache => this%cx%angular_cache, &
+         epsilon_cache => this%cx%epsilon_cache)
 
          omega_c = omega - m*Omega_rot
 
@@ -284,8 +292,13 @@ contains
             @:ABORT('invalid conv_scheme')
          end select
 
-         eps_rho = this%cx%eps_rho(st, pt)
-         eps_T = this%cx%eps_T(st, pt)
+         if (epsilon_cache) then
+            eps_rho = this%eps_rho
+            eps_T = this%eps_T
+         else
+            eps_rho = this%cx%eps_rho(st, pt)
+            eps_T = this%cx%eps_T(st, pt)
+         end if
 
          c_eps_ad = c_eps*(nabla_ad*eps_T + eps_rho/Gamma_1)
          c_eps_S = c_eps*(eps_T - ups_T*eps_rho)
