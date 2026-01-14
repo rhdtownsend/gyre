@@ -38,7 +38,6 @@ module sad_bvp_m
    use point_m
    use sad_bound_m
    use sad_eqns_m
-   use sad_match_m
    use sad_trans_m
    use state_m
    use util_m
@@ -112,27 +111,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, gr%n-1
-
-         associate( &
-            pt_a => gr%pt(j), &
-            pt_b => gr%pt(j+1))
-
-            if (pt_a%s == pt_b%s) then
-
-               ! Regular subinterval; use difference equations
-
-               allocate(de(j)%df, SOURCE=diff_rt(eqns_factory_, pt_a, pt_b, nm_p))
-
-            else
-
-               ! Segment boundary; use match conditions
-
-               allocate(de(j)%df, SOURCE=sad_match_t(cx, pt_a, pt_b, md_p, os_p))
-
-            end if
-
-         end associate
-
+         allocate(de(j)%df, SOURCE=diff_rt(eqns_factory_, gr%pt(j), gr%pt(j+1), nm_p))
       end do
 
       ! Initialize the bvp_t

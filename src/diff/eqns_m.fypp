@@ -31,6 +31,7 @@ module eqns_m
          integer :: n_e
       contains
          procedure(eval_A_${S}$_), deferred  :: eval_A
+         procedure(eval_C_${S}$_), deferred  :: eval_C
       end type eqns_${S}$
 
       ! Interfaces
@@ -46,6 +47,16 @@ module eqns_m
             class(state_${S}$), intent(in) :: st
             ${T}$, intent(out)             :: A(:,:)
          end subroutine eval_A_${S}$_
+
+         subroutine eval_C_${S}$_(this, st, C)
+            use forum_m, only: RD
+            use state_m
+            import eqns_${S}$
+            implicit none (type, external)
+            class(eqns_${S}$), intent(in)  :: this
+            class(state_${S}$), intent(in) :: st
+            ${T}$, intent(out)             :: C(:,:)
+         end subroutine eval_C_${S}$_
 
       end interface
 

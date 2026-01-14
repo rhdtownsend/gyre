@@ -1,0 +1,127 @@
+! Module  : match_diff_m
+! Purpose : difference equations (match conditions)
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module match_diff_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use diff_m
+   use eqns_m
+   use ext_m
+   use math_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, extends(diff_${S}$) :: match_diff_${S}$
+         private
+         class(eqns_${S}$), allocatable   :: eq(:)
+         real(RD)                         :: dx
+      contains
+         private
+         procedure, public :: build => build_${S}$_
+      end type match_diff_${S}$
+
+      ! Interfaces
+
+      interface match_diff_${S}$
+         module procedure match_diff_${S}$_
+      end interface match_diff_${S}$
+
+      ! Access specifiers
+
+      public :: match_diff_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function match_diff_${S}$_(eqns_factory, pt_a, pt_b) result(df)
+
+         interface
+            subroutine eqns_factory(pt, eq)
+               use point_m
+               use eqns_m
+               implicit none (type, external)
+               type(point_t), intent(in)                   :: pt(:)
+               class(eqns_${S}$), allocatable, intent(out) :: eq(:)
+            end subroutine eqns_factory
+         end interface
+         type(point_t), intent(in) :: pt_a
+         type(point_t), intent(in) :: pt_b
+         type(match_diff_${S}$)    :: df
+
+         @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
+
+         ! Construct the match_diff type
+
+         call eqns_factory([pt_a,pt_b], df%eq)
+
+         df%n_e = df%eq(1)%n_e
+         @:ASSERT_DEBUG(ALL(df%eq%n_e == df%n_e))
+
+         ! Finish
+
+         return
+
+      end function match_diff_${S}$_
+
+      !****
+
+      subroutine build_${S}$_(this, st, E_l, E_r, scl)
+
+         class(match_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)      :: st
+         ${T}$, intent(out)                  :: E_l(:,:)
+         ${T}$, intent(out)                  :: E_r(:,:)
+         type(ext_${S}$), intent(out)        :: scl
+
+         ! Build the difference equations
+
+         call this%eq(1)%eval_C(st, E_l)
+         call this%eq(2)%eval_C(st, E_r)
+
+         E_l = -E_l
+
+         scl = ONE_${S}$
+
+         ! Finish
+
+      end subroutine build_${S}$_
+
+   #:endfor
+
+end module match_diff_m

@@ -76,8 +76,9 @@ test_gyre_mesa_SRCS = test_gyre_mesa.fypp
 test_gyre_mesa_USES = $(libgyre_mesa_SRCS) $(libgyre_SRCS)
 test_gyre_mesa_LIBS = libgyre_mesa libgyre
 
-libgyre_SRCS = adhoc_angular_m.fypp ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp	\
-   ad_eqns_m.fypp ad_match_m.fypp ad_trans_m.fypp amdl_file_m.fypp			\
+libgyre_SRCS = adhoc_angular_m.fypp							\
+   ad_bound_m.fypp ad_bvp_m.fypp  ad_eqns_m.fypp ad_trans_m.fypp 			\
+   amdl_file_m.fypp									\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp anapoly_5_model_m.fypp			\
    anapoly_5_1_model_m.fypp angular_m.fypp angular_factory_m.fypp atmos_m.fypp		\
    b3_file_m.fypp band_sysmtx_m.fypp blas_lapack_m.fypp					\
@@ -85,7 +86,7 @@ libgyre_SRCS = adhoc_angular_m.fypp ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp
    cheb_fit_m.fypp colloc_diff_m.fypp constants_m.fypp context_m.fypp			\
    contour_map_m.fypp contour_path_m.fypp contour_search_m.fypp				\
    cubic_interp_m.fypp deriv_m.fypp detail_m.fypp diff_factory_m.fypp			\
-   diff_m.fypp discrim_m.fypp eqns_m.fypp evol_model_m.fypp				\
+   diff_m.fypp diff_element_m.fypp discrim_m.fypp eqns_m.fypp evol_model_m.fypp		\
    ext_complex_m.fypp ext_m.fypp ext_real_m.fypp famdl_file_m.fypp			\
    fgong_file_m.fypp freq_context_m.fypp freq_m.fypp gyre_m.fypp			\
    grid_m.fypp grid_par_m.fypp grid_refine_m.fypp					\
@@ -93,21 +94,19 @@ libgyre_SRCS = adhoc_angular_m.fypp ad_bound_m.fypp ad_bvp_m.fypp ad_diff_m.fypp
    grid_weights_m.fypp gsm_file_m.fypp hdf_writer_m.fypp				\
    hom_model_m.fypp interp_m.fypp integ_m.fypp linalg_m.fypp				\
    linear_interp_m.fypp losc_file_m.fypp math_m.fypp					\
-   magnus_diff_m.fypp mesa_file_m.fypp minim_m.fypp					\
+   magnus_diff_m.fypp match_diff_m.fypp mesa_file_m.fypp minim_m.fypp			\
    minmod_search_m.fypp mirk_diff_m.fypp mode_m.fypp mode_par_m.fypp			\
    model_factory_m.fypp model_m.fypp model_par_m.fypp					\
    model_util_m.fypp nad_bound_m.fypp nad_bvp_m.fypp nad_diff_m.fypp			\
-   nad_eqns_m.fypp nad_match_m.fypp nad_trans_m.fypp					\
+   nad_eqns_m.fypp nad_trans_m.fypp							\
    num_par_m.fypp orbit_par_m.fypp osc_file_m.fypp osc_par_m.fypp			\
    out_par_m.fypp out_util_m.fypp parfait_file_m.fypp					\
    parfait_model_m.fypp parfaitd_file_m.fypp parfaitd_model_m.fypp			\
    pblock_sysmtx_m.fypp   point_m.fypp poly_file_m.fypp poly_model_m.fypp		\
    prox_search_m.fypp qad_eval_m.fypp 							\
-   rad_bound_m.fypp rad_bvp_m.fypp rad_diff_m.fypp rad_eqns_m.fypp 			\
-   rad_match_m.fypp rad_trans_m.fypp resp_m.fypp					\
-   root_m.fypp rot_par_m.fypp rowpp_sysmtx_m.fypp 					\
-   sad_bound_m.fypp sad_bvp_m.fypp sad_diff_m.fypp					\
-   sad_eqns_m.fypp sad_match_m.fypp sad_trans_m.fypp					\
+   rad_bound_m.fypp rad_bvp_m.fypp rad_eqns_m.fypp rad_trans_m.fypp			\
+   resp_m.fypp root_m.fypp rot_par_m.fypp rowpp_sysmtx_m.fypp 				\
+   sad_bound_m.fypp sad_bvp_m.fypp sad_eqns_m.fypp sad_trans_m.fypp			\
    sblock_sysmtx_m.fypp scan_m.fypp scan_par_m.fypp search_m.fypp special_m.fypp	\
    sph_angular_m.fypp state_m.fypp status_m.fypp					\
    string_m.fypp summary_m.fypp sysmtx_factory_m.fypp sysmtx_m.fypp			\
@@ -123,11 +122,11 @@ libgyre_mesa_LIBS = libgyre
 
 # Build flags
 
-FFLAGS = -I$(FORUM_INC_DIR)
+FFLAGS = -g -I$(FORUM_INC_DIR)
 
 FPPFLAGS = -I$(FORUM_INC_DIR)
 
-LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB_DIR) -lforum
+LDFLAGS = -g `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB_DIR) -lforum
 
 # Include standard rules
 

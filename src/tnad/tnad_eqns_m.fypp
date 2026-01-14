@@ -58,6 +58,7 @@ module tnad_eqns_m
    contains
       private
       procedure, public :: eval_A
+      procedure, public :: eval_C
       procedure, public :: y_trb
       procedure, public :: F_trb
    end type tnad_eqns_t
@@ -146,7 +147,7 @@ contains
       @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
 
-      ! Evaluate the RHS matrix
+      ! Evaluate the Jacobian matrix
 
       associate ( &
          V_g => this%V_g, &
@@ -200,6 +201,29 @@ contains
       return
 
    end subroutine eval_A
+
+   !****
+
+   !****
+
+   subroutine eval_C(this, st, C)
+
+      class(tnad_eqns_t), intent(in) :: this
+      class(state_ct), intent(in)    :: st
+      complex(RD), intent(out)       :: C(:,:)
+
+      @:CHECK_BOUNDS(SIZE(C, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
+
+      ! Evaluate the match matrix
+
+      call this%eq%eval_C(st, C)
+
+      ! Finish
+
+      return
+
+   end subroutine eval_C
 
    !****
 

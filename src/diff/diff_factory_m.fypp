@@ -27,6 +27,7 @@ module diff_factory_m
    use diff_m
    use eqns_m
    use magnus_diff_m
+   use match_diff_m
    use mirk_diff_m
    use num_par_m
    use point_m
@@ -78,26 +79,38 @@ contains
 
          ! Construct the diff type
 
-         select case (nm_p%diff_scheme)
-         case ('MAGNUS_GL2')
-            allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL2'))
-         case ('MAGNUS_GL4')
-            allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL4'))
-         case ('MAGNUS_GL6')
-            allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL6'))
-         case ('COLLOC_GL2')
-            allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL2'))
-         case ('COLLOC_GL4')
-            allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL4'))
-         case ('COLLOC_GL6')
-            allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL6'))
-         case ('TRAPZ')
-            allocate(df, SOURCE=trapz_diff_${S}$(eqns_factory, pt_a, pt_b))
-         case ('MIRK')
-            allocate(df, SOURCE=mirk_diff_${S}$(eqns_factory, pt_a, pt_b))
-         case default
-            @:ABORT('invalid diff_scheme')
-         end select
+         if (pt_a%s == pt_b%s) then
+
+            ! Regular subinterval
+
+            select case (nm_p%diff_scheme)
+            case ('MAGNUS_GL2')
+               allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL2'))
+            case ('MAGNUS_GL4')
+               allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL4'))
+            case ('MAGNUS_GL6')
+               allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL6'))
+            case ('COLLOC_GL2')
+               allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL2'))
+            case ('COLLOC_GL4')
+               allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL4'))
+            case ('COLLOC_GL6')
+               allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL6'))
+            case ('TRAPZ')
+               allocate(df, SOURCE=trapz_diff_${S}$(eqns_factory, pt_a, pt_b))
+            case ('MIRK')
+               allocate(df, SOURCE=mirk_diff_${S}$(eqns_factory, pt_a, pt_b))
+            case default
+               @:ABORT('invalid diff_scheme')
+            end select
+
+         else
+
+            ! Segment boundary
+
+            allocate(df, SOURCE=match_diff_${S}$(eqns_factory, pt_a, pt_b))
+
+         end if
 
          ! Finish
 

@@ -53,6 +53,7 @@ module sad_eqns_m
    contains
       private
       procedure, public :: eval_A
+      procedure, public :: eval_C
    end type sad_eqns_t
 
    ! Interfaces
@@ -126,7 +127,7 @@ contains
       @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
 
-      ! Evaluate the RHS matrix
+      ! Evaluate the Jacobian matrix
 
       associate ( &
          V_g => this%V_g, &
@@ -158,5 +159,39 @@ contains
       return
 
    end subroutine eval_A
+
+   !****
+
+   subroutine eval_C(this, st, C)
+
+      class(sad_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)   :: st
+      real(RD), intent(out)         :: C(:,:)
+
+      @:CHECK_BOUNDS(SIZE(C, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
+
+      ! Evaluate the match matrix
+
+      associate ( &
+         U => this%U)
+
+         C(1,1) = 1._RD
+         C(1,2) = 0._RD
+
+         C(2,1) = -U
+         C(2,2) = 1._RD
+
+         ! Apply the variables transformation
+
+         call this%tr%trans_cond(C, st)
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval_C
 
 end module sad_eqns_m

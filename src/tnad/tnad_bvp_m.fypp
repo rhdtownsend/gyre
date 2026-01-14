@@ -32,7 +32,6 @@ module tnad_bvp_m
    use mode_par_m
    use nad_bound_m
    use nad_eqns_m
-   use nad_match_m
    use nad_trans_m
    use num_par_m
    use osc_par_m
@@ -108,27 +107,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, gr%n-1
-
-         associate( &
-            pt_a => gr%pt(j), &
-            pt_b => gr%pt(j+1))
-
-            if (pt_a%s == pt_b%s) then
-
-               ! Regular subinterval; use difference equations
-
-               allocate(de(j)%df, SOURCE=tnad_diff_t(cx, pt_a, pt_b, md_p, nm_p, os_p))
-
-            else
-
-               ! Segment boundary; use match conditions
-
-               allocate(de(j)%df, SOURCE=nad_match_t(cx, pt_a, pt_b, md_p, os_p))
-
-            end if
-
-         end associate
-
+         allocate(de(j)%df, SOURCE=tnad_diff_t(cx, gr%pt(j), gr%pt(j+1), md_p, nm_p, os_p))
       end do
 
       ! Initialize the bvp_t
