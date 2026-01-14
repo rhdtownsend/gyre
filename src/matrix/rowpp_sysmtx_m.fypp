@@ -257,11 +257,9 @@ contains
                      if (i_piv /= j) then
 
                         do s = 1, 2*n_e
-
                            alpha = M(i_piv,s)
                            M(i_piv,s) = M(j,s)
                            M(j,s) = alpha
-
                         end do
 
                         scl = rscl(i_piv)
@@ -280,7 +278,7 @@ contains
 
                         alpha = M(i,j)/M(j,j)
 
-                        do s = j+1, 2*n_e
+                        do concurrent(s = j+1:2*n_e)
                            M(i,s) = M(i,s) - alpha*M(j,s)
                         end do
 
@@ -306,7 +304,7 @@ contains
                ! Next, build and factorize the final block
 
                call bd%build_o(st, B_o)
-               
+
                R(:n_i,:) = M(n_e+1:,n_e+1:)
                R(n_i+1:,:) = B_o
 
@@ -349,11 +347,9 @@ contains
                   if (i_piv /= j) then
 
                      do s = 1, n_e
-
                         alpha = R(i_piv,s)
                         R(i_piv,s) = R(j,s)
                         R(j,s) = alpha
-
                      end do
 
                      scl = rscl_R(i_piv)
@@ -375,7 +371,8 @@ contains
                   do i = j+1, n_e
 
                      alpha = R(i,j)/R(j,j)
-                     do s = 1, n_e
+
+                     do concurrent(s = 1:n_e)
                         R(i,s) = R(i,s) - alpha*R(j,s)
                      end do
 
