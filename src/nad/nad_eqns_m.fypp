@@ -282,28 +282,28 @@ contains
          A(1,3) = invx*alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
          A(1,4) = invx*alpha_grv*(0._RD)
          A(1,5) = invx*ups_T
-         A(1,6) = invx*0._RD
+         A(1,6) = 0._RD
 
          A(2,1) = invx*(c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._RD, As > 0._RD))
          A(2,2) = invx*(As - U + 3._RD - l_i)
          A(2,3) = invx*alpha_grv*(0._RD)
          A(2,4) = invx*alpha_grv*(-1._RD)
          A(2,5) = invx*ups_T
-         A(2,6) = invx*0._RD
+         A(2,6) = 0._RD
 
-         A(3,1) = invx*alpha_grv*(0._RD)
-         A(3,2) = invx*alpha_grv*(0._RD)
+         A(3,1) = 0._RD
+         A(3,2) = 0._RD
          A(3,3) = invx*alpha_grv*(3._RD - U - l_i)
          A(3,4) = invx*alpha_grv*(1._RD)
-         A(3,5) = invx*alpha_grv*(0._RD)
-         A(3,6) = invx*alpha_grv*(0._RD)
+         A(3,5) = 0._RD
+         A(3,6) = 0._RD
 
          A(4,1) = invx*alpha_grv*(U*As)
          A(4,2) = invx*alpha_grv*(U*V_g)
          A(4,3) = invx*alpha_grv*(lambda)
          A(4,4) = invx*alpha_grv*(-U - l_i + 2._RD)
          A(4,5) = invx*alpha_grv*(-U*ups_T)
-         A(4,6) = invx*alpha_grv*(0._RD)
+         A(4,6) = 0._RD
 
          A(5,1) = invx*V*(nabla_ad*(U - c_1*alpha_omg*omega_c**2) - 4._RD*(nabla_ad - nabla) + c_kap_ad*V*nabla + c_dif)/f_rh
          A(5,2) = invx*V*(lambda/(c_1*alpha_omg*omega_c**2)*(nabla_ad - nabla) - c_kap_ad*V*nabla - c_dif)/f_rh

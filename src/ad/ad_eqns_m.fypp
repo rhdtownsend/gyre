@@ -166,11 +166,11 @@ contains
 
          A(2,1) = invx*(c_1*alpha_omg*omega_c**2 - As*MERGE(MERGE(alpha_pi, alpha_gam, x<x_atm), 1._RD, As > 0._RD))
          A(2,2) = invx*(As - U + 3._RD - l_i)
-         A(2,3) = invx*alpha_grv*(0._RD)
+         A(2,3) = 0._RD
          A(2,4) = invx*alpha_grv*(-1._RD)
 
-         A(3,1) = invx*alpha_grv*(0._RD)
-         A(3,2) = invx*alpha_grv*(0._RD)
+         A(3,1) = 0._RD
+         A(3,2) = 0._RD
          A(3,3) = invx*alpha_grv*(3._RD - U - l_i)
          A(3,4) = invx*alpha_grv*(1._RD)
 
