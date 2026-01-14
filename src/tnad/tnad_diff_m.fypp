@@ -33,7 +33,6 @@ module tnad_diff_m
    use mode_par_m
    use model_m
    use nad_eqns_m
-   use nad_match_m
    use num_par_m
    use osc_par_m
    use point_m
@@ -93,40 +92,28 @@ contains
 
       df%cx => cx
 
-      if (pt_a%s == pt_b%s) then
+      select case (nm_p%diff_scheme)
+      case ('TRAPZ')
+         allocate(df%df, SOURCE=trapz_diff_ct(eqns_factory_, pt_a, pt_b, &
+            [0.5_RD,0.5_RD,0.5_RD,0.5_RD,0._RD,1._RD]))
+      case default
+         allocate(df%df, SOURCE=diff_ct(eqns_factory_, pt_a, pt_b, nm_p))
+      end select
 
-         ! Regular subinterval; use difference equations
+      ! Set up midpoint eqns_t (used for regularization of Magnus
+      ! schemes)
 
-         select case (nm_p%diff_scheme)
-         case ('TRAPZ')
-            allocate(df%df, SOURCE=trapz_diff_ct(eqns_factory_, pt_a, pt_b, &
-               [0.5_RD,0.5_RD,0.5_RD,0.5_RD,0._RD,1._RD]))
-         case default
-            allocate(df%df, SOURCE=diff_ct(eqns_factory_, pt_a, pt_b, nm_p))
-         end select
+      df%dx = pt_b%x - pt_a%x
 
-         ! Set up midpoint eqns_t (used for regularization of Magnus
-         ! schemes)
+      pt_m%s = pt_a%s
+      pt_m%x = pt_a%x + 0.5_RD*df%dx
 
-         df%dx = pt_b%x - pt_a%x
+      df%eq = nad_eqns_t(cx, pt_m, md_p, os_p)
 
-         pt_m%s = pt_a%s
-         pt_m%x = pt_a%x + 0.5_RD*df%dx
+      ! Set up midpoint Omega_rot (used for regularization of colloc
+      ! schemes)
 
-         df%eq = nad_eqns_t(cx, pt_m, md_p, os_p)
-
-         ! Set up midpoint Omega_rot (used for regularization of colloc
-         ! schemes)
-
-         df%Omega_rot = cx%Omega_rot(pt_m)
-
-      else
-
-         ! Segment boundary; use match conditions
-
-         allocate(df%df, SOURCE=nad_match_t(cx, pt_a, pt_b, md_p, os_p))
-
-      endif
+      df%Omega_rot = cx%Omega_rot(pt_m)
 
       df%n_e = df%df%n_e
 

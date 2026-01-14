@@ -1,0 +1,50 @@
+! Module  : diff_element_m
+! Purpose : array element storage for diff_t
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module diff_element_m
+
+   ! Uses
+
+   use diff_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type :: diff_element_${S}$
+         class(diff_${S}$), allocatable :: df
+      end type diff_element_${S}$
+
+      ! Interfaces
+
+      ! Access specifiers
+
+      public :: diff_element_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+end module diff_element_m

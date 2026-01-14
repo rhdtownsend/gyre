@@ -25,6 +25,9 @@ module rad_bvp_m
 
    use bvp_m
    use context_m
+   use diff_element_m
+   use diff_factory_m
+   use eqns_m
    use ext_m
    use grid_m
    use integ_m
@@ -35,7 +38,8 @@ module rad_bvp_m
    use point_m
    use qad_eval_m
    use rad_bound_m
-   use rad_diff_m
+   use rad_eqns_m
+   use rad_match_m
    use rad_trans_m
    use state_m
    use wave_m
@@ -90,12 +94,10 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(rad_bvp_t)                      :: bp
 
-      type(point_t)                 :: pt_i
-      type(point_t)                 :: pt_o
-      type(rad_bound_t)             :: bd
-      integer                       :: j
-      type(rad_diff_t), allocatable :: df(:)
-      type(osc_par_t)               :: qad_os_p
+      type(rad_bound_t)                  :: bd
+      integer                            :: j
+      type(diff_element_rt), allocatable :: de(:)
+      type(osc_par_t)                    :: qad_os_p
 
       ! Construct the rad_bvp_t
 
@@ -103,25 +105,42 @@ contains
          @:WARN('alpha_grv is ignored in 2nd-order radial equations')
       endif
 
-      pt_i = gr%pt_i()
-      pt_o = gr%pt_o()
-
       ! Initialize the boundary conditions
 
       bd = rad_bound_t(cx, md_p, os_p)
 
       ! Initialize the difference equations
 
-      allocate(df(gr%n-1))
+      allocate(de(gr%n-1))
 
       !$OMP PARALLEL DO
       do j = 1, gr%n-1
-         df(j) = rad_diff_t(cx, gr%pt(j), gr%pt(j+1), md_p, nm_p, os_p)
-      end do
 
+         associate( &
+            pt_a => gr%pt(j), &
+            pt_b => gr%pt(j+1))
+
+            if (pt_a%s == pt_b%s) then
+
+               ! Regular subinterval; use difference equations
+
+               allocate(de(j)%df, SOURCE=diff_rt(eqns_factory_, pt_a, pt_b, nm_p))
+
+            else
+
+               ! Segment boundary; use match conditions
+
+               allocate(de(j)%df, SOURCE=rad_match_t(cx, pt_a, pt_b, md_p, os_p))
+
+            end if
+
+         end associate
+
+      end do
+      
       ! Initialize the bvp_t
 
-      bp%bvp_rt = bvp_rt(bd, df, nm_p)
+      bp%bvp_rt = bvp_rt(bd, de, nm_p)
 
       ! Other initializations
 
@@ -148,6 +167,31 @@ contains
       ! Finish
 
       return
+
+   contains
+
+      subroutine eqns_factory_(pt, eq)
+
+         type(point_t), intent(in)                :: pt(:)
+         class(eqns_rt), allocatable, intent(out) :: eq(:)
+
+         type(rad_eqns_t), allocatable :: eq_(:)
+         integer                       :: n
+         integer                       :: i
+
+         n = SIZE(pt)
+
+         allocate(eq_(n))
+
+         do i = 1, n
+            eq_(i) = rad_eqns_t(cx, pt(i), md_p, os_p)
+         end do
+
+         eq = eq_
+
+         return
+
+      end subroutine eqns_factory_
 
    end function rad_bvp_t_
 

@@ -43,83 +43,50 @@ module sysmtx_m
 
       abstract interface
 
-         subroutine eval_det_${S}$_(this, eval_B, eval_E, det)
+         subroutine eval_det_${S}$_(this, st, bd, de, det)
             use forum_m, only: RD
+            use state_m
+            use bound_m
+            use diff_element_m
             use ext_m
             import sysmtx_${S}$
             implicit none (type, external)
-            class(sysmtx_${S}$), intent(inout) :: this
-            interface
-               subroutine eval_B(B_i, B_o)
-                  use forum_m, only: RD
-                  implicit none (type, external)
-                  ${T}$, intent(out) :: B_i(:,:)
-                  ${T}$, intent(out) :: B_o(:,:)
-               end subroutine eval_B
-               subroutine eval_E(k, E_l, E_r, scl)
-                  use forum_m, only: RD
-                  use ext_m
-                  implicit none (type, external)
-                  integer, intent(in)          :: k
-                  ${T}$, intent(out)           :: E_l(:,:)
-                  ${T}$, intent(out)           :: E_r(:,:)
-                  type(ext_${S}$), intent(out) :: scl
-               end subroutine eval_E
-            end interface
-            type(ext_${S}$), intent(out) :: det
+            class(sysmtx_${S}$), intent(inout)    :: this
+            class(state_${S}$), intent(in)        :: st
+            class(bound_${S}$), intent(in)        :: bd
+            class(diff_element_${S}$), intent(in) :: de(:)
+            type(ext_${S}$), intent(out)          :: det
          end subroutine eval_det_${S}$_
 
-         subroutine solve_hom_${S}$_(this, eval_B, eval_E, u)
+         subroutine solve_hom_${S}$_(this, st, bd, de, u)
             use forum_m, only: RD
+            use state_m
+            use bound_m
+            use diff_element_m
             use ext_m
             import sysmtx_${S}$
             implicit none (type, external)
-            class(sysmtx_${S}$), intent(inout) :: this
-            interface
-               subroutine eval_B(B_i, B_o)
-                  use forum_m, only: RD
-                  implicit none (type, external)
-                  ${T}$, intent(out) :: B_i(:,:)
-                  ${T}$, intent(out) :: B_o(:,:)
-               end subroutine eval_B
-               subroutine eval_E(k, E_l, E_r, scl)
-                  use forum_m, only: RD
-                  use ext_m
-                  implicit none (type, external)
-                  integer, intent(in)          :: k
-                  ${T}$, intent(out)           :: E_l(:,:)
-                  ${T}$, intent(out)           :: E_r(:,:)
-                  type(ext_${S}$), intent(out) :: scl
-               end subroutine eval_E
-            end interface
-            ${T}$, intent(out) :: u(:)
+            class(sysmtx_${S}$), intent(inout)    :: this
+            class(state_${S}$), intent(in)        :: st
+            class(bound_${S}$), intent(in)        :: bd
+            class(diff_element_${S}$), intent(in) :: de(:)
+            ${T}$, intent(out)                    :: u(:)
          end subroutine solve_hom_${S}$_
 
-         subroutine solve_inhom_${S}$_(this, eval_B, eval_E, v, u)
+         subroutine solve_inhom_${S}$_(this, st, bd, de, v, u)
             use forum_m, only: RD
+            use state_m
+            use bound_m
+            use diff_element_m
             use ext_m
             import sysmtx_${S}$
             implicit none (type, external)
-            class(sysmtx_${S}$), intent(inout) :: this
-            interface
-               subroutine eval_B(B_i, B_o)
-                  use forum_m, only: RD
-                  implicit none (type, external)
-                  ${T}$, intent(out) :: B_i(:,:)
-                  ${T}$, intent(out) :: B_o(:,:)
-               end subroutine eval_B
-               subroutine eval_E(k, E_l, E_r, scl)
-                  use forum_m, only: RD
-                  use ext_m
-                  implicit none (type, external)
-                  integer, intent(in)          :: k
-                  ${T}$, intent(out)           :: E_l(:,:)
-                  ${T}$, intent(out)           :: E_r(:,:)
-                  type(ext_${S}$), intent(out) :: scl
-               end subroutine eval_E
-            end interface
-            ${T}$, intent(in)  :: v(:)
-            ${T}$, intent(out) :: u(:)
+            class(sysmtx_${S}$), intent(inout)    :: this
+            class(state_${S}$), intent(in)        :: st
+            class(bound_${S}$), intent(in)        :: bd
+            class(diff_element_${S}$), intent(in) :: de(:)
+            ${T}$, intent(in)                     :: v(:)
+            ${T}$, intent(out)                    :: u(:)
          end subroutine solve_inhom_${S}$_
 
          subroutine dump_${S}$_(this, hi)

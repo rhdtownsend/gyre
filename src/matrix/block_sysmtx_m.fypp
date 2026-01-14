@@ -25,9 +25,12 @@ module block_sysmtx_m
    use forum_m, only: RD, hdf5io_t
 
    use blas_lapack_m
+   use bound_m
+   use diff_element_m
    use ext_m
    use linalg_m
    use math_m
+   use state_m
    use sysmtx_m
 
    use ISO_FORTRAN_ENV
@@ -115,26 +118,12 @@ contains
 
       !****
 
-      subroutine build_and_factor_orig_${S}$_(this, eval_B, eval_E)
+      subroutine build_and_factor_orig_${S}$_(this, st, bd, de)
 
          class(block_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
+         class(state_${S}$), intent(in)           :: st
+         class(bound_${S}$), intent(in)           :: bd
+         class(diff_element_${S}$), intent(in)    :: de(:)
 
          ${T}$, parameter :: ONE = 1._RD
 
@@ -157,12 +146,13 @@ contains
             ! Build the boundary blocks, and row-scale to unity
 
             !$OMP SINGLE
-            call eval_B(this%B_i, this%B_o)
+            call bd%build_i(st, this%B_i)
             do i = 1, n_i
                scl = MAXVAL(abs(this%B_i(i,:)))
                this%scl_i(i) = scl
                this%B_i(i,:) = this%B_i(i,:)/scl
             end do
+            call bd%build_o(st, this%B_o)
             do i = 1, n_o
                scl = MAXVAL(abs(this%B_o(i,:)))
                this%scl_o(i) = scl
@@ -193,12 +183,12 @@ contains
 
                   ! Set up matrices (see expressions following
                   ! eqn. 2.5 of Wright 1994). On the first pass
-                  ! through, E_l and E_r are evaluated using eval_E,
-                  ! and then row-scaled to unity
+                  ! through, E_l and E_r are evaluated and then
+                  ! row-scaled to unity
 
                   if (l == 1) then
 
-                     call eval_E(k, this%E_l(:,:,k), this%E_r(:,:,k), this%scl(k))
+                     call de(k)%df%build(st, this%E_l(:,:,k), this%E_r(:,:,k), this%scl(k))
                      do i = 1, n_e
                         scl = MAX(MAXVAL(abs(this%E_l(i,:,k))), MAXVAL(abs(this%E_r(i,:,k))))
                         this%E_l(i,:,k) = this%E_l(i,:,k)/scl
@@ -206,7 +196,7 @@ contains
                         this%scl(k) = this%scl(k)*scl
                      end do
 
-                     call eval_E(k+1, this%E_l(:,:,k+1), this%E_r(:,:,k+1), this%scl(k+1))
+                     call de(k+1)%df%build(st, this%E_l(:,:,k+1), this%E_r(:,:,k+1), this%scl(k+1))
                      do i = 1, n_e
                         scl = MAX(MAXVAL(abs(this%E_l(i,:,k+1))), MAXVAL(abs(this%E_r(i,:,k+1))))
                         this%E_l(i,:,k+1) = this%E_l(i,:,k+1)/scl
@@ -275,7 +265,7 @@ contains
 
                !$OMP SINGLE
                if (l == 1 .AND. MOD(n, 2) /= 0) then
-                  call eval_E(n, this%E_l(:,:,n), this%E_r(:,:,n), this%scl(n))
+                  call de(n)%df%build(st, this%E_l(:,:,n), this%E_r(:,:,n), this%scl(n))
                   do i = 1, n_e
                      scl = MAX(MAXVAL(abs(this%E_l(i,:,n))), MAXVAL(abs(this%E_r(i,:,n))))
                      this%E_l(i,:,n) = this%E_l(i,:,n)/scl
@@ -303,26 +293,12 @@ contains
 
       !****
 
-      subroutine build_and_factor_alt_${S}$_(this, eval_B, eval_E)
+      subroutine build_and_factor_alt_${S}$_(this, st, bd, de)
 
          class(block_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
+         class(state_${S}$), intent(in)           :: st
+         class(bound_${S}$), intent(in)           :: bd
+         class(diff_element_${S}$), intent(in)    :: de(:)
 
          ${T}$, parameter :: ONE = 1._RD
 
@@ -344,12 +320,13 @@ contains
             ! Build the boundary blocks, and row-scale to unity
 
             !$OMP SINGLE
-            call eval_B(this%B_i, this%B_o)
+            call bd%build_i(st, this%B_i)
             do i = 1, n_i
                scl = MAXVAL(abs(this%B_i(i,:)))
                this%B_i(i,:) = this%B_i(i,:)/scl
                this%scl_i(i) = this%scl_i(i)*scl
             end do
+            call bd%build_o(st, this%B_o)
             do i = 1, n_o
                scl = MAXVAL(abs(this%B_o(i,:)))
                this%B_o(i,:) = this%B_o(i,:)/scl
@@ -380,12 +357,12 @@ contains
 
                   ! Set up matrices (see expressions following
                   ! eqn. 2.5 of Wright 1994). On the first pass
-                  ! through, E_l and E_r are evaluated using eval_E,
-                  ! and then row-scaled to unity
+                  ! through, E_l and E_r are evaluated and then
+                  ! row-scaled to unity
 
                   if (l == 1) then
 
-                     call eval_E(k, this%E_l(:,:,k), this%E_r(:,:,k), this%scl(k))
+                     call de(k)%df%build(st, this%E_l(:,:,k), this%E_r(:,:,k), this%scl(k))
                      do i = 1, n_e
                         scl = MAX(MAXVAL(abs(this%E_l(i,:,k))), MAXVAL(abs(this%E_r(i,:,k))))
                         this%E_l(i,:,k) = this%E_l(i,:,k)/scl
@@ -393,7 +370,7 @@ contains
                         this%scl(k) = this%scl(k)*scl
                      end do
 
-                     call eval_E(k+1, this%E_l(:,:,k+1), this%E_r(:,:,k+1), this%scl(k+1))
+                     call de(k+1)%df%build(st, this%E_l(:,:,k+1), this%E_r(:,:,k+1), this%scl(k+1))
                      do i = 1, n_e
                         scl = MAX(MAXVAL(abs(this%E_l(i,:,k+1))), MAXVAL(abs(this%E_r(i,:,k+1))))
                         this%E_l(i,:,k+1) = this%E_l(i,:,k+1)/scl
@@ -451,7 +428,7 @@ contains
 
                !$OMP SINGLE
                if (l == 1 .AND. MOD(n, 2) /= 0) then
-                  call eval_E(n, this%E_l(:,:,n), this%E_r(:,:,n), this%scl(n))
+                  call de(n)%df%build(st, this%E_l(:,:,n), this%E_r(:,:,n), this%scl(n))
                   do i = 1, n_e
                      scl = MAX(MAXVAL(abs(this%E_l(i,:,n))), MAXVAL(abs(this%E_r(i,:,n))))
                      this%E_l(i,:,n) = this%E_l(i,:,n)/scl
@@ -544,27 +521,13 @@ contains
 
       !****
 
-      subroutine eval_det_${S}$_(this, eval_B, eval_E, det)
+      subroutine eval_det_${S}$_(this, st, bd, de, det)
 
          class(block_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
-         type(ext_${S}$), intent(out) :: det
+         class(state_${S}$), intent(in)           :: st
+         class(bound_${S}$), intent(in)           :: bd
+         class(diff_element_${S}$), intent(in)    :: de(:)
+         type(ext_${S}$), intent(out)             :: det
 
          ${T}$   :: M(2*this%n_e,2*this%n_e)
          integer :: ipiv(2*this%n_e)
@@ -573,7 +536,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_(st, bd, de)
 
          ! Evaluate the determinant
 
@@ -612,27 +575,13 @@ contains
 
       !****
 
-      subroutine solve_hom_${S}$_(this, eval_B, eval_E, u)
+      subroutine solve_hom_${S}$_(this, st, bd, de, u)
 
          class(block_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
-         ${T}$, intent(out) :: u(:)
+         class(state_${S}$), intent(in)           :: st
+         class(bound_${S}$), intent(in)           :: bd
+         class(diff_element_${S}$), intent(in)    :: de(:)
+         ${T}$, intent(out)                       :: u(:)
 
          logical, parameter :: USE_SVD = .FALSE.
          ${T}$, parameter   :: ZERO = 0._RD
@@ -653,7 +602,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_(st, bd, de)
 
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) >= 1; if nul(S) =
@@ -733,28 +682,14 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, eval_B, eval_E, v, u)
+      subroutine solve_inhom_${S}$_(this, st, bd, de, v, u)
 
          class(block_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
-         ${T}$, intent(in)  :: v(:)
-         ${T}$, intent(out) :: u(:)
+         class(state_${S}$), intent(in)           :: st
+         class(bound_${S}$), intent(in)           :: bd
+         class(diff_element_${S}$), intent(in)    :: de(:)
+         ${T}$, intent(in)                        :: v(:)
+         ${T}$, intent(out)                       :: u(:)
 
          ${T}$   :: M(2*this%n_e,2*this%n_e)
          integer :: ipiv(2*this%n_e)
@@ -768,7 +703,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_(st, bd, de)
 
          ! Evaluate the solution vector v of the inhomogeneous linear
          ! system S u = v. It is assumed that the right-hand side

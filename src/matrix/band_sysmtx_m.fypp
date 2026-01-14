@@ -24,9 +24,12 @@ module band_sysmtx_m
    use forum_m, only: RD, hdf5io_t
 
    use blas_lapack_m
+   use bound_m
+   use diff_element_m
    use ext_m
    use linalg_m
    use math_m
+   use state_m
    use sysmtx_m
 
    use ISO_FORTRAN_ENV
@@ -194,26 +197,12 @@ contains
 
       !****
 
-      subroutine build_and_factor_${S}$_(this, eval_B, eval_E)
+      subroutine build_and_factor_${S}$_(this, st, bd, de)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
+         class(state_${S}$), intent(in)          :: st
+         class(bound_${S}$), intent(in)          :: bd
+         class(diff_element_${S}$), intent(in)   :: de(:)
 
          ${T}$   :: B_i(this%n_i,this%n_e)
          ${T}$   :: B_o(this%n_i,this%n_e)
@@ -231,12 +220,13 @@ contains
 
             ! Build the boundary blocks, and row-scale to unity
 
-            call eval_B(B_i, B_o)
+            call bd%build_i(st, B_i)
             do i = 1, n_i
                scl = MAXVAL(abs(B_i(i,:)))
                this%scl_i(i) = scl
                call this%set_row_(i, 1, B_i(i,:)/scl)
             end do
+            call bd%build_o(st, B_o)
             do i = 1, n_o
                scl = MAXVAL(abs(B_o(i,:)))
                this%scl_o(i) = scl
@@ -249,7 +239,7 @@ contains
 
             !$OMP DO PRIVATE(E_l, E_r, i, R, scl)
             do k = 1, n
-               call eval_E(k, E_l, E_r, this%scl(k))
+               call de(k)%df%build(st, E_l, E_r, this%scl(k))
                do i = 1, n_e
                   R = [E_l(i,:),E_r(i,:)]
                   scl = MAXVAL(abs(R))
@@ -277,33 +267,19 @@ contains
 
       !****
 
-      subroutine eval_det_${S}$_(this, eval_B, eval_E, det)
+      subroutine eval_det_${S}$_(this, st, bd, de, det)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
-         type(ext_${S}$), intent(out) :: det
+         class(state_${S}$), intent(in)          :: st
+         class(bound_${S}$), intent(in)          :: bd
+         class(diff_element_${S}$), intent(in)   :: de(:)
+         type(ext_${S}$), intent(out)            :: det
 
          integer :: j
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_(st, bd, de)
 
          ! Evaluate the determinant
 
@@ -322,27 +298,13 @@ contains
 
       !****
 
-      subroutine solve_hom_${S}$_(this, eval_B, eval_E, u)
+      subroutine solve_hom_${S}$_(this, st, bd, de, u)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
-         ${T}$, intent(out) :: u(:)
+         class(state_${S}$), intent(in)          :: st
+         class(bound_${S}$), intent(in)          :: bd
+         class(diff_element_${S}$), intent(in)   :: de(:)
+         ${T}$, intent(out)                      :: u(:)
 
          integer              :: i_s
          real(RD)             :: A_s
@@ -358,7 +320,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_(st, bd, de)
 
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) >= 1
@@ -419,28 +381,14 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, eval_B, eval_E, v, u)
+      subroutine solve_inhom_${S}$_(this, st, bd, de, v, u)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
-         ${T}$, intent(in)  :: v(:)
-         ${T}$, intent(out) :: u(:)
+         class(state_${S}$), intent(in)          :: st
+         class(bound_${S}$), intent(in)          :: bd
+         class(diff_element_${S}$), intent(in)   :: de(:)
+         ${T}$, intent(in)                       :: v(:)
+         ${T}$, intent(out)                      :: u(:)
 
          ${T}$   :: B(this%n_e*(this%n+1),1)
          integer :: info
@@ -451,7 +399,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_(st, bd, de)
 
          ! Evaluate the solution vector u of the inhomogeneous linear
          ! system S u = v. It is assumed that the right-hand side vector v

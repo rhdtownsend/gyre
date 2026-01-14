@@ -24,7 +24,7 @@ module bvp_m
    use forum_m, only: RD
 
    use bound_m
-   use diff_m
+   use diff_element_m
    use ext_m
    use num_par_m
    use state_m
@@ -44,13 +44,13 @@ module bvp_m
 
       type :: bvp_${S}$
          private
-         class(diff_${S}$), allocatable   :: df(:)
-         class(bound_${S}$), allocatable  :: bd
-         class(sysmtx_${S}$), allocatable :: sm
-         integer, public                  :: n
-         integer, public                  :: n_e
-         integer, public                  :: n_i
-         integer, public                  :: n_o
+         class(diff_element_${S}$), allocatable :: de(:)
+         class(bound_${S}$), allocatable        :: bd
+         class(sysmtx_${S}$), allocatable       :: sm
+         integer, public                        :: n
+         integer, public                        :: n_e
+         integer, public                        :: n_i
+         integer, public                        :: n_o
       contains
          private
          procedure, public :: eval_det => eval_det_${S}$_
@@ -78,12 +78,12 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function bvp_${S}$_(bd, df, nm_p) result(bp)
+      function bvp_${S}$_(bd, de, nm_p) result(bp)
 
-         class(diff_${S}$), intent(in)  :: df(:)
-         class(bound_${S}$), intent(in) :: bd
-         type(num_par_t), intent(in)    :: nm_p
-         type(bvp_${S}$)                :: bp
+         class(bound_${S}$), intent(in)        :: bd
+         class(diff_element_${S}$), intent(in) :: de(:)
+         type(num_par_t), intent(in)           :: nm_p
+         type(bvp_${S}$)                       :: bp
 
          integer :: n
          integer :: n_e
@@ -92,7 +92,7 @@ contains
 
          ! Perform basic validations
 
-         n = SIZE(df) + 1
+         n = SIZE(de) + 1
          n_e = bd%n_e
 
          n_i = bd%n_i
@@ -100,11 +100,11 @@ contains
 
          @:CHECK_BOUNDS(n_i+n_o, n_e)
 
-         @:ASSERT_DEBUG(ALL(df%n_e == n_e), 'dimension mismatch')
+         @:ASSERT_DEBUG(ALL(de%df%n_e == n_e), 'dimension mismatch')
 
          ! Construct the bvp type
 
-         allocate(bp%df(n-1), SOURCE=df)
+         allocate(bp%de, SOURCE=de)
 
          allocate(bp%bd, SOURCE=bd)
 
@@ -131,46 +131,11 @@ contains
 
          ! Evaluate the determinant of the sysmtx
 
-         call this%sm%eval_det(eval_B_, eval_E_, det)
+         call this%sm%eval_det(st, this%bd, this%de, det)
 
          ! Finish
 
          return
-
-      contains
-
-         subroutine eval_B_(B_i, B_o)
-
-            ${T}$, intent(out) :: B_i(:,:)
-            ${T}$, intent(out) :: B_o(:,:)
-
-            @:CHECK_BOUNDS(SIZE(B_i, 1), this%n_i)
-            @:CHECK_BOUNDS(SIZE(B_i, 2), this%n_e)
-
-            @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
-            @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
-
-            call this%bd%build_i(st, B_i)
-            call this%bd%build_o(st, B_o)
-
-         end subroutine eval_B_
-
-         subroutine eval_E_(k, E_l, E_r, scl)
-
-            integer, intent(in)          :: k
-            ${T}$, intent(out)           :: E_l(:,:)
-            ${T}$, intent(out)           :: E_r(:,:)
-            type(ext_${S}$), intent(out) :: scl
-
-            @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
-            @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
-
-            @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
-            @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
-
-            call this%df(k)%build(st, E_l, E_r, scl)
-
-         end subroutine eval_E_
 
       end subroutine eval_det_${S}$_
 
@@ -189,48 +154,13 @@ contains
 
          ! Evaluate the solution vector y of the homogeneous system
 
-         call this%sm%solve_hom(eval_B_, eval_E_, u)
+         call this%sm%solve_hom(st, this%bd, this%de, u)
 
          y = RESHAPE(u, SHAPE(y))
 
          ! Finish
 
          return
-
-      contains
-
-         subroutine eval_B_(B_i, B_o)
-
-            ${T}$, intent(out) :: B_i(:,:)
-            ${T}$, intent(out) :: B_o(:,:)
-
-            @:CHECK_BOUNDS(SIZE(B_i, 1), this%n_i)
-            @:CHECK_BOUNDS(SIZE(B_i, 2), this%n_e)
-
-            @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
-            @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
-
-            call this%bd%build_i(st, B_i)
-            call this%bd%build_o(st, B_o)
-
-         end subroutine eval_B_
-
-         subroutine eval_E_(k, E_l, E_r, scl)
-
-            integer, intent(in)          :: k
-            ${T}$, intent(out)           :: E_l(:,:)
-            ${T}$, intent(out)           :: E_r(:,:)
-            type(ext_${S}$), intent(out) :: scl
-
-            @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
-            @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
-
-            @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
-            @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
-
-            call this%df(k)%build(st, E_l, E_r, scl)
-
-         end subroutine eval_E_
 
       end subroutine solve_hom_${S}$_
 
@@ -254,48 +184,13 @@ contains
 
          ! Evaluate the solution vector y of the inhomogeneous system
 
-         call this%sm%solve_inhom(eval_B_, eval_E_, [z_i,z_o], u)
+         call this%sm%solve_inhom(st, this%bd, this%de, [z_i,z_o], u)
 
          y = RESHAPE(u, SHAPE(y))
 
          ! Finish
 
          return
-
-      contains
-
-         subroutine eval_B_(B_i, B_o)
-
-            ${T}$, intent(out) :: B_i(:,:)
-            ${T}$, intent(out) :: B_o(:,:)
-
-            @:CHECK_BOUNDS(SIZE(B_i, 1), this%n_i)
-            @:CHECK_BOUNDS(SIZE(B_i, 2), this%n_e)
-
-            @:CHECK_BOUNDS(SIZE(B_o, 1), this%n_o)
-            @:CHECK_BOUNDS(SIZE(B_o, 2), this%n_e)
-
-            call this%bd%build_i(st, B_i)
-            call this%bd%build_o(st, B_o)
-
-         end subroutine eval_B_
-
-         subroutine eval_E_(k, E_l, E_r, scl)
-
-            integer, intent(in)          :: k
-            ${T}$, intent(out)           :: E_l(:,:)
-            ${T}$, intent(out)           :: E_r(:,:)
-            type(ext_${S}$), intent(out) :: scl
-
-            @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
-            @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
-
-            @:CHECK_BOUNDS(SIZE(E_r, 1), this%n_e)
-            @:CHECK_BOUNDS(SIZE(E_r, 2), this%n_e)
-
-            call this%df(k)%build(st, E_l, E_r, scl)
-
-         end subroutine eval_E_
 
       end subroutine solve_inhom_${S}$_
 

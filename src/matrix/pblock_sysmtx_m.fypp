@@ -23,9 +23,12 @@ module pblock_sysmtx_m
 
    use forum_m, only: RD, hdf5io_t
 
+   use bound_m
+   use diff_element_m
    use ext_m
    use linalg_m
    use math_m
+   use state_m
    use sysmtx_m
 
    use ISO_FORTRAN_ENV
@@ -60,30 +63,20 @@ module pblock_sysmtx_m
       ! Interfaces
 
       abstract interface
-         subroutine build_and_factor_${S}$_(this, eval_B, eval_E, full, f)
+         subroutine build_and_factor_${S}$_(this, st, bd, de, full, f)
             use forum_m, only: RD
+            use state_m
+            use bound_m
+            use diff_element_m
+            use ext_m
             import pblock_sysmtx_${S}$
             implicit none (type, external)
             class(pblock_sysmtx_${S}$), intent(inout) :: this
-            interface
-               subroutine eval_B(B_i, B_o)
-                  use forum_m, only: RD
-                  implicit none (type, external)
-                  ${T}$, intent(out) :: B_i(:,:)
-                  ${T}$, intent(out) :: B_o(:,:)
-               end subroutine eval_B
-               subroutine eval_E(k, E_l, E_r, scl)
-                  use forum_m, only: RD
-                  use ext_m
-                  implicit none (type, external)
-                  integer, intent(in)          :: k
-                  ${T}$, intent(out)           :: E_l(:,:)
-                  ${T}$, intent(out)           :: E_r(:,:)
-                  type(ext_${S}$), intent(out) :: scl
-               end subroutine eval_E
-            end interface
-            logical, intent(in), optional  :: full
-            ${T}$, intent(inout), optional :: f(:)
+            class(state_${S}$), intent(in)            :: st
+            class(bound_${S}$), intent(in)            :: bd
+            class(diff_element_${S}$), intent(in)     :: de(:)
+            logical, intent(in), optional             :: full
+            ${T}$, intent(inout), optional            :: f(:)
          end subroutine build_and_factor_${S}$_
       end interface
 
@@ -156,28 +149,14 @@ contains
          ['6_3', 6, 3, 3], &
          ['gen', 'this%n_e', 'this%n_i', 'this%n_o']]
 
-         subroutine build_and_factor_${I}$_${S}$_(this, eval_B, eval_E, full, f)
+         subroutine build_and_factor_${I}$_${S}$_(this, st, bd, de, full, f)
 
             class(pblock_sysmtx_${S}$), intent(inout) :: this
-            interface
-               subroutine eval_B(B_i, B_o)
-                  use forum_m, only: RD
-                  implicit none (type, external)
-                  ${T}$, intent(out) :: B_i(:,:)
-                  ${T}$, intent(out) :: B_o(:,:)
-               end subroutine eval_B
-               subroutine eval_E(k, E_l, E_r, scl)
-                  use forum_m, only: RD
-                  use ext_m
-                  implicit none (type, external)
-                  integer, intent(in)          :: k
-                  ${T}$, intent(out)           :: E_l(:,:)
-                  ${T}$, intent(out)           :: E_r(:,:)
-                  type(ext_${S}$), intent(out) :: scl
-               end subroutine eval_E
-            end interface
-            logical, intent(in), optional  :: full
-            ${T}$, intent(inout), optional :: f(:)
+            class(state_${S}$), intent(in)            :: st
+            class(bound_${S}$), intent(in)            :: bd
+            class(diff_element_${S}$), intent(in)     :: de(:)
+            logical, intent(in), optional             :: full
+            ${T}$, intent(inout), optional            :: f(:)
 
             logical  :: full_
             integer  :: l
@@ -236,8 +215,8 @@ contains
 
                         if (l == 1) then
 
-                           call eval_E(k, G_1, U_1, this%scl(k))
-                           call eval_E(k+l, U_2, E_2, this%scl(k+l))
+                           call de(k)%df%build(st, G_1, U_1, this%scl(k))
+                           call de(k+l)%df%build(st, U_2, E_2, this%scl(k+l))
 
                            G_2 = 0._RD
                            E_1 = 0._RD
@@ -365,7 +344,7 @@ contains
                      !$OMP SINGLE
                      if (l == 1 .AND. MOD(n, 2) /= 0) then
 
-                        call eval_E(n, this%G(:,:,n), this%E(:,:,n), this%scl(n))
+                        call de(n)%df%build(st, this%G(:,:,n), this%E(:,:,n), this%scl(n))
 
                         this%rscl(:,n) = 0._RD
 
@@ -403,7 +382,8 @@ contains
                   this%R(:n_e,:n_e) = this%G(:,:,1)
                   this%R(:n_e,n_e+1:) = this%E(:,:,1)
 
-                  call eval_B(R_2(:n_i,:n_e), R_2(n_i+1:,n_e+1:))
+                  call bd%build_i(st, R_2(:n_i,:n_e))
+                  call bd%build_o(st, R_2(n_i+1:,n_e+1:))
 
                   R_2(:n_i,n_e+1:) = 0._RD
                   R_2(n_i+1:,:n_e) = 0._RD
@@ -587,33 +567,19 @@ contains
 
       !****
 
-      subroutine eval_det_${S}$_(this, eval_B, eval_E, det)
+      subroutine eval_det_${S}$_(this, st, bd, de, det)
 
          class(pblock_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
-         type(ext_${S}$), intent(out) :: det
+         class(state_${S}$), intent(in)            :: st
+         class(bound_${S}$), intent(in)            :: bd
+         class(diff_element_${S}$), intent(in)     :: de(:)
+         type(ext_${S}$), intent(out)              :: det
 
          ! Evaluate the determinant of the sysmtx
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(eval_B, eval_E)
+         call this%build_and_factor_(st, bd, de)
 
          ! Evaluate the determinant as the product of the diagonal
          ! elements
@@ -628,27 +594,13 @@ contains
 
       !****
 
-      subroutine solve_hom_${S}$_(this, eval_B, eval_E, u)
+      subroutine solve_hom_${S}$_(this, st, bd, de, u)
 
          class(pblock_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
-         ${T}$, intent(out) :: u(:)
+         class(state_${S}$), intent(in)            :: st
+         class(bound_${S}$), intent(in)            :: bd
+         class(diff_element_${S}$), intent(in)     :: de(:)
+         ${T}$, intent(out)                        :: u(:)
 
          real(RD) :: R_s
          integer  :: i
@@ -666,7 +618,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(eval_B, eval_E, full=.TRUE.)
+            call this%build_and_factor_(st, bd, de, full=.TRUE.)
 
             ! Find the (most) singular element on the diagonal of the
             ! boundary matrix
@@ -711,28 +663,14 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, eval_B, eval_E, v, u)
+      subroutine solve_inhom_${S}$_(this, st, bd, de, v, u)
 
          class(pblock_sysmtx_${S}$), intent(inout) :: this
-         interface
-            subroutine eval_B(B_i, B_o)
-               use forum_m, only: RD
-               implicit none (type, external)
-               ${T}$, intent(out) :: B_i(:,:)
-               ${T}$, intent(out) :: B_o(:,:)
-            end subroutine eval_B
-            subroutine eval_E(k, E_l, E_r, scl)
-               use forum_m, only: RD
-               use ext_m
-               implicit none (type, external)
-               integer, intent(in)          :: k
-               ${T}$, intent(out)           :: E_l(:,:)
-               ${T}$, intent(out)           :: E_r(:,:)
-               type(ext_${S}$), intent(out) :: scl
-            end subroutine eval_E
-         end interface
-         ${T}$, intent(in)  :: v(:)
-         ${T}$, intent(out) :: u(:)
+         class(state_${S}$), intent(in)            :: st
+         class(bound_${S}$), intent(in)            :: bd
+         class(diff_element_${S}$), intent(in)     :: de(:)
+         ${T}$, intent(in)                         :: v(:)
+         ${T}$, intent(out)                        :: u(:)
 
          ${T}$   :: f(2*this%n_e)
          integer :: i
@@ -760,7 +698,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(eval_B, eval_E, full=.TRUE., f=f)
+            call this%build_and_factor_(st, bd, de, full=.TRUE., f=f)
 
             ! Use backsubstitution to solve for u_bound
 
