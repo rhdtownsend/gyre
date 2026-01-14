@@ -50,7 +50,6 @@ module sad_eqns_m
       real(RD)                 :: As
       real(RD)                 :: U
       real(RD)                 :: x
-      integer                  :: l
    contains
       private
       procedure, public :: eval_A
@@ -104,8 +103,6 @@ contains
 
       eq%x = pt%x
 
-      eq%l = md_p%l
-
       eq%n_e = 2
 
       ! Finish
@@ -135,9 +132,9 @@ contains
          V_g => this%V_g, &
          As => this%As, &
          U => this%U, &
-         x => this%x)
+         x => this%x, &
+         l => this%cx%l)
 
-         l = this%l
          lambda = l*(l+1._RD)
 
          ! Set up the matrix

@@ -50,13 +50,7 @@ module ad_eqns_m
       real(RD)                 :: U
       real(RD)                 :: c_1
       real(RD)                 :: Omega_rot
-      real(RD)                 :: Omega_rot_i
       real(RD)                 :: x
-      real(RD)                 :: x_atm
-      real(RD)                 :: alpha_grv
-      real(RD)                 :: alpha_omg
-      real(RD)                 :: alpha_gam
-      real(RD)                 :: alpha_pi
    contains
       private
       procedure, public :: eval_A
@@ -109,30 +103,10 @@ contains
       eq%c_1 = ml%coeff(I_C_1, pt)
 
       eq%Omega_rot = cx%Omega_rot(pt)
-      eq%Omega_rot_i = cx%Omega_rot(cx%point_i())
 
       ! Other initializations
 
       eq%x = pt%x
-
-      eq%x_atm = os_p%x_atm
-      if (eq%x_atm < 0._RD) then
-         pt_o = cx%point_o()
-         eq%x_atm = pt_o%x
-      end if
-
-      eq%alpha_grv = os_p%alpha_grv
-      eq%alpha_gam = os_p%alpha_gam
-      eq%alpha_pi = os_p%alpha_pi
-
-      select case (os_p%time_factor)
-      case ('OSC')
-         eq%alpha_omg = 1._RD
-      case ('EXP')
-         eq%alpha_omg = -1._RD
-      case default
-         @:ABORT('invalid time_factor')
-      end select
 
       eq%n_e = 4
 
@@ -167,13 +141,13 @@ contains
          U => this%U, &
          c_1 => this%c_1, &
          Omega_rot => this%Omega_rot, &
-         Omega_rot_i => this%Omega_rot_i, &
          x => this%x, &
-         x_atm => this%x_atm, &
-         alpha_grv => this%alpha_grv, &
-         alpha_omg => this%alpha_omg, &
-         alpha_gam => this%alpha_gam, &
-         alpha_pi => this%alpha_pi, &
+         x_atm => this%cx%x_atm, &
+         Omega_rot_i => this%cx%Omega_rot_i, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_omg => this%cx%alpha_omg, &
+         alpha_gam => this%cx%alpha_gam, &
+         alpha_pi => this%cx%alpha_pi, &
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot

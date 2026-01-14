@@ -54,10 +54,7 @@ module tnad_eqns_m
       real(RD)                 :: As
       real(RD)                 :: c_1
       real(RD)                 :: Omega_rot
-      real(RD)                 :: Omega_rot_i
       real(RD)                 :: x
-      real(RD)                 :: alpha_omg
-      real(RD)                 :: alpha_trb
    contains
       private
       procedure, public :: eval_A
@@ -117,22 +114,10 @@ contains
       eq%c_1 = ml%coeff(I_C_1, pt)
 
       eq%Omega_rot = cx%Omega_rot(pt)
-      eq%Omega_rot_i = cx%Omega_rot(cx%point_i())
 
       ! Other initializations
 
       eq%x = pt%x
-
-      select case (os_p%time_factor)
-      case ('OSC')
-         eq%alpha_omg = 1._RD
-      case ('EXP')
-         eq%alpha_omg = -1._RD
-      case default
-         @:ABORT('Invalid time_factor')
-      end select
-
-      eq%alpha_trb = os_p%alpha_trb
 
       eq%n_e = 6
 
@@ -165,8 +150,8 @@ contains
 
       associate ( &
          V_g => this%V_g, &
-         Omega_rot_i => this%Omega_rot_i, &
-         x => this%x)
+         x => this%x, &
+         Omega_rot_i => this%cx%Omega_rot_i)
 
          ! Set up original (nad) eqns
 
@@ -237,7 +222,7 @@ contains
       ! the solution vector
 
       associate ( &
-         Omega_rot_i => this%Omega_rot_i)
+         Omega_rot_i => this%cx%Omega_rot_i)
 
          ! Set up original (nad) eqns
 
@@ -293,10 +278,10 @@ contains
          As => this%As, &
          c_1 => this%c_1, &
          Omega_rot => this%Omega_rot, &
-         Omega_rot_i => this%Omega_rot_i, &
          x => this%x, &
-         alpha_omg => this%alpha_omg, &
-         alpha_trb => this%alpha_trb, &
+         Omega_rot_i => this%cx%Omega_rot_i, &
+         alpha_omg => this%cx%alpha_omg, &
+         alpha_trb => this%cx%alpha_trb, &
          m => this%cx%m)
 
          if (x > 0._RD .AND. As < 0._RD) then

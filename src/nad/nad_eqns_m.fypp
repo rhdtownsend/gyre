@@ -75,19 +75,7 @@ module nad_eqns_m
       real(RD)                 :: kap_rho
       real(RD)                 :: kap_T
       real(RD)                 :: Omega_rot
-      real(RD)                 :: Omega_rot_i
       real(RD)                 :: x
-      real(RD)                 :: x_atm
-      real(RD)                 :: alpha_grv
-      real(RD)                 :: alpha_thm
-      real(RD)                 :: alpha_hfl
-      real(RD)                 :: alpha_omg
-      real(RD)                 :: alpha_gam
-      real(RD)                 :: alpha_pi
-      real(RD)                 :: alpha_kar
-      real(RD)                 :: alpha_kat
-      real(RD)                 :: alpha_rht
-      real(RD)                 :: alpha_egv
       integer                  :: conv_scheme
    contains
       private
@@ -163,36 +151,10 @@ contains
       eq%kap_T = ml%coeff(I_KAP_T, pt)
 
       eq%Omega_rot = cx%Omega_rot(pt)
-      eq%Omega_rot_i = cx%Omega_rot(cx%point_i())
 
       ! Other initializations
 
       eq%x = pt%x
-
-      eq%x_atm = os_p%x_atm
-      if (eq%x_atm < 0._RD) then
-         pt_o = cx%point_o()
-         eq%x_atm = pt_o%x
-      end if
-
-      eq%alpha_grv = os_p%alpha_grv
-      eq%alpha_thm = os_p%alpha_thm
-      eq%alpha_hfl = os_p%alpha_hfl
-      eq%alpha_gam = os_p%alpha_gam
-      eq%alpha_pi = os_p%alpha_pi
-      eq%alpha_kar = os_p%alpha_kar
-      eq%alpha_kat = os_p%alpha_kat
-      eq%alpha_rht = os_p%alpha_rht
-      eq%alpha_egv = os_p%alpha_egv
-
-      select case (os_p%time_factor)
-      case ('OSC')
-         eq%alpha_omg = 1._RD
-      case ('EXP')
-         eq%alpha_omg = -1._RD
-      case default
-         @:ABORT('invalid time_factor')
-      end select
 
       select case (os_p%conv_scheme)
       case ('FROZEN_PESNELL_1')
@@ -264,20 +226,21 @@ contains
          kap_rho => this%kap_rho, &
          kap_T => this%kap_T, &
          Omega_rot => this%Omega_rot, &
-         Omega_rot_i => this%Omega_rot_i, &
+         Omega_rot_i => this%cx%Omega_rot_i, &
          x => this%x, &
-         x_atm => this%x_atm, &
          pt => this%pt, &
-         alpha_grv => this%alpha_grv, &
-         alpha_thm => this%alpha_thm, &
-         alpha_hfl => this%alpha_hfl, &
-         alpha_rht => this%alpha_rht, &
-         alpha_omg => this%alpha_omg, &
-         alpha_gam => this%alpha_gam, &
-         alpha_pi => this%alpha_pi, &
-         alpha_kar => this%alpha_kar, &
-         alpha_kat => this%alpha_kat, &
-         alpha_egv => this%alpha_egv, &
+         conv_scheme => this%conv_scheme, &
+         x_atm => this%cx%x_atm, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_thm => this%cx%alpha_thm, &
+         alpha_hfl => this%cx%alpha_hfl, &
+         alpha_rht => this%cx%alpha_rht, &
+         alpha_omg => this%cx%alpha_omg, &
+         alpha_gam => this%cx%alpha_gam, &
+         alpha_pi => this%cx%alpha_pi, &
+         alpha_kar => this%cx%alpha_kar, &
+         alpha_kat => this%cx%alpha_kat, &
+         alpha_egv => this%cx%alpha_egv, &
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot
@@ -290,7 +253,7 @@ contains
          f_rh = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
          df_rh = -0.25_RD*alpha_rht*i_omega_c*c_thn*dc_thn/f_rh
 
-         select case (this%conv_scheme)
+         select case (conv_scheme)
          case (P1_CONV_SCHEME)
             conv_term = lambda*c_rad*(3._RD + dc_rad)/(c_1*alpha_omg*omega_c**2)
          case (P4_CONV_SCHEME)

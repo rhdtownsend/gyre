@@ -59,8 +59,23 @@ module context_m
       class(angular_ct), allocatable :: an
       type(point_t)                  :: pt_i
       type(point_t)                  :: pt_o
+      real(RD), public               :: x_atm
       integer                        :: Omega_rot_source
       real(RD)                       :: Omega_rot_
+      real(RD), public               :: Omega_rot_i
+      real(RD), public               :: alpha_grv
+      real(RD), public               :: alpha_gbc
+      real(RD), public               :: alpha_thm
+      real(RD), public               :: alpha_hfl
+      real(RD), public               :: alpha_omg
+      real(RD), public               :: alpha_gam
+      real(RD), public               :: alpha_pi
+      real(RD), public               :: alpha_kar
+      real(RD), public               :: alpha_kat
+      real(RD), public               :: alpha_rht
+      real(RD), public               :: alpha_egv
+      real(RD), public               :: alpha_trb
+      integer, public                :: conv_scheme
       integer                        :: deps_source
       logical                        :: complex_lambda
       type(cubic_interp_ct)          :: ci_eps_rho
@@ -116,9 +131,10 @@ contains
       cx%pt_i = gr%pt_i()
       cx%pt_o = gr%pt_o()
 
-      cx%m = md_p%m
-
-      cx%complex_lambda = os_p%complex_lambda
+      cx%x_atm = os_p%x_atm
+      if (cx%x_atm < 0._RD) then
+         cx%x_atm = cx%pt_o%x
+      end if
 
       select case (rt_p%Omega_rot_source)
       case ('MODEL')
@@ -130,6 +146,29 @@ contains
          @:ABORT('invalid Omega_rot_source')
       end select
 
+      cx%Omega_rot_i = cx%Omega_rot(cx%pt_i)
+
+      cx%alpha_grv = os_p%alpha_grv
+      cx%alpha_gbc = os_p%alpha_gbc
+      cx%alpha_thm = os_p%alpha_thm
+      cx%alpha_hfl = os_p%alpha_hfl
+      cx%alpha_gam = os_p%alpha_gam
+      cx%alpha_pi = os_p%alpha_pi
+      cx%alpha_kar = os_p%alpha_kar
+      cx%alpha_kat = os_p%alpha_kat
+      cx%alpha_rht = os_p%alpha_rht
+      cx%alpha_egv = os_p%alpha_egv
+      cx%alpha_trb = os_p%alpha_trb
+
+      select case (os_p%time_factor)
+      case ('OSC')
+         cx%alpha_omg = 1._RD
+      case ('EXP')
+         cx%alpha_omg = -1._RD
+      case default
+         @:ABORT('invalid time_factor')
+      end select
+
       select case (os_p%deps_source)
       case ('MODEL')
          cx%deps_source = MODEL_DEPS_SOURCE
@@ -139,6 +178,12 @@ contains
       case default
          @:ABORT('invalid deps_source')
       end select
+
+      cx%complex_lambda = os_p%complex_lambda
+
+      cx%l = md_p%l
+      cx%m = md_p%m
+
 
       ! Finish
 

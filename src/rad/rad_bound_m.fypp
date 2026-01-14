@@ -65,7 +65,6 @@ module rad_bound_m
       real(RD)                 :: c_1_i
       real(RD)                 :: c_1_o
       real(RD)                 :: Gamma_1_o
-      real(RD)                 :: alpha_omg
       integer                  :: type_i
       integer                  :: type_o
    contains
@@ -193,15 +192,6 @@ contains
 
       ! Other initializations
 
-      select case (os_p%time_factor)
-      case ('OSC')
-         bd%alpha_omg = 1._RD
-      case ('EXP')
-         bd%alpha_omg = -1._RD
-      case default
-         @:ABORT('invalid time_factor')
-      end select
-
       bd%n_i = 1
       bd%n_o = 1
 
@@ -263,7 +253,7 @@ contains
       associate( &
          omega => st%omega, &
          c_1 => this%c_1_i, &
-         alpha_omg => this%alpha_omg)
+         alpha_omg => this%cx%alpha_omg)
 
          omega_c = omega
 
@@ -413,7 +403,7 @@ contains
          omega => st%omega, &
          V => this%V_o, &
          c_1 => this%c_1_o, &
-         alpha_omg => this%alpha_omg)
+         alpha_omg => this%cx%alpha_omg)
 
          omega_c = omega
 
@@ -455,7 +445,7 @@ contains
          As => this%As_o, &
          c_1 => this%c_1_o, &
          Gamma_1 => this%Gamma_1_o, &
-         alpha_omg => this%alpha_omg)
+         alpha_omg => this%cx%alpha_omg)
 
          omega_c = omega
 
@@ -507,7 +497,7 @@ contains
          As => this%As_o, &
          c_1 => this%c_1_o, &
          Gamma_1 => this%Gamma_1_o, &
-         alpha_omg => this%alpha_omg)
+         alpha_omg => this%cx%alpha_omg)
 
          omega_c = omega
 

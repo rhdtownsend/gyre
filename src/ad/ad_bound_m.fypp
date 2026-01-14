@@ -66,14 +66,9 @@ module ad_bound_m
       real(RD)                 :: c_1_i
       real(RD)                 :: c_1_o
       real(RD)                 :: Gamma_1_o
-      real(RD)                 :: Omega_rot_i
       real(RD)                 :: Omega_rot_o
-      real(RD)                 :: alpha_grv
-      real(RD)                 :: alpha_gbc
-      real(RD)                 :: alpha_omg
       integer                  :: type_i
       integer                  :: type_o
-      logical                  :: U_term
    contains
       private
       procedure, public :: build_i
@@ -212,22 +207,9 @@ contains
       bd%U_o = ml%coeff(I_U, pt_o)
       bd%c_1_o = ml%coeff(I_C_1, pt_o)
 
-      bd%Omega_rot_i = cx%Omega_rot(pt_i)
       bd%Omega_rot_o = cx%Omega_rot(pt_o)
 
       ! Other initializations
-
-      bd%alpha_grv = os_p%alpha_grv
-      bd%alpha_gbc = os_p%alpha_gbc
-
-      select case (os_p%time_factor)
-      case ('OSC')
-         bd%alpha_omg = 1._RD
-      case ('EXP')
-         bd%alpha_omg = -1._RD
-      case default
-         @:ABORT('invalid time_factor')
-      end select
 
       bd%n_i = 2
       bd%n_o = 2
@@ -290,9 +272,9 @@ contains
       associate( &
          omega => st%omega, &
          c_1 => this%c_1_i, &
-         Omega_rot => this%Omega_rot_i, &
-         alpha_grv => this%alpha_grv, &
-         alpha_omg => this%alpha_omg, &
+         Omega_rot => this%cx%Omega_rot_i, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_omg => this%cx%alpha_omg, &
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot
@@ -334,7 +316,7 @@ contains
       ! displacement/gravity)
 
       associate( &
-         alpha_grv => this%alpha_grv)
+         alpha_grv => this%cx%alpha_grv)
 
          ! Set up the boundary conditions
 
@@ -371,7 +353,7 @@ contains
       ! horizontal displacement/gravity)
 
       associate( &
-         alpha_grv => this%alpha_grv)
+         alpha_grv => this%cx%alpha_grv)
 
          ! Set up the boundary conditions
 
@@ -454,8 +436,8 @@ contains
       associate( &
          U => this%U_o, &
          Omega_rot => this%Omega_rot_o, &
-         alpha_grv => this%alpha_grv, &
-         alpha_gbc => this%alpha_gbc)
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc)
 
          l_e = this%cx%l_e(Omega_rot, st)
 
@@ -498,8 +480,8 @@ contains
       associate( &
          U => this%U_o, &
          Omega_rot => this%Omega_rot_o, &
-         alpha_grv => this%alpha_grv, &
-         alpha_gbc => this%alpha_gbc)
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc)
 
          l_e = this%cx%l_e(Omega_rot, st)
 
@@ -542,8 +524,8 @@ contains
       associate( &
          U => this%U_o, &
          Omega_rot => this%Omega_rot_o, &
-         alpha_grv => this%alpha_grv, &
-         alpha_gbc => this%alpha_gbc)
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc)
 
          l_e = this%cx%l_e(Omega_rot, st)
 
@@ -590,9 +572,9 @@ contains
          U => this%U_o, &
          c_1 => this%c_1_o, &
          Omega_rot => this%Omega_rot_o, &
-         alpha_grv => this%alpha_grv, &
-         alpha_gbc => this%alpha_gbc, &
-         alpha_omg => this%alpha_omg, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc, &
+         alpha_omg => this%cx%alpha_omg, &
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot
@@ -657,9 +639,9 @@ contains
          c_1 => this%c_1_o, &
          Gamma_1 => this%Gamma_1_o, &
          Omega_rot => this%Omega_rot_o, &
-         alpha_grv => this%alpha_grv, &
-         alpha_gbc => this%alpha_gbc, &
-         alpha_omg => this%alpha_omg, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc, &
+         alpha_omg => this%cx%alpha_omg, &
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot
@@ -756,9 +738,9 @@ contains
          c_1 => this%c_1_o, &
          Gamma_1 => this%Gamma_1_o, &
          Omega_rot => this%Omega_rot_o, &
-         alpha_grv => this%alpha_grv, &
-         alpha_gbc => this%alpha_gbc, &
-         alpha_omg => this%alpha_omg, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc, &
+         alpha_omg => this%cx%alpha_omg, &
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot
@@ -806,8 +788,8 @@ contains
 
       associate( &
          Omega_rot => this%Omega_rot_o, &
-         alpha_grv => this%alpha_grv, &
-         alpha_omg => this%alpha_omg)
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_omg => this%cx%alpha_omg)
 
          ! Set up the boundary conditions
 
@@ -853,8 +835,8 @@ contains
          c_1 => this%c_1_o, &
          Gamma_1 => this%Gamma_1_o, &
          Omega_rot => this%Omega_rot_o, &
-         alpha_grv => this%alpha_grv, &
-         alpha_omg => this%alpha_omg, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_omg => this%cx%alpha_omg, &
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot

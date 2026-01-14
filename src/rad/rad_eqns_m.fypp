@@ -50,7 +50,6 @@ module rad_eqns_m
       real(RD)                 :: U
       real(RD)                 :: c_1
       real(RD)                 :: x
-      real(RD)                 :: alpha_omg
    contains
       private
       procedure, public :: eval_A
@@ -105,15 +104,6 @@ contains
 
       eq%x = pt%x
 
-      select case (os_p%time_factor)
-      case ('OSC')
-         eq%alpha_omg = 1._RD
-      case ('EXP')
-         eq%alpha_omg = -1._RD
-      case default
-         @:ABORT('invalid time_factor')
-      end select
-
       eq%n_e = 2
 
       ! Finish
@@ -145,7 +135,7 @@ contains
          U => this%U, &
          c_1 => this%c_1, &
          x => this%x, &
-         alpha_omg => this%alpha_omg)
+         alpha_omg => this%cx%alpha_omg)
 
          omega_c = omega
 

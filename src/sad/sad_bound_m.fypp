@@ -55,7 +55,6 @@ module sad_bound_m
       real(RD)                 :: U_o
       integer                  :: type_i
       integer                  :: type_o
-      integer                  :: l
    contains
       private
       procedure, public :: build_i
@@ -131,8 +130,6 @@ contains
 
       ! Other initializations
 
-      bd%l = md_p%l
-
       bd%n_i = 1
       bd%n_o = 1
 
@@ -182,19 +179,20 @@ contains
       class(state_rt), intent(in)    :: st
       real(RD), intent(out)          :: B(:,:)
 
-      real(RD) :: l
-
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
       ! Evaluate the inner boundary conditions (regular-enforcing)
 
-      l = this%l
+      associate (&
+         l => this%cx%l)
 
-      ! Set up the boundary conditions
+         ! Set up the boundary conditions
 
-      B(1,1) = l
-      B(1,2) = -1._RD
+         B(1,1) = l
+         B(1,2) = -1._RD
+
+      end associate
 
       ! Finish
 
@@ -240,17 +238,14 @@ contains
       class(state_rt), intent(in)    :: st
       real(RD), intent(out)          :: B(:,:)
 
-      integer :: l
-
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
       ! Evaluate the outer boundary conditions (vacuum)
 
       associate ( &
-         U => this%U_o)
-
-         l = this%l
+         U => this%U_o, &
+         l => this%cx%l)
 
          ! Set up the boundary conditions
 
