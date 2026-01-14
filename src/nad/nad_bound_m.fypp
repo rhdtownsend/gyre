@@ -637,7 +637,7 @@ contains
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot
-
+         
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          l_e = this%cx%l_e(Omega_rot, st)
@@ -709,7 +709,7 @@ contains
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot
-
+         
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)
@@ -797,7 +797,7 @@ contains
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot
-
+         
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)
@@ -917,7 +917,7 @@ contains
          m => this%cx%m)
 
          omega_c = omega - m*Omega_rot
-
+         
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)
