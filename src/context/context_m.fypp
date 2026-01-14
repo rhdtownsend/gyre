@@ -82,6 +82,8 @@ module context_m
       type(cubic_interp_ct)          :: ci_eps_T
       integer, public                :: l
       integer, public                :: m
+      logical, public                :: angular_cache
+      logical, public                :: epsilon_cache
    contains
       private
       procedure, public  :: model
@@ -115,6 +117,9 @@ contains
 
    function context_t_(ml, gr, md_p, os_p, rt_p) result(cx)
 
+      use sph_angular_m
+      use adhoc_angular_m
+
       class(model_t), pointer, intent(in) :: ml
       type(grid_t), intent(in)            :: gr
       type(mode_par_t), intent(in)        :: md_p
@@ -127,6 +132,15 @@ contains
       cx%ml => ml
 
       allocate(cx%an, SOURCE=angular_ct(md_p, os_p))
+
+      select type(an => cx%an)
+      class is(sph_angular_ct)
+         cx%angular_cache = .TRUE.
+      class is(adhoc_angular_ct)
+         cx%angular_cache = .TRUE.
+      class default
+         cx%angular_cache = .FALSE.
+      end select
 
       cx%pt_i = gr%pt_i()
       cx%pt_o = gr%pt_o()
@@ -172,9 +186,11 @@ contains
       select case (os_p%deps_source)
       case ('MODEL')
          cx%deps_source = MODEL_DEPS_SOURCE
+         cx%epsilon_cache = .TRUE.
       case ('FILE')
          call read_deps_(ml, os_p, cx%ci_eps_rho, cx%ci_eps_T)
          cx%deps_source = FILE_DEPS_SOURCE
+         cx%epsilon_cache = .FALSE.
       case default
          @:ABORT('invalid deps_source')
       end select

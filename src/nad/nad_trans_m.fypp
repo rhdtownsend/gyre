@@ -58,6 +58,8 @@ module nad_trans_m
       real(RD)                 :: dc_1
       real(RD)                 :: Omega_rot
       real(RD)                 :: x
+      complex(RD)              :: lambda
+      complex(RD)              :: l_i
       integer                  :: set
       integer                  :: n_e
    contains
@@ -145,6 +147,11 @@ contains
       tr%dc_1 = ml%dcoeff(I_C_1, pt)
 
       tr%Omega_rot = cx%Omega_rot(pt)
+
+      if (cx%angular_cache) then
+         tr%lambda = cx%lambda(tr%Omega_rot, state_ct(0._RD))
+         tr%l_i = cx%l_e(cx%Omega_rot_i, state_ct(0._RD))
+      end if
 
       ! Other initializations
 
@@ -415,11 +422,16 @@ contains
          c_1 => this%c_1, &
          Omega_rot => this%Omega_rot, &
          l => this%cx%l, &
-         m => this%cx%m)
+         m => this%cx%m, &
+         angular_cache => this%cx%angular_cache)
 
          omega_c = omega - m*Omega_rot
 
-         lambda = this%cx%lambda(Omega_rot, st)
+         if (angular_cache) then
+            lambda = this%lambda
+         else
+            lambda = this%cx%lambda(Omega_rot, st)
+         end if
 
          ! Set up the matrix
 
@@ -696,11 +708,16 @@ contains
          c_1 => this%c_1, &
          Omega_rot => this%Omega_rot, &
          l => this%cx%l, &
-         m => this%cx%m)
+         m => this%cx%m, &
+         angular_cache => this%cx%angular_cache)
 
          omega_c = omega - m*Omega_rot
 
-         lambda = this%cx%lambda(Omega_rot, st)
+         if (angular_cache) then
+            lambda = this%lambda
+         else
+            lambda = this%cx%lambda(Omega_rot, st)
+         end if
 
          ! Set up the matrix
 
@@ -919,11 +936,16 @@ contains
          Omega_rot => this%Omega_rot, &
          x => this%x, &
          l => this%cx%l, &
-         m => this%cx%m)
+         m => this%cx%m, &
+         angular_cache => this%cx%angular_cache)
 
          omega_c = omega - m*Omega_rot
 
-         lambda = this%cx%lambda(Omega_rot, st)
+         if (angular_cache) then
+            lambda = this%lambda
+         else
+            lambda = this%cx%lambda(Omega_rot, st)
+         end if
 
          ! Set up the matrix (nb: the derivatives of omega_c and lambda is
          ! neglected; this is incorrect when rotation is non-zero)

@@ -52,6 +52,8 @@ module ad_eqns_m
       real(RD)                 :: c_1
       real(RD)                 :: Omega_rot
       real(RD)                 :: x
+      real(RD)                 :: lambda
+      real(RD)                 :: l_i
    contains
       private
       procedure, public :: eval_A
@@ -107,6 +109,11 @@ contains
 
       eq%Omega_rot = cx%Omega_rot(pt)
 
+      if (cx%angular_cache) then
+         eq%lambda = cx%lambda(eq%Omega_rot, state_rt(0._RD))
+         eq%l_i = cx%l_e(cx%Omega_rot_i, state_rt(0._RD))
+      end if
+
       ! Other initializations
 
       eq%x = pt%x
@@ -154,12 +161,18 @@ contains
          alpha_omg => this%cx%alpha_omg, &
          alpha_gam => this%cx%alpha_gam, &
          alpha_pi => this%cx%alpha_pi, &
-         m => this%cx%m)
-
+         m => this%cx%m, &
+         angular_cache => this%cx%angular_cache)
+         
          omega_c = omega - m*Omega_rot
 
-         lambda = this%cx%lambda(Omega_rot, st)
-         l_i = this%cx%l_e(Omega_rot_i, st)
+         if (angular_cache) then
+            lambda = this%lambda
+            l_i = this%l_i
+         else
+            lambda = this%cx%lambda(Omega_rot, st)
+            l_i = this%cx%l_e(Omega_rot_i, st)
+         end if
 
          om2 = c_1*alpha_omg*omega_c**2
          eta = lambda/om2
