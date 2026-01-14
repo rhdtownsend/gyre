@@ -199,7 +199,7 @@ contains
 
             Omega_rot = cx%Omega_rot(pt)
 
-            omega_c = cx%omega_c(Omega_rot, st)
+            omega_c = st%omega - cx%m*Omega_rot
 
             lambda = cx%lambda(Omega_rot, st)
 

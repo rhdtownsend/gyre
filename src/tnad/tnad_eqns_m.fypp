@@ -277,7 +277,7 @@ contains
       complex(RD)                    :: F_trb
 
       complex(RD) :: omega_c
-      complex(RD) :: omega_c_r
+      real(RD)    :: omega_c_r
       complex(RD) :: i_omega_c
       complex(RD) :: l_i
       real(RD)    :: H_r
@@ -287,6 +287,8 @@ contains
       ! Evaluate the turbulent viscosity factor i*sigma*nu/(g r)
 
       associate ( &
+         omega => st%omega, &
+         omega_r => st%omega_r, &
          V => this%V, &
          As => this%As, &
          c_1 => this%c_1, &
@@ -294,12 +296,14 @@ contains
          Omega_rot_i => this%Omega_rot_i, &
          x => this%x, &
          alpha_omg => this%alpha_omg, &
-         alpha_trb => this%alpha_trb)
+         alpha_trb => this%alpha_trb, &
+         m => this%cx%m)
 
          if (x > 0._RD .AND. As < 0._RD) then
 
-            omega_c = this%cx%omega_c(Omega_rot, st)
-            omega_c_r = this%cx%omega_c(Omega_rot, st, use_omega_r=.TRUE.)
+            omega_c = omega - m*Omega_rot
+            omega_c_r = omega_r - m*Omega_rot
+
             i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
             l_i = this%cx%l_e(Omega_rot_i, st)

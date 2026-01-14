@@ -595,10 +595,12 @@ contains
 
       if (this%l /= 0) then
 
-         associate (               &
+         associate ( &
+            omega => this%omega, &
             ml => this%cx%model(), &
-            pt => this%gr%pt(j),   &
-            l_i => this%l_i)
+            pt => this%gr%pt(j), &
+            l_i => this%l_i, &
+            m => this%m)
 
             y_3 = this%y_i(3, j)
 
@@ -639,7 +641,7 @@ contains
 
                c_1 = ml%coeff(I_C_1, pt)
 
-               omega_c = this%cx%omega_c(Omega_rot, this%st)
+               omega_c = omega - m*Omega_rot
 
                if (l_i /= 1._RD) then
 
@@ -1488,10 +1490,11 @@ contains
       ! M_star**2/R_star. This expression is based on eqn. (14) of
       ! [Towsend:2018]
 
-      associate (               &
+      associate ( &
+         omega => this%omega, &
          ml => this%cx%model(), &
          pt => this%gr%pt(j),   &
-         m => this%m )
+         m => this%m)
 
          xi_r = this%xi_r(j)
 
@@ -1508,7 +1511,7 @@ contains
 
          Omega_rot = this%cx%Omega_rot(pt)
 
-         omega_c = this%cx%omega_c(Omega_rot, this%st)
+         omega_c = omega - m*Omega_rot
 
          dtau_tr_dx = m*pt%x**2*AIMAG((omega_c/CONJG(omega_c) - 1._RD)*( &
             lag_rho*CONJG(eul_P)/(c_1*V_2) + &
@@ -1645,10 +1648,12 @@ contains
       ! Evaluate the I_0 integral, which should be zero for dipole
       ! cases. This expression is based on eqn. (43) of [Takata:2006a]
 
-      associate (               &
+      associate ( &
+         omega => this%omega, &
          ml => this%cx%model(), &
-         pt => this%gr%pt(j),   &
-         l_i => this%l_i )
+         pt => this%gr%pt(j), &
+         l_i => this%l_i, &
+         m => this%m)
 
          y_1 = this%y_i(1, j)
          y_2 = this%y_i(2, j)
@@ -1660,7 +1665,7 @@ contains
 
          Omega_rot = this%cx%Omega_rot(pt)
 
-         omega_c = this%cx%omega_c(Omega_rot, this%st)
+         omega_c = omega - m*Omega_rot
 
          if (pt%x /= 0._RD) then
             I_1 = pow(pt%x, l_i+2._RD)*(c_1*omega_c**2*U*y_1 - U*y_2 - &
@@ -1694,16 +1699,19 @@ contains
       ! Evaluate the alpha_0 excitation parameter defined in equation
       ! (26.10) of Unno et al. (2017)
 
-      associate (               &
+      associate ( &
+         omega => this%omega, &
          ml => this%cx%model(), &
-         pt => this%gr%pt(j))
+         pt => this%gr%pt(j), &
+         m => this%m)
 
          U = ml%coeff(I_U, pt)
          c_1 = ml%coeff(I_C_1, pt)
 
          Omega_rot = this%cx%Omega_rot(pt)
 
-         omega_c = this%cx%omega_c(Omega_rot, this%st)
+         omega_c = omega - m*Omega_rot
+
          lambda = this%cx%lambda(Omega_rot, this%st)
 
          alpha_0 = 4._RD - U - abs(lambda)/(c_1*abs(omega_c)**2) + c_1*abs(omega_c)**2
@@ -1739,9 +1747,11 @@ contains
       ! Evaluate the alpha_1 excitation parameter defined in equation
       ! (26.12) of Unno et al. (2017)
 
-      associate (               &
+      associate ( &
+         omega => this%omega, &
          ml => this%cx%model(), &
-         pt => this%gr%pt(j))
+         pt => this%gr%pt(j), &
+         m => this%m)
 
          alpha_0 = this%alpha_0(j)
 
@@ -1757,7 +1767,8 @@ contains
 
          Omega_rot = this%cx%Omega_rot(pt)
 
-         omega_c = this%cx%omega_c(Omega_rot, this%st)
+         omega_c = omega - m*Omega_rot
+
          lambda = this%cx%lambda(Omega_rot, this%st)
 
          if (V /= 0._RD) then
@@ -1798,9 +1809,11 @@ contains
 
       ! Set up the propagation type (0 -> evanescent, 1 -> p, -1 -> g)
 
-      associate (               &
+      associate ( &
+         omega => this%omega, &
          ml => this%cx%model(), &
-         pt => this%gr%pt(j) )
+         pt => this%gr%pt(j), &
+         m => this%m)
 
          if (ml%is_vacuum(pt)) then
 
@@ -1820,7 +1833,7 @@ contains
 
             lambda = REAL(this%lambda(j))
 
-            omega_c = REAL(this%cx%omega_c(Omega_rot, this%st))
+            omega_c = REAL(omega - m*Omega_rot)
 
             g_4 = -4._RD*V/Gamma_1*c_1
             g_2 = (As - V/Gamma_1 - U + 4._RD)**2 + 4._RD*V/Gamma_1*As + 4._RD*lambda

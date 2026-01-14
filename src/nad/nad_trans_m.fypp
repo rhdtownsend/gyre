@@ -59,7 +59,6 @@ module nad_trans_m
       real(RD)                 :: Omega_rot
       real(RD)                 :: x
       integer                  :: set
-      integer                  :: l
       integer                  :: n_e
    contains
       private
@@ -150,8 +149,6 @@ contains
       ! Other initializations
 
       tr%x = pt%x
-
-      tr%l = md_p%l
 
       tr%n_e = 6
 
@@ -413,17 +410,20 @@ contains
       ! from the canonical form
 
       associate ( &
+         omega => st%omega, &
          U => this%U, &
          c_1 => this%c_1, &
-         Omega_rot => this%Omega_rot)
+         Omega_rot => this%Omega_rot, &
+         l => this%cx%l, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
 
          lambda = this%cx%lambda(Omega_rot, st)
 
          ! Set up the matrix
 
-         if (this%l /= 0) then
+         if (l /= 0) then
 
             G(1,1) = 1._RD
             G(1,2) = 0._RD
@@ -691,17 +691,20 @@ contains
       ! to the canonical form
 
       associate ( &
+         omega => st%omega, &
          U => this%U, &
          c_1 => this%c_1, &
-         Omega_rot => this%Omega_rot)
+         Omega_rot => this%Omega_rot, &
+         l => this%cx%l, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
 
          lambda = this%cx%lambda(Omega_rot, st)
 
          ! Set up the matrix
 
-         if (this%l /= 0) then
+         if (l /= 0) then
 
             H(1,1) = 1._RD
             H(1,2) = 0._RD
@@ -908,14 +911,17 @@ contains
       ! transformation matrix H
 
       associate ( &
+         omega => st%omega, &
          c_1 => this%c_1, &
          dc_1 => this%dc_1, &
          U => this%U, &
          dU => this%dU, &
          Omega_rot => this%Omega_rot, &
-         x => this%x)
+         x => this%x, &
+         l => this%cx%l, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
 
          lambda = this%cx%lambda(Omega_rot, st)
 
@@ -926,7 +932,7 @@ contains
 
          invx = 1._RD/x
 
-         if (this%l /= 0) then
+         if (l /= 0) then
 
             dH(1,1) = invx*0._RD
             dH(1,2) = invx*0._RD

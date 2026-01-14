@@ -60,7 +60,6 @@ module ad_trans_m
       real(RD)                 :: dc_1
       real(RD)                 :: Omega_rot
       integer                  :: set
-      integer                  :: l
       integer                  :: n_e
    contains
       private
@@ -156,8 +155,6 @@ contains
       ! Other initializations
 
       tr%x = pt%x
-
-      tr%l = md_p%l
 
       tr%n_e = 4
 
@@ -399,17 +396,20 @@ contains
       ! from GYRE's canonical form
 
       associate( &
+         omega => st%omega, &
          U => this%U, &
          c_1 => this%c_1, &
-         Omega_rot => this%omega_rot)
+         Omega_rot => this%omega_rot, &
+         l => this%cx%l, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
 
          lambda = this%cx%lambda(Omega_rot, st)
 
          ! Set up the matrix
 
-         if (this%l /= 0) then
+         if (l /= 0) then
 
             G(1,1) = 1._RD
             G(1,2) = 0._RD
@@ -635,17 +635,20 @@ contains
       ! to GYRE's canonical form
 
       associate( &
+         omega => st%omega, &
          U => this%U, &
          c_1 => this%c_1, &
-         Omega_rot => this%Omega_rot)
+         Omega_rot => this%Omega_rot, &
+         l => this%cx%l, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
 
          lambda = this%cx%lambda(Omega_rot, st)
 
          ! Set up the matrix
 
-         if (this%l /= 0._RD) then
+         if (l /= 0._RD) then
 
             H(1,1) = 1._RD
             H(1,2) = 0._RD
@@ -832,14 +835,17 @@ contains
       ! transformation matrix H
 
       associate( &
+         omega => st%omega, &
          U => this%U, &
          dU => this%dU, &
          c_1 => this%c_1, &
          dc_1 => this%dc_1, &
          Omega_rot => this%Omega_rot, &
-         x => this%x)
+         x => this%x, &
+         l => this%cx%l, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
 
          lambda = this%cx%lambda(Omega_rot, st)
 
@@ -848,7 +854,7 @@ contains
 
          invx = 1._RD/x
 
-         if (this%l /= 0._RD) then
+         if (l /= 0._RD) then
 
             dH(1,1) = invx*0._RD
             dH(1,2) = invx*0._RD

@@ -161,6 +161,7 @@ contains
       ! Evaluate the RHS matrix
 
       associate ( &
+         omega => st%omega, &
          V_g => this%V_g, &
          As => this%As, &
          U => this%U, &
@@ -172,9 +173,10 @@ contains
          alpha_grv => this%alpha_grv, &
          alpha_omg => this%alpha_omg, &
          alpha_gam => this%alpha_gam, &
-         alpha_pi => this%alpha_pi)
+         alpha_pi => this%alpha_pi, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
 
          lambda = this%cx%lambda(Omega_rot, st)
          l_i = this%cx%l_e(Omega_rot_i, st)

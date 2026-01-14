@@ -59,19 +59,20 @@ module context_m
       class(angular_ct), allocatable :: an
       type(point_t)                  :: pt_i
       type(point_t)                  :: pt_o
-      integer                        :: m
       integer                        :: Omega_rot_source
       real(RD)                       :: Omega_rot_
       integer                        :: deps_source
       logical                        :: complex_lambda
       type(cubic_interp_ct)          :: ci_eps_rho
       type(cubic_interp_ct)          :: ci_eps_T
+      integer, public                :: l
+      integer, public                :: m
    contains
       private
       procedure, public  :: model
       procedure, public  :: point_i
       procedure, public  :: point_o
-      #:for N in ('omega_c', 'lambda', 'l_e', 'eps_rho', 'eps_T')
+      #:for N in ('lambda', 'l_e', 'eps_rho', 'eps_T')
          #:for S in FLOAT_SUFFIXES
             procedure    :: ${N}$_${S}$_
          #:endfor
@@ -195,57 +196,6 @@ contains
       return
 
    end function point_o
-
-   !****
-
-   function omega_c_r_(this, Omega_rot, st) result(omega_c)
-
-      class(context_t), intent(in) :: this
-      real(RD), intent(in)         :: Omega_rot
-      class(state_rt), intent(in)  :: st
-      real(RD)                     :: omega_c
-
-      ! Evaluate the co-rotating frequency (real)
-
-      omega_c = st%omega - this%m*Omega_rot
-
-      ! Finish
-
-      return
-
-   end function omega_c_r_
-
-   !****
-
-   function omega_c_c_(this, Omega_rot, st, use_omega_r) result(omega_c)
-
-      class(context_t), intent(in)  :: this
-      real(RD), intent(in)          :: Omega_rot
-      class(state_ct), intent(in)   :: st
-      logical, intent(in), optional :: use_omega_r
-      complex(RD)                   :: omega_c
-
-      logical :: use_omega_r_
-
-      if (PRESENT(use_omega_r)) then
-         use_omega_r_ = use_omega_r
-      else
-         use_omega_r_ = .FALSE.
-      endif
-
-      ! Evaluate the co-rotating frequency (complex)
-
-      if (use_omega_r_) then
-         omega_c = st%omega_r - this%m*Omega_rot
-      else
-         omega_c = st%omega - this%m*Omega_rot
-      endif
-
-      ! Finish
-
-      return
-
-   end function omega_c_c_
 
    !****
 

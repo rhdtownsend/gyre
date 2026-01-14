@@ -241,6 +241,7 @@ contains
       ! Evaluate the RHS matrix
 
       associate ( &
+         omega => st%omega, &
          V => this%V, &
          V_g => this%V_g, &
          As => this%As, &
@@ -276,9 +277,11 @@ contains
          alpha_pi => this%alpha_pi, &
          alpha_kar => this%alpha_kar, &
          alpha_kat => this%alpha_kat, &
-         alpha_egv => this%alpha_egv)
+         alpha_egv => this%alpha_egv, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
+
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)

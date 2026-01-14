@@ -361,9 +361,9 @@ contains
 
          omega_loop : do i = 1, SIZE(omega)
 
-            st = state_rt(omega(i))
+            omega_c = omega(i) - cx%m*Omega_rot
 
-            omega_c = cx%omega_c(Omega_rot, st)
+            st = state_rt(omega(i))
 
             lambda = cx%lambda(Omega_rot, st)
             l_i = cx%l_e(Omega_rot_i, st)
@@ -441,7 +441,6 @@ contains
       real(RD)       :: Omega_rot
       real(RD)       :: tau
       integer        :: i
-      type(state_rt) :: st
       real(RD)       :: omega_c
       real(RD)       :: dlnx
 
@@ -482,9 +481,7 @@ contains
 
          omega_loop : do i = 1, SIZE(omega)
 
-            st = state_rt(omega(i))
-
-            omega_c = cx%omega_c(Omega_rot, st)
+            omega_c = omega(i) - cx%m*Omega_rot
 
             ! Evaluate the thermal eigenvalue
 
@@ -640,9 +637,9 @@ contains
 
          omega_loop : do i = 1, SIZE(omega)
 
-            st = state_rt(omega(i))
+            omega_c = omega(i) - cx%m*Omega_rot
 
-            omega_c = cx%omega_c(Omega_rot, st)
+            st = state_rt(omega(i))
 
             lambda = cx%lambda(Omega_rot, st)
             l_i = cx%l_e(Omega_rot_i, st)

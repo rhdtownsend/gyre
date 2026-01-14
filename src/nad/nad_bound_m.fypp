@@ -286,12 +286,14 @@ contains
       ! Evaluate the inner boundary conditions (regular-enforcing)
 
       associate( &
+         omega => st%omega, &
          c_1 => this%c_1_i, &
          Omega_rot => this%Omega_rot_i, &
          alpha_grv => this%alpha_grv, &
-         alpha_omg => this%alpha_omg)
+         alpha_omg => this%alpha_omg, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
 
          l_i = this%cx%l_e(Omega_rot, st)
 
@@ -480,6 +482,7 @@ contains
       ! Evaluate the outer boundary conditions (vacuum)
 
       associate( &
+         omega => st%omega, &
          V => this%V_o, &
          U => this%U_o, &
          nabla_ad => this%nabla_ad_o, &
@@ -488,9 +491,11 @@ contains
          alpha_grv => this%alpha_grv, &
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
-         alpha_omg => this%alpha_omg)
+         alpha_omg => this%alpha_omg, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
+
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          l_e = this%cx%l_e(Omega_rot, st)
@@ -548,6 +553,7 @@ contains
       ! displacement)
 
       associate( &
+         omega => st%omega, &
          V => this%V_o, &
          U => this%U_o, &
          nabla_ad => this%nabla_ad_o, &
@@ -556,9 +562,11 @@ contains
          alpha_grv => this%alpha_grv, &
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
-         alpha_omg => this%alpha_omg)
+         alpha_omg => this%alpha_omg, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
+
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          l_e = this%cx%l_e(Omega_rot, st)
@@ -616,6 +624,7 @@ contains
       ! displacement)
 
       associate( &
+         omega => st%omega, &
          V => this%V_o, &
          U => this%U_o, &
          nabla_ad => this%nabla_ad_o, &
@@ -624,9 +633,11 @@ contains
          alpha_grv => this%alpha_grv, &
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
-         alpha_omg => this%alpha_omg)
+         alpha_omg => this%alpha_omg, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
+
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          l_e = this%cx%l_e(Omega_rot, st)
@@ -684,6 +695,7 @@ contains
       ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
 
       associate( &
+         omega => st%omega, &
          V => this%V_o, &
          U => this%U_o, &
          c_1 => this%c_1_o, &
@@ -693,9 +705,11 @@ contains
          alpha_grv => this%alpha_grv, &
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
-         alpha_omg => this%alpha_omg)
+         alpha_omg => this%alpha_omg, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
+
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)
@@ -766,6 +780,7 @@ contains
       ! eigendecomposition
 
       associate( &
+         omega => st%omega, &
          V => this%V_o, &
          As => this%As_o, &
          U => this%U_o, &
@@ -778,9 +793,11 @@ contains
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg, &
-         branch => this%branch_o)
+         branch => this%branch_o, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
+
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)
@@ -883,6 +900,7 @@ contains
       ! Evaluate the outer boundary conditions ([Chr2008] formulation)
 
       associate( &
+         omega => st%omega, &
          V => this%V_o, &
          As => this%As_o, &
          U => this%U_o, &
@@ -895,9 +913,11 @@ contains
          alpha_gbc => this%alpha_gbc, &
          alpha_rht => this%alpha_rht, &
          alpha_omg => this%alpha_omg, &
-         branch => this%branch_o)
+         branch => this%branch_o, &
+         m => this%cx%m)
 
-         omega_c = this%cx%omega_c(Omega_rot, st)
+         omega_c = omega - m*Omega_rot
+
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
          lambda = this%cx%lambda(Omega_rot, st)
