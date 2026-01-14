@@ -516,7 +516,7 @@ contains
       ! Convert cx to complex
 
       c = CMPLX(real(cx%re), real(cx%im), KIND=RD)
-      
+
       ! Finish
 
       return
