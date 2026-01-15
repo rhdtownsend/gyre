@@ -130,7 +130,7 @@ module ext_complex_m
 
 contains
 
-   elemental function ext_ct_r_(r) result(cx)
+   pure elemental function ext_ct_r_(r) result(cx)
 
       real(RD), intent(in) :: r
       type(ext_ct)         :: cx
@@ -148,7 +148,7 @@ contains
 
    !****
 
-   elemental function ext_ct_r_i_(r, i) result(cx)
+   pure elemental function ext_ct_r_i_(r, i) result(cx)
 
       real(RD), intent(in) :: r
       real(RD), intent(in) :: i
@@ -167,7 +167,7 @@ contains
 
    !****
 
-   elemental function ext_ct_c_(c) result(cx)
+   pure elemental function ext_ct_c_(c) result(cx)
 
       complex(RD), intent(in) :: c
       type(ext_ct)            :: cx
@@ -185,7 +185,7 @@ contains
 
    !****
 
-   elemental function ext_ct_rx_(rx) result(cx)
+   pure elemental function ext_ct_rx_(rx) result(cx)
 
       type(ext_rt), intent(in) :: rx
       type(ext_ct)             :: cx
@@ -203,7 +203,7 @@ contains
 
    !****
 
-   elemental function ext_ct_rx_ix_(rx, ix) result(cx)
+   pure elemental function ext_ct_rx_ix_(rx, ix) result(cx)
 
       type(ext_rt), intent(in) :: rx
       type(ext_rt), intent(in) :: ix
@@ -223,7 +223,7 @@ contains
 
    !****
 
-   elemental function op_plus_cx_cx_(this, that) result(cx)
+   pure elemental function op_plus_cx_cx_(this, that) result(cx)
 
       class(ext_ct), intent(in) :: this
       class(ext_ct), intent(in) :: that
@@ -242,7 +242,7 @@ contains
 
    !****
 
-   elemental function op_minus_cx_(this) result(cx)
+   pure elemental function op_minus_cx_(this) result(cx)
 
       class(ext_ct), intent(in) :: this
       type(ext_ct)              :: cx
@@ -260,7 +260,7 @@ contains
 
    !****
 
-   elemental function op_minus_cx_cx_(this, that) result(cx)
+   pure elemental function op_minus_cx_cx_(this, that) result(cx)
 
       class(ext_ct), intent(in) :: this
       class(ext_ct), intent(in) :: that
@@ -282,7 +282,7 @@ contains
 
    !****
 
-   elemental function op_times_cx_cx_(this, that) result(cx)
+   pure elemental function op_times_cx_cx_(this, that) result(cx)
 
       class(ext_ct), intent(in) :: this
       class(ext_ct), intent(in) :: that
@@ -301,7 +301,7 @@ contains
 
    !****
 
-   elemental function op_divide_cx_cx_(this, that) result(cx)
+   pure elemental function op_divide_cx_cx_(this, that) result(cx)
 
       class(ext_ct), intent(in) :: this
       class(ext_ct), intent(in) :: that
@@ -332,7 +332,7 @@ contains
 
    !****
 
-   elemental function op_eq_cx_cx_(this, that) result(eq)
+   pure elemental function op_eq_cx_cx_(this, that) result(eq)
 
       class(ext_ct), intent(in) :: this
       class(ext_ct), intent(in) :: that
@@ -350,7 +350,7 @@ contains
 
    !****
 
-   elemental function op_neq_cx_cx_(this, that) result(neq)
+   pure elemental function op_neq_cx_cx_(this, that) result(neq)
 
       class(ext_ct), intent(in) :: this
       class(ext_ct), intent(in) :: that
@@ -372,7 +372,7 @@ contains
                         ('plus', 'minus', 'times', 'divide', 'eq', 'neq'), &
                         ('type(ext_ct)',)*4+('logical',)*2)
 
-      elemental function op_${N}$_cx_rx_(this, that) result(${N}$)
+      pure elemental function op_${N}$_cx_rx_(this, that) result(${N}$)
 
          class(ext_ct), intent(in) :: this
          class(ext_rt), intent(in) :: that
@@ -388,7 +388,7 @@ contains
 
       end function op_${N}$_cx_rx_
 
-      elemental function op_${N}$_rx_cx_(this, that) result(${N}$)
+      pure elemental function op_${N}$_rx_cx_(this, that) result(${N}$)
 
          class(ext_rt), intent(in) :: this
          class(ext_ct), intent(in) :: that
@@ -404,7 +404,7 @@ contains
 
       end function op_${N}$_rx_cx_
 
-      elemental function op_${N}$_cx_c_(this, that) result(${N}$)
+      pure elemental function op_${N}$_cx_c_(this, that) result(${N}$)
 
          class(ext_ct), intent(in) :: this
          complex(RD), intent(in)    :: that
@@ -420,7 +420,7 @@ contains
 
       end function op_${N}$_cx_c_
 
-      elemental function op_${N}$_c_cx_(this, that) result(${N}$)
+      pure elemental function op_${N}$_c_cx_(this, that) result(${N}$)
 
          complex(RD), intent(in)    :: this
          class(ext_ct), intent(in) :: that
@@ -436,7 +436,7 @@ contains
 
       end function op_${N}$_c_cx_
 
-      elemental function op_${N}$_cx_r_(this, that) result(${N}$)
+      pure elemental function op_${N}$_cx_r_(this, that) result(${N}$)
 
          class(ext_ct), intent(in) :: this
          real(RD), intent(in)       :: that
@@ -452,7 +452,7 @@ contains
 
       end function op_${N}$_cx_r_
 
-      elemental function op_${N}$_r_cx_(this, that) result(${N}$)
+      pure elemental function op_${N}$_r_cx_(this, that) result(${N}$)
 
          real(RD), intent(in)       :: this
          class(ext_ct), intent(in) :: that
@@ -472,7 +472,7 @@ contains
 
    !****
 
-   elemental function ext_rt_cx_(cx) result(rx)
+   pure elemental function ext_rt_cx_(cx) result(rx)
 
       type(ext_ct), intent(in) :: cx
       type(ext_rt)             :: rx
@@ -489,7 +489,7 @@ contains
 
    !****
 
-   elemental function real_(cx) result(r)
+   pure elemental function real_(cx) result(r)
 
       type(ext_ct), intent(in) :: cx
       real(RD)                 :: r
@@ -506,7 +506,7 @@ contains
 
    !****
 
-   elemental function cmplx_(cx) result(c)
+   pure elemental function cmplx_(cx) result(c)
 
       type(ext_ct), intent(in) :: cx
       complex(RD)              :: c
@@ -525,7 +525,7 @@ contains
 
    !****
 
-   elemental function valid_(cx)
+   pure elemental function valid_(cx)
 
       type(ext_ct), intent(in) :: cx
       logical                  :: valid_
@@ -542,7 +542,7 @@ contains
 
    !****
 
-   elemental function conjg_(cx) result(conjg_cx)
+   pure elemental function conjg_(cx) result(conjg_cx)
 
       type(ext_ct), intent(in) :: cx
       type(ext_ct)             :: conjg_cx
@@ -559,7 +559,7 @@ contains
 
    !****
 
-   function product_(cx) result(prod_cx)
+   pure function product_(cx) result(prod_cx)
 
       type(ext_ct), intent(in) :: cx(:)
       type(ext_ct)             :: prod_cx
@@ -584,7 +584,7 @@ contains
 
    !****
 
-   function product_ct(c) result(prod_cx)
+   pure function product_ct(c) result(prod_cx)
 
       complex(RD), intent(in) :: c(:)
       type(ext_ct)            :: prod_cx
@@ -609,7 +609,7 @@ contains
 
    !****
 
-   elemental function abs_(cx) result(abs_cx)
+   pure elemental function abs_(cx) result(abs_cx)
 
       type(ext_ct), intent(in) :: cx
       type(ext_rt)             :: abs_cx
@@ -622,10 +622,18 @@ contains
       a_re = abs(cx%re)
       a_im = abs(cx%im)
 
-      if (abs(cx%re) >= abs(cx%im)) then
-         abs_cx = a_re*sqrt(1._RD + (cx%im*cx%im)/(cx%re*cx%re))
+      if (a_re /= 0._RD .OR. a_im /= 0._RD) then
+
+         if (a_re >= a_im) then
+            abs_cx = a_re*sqrt(ONE_RT + (cx%im*cx%im)/(cx%re*cx%re))
+         else
+            abs_cx = a_im*sqrt(ONE_RT + (cx%re*cx%re)/(cx%im*cx%im))
+         end if
+
       else
-         abs_cx = a_im*sqrt(1._RD + (cx%re*cx%re)/(cx%im*cx%im))
+
+         abs_cx = ZERO_RT
+
       end if
 
       ! Finish
@@ -636,7 +644,7 @@ contains
 
    !****
 
-   elemental function exp_(cx) result(exp_cx)
+   pure elemental function exp_(cx) result(exp_cx)
 
       type(ext_ct), intent(in) :: cx
       type(ext_ct)             :: exp_cx
@@ -657,7 +665,7 @@ contains
 
    !****
 
-   elemental function sqrt_(cx) result(sqrt_cx)
+   pure elemental function sqrt_(cx) result(sqrt_cx)
 
       type(ext_ct), intent(in) :: cx
       type(ext_ct)             :: sqrt_cx
@@ -682,7 +690,7 @@ contains
 
             f = cx%im/cx%re
 
-            w = sqrt(a_re)*sqrt(0.5_RD*(1._RD + sqrt(1._RD + f*f)))
+            w = sqrt(a_re)*sqrt(0.5_RD*(ONE_RT + sqrt(1._RD + f*f)))
 
          else
 
@@ -692,14 +700,14 @@ contains
 
          end if
 
-         if (cx%re >= 0._RD) then
+         if (cx%re >= ZERO_RT) then
 
             sqrt_cx%re = w
             sqrt_cx%im = 0.5_RD*cx%im/w
 
          else
 
-            if (cx%im >= 0._RD) then
+            if (cx%im >= ZERO_RT) then
 
                sqrt_cx%re = 0.5_RD*a_im/w
                sqrt_cx%im = w
