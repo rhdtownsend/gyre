@@ -146,7 +146,7 @@ contains
          subroutine build_and_factor_${I}$_${S}$_(this, st, bd, de, full, f)
 
             class(rowpp_sysmtx_${S}$), intent(inout) :: this
-            class(state_${S}$), intent(in)               :: st
+            class(state_${S}$), intent(in)           :: st
             class(bound_${S}$), intent(in)           :: bd
             class(diff_element_${S}$), intent(in)    :: de(:)
             logical, intent(in), optional            :: full
@@ -476,7 +476,7 @@ contains
          call this%build_and_factor_(st, bd, de)
 
          ! Evaluate the determinant as the product of the diagonal
-         ! elements
+         ! elements and block scales
 
          det = product_${S}$(this%D)*product(this%scl)
 
