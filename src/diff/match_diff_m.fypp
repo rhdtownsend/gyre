@@ -84,7 +84,8 @@ contains
          type(point_t), intent(in) :: pt_b
          type(match_diff_${S}$)    :: df
 
-         @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
+         @:ASSERT_DEBUG(pt_b%s == pt_a%s+1, 'segment mismatch')
+         @:ASSERT_DEBUG(pt_b%x == pt_a%x, 'segment mismatch')
 
          ! Construct the match_diff type
 
