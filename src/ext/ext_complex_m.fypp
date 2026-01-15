@@ -688,15 +688,15 @@ contains
 
          if (a_re >= a_im) then
 
-            f = cx%im/cx%re
+            f = a_im/a_re
 
-            w = sqrt(a_re)*sqrt(0.5_RD*(ONE_RT + sqrt(1._RD + f*f)))
+            w = sqrt(a_re*0.5_RD*(ONE_RT + sqrt(1._RD + f*f)))
 
          else
 
-            f = cx%re/cx%im
+            f = a_re/a_im
 
-            w = sqrt(a_im)*sqrt(0.5_RD*(f + sqrt(1._RD + f*f)))
+            w = sqrt(a_im*0.5_RD*(f + sqrt(1._RD + f*f)))
 
          end if
 
