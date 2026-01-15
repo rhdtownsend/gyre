@@ -17,7 +17,7 @@ ifeq ($(FRONTENDS),yes)
 endif
 
 ifeq ($(TOOLS),yes)
-   BIN_TARGETS += eval_lambda eval_tidal_coeff eval_love build_poly poly_to_fgong poly_to_txt build_tar_fit
+   BIN_TARGETS += eval_lambda eval_tidal_coeff eval_love build_poly poly_to_fgong poly_to_txt build_tar_fit test_ext
 endif
 
 ifeq ($(IFACES),yes)
@@ -76,14 +76,19 @@ test_gyre_mesa_SRCS = test_gyre_mesa.fypp
 test_gyre_mesa_USES = $(libgyre_mesa_SRCS) $(libgyre_SRCS)
 test_gyre_mesa_LIBS = libgyre_mesa libgyre
 
+test_ext_SRCS = test_ext.fypp
+test_ext_USES = $(libgyre_SRCS)
+test_ext_LIBS = libgyre
+
 libgyre_SRCS = adhoc_angular_m.fypp							\
    ad_bound_m.fypp ad_bvp_m.fypp  ad_eqns_m.fypp ad_trans_m.fypp 			\
    amdl_file_m.fypp									\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp anapoly_5_model_m.fypp			\
    anapoly_5_1_model_m.fypp angular_m.fypp angular_factory_m.fypp atmos_m.fypp		\
    b3_file_m.fypp band_sysmtx_m.fypp blas_lapack_m.fypp					\
-   block_sysmtx_m.fypp bound_m.fypp bracket_search_m.fypp bvp_m.fypp			\
-   cheb_fit_m.fypp colloc_diff_m.fypp constants_m.fypp context_m.fypp			\
+   block_sysmtx_m.fypp bound_m.fypp bracket_search_m.fypp bvp_m.fypp cheb_fit_m.fypp	\
+   colloc_gl2_diff_m.fypp colloc_gl4_diff_m.fypp colloc_gl6_diff_m.fypp			\
+   constants_m.fypp context_m.fypp							\
    contour_map_m.fypp contour_path_m.fypp contour_search_m.fypp				\
    cubic_interp_m.fypp deriv_m.fypp detail_m.fypp diff_factory_m.fypp			\
    diff_m.fypp diff_element_m.fypp discrim_m.fypp eqns_m.fypp evol_model_m.fypp		\
