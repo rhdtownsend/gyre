@@ -535,7 +535,7 @@ contains
          case ('re')
             w = real(-f_a%re/(f_b%re - f_a%re))
          case ('im')
-            w = real(-f_a%im/(f_b%im - f_a%re))
+            w = real(-f_a%im/(f_b%im - f_a%im))
          case default
             @:ABORT('invalid part')
          end select
