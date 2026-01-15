@@ -23,7 +23,9 @@ module diff_factory_m
 
    use forum_m, only: RD
 
-   use colloc_diff_m
+   use colloc_gl2_diff_m
+   use colloc_gl4_diff_m
+   use colloc_gl6_diff_m
    use diff_m
    use eqns_m
    use magnus_diff_m
@@ -91,11 +93,11 @@ contains
             case ('MAGNUS_GL6')
                allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL6'))
             case ('COLLOC_GL2')
-               allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL2'))
+               allocate(df, SOURCE=colloc_gl2_diff_${S}$(eqns_factory, pt_a, pt_b))
             case ('COLLOC_GL4')
-               allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL4'))
+               allocate(df, SOURCE=colloc_gl4_diff_${S}$(eqns_factory, pt_a, pt_b))
             case ('COLLOC_GL6')
-               allocate(df, SOURCE=colloc_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL6'))
+               allocate(df, SOURCE=colloc_gl6_diff_${S}$(eqns_factory, pt_a, pt_b))
             case ('TRAPZ')
                allocate(df, SOURCE=trapz_diff_${S}$(eqns_factory, pt_a, pt_b))
             case ('MIRK')

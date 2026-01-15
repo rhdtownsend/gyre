@@ -1,0 +1,254 @@
+! Module  : colloc_gl6_diff_m
+! Purpose : difference equations (4th-order Gauss-Legendre collocation)
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module colloc_gl6_diff_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use diff_m
+   use eqns_m
+   use ext_m
+   use linalg_m
+   use math_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Parameter definitions
+
+   #:for S in DTYPE_SUFFIXES
+
+      ! Derived-type definitions
+
+      type, extends(diff_${S}$) :: colloc_gl6_diff_${S}$
+         private
+         class(eqns_${S}$), allocatable   :: eq(:)
+         real(RD)                         :: dx
+         logical                          :: reverse
+      contains
+         private
+         procedure, public :: build => build_${S}$_
+      end type colloc_gl6_diff_${S}$
+
+      ! Interfaces
+
+      interface colloc_gl6_diff_${S}$
+         module procedure colloc_gl6_diff_${S}$_
+      end interface colloc_gl6_diff_${S}$
+
+      ! Access specifiers
+
+      public :: colloc_gl6_diff_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function colloc_gl6_diff_${S}$_(eqns_factory, pt_a, pt_b) result(df)
+
+         interface
+            subroutine eqns_factory(pt, eq)
+               use point_m
+               use eqns_m
+               implicit none (type, external)
+               type(point_t), intent(in)                   :: pt(:)
+               class(eqns_${S}$), allocatable, intent(out) :: eq(:)
+            end subroutine eqns_factory
+         end interface
+         type(point_t), intent(in)   :: pt_a
+         type(point_t), intent(in)   :: pt_b
+         type(colloc_gl6_diff_${S}$) :: df
+
+         real(RD), parameter :: C_I(3) = [ &
+            0.5_RD-sqrt(15._RD)/10._RD, &
+            0.5_RD, &
+            0.5_RD+sqrt(15._RD)/10._RD]
+
+         type(point_t) :: pt(3)
+
+         @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
+
+         ! Construct the colloc_gl6_diff type
+
+         df%reverse = pt_a%x >= 0.5_RD
+
+         pt%s = pt_a%s
+
+         if (df%reverse) then
+            df%dx = pt_a%x - pt_b%x
+            pt%x = pt_b%x + C_I*df%dx
+         else
+            df%dx = pt_b%x - pt_a%x
+            pt%x = pt_a%x + C_I*df%dx
+         endif
+
+         call eqns_factory(pt, df%eq)
+
+         df%n_e = df%eq(1)%n_e
+
+         ! Finish
+
+         return
+
+      end function colloc_gl6_diff_${S}$_
+
+      !****
+
+      subroutine build_${S}$_(this, st, E_l, E_r, scl)
+
+         class(colloc_gl6_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)           :: st
+         ${T}$, intent(out)                       :: E_l(:,:)
+         ${T}$, intent(out)                       :: E_r(:,:)
+         type(ext_${S}$), intent(out)             :: scl
+
+         real(RD), parameter :: A_IJ(3,3) = RESHAPE([ &
+            5._RD/36._RD, &
+            5._RD/36._RD+sqrt(15._RD)/24._RD, &
+            5._RD/36._RD+sqrt(15._RD)/30._RD, &
+            2._RD/9._RD-sqrt(15._RD)/15._RD, &
+            2._RD/9._RD, &
+            2._RD/9._RD+sqrt(15._RD)/15._RD, &
+            5._RD/36._RD-sqrt(15._RD)/30._RD, &
+            5._RD/36._RD-sqrt(15._RD)/24._RD, &
+            5._RD/36._RD], &
+            [3,3])
+         real(RD), parameter :: B_I(3) = [ &
+            5._RD/18._RD, &
+            4._RD/9._RD, &
+            5._RD/18._RD]
+         
+         integer :: i
+         integer :: j
+         ${T}$   :: M(3*this%n_e,3*this%n_e)
+         ${T}$   :: B(3*this%n_e,this%n_e)
+         integer :: k
+         ${T}$   :: X(3*this%n_e,this%n_e)
+
+         ! Build the difference equations
+
+         ! Algorithm note: this is implicit Runge Kutta with three
+         ! intermediate stages; A_IJ and B_I are the Butcher tableaux
+         ! coefficients (C_I has already been used in the constructor)
+
+         ! Set up a linear system for the intermediate-stage matrices X
+
+         do i = 1, 3
+
+            associate( &
+               i_a => (i-1)*this%n_e + 1, &
+               i_b => (i-1)*this%n_e + this%n_e)
+
+               call this%eq(i)%eval_A(st, B(i_a:i_b,:))
+
+               do j = 1, 3
+
+                  associate( &
+                     j_a => (j-1)*this%n_e + 1, &
+                     j_b => (j-1)*this%n_e + this%n_e)
+
+                     M(i_a:i_b,j_a:j_b) = -this%dx*A_IJ(i,j)*B(i_a:i_b,:)
+
+                     if (i == j) then
+                        do k = i_a, i_b
+                           M(k,k) = M(k,k) + 1._RD
+                        end do
+                     endif
+
+                  end associate
+
+               end do
+
+            end associate
+
+         end do
+
+         ! Solve the linear system
+
+         X = linear_solve(M, B)
+
+         ! Assemble the difference equations
+
+         E_l = 0._RD
+         E_r = 0._RD
+
+         if (this%reverse) then
+
+            do i = 1, 3
+
+               associate( &
+                  i_a => (i-1)*this%n_e + 1, &
+                  i_b => (i-1)*this%n_e + this%n_e)
+
+                  E_r = E_r + this%dx*B_I(i)*X(i_a:i_b,:)
+
+               end associate
+
+            end do
+
+            do k = 1, this%n_e
+               E_l(k,k) = E_l(k,k) - 1._RD
+               E_r(k,k) = E_r(k,k) + 1._RD
+            end do
+
+         else
+
+            do i = 1, 3
+
+               associate( &
+                  i_a => (i-1)*this%n_e + 1, &
+                  i_b => (i-1)*this%n_e + this%n_e)
+
+                  E_l = E_l + this%dx*B_I(i)*X(i_a:i_b,:)
+
+               end associate
+
+            end do
+
+            do k = 1, this%n_e
+               E_l(k,k) = E_l(k,k) + 1._RD
+               E_r(k,k) = E_r(k,k) - 1._RD
+            end do
+
+         end if
+
+         scl = ONE_${S}$
+
+         ! Finish
+
+         return
+
+      end subroutine build_${S}$_
+
+   #:endfor
+
+end module colloc_gl6_diff_m

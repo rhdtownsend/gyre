@@ -1,0 +1,170 @@
+! Module  : colloc_gl2_diff_m
+! Purpose : difference equations (2nd-order Gauss-Legendre collocation)
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module colloc_gl2_diff_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use diff_m
+   use eqns_m
+   use ext_m
+   use math_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Parameter definitions
+
+   #:for S in DTYPE_SUFFIXES
+
+      ! Derived-type definitions
+
+      type, extends(diff_${S}$) :: colloc_gl2_diff_${S}$
+         private
+         class(eqns_${S}$), allocatable   :: eq(:)
+         real(RD)                         :: dx
+         logical                          :: reverse
+      contains
+         private
+         procedure, public :: build => build_${S}$_
+      end type colloc_gl2_diff_${S}$
+
+      ! Interfaces
+
+      interface colloc_gl2_diff_${S}$
+         module procedure colloc_gl2_diff_${S}$_
+      end interface colloc_gl2_diff_${S}$
+
+      ! Access specifiers
+
+      public :: colloc_gl2_diff_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function colloc_gl2_diff_${S}$_(eqns_factory, pt_a, pt_b) result(df)
+
+         interface
+            subroutine eqns_factory(pt, eq)
+               use point_m
+               use eqns_m
+               implicit none (type, external)
+               type(point_t), intent(in)                   :: pt(:)
+               class(eqns_${S}$), allocatable, intent(out) :: eq(:)
+            end subroutine eqns_factory
+         end interface
+         type(point_t), intent(in)   :: pt_a
+         type(point_t), intent(in)   :: pt_b
+         type(colloc_gl2_diff_${S}$) :: df
+
+         real(RD), parameter :: C_I(1) = [0.5_RD]
+
+         type(point_t) :: pt(1)
+
+         @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
+
+         ! Construct the colloc_gl2_diff type
+
+         df%reverse = pt_a%x >= 0.5_RD
+
+         pt%s = pt_a%s
+
+         if (df%reverse) then
+            df%dx = pt_a%x - pt_b%x
+            pt%x = pt_b%x + C_I*df%dx
+         else
+            df%dx = pt_b%x - pt_a%x
+            pt%x = pt_a%x + C_I*df%dx
+         endif
+
+         call eqns_factory(pt, df%eq)
+
+         df%n_e = df%eq(1)%n_e
+
+         ! Finish
+
+         return
+
+      end function colloc_gl2_diff_${S}$_
+
+      !****
+
+      subroutine build_${S}$_(this, st, E_l, E_r, scl)
+
+         class(colloc_gl2_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)           :: st
+         ${T}$, intent(out)                       :: E_l(:,:)
+         ${T}$, intent(out)                       :: E_r(:,:)
+         type(ext_${S}$), intent(out)             :: scl
+
+         integer  :: i
+         integer  :: j
+         real(RD) :: alpha
+         real(RD) :: beta
+
+         ! Build the difference equations
+
+         call this%eq(1)%eval_A(st, E_l)
+
+         ! Algorithm note: this is equivalent to the modified midpoint
+         ! method
+
+         alpha = 0.5_RD*this%dx
+
+         if (this%reverse) then
+            beta = -1._RD
+         else
+            beta = 1._RD
+         end if
+
+         do j = 1, this%n_e
+
+            do i = 1, this%n_e
+               E_l(i,j) = alpha*E_l(i,j)
+               E_r(i,j) = E_l(i,j)
+            end do
+
+            E_l(j,j) = E_l(j,j) + beta
+            E_r(j,j) = E_r(j,j) - beta
+
+         end do
+
+         scl = ONE_${S}$
+
+         ! Finish
+
+      end subroutine build_${S}$_
+
+   #:endfor
+
+end module colloc_gl2_diff_m
