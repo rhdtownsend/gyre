@@ -17,11 +17,29 @@
 
 #:include 'gyre.inc'
 
+#!!
+#! Split a real(RD) into fraction and exponent parts
+#! (using IEEE-754 magic; much faster than FRACTION
+#! and EXPONENT)
+#!!
+
+#:def SPLIT(X, F, E)
+   if (${X}$ /= 0._RD) then
+      bits = TRANSFER(${X}$, bits)
+      ${E}$ = IBITS(bits, 52, 11) - 1023
+      call MVBITS(1023_ID, 0, 11, bits, 52)
+      ${F}$ = TRANSFER(bits, ${F}$)
+   else
+      ${F}$ = 0._RD
+      ${E}$ = 0
+   endif
+#:enddef
+
 module ext_real_m
 
    ! Uses
 
-   use forum_m, only: RD
+   use forum_m, only: RD, ID
 
    use math_m
 
@@ -132,14 +150,16 @@ module ext_real_m
 
 contains
 
-   elemental function ext_rt_r_(r) result(rx)
+   pure elemental function ext_rt_r_(r) result(rx)
 
       real(RD), intent(in) :: r
       type(ext_rt)         :: rx
 
+      integer(ID) :: bits
+
       ! Construct the ext_rt from the real r
 
-      call split_(r, rx%f, rx%e)
+      @:SPLIT(r, rx%f, rx%e)
 
       ! Finish
 
@@ -149,14 +169,16 @@ contains
 
    !****
 
-   elemental function ext_rt_c_(c) result(rx)
+   pure elemental function ext_rt_c_(c) result(rx)
 
       complex(RD), intent(in) :: c
       type(ext_rt)            :: rx
 
+      integer(ID) :: bits
+
       ! Construct the ext_rt from the complex c
 
-      call split_(REAL(c), rx%f, rx%e)
+      @:SPLIT(REAL(c), rx%f, rx%e)
 
       ! Finish
 
@@ -166,14 +188,15 @@ contains
 
    !****
 
-   elemental function op_plus_rx_rx_(this, that) result(rx)
+   pure elemental function op_plus_rx_rx_(this, that) result(rx)
 
       class(ext_rt), intent(in) :: this
       class(ext_rt), intent(in) :: that
       type(ext_rt)              :: rx
 
-      real(RD) :: f
-      integer  :: e
+      real(RD)    :: f
+      integer     :: e
+      integer(ID) :: bits
 
       ! Evaluate the plus operator
 
@@ -197,7 +220,7 @@ contains
             e = that%e
          endif
 
-         call split_(f, rx%f, rx%e)
+         @:SPLIT(f, rx%f, rx%e)
          rx = scale(rx, e)
 
       endif
@@ -210,7 +233,7 @@ contains
 
    !****
 
-   elemental function op_minus_rx_(this) result(rx)
+   pure elemental function op_minus_rx_(this) result(rx)
 
       class(ext_rt), intent(in) :: this
       type(ext_rt)              :: rx
@@ -228,14 +251,15 @@ contains
 
    !****
 
-   elemental function op_minus_rx_rx_(this, that) result(rx)
+   pure elemental function op_minus_rx_rx_(this, that) result(rx)
 
       class(ext_rt), intent(in) :: this
       class(ext_rt), intent(in) :: that
       type(ext_rt)              :: rx
 
-      real(RD) :: f
-      integer  :: e
+      real(RD)    :: f
+      integer     :: e
+      integer(ID) :: bits
 
       ! Evaluate the minus operator
 
@@ -259,7 +283,7 @@ contains
             e = that%e
          endif
 
-         call split_(f, rx%f, rx%e)
+         @:SPLIT(f, rx%f, rx%e)
          rx = scale(rx, e)
 
       endif
@@ -272,14 +296,15 @@ contains
 
    !****
 
-   elemental function op_times_rx_rx_(this, that) result(rx)
+   pure elemental function op_times_rx_rx_(this, that) result(rx)
 
       class(ext_rt), intent(in) :: this
       class(ext_rt), intent(in) :: that
       type(ext_rt)              :: rx
 
-      real(RD) :: f
-      integer  :: e
+      real(RD)    :: f
+      integer     :: e
+      integer(ID) :: bits
 
       ! Evaluate the times operator
 
@@ -292,7 +317,7 @@ contains
          f = this%f*that%f
          e = this%e + that%e
 
-         call split_(f, rx%f, rx%e)
+         @:SPLIT(f, rx%f, rx%e)
          rx = scale(rx, e)
 
       endif
@@ -305,14 +330,15 @@ contains
 
    !****
 
-   elemental function op_divide_rx_rx_(this, that) result(rx)
+   pure elemental function op_divide_rx_rx_(this, that) result(rx)
 
       class(ext_rt), intent(in) :: this
       class(ext_rt), intent(in) :: that
       type(ext_rt)              :: rx
 
-      real(RD) :: f
-      integer  :: e
+      real(RD)    :: f
+      integer     :: e
+      integer(ID) :: bits
 
       ! Evaluate the divide operator
 
@@ -325,7 +351,7 @@ contains
          f = this%f/that%f
          e = this%e - that%e
 
-         call split_(f, rx%f, rx%e)
+         @:SPLIT(f, rx%f, rx%e)
          rx = scale(rx, e)
 
       endif
@@ -338,7 +364,7 @@ contains
 
    !****
 
-   elemental function op_eq_rx_rx_(this, that) result(eq)
+   pure elemental function op_eq_rx_rx_(this, that) result(eq)
 
       class(ext_rt), intent(in) :: this
       class(ext_rt), intent(in) :: that
@@ -356,7 +382,7 @@ contains
 
    !****
 
-   elemental function op_neq_rx_rx_(this, that) result(neq)
+   pure elemental function op_neq_rx_rx_(this, that) result(neq)
 
       class(ext_rt), intent(in) :: this
       class(ext_rt), intent(in) :: that
@@ -374,7 +400,7 @@ contains
 
    !****
 
-   elemental function op_lt_rx_rx_(this, that) result(lt)
+   pure elemental function op_lt_rx_rx_(this, that) result(lt)
 
       class(ext_rt), intent(in) :: this
       class(ext_rt), intent(in) :: that
@@ -414,7 +440,7 @@ contains
 
    !****
 
-   elemental function op_gt_rx_rx_(this, that) result(gt)
+   pure elemental function op_gt_rx_rx_(this, that) result(gt)
 
       class(ext_rt), intent(in) :: this
       class(ext_rt), intent(in) :: that
@@ -432,7 +458,7 @@ contains
 
    !****
 
-   elemental function op_le_rx_rx_(this, that) result(le)
+   pure elemental function op_le_rx_rx_(this, that) result(le)
 
       class(ext_rt), intent(in) :: this
       class(ext_rt), intent(in) :: that
@@ -450,7 +476,7 @@ contains
 
    !****
 
-   elemental function op_ge_rx_rx_(this, that) result(ge)
+   pure elemental function op_ge_rx_rx_(this, that) result(ge)
 
       class(ext_rt), intent(in) :: this
       class(ext_rt), intent(in) :: that
@@ -472,7 +498,7 @@ contains
                         ('plus', 'minus', 'times', 'divide', 'eq', 'neq', 'lt', 'gt', 'le', 'ge'), &
                         ('type(ext_rt)',)*4+('logical',)*6)
 
-      elemental function op_${N}$_rx_r_(this, that) result(${N}$)
+      pure elemental function op_${N}$_rx_r_(this, that) result(${N}$)
 
          class(ext_rt), intent(in) :: this
          real(RD), intent(in)      :: that
@@ -490,7 +516,7 @@ contains
 
       !****
 
-      elemental function op_${N}$_r_rx_(this, that) result(${N}$)
+      pure elemental function op_${N}$_r_rx_(this, that) result(${N}$)
 
          real(RD), intent(in)      :: this
          class(ext_rt), intent(in) :: that
@@ -510,7 +536,7 @@ contains
 
    !****
 
-   elemental function real_(rx) result(r)
+   pure elemental function real_(rx) result(r)
 
       type(ext_rt), intent(in) :: rx
       real(RD)                 :: r
@@ -543,7 +569,7 @@ contains
 
    !****
 
-   elemental function valid_(rx) result(valid)
+   pure elemental function valid_(rx) result(valid)
 
       type(ext_rt), intent(in) :: rx
       logical                  :: valid
@@ -560,26 +586,33 @@ contains
 
    !****
 
-   function product_(rx) result(prod_rx)
+   pure function product_(rx) result(prod_rx)
 
       type(ext_rt), intent(in) :: rx(:)
       type(ext_rt)             :: prod_rx
 
-      integer  :: i
-      real(RD) :: g
+      integer     :: i
+      real(RD)    :: f
+      integer     :: e
+      integer     :: de
+      integer(ID) :: bits
 
       ! Calculate the product of the elements of rx
 
-      prod_rx = ONE_RT
+      f = 1._RD
+      e = 0
 
-      do i = 1,SIZE(rx)
+      do i = 1, SIZE(rx)
 
-         g = prod_rx%f*rx(i)%f
+         f = f*rx(i)%f
 
-         prod_rx%f = FRACTION(g)
-         prod_rx%e = prod_rx%e + rx(i)%e + EXPONENT(g)
+         @:SPLIT(f, f, de)
+
+         e = e + rx(i)%e + de
 
       end do
+
+      prod_rx = ext_rt(f, e)
 
       ! Finish
 
@@ -589,26 +622,33 @@ contains
 
    !****
 
-   function product_rt(r) result(prod_rx)
+   pure function product_rt(r) result(prod_rx)
 
       real(RD), intent(in) :: r(:)
       type(ext_rt)         :: prod_rx
 
-      integer  :: i
-      real(RD) :: g
+      integer     :: i
+      real(RD)    :: f
+      integer     :: e
+      integer     :: de
+      integer(ID) :: bits
 
       ! Calculate the product of the elements of r
 
-      prod_rx = ONE_RT
+      f = 1._RD
+      e = 0
 
-      do i = 1,SIZE(r)
+      do i = 1, SIZE(r)
 
-         g = prod_rx%f*r(i)
+         f = f*r(i)
 
-         prod_rx%f = FRACTION(g)
-         prod_rx%e = prod_rx%e + EXPONENT(g)
+         @:SPLIT(f, f, de)
+
+         e = e + de
 
       end do
+
+      prod_rx = ext_rt(f, e)
 
       ! Finish
 
@@ -618,7 +658,7 @@ contains
 
    !****
 
-   elemental function abs_(rx) result(abs_rx)
+   pure elemental function abs_(rx) result(abs_rx)
 
       type(ext_rt), intent(in) :: rx
       type(ext_rt)             :: abs_rx
@@ -636,20 +676,21 @@ contains
 
    !****
 
-   elemental function exp_(rx) result(exp_rx)
+   pure elemental function exp_(rx) result(exp_rx)
 
       type(ext_rt), intent(in) :: rx
       type(ext_rt)             :: exp_rx
 
-      real(RD) :: g
-      integer  :: e
+      real(RD)    :: g
+      integer     :: e
+      integer(ID) :: bits
 
       ! Calculate the exponential of rx
 
       g = real(rx)/log(RADIX_RD)
       e = FLOOR(g)
 
-      call split_(pow(RADIX_RD, g-e), exp_rx%f, exp_rx%e)
+      @:SPLIT(pow(RADIX_RD, g-e), exp_rx%f, exp_rx%e)
       exp_rx = scale(exp_rx, e)
 
       ! Finish
@@ -660,7 +701,7 @@ contains
 
    !****
 
-   elemental function sqrt_(rx) result(sqrt_rx)
+   pure elemental function sqrt_(rx) result(sqrt_rx)
 
       type(ext_rt), intent(in) :: rx
       type(ext_rt)             :: sqrt_rx
@@ -683,7 +724,7 @@ contains
 
    !****
 
-   elemental function fraction_(rx) result(fraction_rx)
+   pure elemental function fraction_(rx) result(fraction_rx)
 
       type(ext_rt), intent(in) :: rx
       real(RD)                  :: fraction_rx
@@ -700,7 +741,7 @@ contains
 
    !****
 
-   elemental function exponent_(rx) result(exponent_rx)
+   pure elemental function exponent_(rx) result(exponent_rx)
 
       type(ext_rt), intent(in) :: rx
       integer                   :: exponent_rx
@@ -717,7 +758,7 @@ contains
 
    !****
 
-   elemental function max_(rx_a, rx_b) result(max_rx)
+   pure elemental function max_(rx_a, rx_b) result(max_rx)
 
       type(ext_rt), intent(in) :: rx_a
       type(ext_rt), intent(in) :: rx_b
@@ -765,7 +806,7 @@ contains
 
    !****
 
-   elemental function min_(rx_a, rx_b) result(min_rx)
+   pure elemental function min_(rx_a, rx_b) result(min_rx)
 
       type(ext_rt), intent(in) :: rx_a
       type(ext_rt), intent(in) :: rx_b
@@ -783,7 +824,7 @@ contains
 
    !****
 
-   elemental function scale_(rx, de) result(scale_rx)
+   pure elemental function scale_(rx, de) result(scale_rx)
 
       class(ext_rt), intent(in) :: rx
       integer, intent(in)       :: de
@@ -804,24 +845,5 @@ contains
       return
 
    end function scale_
-
-   !****
-
-   elemental subroutine split_(x, f, e)
-
-      real(RD), intent(in)  :: x
-      real(RD), intent(out) :: f
-      integer, intent(out)  :: e
-
-      ! Spit x into fraction and exponent parts
-
-      f = FRACTION(x)
-      e = EXPONENT(x)
-
-      ! Finish
-
-      return
-
-   end subroutine split_
 
 end module ext_real_m
