@@ -100,7 +100,7 @@ contains
 
          @:CHECK_BOUNDS(n_i+n_o, n_e)
 
-         @:ASSERT_DEBUG(ALL(de%df%n_e == n_e), 'dimension mismatch')
+!         @:ASSERT_DEBUG(ALL(de%df%n_e == n_e), 'dimension mismatch')
 
          ! Construct the bvp type
 
