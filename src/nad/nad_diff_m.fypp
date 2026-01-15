@@ -151,7 +151,6 @@ contains
    subroutine build(this, st, E_l, E_r, scl)
 
       use magnus_diff_m
-      use colloc_diff_m
 
       class(nad_diff_t), intent(in) :: this
       class(state_ct), intent(in)   :: st
@@ -192,11 +191,11 @@ contains
 
          scl = scl*exp(ext_ct(-SUM(lambda, MASK=MAGNUS_EIGVAL_MASK)*this%dx))
 
-      class is (colloc_diff_ct)
+      ! class is (colloc_diff_ct)
 
-         omega_c = st%omega - this%cx%m*this%Omega_rot
+      !    omega_c = st%omega - this%cx%m*this%Omega_rot
 
-         scl = scl/sqrt(omega_c)
+      !    scl = scl/sqrt(omega_c)
 
       end select
 
