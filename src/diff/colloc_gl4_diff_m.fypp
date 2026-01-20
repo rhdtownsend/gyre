@@ -31,6 +31,8 @@ module colloc_gl4_diff_m
    use point_m
    use state_m
 
+   use f95_lapack
+
    use ISO_FORTRAN_ENV
 
    ! No implicit typing
@@ -45,9 +47,8 @@ module colloc_gl4_diff_m
 
       type, extends(diff_${S}$) :: colloc_gl4_diff_${S}$
          private
-         class(eqns_${S}$), allocatable   :: eq(:)
-         real(RD)                         :: dx
-         logical                          :: reverse
+         class(eqns_${S}$), allocatable :: eq(:)
+         real(RD)                       :: dx
       contains
          private
          procedure, public :: build => build_${S}$_
@@ -88,7 +89,7 @@ contains
          type(point_t), intent(in)   :: pt_b
          type(colloc_gl4_diff_${S}$) :: df
 
-         real(RD), parameter :: C_I(2) = [ &
+         real(RD), parameter :: C(2) = [ &
             0.5_RD-sqrt(3._RD)/6._RD, &
             0.5_RD+sqrt(3._RD)/6._RD]
 
@@ -98,17 +99,10 @@ contains
 
          ! Construct the colloc_gl4_diff type
 
-         df%reverse = pt_a%x >= 0.5_RD
-
          pt%s = pt_a%s
 
-         if (df%reverse) then
-            df%dx = pt_a%x - pt_b%x
-            pt%x = pt_b%x + C_I*df%dx
-         else
-            df%dx = pt_b%x - pt_a%x
-            pt%x = pt_a%x + C_I*df%dx
-         endif
+         df%dx = pt_b%x - pt_a%x
+         pt%x = pt_a%x + C*df%dx
 
          call eqns_factory(pt, df%eq)
 
@@ -130,109 +124,52 @@ contains
          ${T}$, intent(out)                       :: E_r(:,:)
          type(ext_${S}$), intent(out)             :: scl
 
-         real(RD), parameter :: A_IJ(2,2) = RESHAPE([ &
-            0.25_RD, &
-            0.25_RD+sqrt(3._RD)/6._RD, &
-            0.25_RD-sqrt(3._RD)/6._RD, &
-            0.25_RD], &
-            [2,2])
-         real(RD), parameter :: B_I(2) = [ &
-            0.5_RD, &
-            0.5_RD]
+         real(RD), parameter :: ALPHA = 1._RD/12._RD
+         real(RD), parameter :: BETA = SQRT(3._RD)/6._RD
+         real(RD), parameter :: GAMMA = 1._RD/4._RD
 
-         integer :: i
-         integer :: j
-         ${T}$   :: M(2*this%n_e,2*this%n_e)
-         ${T}$   :: B(2*this%n_e,this%n_e)
-         integer :: k
-         ${T}$   :: X(2*this%n_e,this%n_e)
+         ${T}$ :: I(this%n_e,this%n_e)
+         ${T}$ :: J(this%n_e,this%n_e)
 
          ! Build the difference equations
 
-         ! Algorithm note: this is implicit Runge Kutta with two
-         ! intermediate stages; A_IJ and B_I are the Butcher tableaux
-         ! coefficients (C_I has already been used in the constructor)
+         ! Algorithm note: this is Gauss-Legendre collocation with 2
+         ! intermediate points. The implementation follows the
+         ! approach in the StORM code
 
-         ! Set up a linear system for the intermediate-stage matrices X
+         ! Calculate the jump matrix J. The associate construct
+         ! is to clarify re-use of dynamic arrays
 
-         do i = 1, 2
+         associate( &
+            A_1 => E_l, &
+            A_2 => E_r, &
+            A_21 => J, &
+            M => J, &
+            K_2 => E_r)
 
-            associate( &
-               i_a => (i-1)*this%n_e + 1, &
-               i_b => (i-1)*this%n_e + this%n_e)
+            call this%eq(1)%eval_A(st, A_1)
+            A_1 = this%dx*A_1
 
-               call this%eq(i)%eval_A(st, B(i_a:i_b,:))
+            call this%eq(2)%eval_A(st, A_2)
+            A_2 = this%dx*A_2
 
-               do j = 1, 2
+            A_21 = MATMUL(A_2, A_1)
 
-                  associate( &
-                     j_a => (j-1)*this%n_e + 1, &
-                     j_b => (j-1)*this%n_e + this%n_e)
+            I = identity_matrix(this%n_e)
 
-                     M(i_a:i_b,j_a:j_b) = -this%dx*A_IJ(i,j)*B(i_a:i_b,:)
+            K_2 =  A_2 + BETA*A_21
+            M = I + ALPHA*A_21
 
-                     if (i == j) then
-                        do k = i_a, i_b
-                           M(k,k) = M(k,k) + 1._RD
-                        end do
-                     endif
+            call LA_GESV(M, K_2)
 
-                  end associate
+            J = GAMMA*(MATMUL(A_1, I - BETA*K_2) + K_2)
 
-               end do
-
-            end associate
-
-         end do
-
-         ! Solve the linear system
-
-         X = linear_solve(M, B)
+         end associate
 
          ! Assemble the difference equations
 
-         E_l = 0._RD
-         E_r = 0._RD
-
-         if (this%reverse) then
-
-            do i = 1, 2
-
-               associate( &
-                  i_a => (i-1)*this%n_e + 1, &
-                  i_b => (i-1)*this%n_e + this%n_e)
-
-                  E_r = E_r + this%dx*B_I(i)*X(i_a:i_b,:)
-
-               end associate
-
-            end do
-
-            do k = 1, this%n_e
-               E_l(k,k) = E_l(k,k) - 1._RD
-               E_r(k,k) = E_r(k,k) + 1._RD
-            end do
-
-         else
-
-            do i = 1, 2
-
-               associate( &
-                  i_a => (i-1)*this%n_e + 1, &
-                  i_b => (i-1)*this%n_e + this%n_e)
-
-                  E_l = E_l + this%dx*B_I(i)*X(i_a:i_b,:)
-
-               end associate
-
-            end do
-
-            do k = 1, this%n_e
-               E_l(k,k) = E_l(k,k) + 1._RD
-               E_r(k,k) = E_r(k,k) - 1._RD
-            end do
-
-         end if
+         E_l = J + I
+         E_r = J - I
 
          scl = ONE_${S}$
 
