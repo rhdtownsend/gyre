@@ -45,6 +45,8 @@ module tidal_resp_m
    use rot_par_m
    use sad_bvp_m
    use state_m
+   use sysmtx_m
+   use sysmtx_factory_m
    use tide_par_m
    use tidal_coeff_m
    use tidal_context_m
@@ -107,6 +109,8 @@ contains
       integer                       :: k
       class(bvp_ct), allocatable    :: bp_nad
       type(sad_bvp_t)               :: bp_sad
+      class(sysmtx_ct), allocatable :: sm_nad
+      class(sysmtx_rt), allocatable :: sm_sad
       complex(RD)                   :: w_i_nad(3)
       complex(RD)                   :: w_o_nad(3)
       real(RD)                      :: w_i_sad(1)
@@ -154,6 +158,9 @@ contains
 
             bp_sad = sad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
 
+            sm_nad = sysmtx_ct(bp_nad%n-1, bp_nad%n_e, bp_nad%n_i, bp_nad%n_o, nm_p)
+            sm_sad = sysmtx_rt(bp_sad%n-1, bp_sad%n_e, bp_sad%n_i, bp_sad%n_o, nm_p)
+
             call system_clock(c_end)
             c_bvp = c_bvp + (c_end - c_beg)
 
@@ -177,9 +184,9 @@ contains
 
                      select type (bp_nad)
                      type is (nad_bvp_t)
-                        wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, id_m, 0._RD, 1)
+                        wv = wave_t(bp_nad, sm_nad, st_nad, w_i_nad, w_o_nad, id_m, 0._RD, 1)
                      type is (tnad_bvp_t)
-                        wv = wave_t(bp_nad, st_nad, w_i_nad, w_o_nad, id_m, 0._RD, 1)
+                        wv = wave_t(bp_nad, sm_nad, st_nad, w_i_nad, w_o_nad, id_m, 0._RD, 1)
                      end select
 
                   case (STATIC_TIDE)
@@ -191,7 +198,7 @@ contains
 
                      st_sad = state_rt(omega(k))
 
-                     wv = wave_t(bp_sad, st_sad, w_i_sad, w_o_sad, id_m)
+                     wv = wave_t(bp_sad, sm_sad, st_sad, w_i_sad, w_o_sad, id_m)
 
                   case default
 
