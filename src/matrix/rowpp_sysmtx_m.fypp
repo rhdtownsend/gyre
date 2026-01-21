@@ -348,7 +348,7 @@ contains
                      end if
                   end do
 
-                  @:ASSERT(piv /= 0, 'zero pivot')
+                  if (piv == 0._RD) cycle reduce_R_loop
 
                   ! If necessary, swap rows to place the pivot
                   ! on the diagonal
