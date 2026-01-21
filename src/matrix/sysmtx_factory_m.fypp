@@ -103,7 +103,7 @@ contains
 
          ! Construct the sysmtx type from the supplied bvp
 
-         sm = sysmtx_${S}$(bp%n-1, bp%n_e, bp%n_i, bp%n_o, nm_p)
+         allocate(sm, SOURCE=sysmtx_${S}$(bp%n-1, bp%n_e, bp%n_i, bp%n_o, nm_p))
 
          ! Finish
 

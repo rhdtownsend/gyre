@@ -120,7 +120,8 @@ program eval_love
    ! Solve for the tidal response
 
    bp = sad_bvp_t(cx, gr, md_p, nm_p, os_p)
-   sm = sysmtx_rt(bp, nm_p)
+
+   allocate(sm, SOURCE=sysmtx_rt(bp, nm_p))
 
    A = 1._RD
 
