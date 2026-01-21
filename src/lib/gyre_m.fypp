@@ -29,6 +29,11 @@ module gyre_m
    use sad_bvp_m
    use tnad_bvp_m
 
+   ! System matrices
+
+   use sysmtx_m
+   use sysmtx_factory_m
+
    ! Grids
 
    use grid_m

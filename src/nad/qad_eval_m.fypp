@@ -107,10 +107,10 @@ contains
 
    function y_qad(this, st, y_ad)
 
-      class(qad_eval_t), intent(inout) :: this
-      class(state_ct), intent(in)      :: st
-      real(RD), intent(in)             :: y_ad(:,:)
-      complex(RD)                      :: y_qad(6,this%n)
+      class(qad_eval_t), intent(in) :: this
+      class(state_ct), intent(in)   :: st
+      real(RD), intent(in)          :: y_ad(:,:)
+      complex(RD)                   :: y_qad(6,this%n)
 
       integer         :: j
       integer         :: s

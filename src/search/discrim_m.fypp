@@ -26,6 +26,7 @@ module discrim_m
    use bvp_m
    use ext_m
    use state_m
+   use sysmtx_m
 
    use ISO_FORTRAN_ENV
 
@@ -53,15 +54,16 @@ contains
 
    #:for S in DTYPE_SUFFIXES
 
-      subroutine eval_discrim_${S}$_(bp, st, discrim)
+      subroutine eval_discrim_${S}$_(bp, sm, st, discrim)
 
-         class(bvp_${S}$), intent(inout) :: bp
-         class(state_${S}$), intent(in)  :: st
-         type(ext_${S}$), intent(out)    :: discrim
+         class(bvp_${S}$), intent(in)       :: bp
+         class(sysmtx_${S}$), intent(inout) :: sm
+         class(state_${S}$), intent(in)     :: st
+         type(ext_${S}$), intent(out)       :: discrim
 
          ! Evaluate the discriminant
 
-         call bp%eval_det(st, discrim)
+         call bp%eval_det(sm, st, discrim)
 
          ! Finish
 

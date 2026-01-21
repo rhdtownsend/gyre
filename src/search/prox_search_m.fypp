@@ -34,6 +34,7 @@ module prox_search_m
    use root_m
    use state_m
    use status_m
+   use sysmtx_m
    use tnad_bvp_m
    use util_m
    use wave_m
@@ -72,14 +73,15 @@ module prox_search_m
 
 contains
 
-   subroutine prox_search_1_(bp, omega, id, omega_min, omega_max, nm_p, process_mode)
+   subroutine prox_search_1_(bp, sm, omega, id, omega_min, omega_max, nm_p, process_mode)
 
-      class(bvp_ct), target, intent(inout) :: bp
-      complex(RD), intent(in)              :: omega(:)
-      integer, intent(in)                  :: id(:)
-      real(RD), intent(in)                 :: omega_min
-      real(RD), intent(in)                 :: omega_max
-      type(num_par_t), intent(in)          :: nm_p
+      class(bvp_ct), target, intent(in) :: bp
+      class(sysmtx_ct), intent(inout)   :: sm
+      complex(RD), intent(in)           :: omega(:)
+      integer, intent(in)               :: id(:)
+      real(RD), intent(in)              :: omega_min
+      real(RD), intent(in)              :: omega_max
+      type(num_par_t), intent(in)       :: nm_p
       interface
          subroutine process_mode(md, culled)
             use mode_m
@@ -109,7 +111,7 @@ contains
 
       ! Search for roots via proximity, and then solve for modes
 
-      call prox_search_2_(bp, omega_a, omega_b, id, omega_min, omega_max, nm_p, process_mode)
+      call prox_search_2_(bp, sm, omega_a, omega_b, id, omega_min, omega_max, nm_p, process_mode)
 
       ! Finish
 
@@ -119,15 +121,16 @@ contains
 
    !****
 
-   subroutine prox_search_2_(bp, omega_a, omega_b, id, omega_min, omega_max, nm_p, process_mode)
+   subroutine prox_search_2_(bp, sm, omega_a, omega_b, id, omega_min, omega_max, nm_p, process_mode)
 
-      class(bvp_ct), intent(inout) :: bp
-      complex(RD), intent(in)      :: omega_a(:)
-      complex(RD), intent(in)      :: omega_b(:)
-      integer, intent(in)          :: id(:)
-      real(RD), intent(in)         :: omega_min
-      real(RD), intent(in)         :: omega_max
-      type(num_par_t), intent(in)  :: nm_p
+      class(bvp_ct), intent(in)       :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      complex(RD), intent(in)         :: omega_a(:)
+      complex(RD), intent(in)         :: omega_b(:)
+      integer, intent(in)             :: id(:)
+      real(RD), intent(in)            :: omega_min
+      real(RD), intent(in)            :: omega_max
+      type(num_par_t), intent(in)     :: nm_p
       interface
          subroutine process_mode(md, culled)
             use mode_m
@@ -150,21 +153,21 @@ contains
 
       if (nm_p%parallel_scan .AND. .NOT. nm_p%deflate_roots) then
 
-         !$OMP PARALLEL FIRSTPRIVATE(bp)
+         !$OMP PARALLEL FIRSTPRIVATE(sm)
          call setup_proxs_(omega_a, omega_b, id, pr)
-         call find_roots_(bp, omega_min, omega_max, nm_p, pr)
-         call process_modes_(bp, pr, process_mode)
+         call find_roots_(bp, sm, omega_min, omega_max, nm_p, pr)
+         call process_modes_(bp, sm, pr, process_mode)
          !$OMP END PARALLEL
 
       else
 
          call setup_proxs_(omega_a, omega_b, id, pr)
          if (nm_p%deflate_roots) then
-            call find_roots_deflate_(bp, omega_min, omega_max, nm_p, pr)
+            call find_roots_deflate_(bp, sm, omega_min, omega_max, nm_p, pr)
          else
-            call find_roots_(bp, omega_min, omega_max, nm_p, pr)
+            call find_roots_(bp, sm, omega_min, omega_max, nm_p, pr)
          end if
-         call process_modes_(bp, pr, process_mode)
+         call process_modes_(bp, sm, pr, process_mode)
 
       end if
 
@@ -214,13 +217,14 @@ contains
 
    !****
 
-   subroutine find_roots_(bp, omega_min, omega_max, nm_p, pr)
+   subroutine find_roots_(bp, sm, omega_min, omega_max, nm_p, pr)
 
-      class(bvp_ct), intent(inout) :: bp
-      real(RD), intent(in)         :: omega_min
-      real(RD), intent(in)         :: omega_max
-      type(num_par_t), intent(in)  :: nm_p
-      type(prox_t), intent(inout)  :: pr(:)
+      class(bvp_ct), intent(in)       :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      real(RD), intent(in)            :: omega_min
+      real(RD), intent(in)            :: omega_max
+      type(num_par_t), intent(in)     :: nm_p
+      type(prox_t), intent(inout)     :: pr(:)
 
       integer      :: c_beg
       integer      :: c_end
@@ -312,7 +316,7 @@ contains
 
          if (REAL(omega) >= omega_min .AND. REAL(omega) <= omega_max) then
 
-            call eval_discrim(bp, state_ct(omega, omega_r=omega_r), discrim)
+            call eval_discrim(bp, sm, state_ct(omega, omega_r=omega_r), discrim)
 
             stat = STAT_OK
 
@@ -368,13 +372,14 @@ contains
 
    !****
 
-   subroutine find_roots_deflate_(bp, omega_min, omega_max, nm_p, pr)
+   subroutine find_roots_deflate_(bp, sm, omega_min, omega_max, nm_p, pr)
 
-      class(bvp_ct), intent(inout) :: bp
-      real(RD), intent(in)         :: omega_min
-      real(RD), intent(in)         :: omega_max
-      type(num_par_t), intent(in)  :: nm_p
-      type(prox_t), intent(inout)  :: pr(:)
+      class(bvp_ct), intent(in)       :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      real(RD), intent(in)            :: omega_min
+      real(RD), intent(in)            :: omega_max
+      type(num_par_t), intent(in)     :: nm_p
+      type(prox_t), intent(inout)     :: pr(:)
 
       integer      :: c_beg
       integer      :: c_end
@@ -492,7 +497,7 @@ contains
 
          if (REAL(omega) >= omega_min .AND. REAL(omega) <= omega_max) then
 
-            call eval_discrim(bp, state_ct(omega, omega_r=omega_r), discrim)
+            call eval_discrim(bp, sm, state_ct(omega, omega_r=omega_r), discrim)
 
             stat = STAT_OK
 
@@ -526,7 +531,7 @@ contains
 
          if (REAL(omega) >= omega_min .AND. REAL(omega) <= omega_max) then
 
-            call eval_discrim(bp, state_ct(omega, omega_r=omega_r), discrim)
+            call eval_discrim(bp, sm, state_ct(omega, omega_r=omega_r), discrim)
 
             discrim = discrim*f_deflate_(omega)
 
@@ -601,10 +606,11 @@ contains
 
    !****
 
-   subroutine process_modes_(bp, pr, process_mode)
+   subroutine process_modes_(bp, sm, pr, process_mode)
 
-      class(bvp_ct), intent(inout) :: bp
-      type(prox_t), intent(inout)  :: pr(:)
+      class(bvp_ct), intent(in)       :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      type(prox_t), intent(inout)     :: pr(:)
       interface
          subroutine process_mode(md, culled)
             use mode_m
@@ -646,9 +652,9 @@ contains
 
          select type (bp)
          type is (nad_bvp_t)
-            wv = wave_t(bp, state_ct(pr(i)%omega_root, omega_r=pr(i)%omega_r), pr(i)%id, pr(i)%chi, pr(i)%n_iter)
+            wv = wave_t(bp, sm, state_ct(pr(i)%omega_root, omega_r=pr(i)%omega_r), pr(i)%id, pr(i)%chi, pr(i)%n_iter)
          type is (tnad_bvp_t)
-            wv = wave_t(bp, state_ct(pr(i)%omega_root, omega_r=pr(i)%omega_r), pr(i)%id, pr(i)%chi, pr(i)%n_iter)
+            wv = wave_t(bp, sm, state_ct(pr(i)%omega_root, omega_r=pr(i)%omega_r), pr(i)%id, pr(i)%chi, pr(i)%n_iter)
          class default
             @:ABORT('invalid bp class')
          end select

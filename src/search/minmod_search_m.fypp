@@ -31,6 +31,7 @@ module minmod_search_m
    use prox_search_m
    use state_m
    use status_m
+   use sysmtx_m
    use util_m
 
    use ISO_FORTRAN_ENV
@@ -67,13 +68,14 @@ module minmod_search_m
 
 contains
 
-   subroutine minmod_search(bp, omega, omega_min, omega_max, nm_p, process_mode)
+   subroutine minmod_search(bp, sm, omega, omega_min, omega_max, nm_p, process_mode)
 
-      class(bvp_ct), intent(inout) :: bp
-      real(RD), intent(in)         :: omega(:)
-      real(RD), intent(in)         :: omega_min
-      real(RD), intent(in)         :: omega_max
-      type(num_par_t), intent(in)  :: nm_p
+      class(bvp_ct), intent(in)       :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      real(RD), intent(in)            :: omega(:)
+      real(RD), intent(in)            :: omega_min
+      real(RD), intent(in)            :: omega_max
+      type(num_par_t), intent(in)     :: nm_p
       interface
          subroutine process_mode(md, culled)
             use mode_m
@@ -95,23 +97,23 @@ contains
 
       if (nm_p%parallel_scan) then
 
-         !$OMP PARALLEL FIRSTPRIVATE(bp)
-         call scan_omega_(bp, omega, mod_discrim)
+         !$OMP PARALLEL FIRSTPRIVATE(sm)
+         call scan_omega_(bp, sm, omega, mod_discrim)
          call setup_brackets_(omega, mod_discrim, br)
-         call find_minima_(bp, omega_min, omega_max, nm_p, br)
+         call find_minima_(bp, sm, omega_min, omega_max, nm_p, br)
          !$OMP END PARALLEL
 
       else
 
-         call scan_omega_(bp, omega, mod_discrim)
+         call scan_omega_(bp, sm, omega, mod_discrim)
          call setup_brackets_(omega, mod_discrim, br)
-         call find_minima_(bp, omega_min, omega_max, nm_p, br)
+         call find_minima_(bp, sm, omega_min, omega_max, nm_p, br)
 
       end if
 
       ! Search for modes
 
-      call prox_search(bp, CMPLX(PACK(br%omega_minim, MASK=br%active), KIND=RD), PACK(br%id, MASK=br%active), &
+      call prox_search(bp, sm, CMPLX(PACK(br%omega_minim, MASK=br%active), KIND=RD), PACK(br%id, MASK=br%active), &
          omega_min, omega_max, nm_p, process_mode)
 
       ! Finish
@@ -122,11 +124,12 @@ contains
 
    !****
 
-   subroutine scan_omega_(bp, omega, mod_discrim)
+   subroutine scan_omega_(bp, sm, omega, mod_discrim)
 
-      class(bvp_ct), intent(inout) :: bp
-      real(RD), intent(in)         :: omega(:)
-      type(ext_rt), intent(inout)  :: mod_discrim(:)
+      class(bvp_ct), intent(in)       :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      real(RD), intent(in)            :: omega(:)
+      type(ext_rt), intent(inout)     :: mod_discrim(:)
 
       integer      :: c_beg
       integer      :: c_end
@@ -152,7 +155,7 @@ contains
       !$OMP DO PRIVATE(discrim, mod_discrim_f, mod_discrim_e)
       omega_loop: do i = 1, SIZE(omega)
 
-         call eval_discrim(bp, state_ct(omega(i)), discrim)
+         call eval_discrim(bp, sm, state_ct(omega(i)), discrim)
 
          mod_discrim(i) = abs(discrim)
 
@@ -230,13 +233,14 @@ contains
 
    !****
 
-   subroutine find_minima_(bp, omega_min, omega_max, nm_p, br)
+   subroutine find_minima_(bp, sm, omega_min, omega_max, nm_p, br)
 
-      class(bvp_ct), intent(inout)   :: bp
-      real(RD), intent(in)           :: omega_min
-      real(RD), intent(in)           :: omega_max
-      type(num_par_t), intent(in)    :: nm_p
-      type(bracket_t), intent(inout) :: br(:)
+      class(bvp_ct), intent(in)       :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      real(RD), intent(in)            :: omega_min
+      real(RD), intent(in)            :: omega_max
+      type(num_par_t), intent(in)     :: nm_p
+      type(bracket_t), intent(inout)  :: br(:)
 
       integer      :: c_beg
       integer      :: c_end
@@ -322,7 +326,7 @@ contains
 
          if (omega >= omega_min .AND. omega <= omega_max) then
 
-            call eval_discrim(bp, state_ct(omega), discrim)
+            call eval_discrim(bp, sm, state_ct(omega), discrim)
 
             mod_discrim = abs(discrim)
 

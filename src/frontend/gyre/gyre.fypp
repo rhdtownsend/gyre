@@ -56,8 +56,8 @@ program gyre
    type(grid_par_t)              :: gr_p_sel
    type(scan_par_t), allocatable :: sc_p_sel(:)
    type(context_t), pointer      :: cx => null()
-   type(summary_t)               :: sm_ad
-   type(summary_t)               :: sm_nad
+   type(summary_t)               :: su_ad
+   type(summary_t)               :: su_nad
    type(detail_t)                :: dt_ad
    type(detail_t)                :: dt_nad
    real(RD), allocatable         :: omega_re(:)
@@ -67,6 +67,8 @@ program gyre
    type(grid_t)                  :: gr
    class(bvp_rt), allocatable    :: bp_ad
    class(bvp_ct), allocatable    :: bp_nad
+   class(sysmtx_rt), allocatable :: sm_ad
+   class(sysmtx_ct), allocatable :: sm_nad
    integer                       :: n_ad
    integer                       :: d_ad
    complex(RD), allocatable      :: omega_ad(:)
@@ -141,8 +143,8 @@ program gyre
 
    ! Initialize the summary and detail outputters
 
-   sm_ad = summary_t(ot_p_ad)
-   sm_nad = summary_t(ot_p_nad)
+   su_ad = summary_t(ot_p_ad)
+   su_nad = summary_t(ot_p_nad)
 
    dt_ad = detail_t(ot_p_ad)
    dt_nad = detail_t(ot_p_nad)
@@ -213,10 +215,12 @@ program gyre
          allocate(id_ad(d_ad))
 
          if (md_p(i)%l == 0 .AND. os_p_sel%reduce_order) then
-            allocate(bp_ad, SOURCE=rad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+            bp_ad = rad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel)
          else
-            allocate(bp_ad, SOURCE=ad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+            bp_ad = ad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel)
          endif
+
+         sm_ad = sysmtx_rt(bp_ad, nm_p_sel)
 
          if (check_log_level('INFO')) then
             write(OUTPUT_UNIT, 100) 'Starting search (adiabatic)'
@@ -228,7 +232,7 @@ program gyre
          case ('BRACKET')
 
             if (SIZE(omega_re) > 2) then
-               call bracket_search(bp_ad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_ad)
+               call bracket_search(bp_ad, sm_ad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_ad)
             else
                if (check_log_level('INFO')) then
                   write(OUTPUT_UNIT, 100) 'Too few scan points for bracket search, skipping...'
@@ -250,10 +254,12 @@ program gyre
       if (os_p_sel%nonadiabatic) then
 
          if (os_p_sel%alpha_trb > 0._RD) then
-            allocate(bp_nad, SOURCE=tnad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+            bp_nad = tnad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel)
          else
-            allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel))
+            bp_nad = nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel)
          endif
+
+         sm_nad = sysmtx_ct(bp_nad, nm_p_sel)
 
          if (check_log_level('INFO')) then
             write(OUTPUT_UNIT, 100) 'Starting search (non-adiabatic)'
@@ -268,12 +274,12 @@ program gyre
 
             j = sort_indices(id_ad(:n_ad))
 
-            call prox_search(bp_nad, omega_ad(j), id_ad(j), omega_min, omega_max, nm_p_sel, process_mode_nad)
+            call prox_search(bp_nad, sm_nad, omega_ad(j), id_ad(j), omega_min, omega_max, nm_p_sel, process_mode_nad)
 
          case ('MINMOD')
 
             if (SIZE(omega_re) > 2) then
-               call minmod_search(bp_nad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_nad)
+               call minmod_search(bp_nad, sm_nad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_nad)
             else
                if (check_log_level('INFO')) then
                   write(OUTPUT_UNIT, 100) 'Too few scan points for minmod search, skipping...'
@@ -283,7 +289,7 @@ program gyre
          case ('CONTOUR')
 
             if (SIZE(omega_re) > 2 .AND. SIZE(omega_im) > 2) then
-               call contour_search(bp_nad, omega_re, omega_im, omega_min, omega_max, i, nm_p_sel, process_mode_nad)
+               call contour_search(bp_nad, sm_nad, omega_re, omega_im, omega_min, omega_max, i, nm_p_sel, process_mode_nad)
             else
                if (check_log_level('INFO')) then
                   write(OUTPUT_UNIT, 100) 'Too few scan points for contour search, skipping...'
@@ -311,8 +317,8 @@ program gyre
 
    ! Write the summaries
 
-   call sm_ad%write()
-   call sm_nad%write()
+   call su_ad%write()
+   call su_nad%write()
 
    ! Clean up
 
@@ -350,7 +356,7 @@ contains
 
       ! Cache/write the mode
 
-      call sm_ad%cache(md)
+      call su_ad%cache(md)
       call dt_ad%write(md)
 
       ! Finish
@@ -374,7 +380,7 @@ contains
 
       ! Cache/write the mode
 
-      call sm_nad%cache(md)
+      call su_nad%cache(md)
       call dt_nad%write(md)
 
       ! Finish

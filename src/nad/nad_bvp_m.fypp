@@ -37,6 +37,7 @@ module nad_bvp_m
    use osc_par_m
    use point_m
    use state_m
+   use sysmtx_m
    use wave_m
 
    use ISO_FORTRAN_ENV
@@ -135,9 +136,10 @@ contains
 
    !****
 
-   function wave_t_hom_(bp, st, id, chi, n_iter) result(wv)
+   function wave_t_hom_(bp, sm, st, id, chi, n_iter) result(wv)
 
-      class(nad_bvp_t), intent(inout) :: bp
+      class(nad_bvp_t), intent(in)    :: bp
+      class(sysmtx_ct), intent(inout) :: sm
       type(state_ct), intent(in)      :: st
       integer, intent(in)             :: id
       real(RD), intent(in)            :: chi
@@ -149,7 +151,7 @@ contains
 
       ! Calculate the homogeneous solution vector
 
-      call bp%solve_hom(st, y)
+      call bp%solve_hom(sm, st, y)
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
@@ -168,9 +170,10 @@ contains
 
    !****
 
-   function wave_t_inhom_(bp, st, z_i, z_o, id, chi, n_iter) result(wv)
+   function wave_t_inhom_(bp, sm, st, z_i, z_o, id, chi, n_iter) result(wv)
 
-      class(nad_bvp_t), intent(inout) :: bp
+      class(nad_bvp_t), intent(in)    :: bp
+      class(sysmtx_ct), intent(inout) :: sm
       type(state_ct), intent(in)      :: st
       complex(RD), intent(in)         :: z_i(:)
       complex(RD), intent(in)         :: z_o(:)
@@ -187,7 +190,7 @@ contains
 
       ! Calculate the inhomogeneous solution vector
 
-      call bp%solve_inhom(st, z_i, z_o, y)
+      call bp%solve_inhom(sm, st, z_i, z_o, y)
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
@@ -208,13 +211,13 @@ contains
 
    function wave_t_y_(bp, st, y, id, chi, n_iter) result(wv)
 
-      class(nad_bvp_t), intent(inout) :: bp
-      type(state_ct), intent(in)      :: st
-      complex(RD), intent(in)         :: y(:,:)
-      integer, intent(in)             :: id
-      real(RD), intent(in)            :: chi
-      integer, intent(in)             :: n_iter
-      type(wave_t)                    :: wv
+      class(nad_bvp_t), intent(in) :: bp
+      type(state_ct), intent(in)   :: st
+      complex(RD), intent(in)      :: y(:,:)
+      integer, intent(in)          :: id
+      real(RD), intent(in)         :: chi
+      integer, intent(in)          :: n_iter
+      type(wave_t)                 :: wv
 
       @:CHECK_BOUNDS(SIZE(y, 1), bp%n_e)
       @:CHECK_BOUNDS(SIZE(y, 2), bp%n)

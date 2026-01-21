@@ -38,24 +38,25 @@ program eval_love
    character(:), allocatable :: file_format
    integer, allocatable      :: l
 
-   type(arg_parser_t)       :: arg_parser
-   type(model_par_t)        :: ml_p
-   type(osc_par_t)          :: os_p
-   type(rot_par_t)          :: rt_p
-   type(num_par_t)          :: nm_p
-   type(grid_par_t)         :: gr_p
-   type(mode_par_t)         :: md_p
-   class(model_t), pointer  :: ml => null()
-   type(context_t), pointer :: cx
-   type(grid_t)             :: gr
-   type(sad_bvp_t)          :: bp
-   type(state_rt)           :: st
-   real(RD)                 :: A
-   real(RD)                 :: B
-   real(RD)                 :: w_i(1)
-   real(RD)                 :: w_o(1)
-   type(wave_t)             :: wv
-   real(RD)                 :: k_l
+   type(arg_parser_t)            :: arg_parser
+   type(model_par_t)             :: ml_p
+   type(osc_par_t)               :: os_p
+   type(rot_par_t)               :: rt_p
+   type(num_par_t)               :: nm_p
+   type(grid_par_t)              :: gr_p
+   type(mode_par_t)              :: md_p
+   class(model_t), pointer       :: ml => null()
+   type(context_t), pointer      :: cx
+   type(grid_t)                  :: gr
+   type(sad_bvp_t)               :: bp
+   class(sysmtx_rt), allocatable :: sm
+   type(state_rt)                :: st
+   real(RD)                      :: A
+   real(RD)                      :: B
+   real(RD)                      :: w_i(1)
+   real(RD)                      :: w_o(1)
+   type(wave_t)                  :: wv
+   real(RD)                      :: k_l
 
    ! Read parameters
 
@@ -119,6 +120,7 @@ program eval_love
    ! Solve for the tidal response
 
    bp = sad_bvp_t(cx, gr, md_p, nm_p, os_p)
+   sm = sysmtx_rt(bp, nm_p)
 
    A = 1._RD
 
@@ -127,7 +129,7 @@ program eval_love
 
    st = state_rt(0._RD)
 
-   wv = wave_t(bp, st, w_i, w_o, 0)
+   wv = wave_t(bp, sm, st, w_i, w_o, 0)
 
    ! Evaluate the Love number
 

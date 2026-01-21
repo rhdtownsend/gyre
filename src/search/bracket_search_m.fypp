@@ -33,6 +33,7 @@ module bracket_search_m
    use root_m
    use state_m
    use status_m
+   use sysmtx_m
    use util_m
    use wave_m
 
@@ -72,13 +73,14 @@ module bracket_search_m
 
 contains
 
-   subroutine bracket_search(bp, omega, omega_min, omega_max, nm_p, process_mode)
+   subroutine bracket_search(bp, sm, omega, omega_min, omega_max, nm_p, process_mode)
 
-      class(bvp_rt), intent(inout) :: bp
-      real(RD), intent(in)         :: omega(:)
-      real(RD), intent(in)         :: omega_min
-      real(RD), intent(in)         :: omega_max
-      type(num_par_t), intent(in)  :: nm_p
+      class(bvp_rt), intent(in)       :: bp
+      class(sysmtx_rt), intent(inout) :: sm
+      real(RD), intent(in)            :: omega(:)
+      real(RD), intent(in)            :: omega_min
+      real(RD), intent(in)            :: omega_max
+      type(num_par_t), intent(in)     :: nm_p
       interface
          subroutine process_mode(md, culled)
             use mode_m
@@ -99,19 +101,19 @@ contains
 
       if (nm_p%parallel_scan) then
 
-         !$OMP PARALLEL FIRSTPRIVATE(bp)
-         call scan_omega_(bp, omega, discrim)
+         !$OMP PARALLEL FIRSTPRIVATE(sm)
+         call scan_omega_(bp, sm, omega, discrim)
          call setup_brackets_(omega, discrim, br)
-         call find_roots_(bp, omega_min, omega_max, nm_p, br)
-         call process_modes_(bp, br, process_mode)
+         call find_roots_(bp, sm, omega_min, omega_max, nm_p, br)
+         call process_modes_(bp, sm, br, process_mode)
          !$OMP END PARALLEL
 
       else
 
-         call scan_omega_(bp, omega, discrim)
+         call scan_omega_(bp, sm, omega, discrim)
          call setup_brackets_(omega, discrim, br)
-         call find_roots_(bp, omega_min, omega_max, nm_p, br)
-         call process_modes_(bp, br, process_mode)
+         call find_roots_(bp, sm, omega_min, omega_max, nm_p, br)
+         call process_modes_(bp, sm, br, process_mode)
 
       end if
 
@@ -123,11 +125,12 @@ contains
 
    !****
 
-   subroutine scan_omega_(bp, omega, discrim)
+   subroutine scan_omega_(bp, sm, omega, discrim)
 
-      class(bvp_rt), intent(inout) :: bp
-      real(RD), intent(in)         :: omega(:)
-      type(ext_rt), intent(inout)  :: discrim(:)
+      class(bvp_rt), intent(in)       :: bp
+      class(sysmtx_rt), intent(inout) :: sm
+      real(RD), intent(in)            :: omega(:)
+      type(ext_rt), intent(inout)     :: discrim(:)
 
       integer  :: c_beg
       integer  :: c_end
@@ -152,7 +155,7 @@ contains
       !$OMP DO PRIVATE(discrim_f, discrim_e)
       omega_loop: do i = 1, SIZE(omega)
 
-         call eval_discrim(bp, state_rt(omega(i)), discrim(i))
+         call eval_discrim(bp, sm, state_rt(omega(i)), discrim(i))
 
          if (check_log_level('DEBUG')) then
 
@@ -226,13 +229,14 @@ contains
 
    !****
 
-   subroutine find_roots_(bp, omega_min, omega_max, nm_p, br)
+   subroutine find_roots_(bp, sm, omega_min, omega_max, nm_p, br)
 
-      class(bvp_rt), intent(inout)   :: bp
-      real(RD), intent(in)           :: omega_min
-      real(RD), intent(in)           :: omega_max
-      type(num_par_t), intent(in)    :: nm_p
-      type(bracket_t), intent(inout) :: br(:)
+      class(bvp_rt), intent(in)       :: bp
+      class(sysmtx_rt), intent(inout) :: sm
+      real(RD), intent(in)            :: omega_min
+      real(RD), intent(in)            :: omega_max
+      type(num_par_t), intent(in)     :: nm_p
+      type(bracket_t), intent(inout)  :: br(:)
 
       integer      :: c_beg
       integer      :: c_end
@@ -316,7 +320,7 @@ contains
 
          if (omega >= omega_min .AND. omega <= omega_max) then
 
-            call eval_discrim(bp, state_rt(omega), discrim)
+            call eval_discrim(bp, sm, state_rt(omega), discrim)
 
             stat = STAT_OK
 
@@ -370,10 +374,11 @@ contains
 
    !****
 
-   subroutine process_modes_(bp, br, process_mode)
+   subroutine process_modes_(bp, sm, br, process_mode)
 
-      class(bvp_rt), intent(inout)   :: bp
-      type(bracket_t), intent(inout) :: br(:)
+      class(bvp_rt), intent(in)       :: bp
+      class(sysmtx_rt), intent(inout) :: sm
+      type(bracket_t), intent(inout)  :: br(:)
       interface
          subroutine process_mode(md, culled)
             use mode_m
@@ -415,9 +420,9 @@ contains
 
          select type (bp)
          type is (ad_bvp_t)
-            wv = wave_t(bp, state_rt(br(i)%omega_root), br(i)%id, br(i)%chi, br(i)%n_iter)
+            wv = wave_t(bp, sm, state_rt(br(i)%omega_root), br(i)%id, br(i)%chi, br(i)%n_iter)
          type is (rad_bvp_t)
-            wv = wave_t(bp, state_rt(br(i)%omega_root), br(i)%id, br(i)%chi, br(i)%n_iter)
+            wv = wave_t(bp, sm, state_rt(br(i)%omega_root), br(i)%id, br(i)%chi, br(i)%n_iter)
          class default
             @:ABORT('invalid bp class')
          end select

@@ -59,6 +59,7 @@ program gyre_map
    real(RD)                      :: omega_max
    type(grid_t)                  :: gr
    class(bvp_ct), allocatable    :: bp
+   class(sysmtx_ct), allocatable :: sm
    integer                       :: n_omega_re
    integer                       :: n_omega_im
    type(ext_ct), allocatable     :: discrim(:,:)
@@ -183,6 +184,7 @@ program gyre_map
    ! Set up the bvp
 
    bp = nad_bvp_t(cx, gr, md_p(1), nm_p_sel, os_p_sel)
+   sm = sysmtx_ct(bp, nm_p(1))
 
    ! Map the discriminant
 
@@ -195,13 +197,13 @@ program gyre_map
 
    allocate(discrim(n_omega_re,n_omega_im))
 
-   !$OMP PARALLEL DO FIRSTPRIVATE(bp) PRIVATE(omega) COLLAPSE(2)
+   !$OMP PARALLEL DO FIRSTPRIVATE(sm) PRIVATE(omega) COLLAPSE(2)
    do i_im = 1, n_omega_im
       do i_re = 1, n_omega_re
 
          omega = CMPLX(omega_re(i_re), omega_im(i_im), KIND=RD)
 
-         call eval_discrim(bp, state_ct(omega, omega_r=0._RD), discrim(i_re,i_im))
+         call eval_discrim(bp, sm, state_ct(omega, omega_r=0._RD), discrim(i_re,i_im))
 
       end do
    end do

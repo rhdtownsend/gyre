@@ -31,6 +31,7 @@ module contour_search_m
    use prox_search_m
    use state_m
    use status_m
+   use sysmtx_m
    use util_m
 
    use ISO_FORTRAN_ENV
@@ -65,15 +66,16 @@ module contour_search_m
 
 contains
 
-   subroutine contour_search (bp, omega_re, omega_im, omega_min, omega_max, i, nm_p, process_mode)
+   subroutine contour_search (bp, sm, omega_re, omega_im, omega_min, omega_max, i, nm_p, process_mode)
 
-      class(bvp_ct), intent(inout) :: bp
-      real(RD), intent(in)         :: omega_re(:)
-      real(RD), intent(in)         :: omega_im(:)
-      real(RD), intent(in)         :: omega_min
-      real(RD), intent(in)         :: omega_max
-      integer, intent(in)          :: i
-      type(num_par_t), intent(in)  :: nm_p
+      class(bvp_ct), intent(in)       :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      real(RD), intent(in)            :: omega_re(:)
+      real(RD), intent(in)            :: omega_im(:)
+      real(RD), intent(in)            :: omega_min
+      real(RD), intent(in)            :: omega_max
+      integer, intent(in)             :: i
+      type(num_par_t), intent(in)     :: nm_p
       interface
          subroutine process_mode(md, culled)
             use mode_m
@@ -95,23 +97,23 @@ contains
 
       if (nm_p%parallel_scan) then
 
-         !$OMP PARALLEL FIRSTPRIVATE(bp)
-         call scan_discrim_(bp, omega_re, omega_im, discrim)
+         !$OMP PARALLEL FIRSTPRIVATE(sm)
+         call scan_discrim_(bp, sm, omega_re, omega_im, discrim)
          !$OMP END PARALLEL
 
       else
 
-         call scan_discrim_(bp, omega_re, omega_im, discrim)
+         call scan_discrim_(bp, sm, omega_re, omega_im, discrim)
 
       end if
 
       ! Find contour intersections
 
-      call find_isects_(bp, omega_re, omega_im, discrim, i, nm_p, is)
+      call find_isects_(bp, sm, omega_re, omega_im, discrim, i, nm_p, is)
 
       ! Search for modes
 
-      call prox_search(bp, is%omega_a, is%omega_b, is%id, omega_min, omega_max, nm_p, process_mode)
+      call prox_search(bp, sm, is%omega_a, is%omega_b, is%id, omega_min, omega_max, nm_p, process_mode)
 
       ! Finish
 
@@ -121,12 +123,13 @@ contains
 
    !****
 
-   subroutine scan_discrim_(bp, omega_re, omega_im, discrim)
+   subroutine scan_discrim_(bp, sm, omega_re, omega_im, discrim)
 
-      class(bvp_ct), intent(inout)          :: bp
-      real(RD), intent(in)                  :: omega_re(:)
-      real(RD), intent(in)                  :: omega_im(:)
-      type(ext_ct), intent(out)             :: discrim(:,:)
+      class(bvp_ct), intent(in)       :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      real(RD), intent(in)            :: omega_re(:)
+      real(RD), intent(in)            :: omega_im(:)
+      type(ext_ct), intent(out)       :: discrim(:,:)
 
       integer     :: c_beg
       integer     :: c_end
@@ -161,7 +164,7 @@ contains
 
             omega = CMPLX(omega_re(i), omega_im(j), KIND=RD)
 
-            call eval_discrim(bp, state_ct(omega, omega_r=omega_re(i)), discrim(i,j))
+            call eval_discrim(bp, sm, state_ct(omega, omega_r=omega_re(i)), discrim(i,j))
 
          end do discrim_re_loop
       end do discrim_im_loop
@@ -184,9 +187,10 @@ contains
 
    !****
 
-   subroutine find_isects_(bp, omega_re, omega_im, discrim, i, nm_p, is)
+   subroutine find_isects_(bp, sm, omega_re, omega_im, discrim, i, nm_p, is)
 
-      class(bvp_ct), intent(inout)            :: bp
+      class(bvp_ct), intent(in)               :: bp
+      class(sysmtx_ct), intent(inout)         :: sm
       real(RD), intent(in)                    :: omega_re(:)
       real(RD), intent(in)                    :: omega_im(:)
       type(ext_ct), intent(in)                :: discrim(:,:)
@@ -282,8 +286,8 @@ contains
 
          ! Evaluate the discriminant at the segment endpoints
 
-         call eval_discrim(bp, state_ct(omega_a, omega_r=REAL(omega_a)), discrim_a)
-         call eval_discrim(bp, state_ct(omega_b, omega_r=REAL(omega_b)), discrim_b)
+         call eval_discrim(bp, sm, state_ct(omega_a, omega_r=REAL(omega_a)), discrim_a)
+         call eval_discrim(bp, sm, state_ct(omega_b, omega_r=REAL(omega_b)), discrim_b)
 
          ! Look for the point on the segment where the real/imaginary
          ! part of the discriminant changes sign

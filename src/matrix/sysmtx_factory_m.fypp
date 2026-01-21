@@ -23,13 +23,14 @@ module sysmtx_factory_m
 
    use forum_m, only: RD
 
-   use sysmtx_m
+   use bvp_m
    use band_sysmtx_m
    use block_sysmtx_m
    use num_par_m
    use pblock_sysmtx_m
    use rowpp_sysmtx_m
    use sblock_sysmtx_m
+   use sysmtx_m
 
    use ISO_FORTRAN_ENV
 
@@ -42,7 +43,8 @@ module sysmtx_factory_m
       ! Interfaces
 
       interface sysmtx_${S}$
-         module procedure sysmtx_${S}$_
+         module procedure sysmtx_dims_${S}$_
+         module procedure sysmtx_bvp_${S}$_
       end interface sysmtx_${S}$
 
       ! Access specifiers
@@ -59,28 +61,28 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function sysmtx_${S}$_(n, n_e, n_i, n_o, np) result(sm)
+      function sysmtx_dims_${S}$_(n, n_e, n_i, n_o, nm_p) result(sm)
 
          integer, intent(in)              :: n
          integer, intent(in)              :: n_e
          integer, intent(in)              :: n_i
          integer, intent(in)              :: n_o
-         type(num_par_t), intent(in)      :: np
+         type(num_par_t), intent(in)      :: nm_p
          class(sysmtx_${S}$), allocatable :: sm
 
-         ! Construct the sysmtx type
+         ! Construct the sysmtx type from the supplied dimensions
 
-         select case (np%matrix_type)
+         select case (nm_p%matrix_type)
          case ('BAND')
-            allocate(sm, SOURCE=band_sysmtx_${S}$(n, n_e, n_i, n_o))
+            sm = band_sysmtx_${S}$(n, n_e, n_i, n_o)
          case ('BLOCK')
-            allocate(sm, SOURCE=block_sysmtx_${S}$(n, n_e, n_i, n_o))
+            sm = block_sysmtx_${S}$(n, n_e, n_i, n_o)
          case ('PARALLEL_BLOCK')
-            allocate(sm, SOURCE=pblock_sysmtx_${S}$(n, n_e, n_i, n_o))
+            sm = pblock_sysmtx_${S}$(n, n_e, n_i, n_o)
          case ('SERIAL_BLOCK')
-            allocate(sm, SOURCE=sblock_sysmtx_${S}$(n, n_e, n_i, n_o))
+            sm = sblock_sysmtx_${S}$(n, n_e, n_i, n_o)
          case ('ROWPP')
-            allocate(sm, SOURCE=rowpp_sysmtx_${S}$(n, n_e, n_i, n_o))
+            sm = rowpp_sysmtx_${S}$(n, n_e, n_i, n_o)
          case default
             @:ABORT('invalid matrix_type')
          end select
@@ -89,7 +91,25 @@ contains
 
          return
 
-      end function sysmtx_${S}$_
+      end function sysmtx_dims_${S}$_
+
+      !****
+
+      function sysmtx_bvp_${S}$_(bp, nm_p) result(sm)
+
+         class(bvp_${S}$), intent(in)     :: bp
+         type(num_par_t), intent(in)      :: nm_p
+         class(sysmtx_${S}$), allocatable :: sm
+
+         ! Construct the sysmtx type from the supplied bvp
+
+         sm = sysmtx_${S}$(bp%n-1, bp%n_e, bp%n_i, bp%n_o, nm_p)
+
+         ! Finish
+
+         return
+
+      end function sysmtx_bvp_${S}$_
 
    #:endfor
 

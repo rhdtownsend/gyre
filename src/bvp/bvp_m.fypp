@@ -30,7 +30,6 @@ module bvp_m
    use state_m
    use status_m
    use sysmtx_m
-   use sysmtx_factory_m
 
    use ISO_FORTRAN_ENV
 
@@ -46,7 +45,6 @@ module bvp_m
          private
          class(diff_element_${S}$), allocatable :: de(:)
          class(bound_${S}$), allocatable        :: bd
-         class(sysmtx_${S}$), allocatable       :: sm
          integer, public                        :: n
          integer, public                        :: n_e
          integer, public                        :: n_i
@@ -108,8 +106,6 @@ contains
 
          allocate(bp%bd, SOURCE=bd)
 
-         allocate(bp%sm, SOURCE=sysmtx_${S}$(n-1, n_e, n_i, n_o, nm_p))
-
          bp%n = n
          bp%n_e = n_e
          bp%n_i = n_i
@@ -123,15 +119,21 @@ contains
 
       !****
 
-      subroutine eval_det_${S}$_(this, st, det)
+      subroutine eval_det_${S}$_(this, sm, st, det)
 
-         class(bvp_${S}$), intent(inout) :: this
-         class(state_${S}$), intent(in)  :: st
-         type(ext_${S}$), intent(out)    :: det
+         class(bvp_${S}$), intent(in)       :: this
+         class(sysmtx_${S}$), intent(inout) :: sm
+         class(state_${S}$), intent(in)     :: st
+         type(ext_${S}$), intent(out)       :: det
+
+         @:ASSERT_DEBUG(sm%n+1 == this%n, 'dimension mismatch')
+         @:ASSERT_DEBUG(sm%n_e == this%n_e, 'dimension mismatch')
+         @:ASSERT_DEBUG(sm%n_i == this%n_i, 'dimension mismatch')
+         @:ASSERT_DEBUG(sm%n_o == this%n_o, 'dimension mismatch')
 
          ! Evaluate the determinant of the sysmtx
 
-         call this%sm%eval_det(st, this%bd, this%de, det)
+         call sm%eval_det(st, this%bd, this%de, det)
 
          ! Finish
 
@@ -141,20 +143,26 @@ contains
 
       !****
 
-      subroutine solve_hom_${S}$_(this, st, y)
+      subroutine solve_hom_${S}$_(this, sm, st, y)
 
-         class(bvp_${S}$), intent(inout) :: this
-         class(state_${S}$), intent(in)  :: st
-         ${T}$, intent(out)              :: y(:,:)
+         class(bvp_${S}$), intent(in)       :: this
+         class(sysmtx_${S}$), intent(inout) :: sm
+         class(state_${S}$), intent(in)     :: st
+         ${T}$, intent(out)                 :: y(:,:)
 
          ${T}$ :: u(this%n_e*this%n)
+
+         @:ASSERT_DEBUG(sm%n+1 == this%n, 'dimension mismatch')
+         @:ASSERT_DEBUG(sm%n_e == this%n_e, 'dimension mismatch')
+         @:ASSERT_DEBUG(sm%n_i == this%n_i, 'dimension mismatch')
+         @:ASSERT_DEBUG(sm%n_o == this%n_o, 'dimension mismatch')
 
          @:CHECK_BOUNDS(SIZE(y, 1), this%n_e)
          @:CHECK_BOUNDS(SIZE(y, 2), this%n)
 
          ! Evaluate the solution vector y of the homogeneous system
 
-         call this%sm%solve_hom(st, this%bd, this%de, u)
+         call sm%solve_hom(st, this%bd, this%de, u)
 
          y = RESHAPE(u, SHAPE(y))
 
@@ -166,15 +174,21 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, st, z_i, z_o, y)
+      subroutine solve_inhom_${S}$_(this, sm, st, z_i, z_o, y)
 
-         class(bvp_${S}$), intent(inout) :: this
-         class(state_${S}$), intent(in)  :: st
-         ${T}$, intent(in)               :: z_i(:)
-         ${T}$, intent(in)               :: z_o(:)
-         ${T}$, intent(out)              :: y(:,:)
+         class(bvp_${S}$), intent(in)       :: this
+         class(sysmtx_${S}$), intent(inout) :: sm
+         class(state_${S}$), intent(in)     :: st
+         ${T}$, intent(in)                  :: z_i(:)
+         ${T}$, intent(in)                  :: z_o(:)
+         ${T}$, intent(out)                 :: y(:,:)
 
          ${T}$ :: u(this%n_e*this%n)
+
+         @:ASSERT_DEBUG(sm%n+1 == this%n, 'dimension mismatch')
+         @:ASSERT_DEBUG(sm%n_e == this%n_e, 'dimension mismatch')
+         @:ASSERT_DEBUG(sm%n_i == this%n_i, 'dimension mismatch')
+         @:ASSERT_DEBUG(sm%n_o == this%n_o, 'dimension mismatch')
 
          @:CHECK_BOUNDS(SIZE(z_i), this%n_i)
          @:CHECK_BOUNDS(SIZE(z_o), this%n_o)
@@ -184,7 +198,7 @@ contains
 
          ! Evaluate the solution vector y of the inhomogeneous system
 
-         call this%sm%solve_inhom(st, this%bd, this%de, [z_i,z_o], u)
+         call sm%solve_inhom(st, this%bd, this%de, [z_i,z_o], u)
 
          y = RESHAPE(u, SHAPE(y))
 
