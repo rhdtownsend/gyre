@@ -272,6 +272,8 @@ contains
       real(RD)                      :: omega_max
       class(bvp_rt), allocatable    :: bp_ad
       class(bvp_ct), allocatable    :: bp_nad
+      class(sysmtx_rt), allocatable :: sm_ad
+      class(sysmtx_ct), allocatable :: sm_nad
       integer                       :: n_ad
       integer                       :: d_ad
       complex(RD), allocatable      :: omega_ad(:)
@@ -341,10 +343,12 @@ contains
             allocate(id_ad(d_ad))
 
             if (md_p_m(i)%l == 0 .AND. os_p_sel%reduce_order) then
-               allocate(bp_ad, SOURCE=rad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
+               bp_ad = rad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
             else
-               allocate(bp_ad, SOURCE=ad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
+               bp_ad = ad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
             endif
+
+            sm_ad = sysmtx_rt(bp_ad, nm_p_sel)
 
             select case (nm_p_sel%ad_search)
 
@@ -368,7 +372,9 @@ contains
 
          if (os_p_sel%nonadiabatic) then
 
-            allocate(bp_nad, SOURCE=nad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
+            bp_nad = nad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel)
+
+            sm_nad = sysmtx_ct(bp_nad, nm_p_sel)
 
             select case (nm_p_sel%nad_search)
 

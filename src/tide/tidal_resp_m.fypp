@@ -151,9 +151,9 @@ contains
             call system_clock(c_beg)
 
             if (os_p%alpha_trb > 0._RD) then
-               allocate(bp_nad, SOURCE=tnad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p))
+               bp_nad = tnad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
             else
-               allocate(bp_nad, SOURCE=nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p))
+               bp_nad = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
             endif
 
             bp_sad = sad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)

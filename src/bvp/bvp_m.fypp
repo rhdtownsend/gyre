@@ -104,7 +104,7 @@ contains
 
          allocate(bp%de, SOURCE=de)
 
-         allocate(bp%bd, SOURCE=bd)
+         bp%bd = bd
 
          bp%n = n
          bp%n_e = n_e

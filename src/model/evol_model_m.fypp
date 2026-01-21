@@ -287,9 +287,9 @@ contains
 
       select case(this%interp_type)
       case('LINEAR')
-         allocate(this%in, SOURCE=linear_interp_())
+         this%in = linear_interp_()
       case('CUBIC')
-         allocate(this%in, SOURCE=cubic_interp_())
+         this%in = cubic_interp_()
       case default
          @:ABORT('invalid deriv_type')
       end select

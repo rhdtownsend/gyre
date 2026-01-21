@@ -189,9 +189,9 @@ contains
 
       select case (this%ot_p%summary_file_format)
       case ('HDF')
-         allocate(wr, SOURCE=hdf_writer_t(this%ot_p%summary_file, this%ot_p%label))
+         wr = hdf_writer_t(this%ot_p%summary_file, this%ot_p%label)
       case ('TXT')
-         allocate(wr, SOURCE=txt_writer_t(this%ot_p%summary_file, this%ot_p%label))
+         wr = txt_writer_t(this%ot_p%summary_file, this%ot_p%label)
       case default
          @:ABORT('invalid summary_file_format')
       end select

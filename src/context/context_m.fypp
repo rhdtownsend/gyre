@@ -131,7 +131,7 @@ contains
 
       cx%ml => ml
 
-      allocate(cx%an, SOURCE=angular_ct(md_p, os_p))
+      cx%an = angular_ct(md_p, os_p)
 
       select type(an => cx%an)
       class is(sph_angular_ct)

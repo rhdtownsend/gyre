@@ -60,21 +60,21 @@ contains
 
       function angular_${S}$_(md_p, os_p) result(an)
 
-         type(mode_par_t), intent(in)  :: md_p
-         type(osc_par_t), intent(in)   :: os_p
+         type(mode_par_t), intent(in)      :: md_p
+         type(osc_par_t), intent(in)       :: os_p
          class(angular_${S}$), allocatable :: an
 
          ! Create a rot_t type
 
          select case (os_p%lambda_method)
          case ('SPH')
-            allocate(an, SOURCE=sph_angular_${S}$(md_p))
+            an = sph_angular_${S}$(md_p)
          case ('TAR-GRAVITY')
-            allocate(an, SOURCE=tar_angular_${S}$(md_p, rossby=.FALSE.))
+            an = tar_angular_${S}$(md_p, rossby=.FALSE.)
          case ('TAR-ROSSBY')
-            allocate(an, SOURCE=tar_angular_${S}$(md_p, rossby=.TRUE.))
+            an = tar_angular_${S}$(md_p, rossby=.TRUE.)
          case ('ADHOC')
-            allocate(an, SOURCE=adhoc_angular_${S}$(os_p%lambda))
+            an = adhoc_angular_${S}$(os_p%lambda)
          case default
             @:ABORT('invalid lambda_method')
          end select

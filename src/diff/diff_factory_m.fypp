@@ -87,21 +87,21 @@ contains
 
             select case (nm_p%diff_scheme)
             case ('MAGNUS_GL2')
-               allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL2'))
+               df = magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL2')
             case ('MAGNUS_GL4')
-               allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL4'))
+               df = magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL4')
             case ('MAGNUS_GL6')
-               allocate(df, SOURCE=magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL6'))
+               df = magnus_diff_${S}$(eqns_factory, pt_a, pt_b, 'GL6')
             case ('COLLOC_GL2')
-               allocate(df, SOURCE=colloc_gl2_diff_${S}$(eqns_factory, pt_a, pt_b))
+               df = colloc_gl2_diff_${S}$(eqns_factory, pt_a, pt_b)
             case ('COLLOC_GL4')
-               allocate(df, SOURCE=colloc_gl4_diff_${S}$(eqns_factory, pt_a, pt_b))
+               df = colloc_gl4_diff_${S}$(eqns_factory, pt_a, pt_b)
             case ('COLLOC_GL6')
-               allocate(df, SOURCE=colloc_gl6_diff_${S}$(eqns_factory, pt_a, pt_b))
+               df = colloc_gl6_diff_${S}$(eqns_factory, pt_a, pt_b)
             case ('TRAPZ')
-               allocate(df, SOURCE=trapz_diff_${S}$(eqns_factory, pt_a, pt_b))
+               df = trapz_diff_${S}$(eqns_factory, pt_a, pt_b)
             case ('MIRK')
-               allocate(df, SOURCE=mirk_diff_${S}$(eqns_factory, pt_a, pt_b))
+               df = mirk_diff_${S}$(eqns_factory, pt_a, pt_b)
             case default
                @:ABORT('invalid diff_scheme')
             end select
@@ -110,7 +110,7 @@ contains
 
             ! Segment boundary
 
-            allocate(df, SOURCE=match_diff_${S}$(eqns_factory, pt_a, pt_b))
+            df = match_diff_${S}$(eqns_factory, pt_a, pt_b)
 
          end if
 
