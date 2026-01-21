@@ -1,5 +1,5 @@
 ! Module  : colloc_gl6_diff_m
-! Purpose : difference equations (4th-order Gauss-Legendre collocation)
+! Purpose : difference equations (6th-order Gauss-Legendre collocation)
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -23,6 +23,7 @@ module colloc_gl6_diff_m
 
    use forum_m, only: RD
 
+   use blas_lapack_m
    use diff_m
    use eqns_m
    use ext_m
@@ -30,6 +31,8 @@ module colloc_gl6_diff_m
    use math_m
    use point_m
    use state_m
+
+   use f95_lapack
 
    use ISO_FORTRAN_ENV
 
@@ -88,7 +91,7 @@ contains
          type(point_t), intent(in)   :: pt_b
          type(colloc_gl6_diff_${S}$) :: df
 
-         real(RD), parameter :: C_I(3) = [ &
+         real(RD), parameter :: C(3) = [ &
             0.5_RD-sqrt(15._RD)/10._RD, &
             0.5_RD, &
             0.5_RD+sqrt(15._RD)/10._RD]
@@ -99,17 +102,10 @@ contains
 
          ! Construct the colloc_gl6_diff type
 
-         df%reverse = pt_a%x >= 0.5_RD
-
          pt%s = pt_a%s
 
-         if (df%reverse) then
-            df%dx = pt_a%x - pt_b%x
-            pt%x = pt_b%x + C_I*df%dx
-         else
-            df%dx = pt_b%x - pt_a%x
-            pt%x = pt_a%x + C_I*df%dx
-         endif
+         df%dx = pt_b%x - pt_a%x
+         pt%x = pt_a%x + C*df%dx
 
          call eqns_factory(pt, df%eq)
 
@@ -131,115 +127,101 @@ contains
          ${T}$, intent(out)                       :: E_r(:,:)
          type(ext_${S}$), intent(out)             :: scl
 
-         real(RD), parameter :: A_IJ(3,3) = RESHAPE([ &
-            5._RD/36._RD, &
-            5._RD/36._RD+sqrt(15._RD)/24._RD, &
-            5._RD/36._RD+sqrt(15._RD)/30._RD, &
-            2._RD/9._RD-sqrt(15._RD)/15._RD, &
-            2._RD/9._RD, &
-            2._RD/9._RD+sqrt(15._RD)/15._RD, &
-            5._RD/36._RD-sqrt(15._RD)/30._RD, &
-            5._RD/36._RD-sqrt(15._RD)/24._RD, &
-            5._RD/36._RD], &
-            [3,3])
-         real(RD), parameter :: B_I(3) = [ &
-            5._RD/18._RD, &
-            4._RD/9._RD, &
-            5._RD/18._RD]
-         
-         integer :: i
-         integer :: j
-         ${T}$   :: M(3*this%n_e,3*this%n_e)
-         ${T}$   :: B(3*this%n_e,this%n_e)
-         integer :: k
-         ${T}$   :: X(3*this%n_e,this%n_e)
+         real(RD), parameter :: D_12 = -sqrt(15._RD)/15._RD
+         real(RD), parameter :: D_13 = -sqrt(15._RD)/30._RD
+         real(RD), parameter :: D_21 = sqrt(15._RD)/24._RD
+         real(RD), parameter :: D_23 = -sqrt(15._RD)/24._RD
+         real(RD), parameter :: D_31 = sqrt(15._RD)/30._RD
+         real(RD), parameter :: D_32 = sqrt(15._RD)/15._RD
+
+         real(RD), parameter :: B_1 = 5._RD/18._RD
+         real(RD), parameter :: B_2 = 4._RD/9._RD
+         real(RD), parameter :: B_3 = 5._RD/18._RD
+
+         ${T}$  :: A_1(this%n_e,this%n_e)
+         ${T}$  :: A_2(this%n_e,this%n_e)
+         ${T}$  :: A_3(this%n_e,this%n_e)
+         ${T}$  :: A_21(this%n_e,this%n_e)
+         ${T}$  :: A_31(this%n_e,this%n_e)
+         ${T}$  :: I(this%n_e,this%n_e)
+         ${T}$  :: U_12(this%n_e,this%n_e)
+         ${T}$  :: U_13(this%n_e,this%n_e)
+         ${T}$  :: U_23(this%n_e,this%n_e)
+         ${T}$  :: M_2(this%n_e,this%n_e)
+         ${T}$  :: S_3(this%n_e,this%n_e)
+         ${T}$  :: M_3(this%n_e,this%n_e)
+         ${T}$  :: R_1(this%n_e,this%n_e)
+         ${T}$  :: R_2(this%n_e,this%n_e)
+         ${T}$  :: R_3(this%n_e,this%n_e)
+         integer :: ipiv(this%n_e)
+         ${T}$   :: K_1(this%n_e,this%n_e)
+         ${T}$   :: K_2(this%n_e,this%n_e)
+         ${T}$   :: K_3(this%n_e,this%n_e)
+         ${T}$   :: J(this%n_e,this%n_e)
 
          ! Build the difference equations
 
-         ! Algorithm note: this is implicit Runge Kutta with three
-         ! intermediate stages; A_IJ and B_I are the Butcher tableaux
-         ! coefficients (C_I has already been used in the constructor)
+         ! Algorithm note: this is Gauss-Legendre collocation with 3
+         ! intermediate points. The implementation follows the
+         ! approach in the StORM code
 
-         ! Set up a linear system for the intermediate-stage matrices X
+         call this%eq(1)%eval_A(st, A_1)
+         A_1 = this%dx*A_1
 
-         do i = 1, 3
+         call this%eq(2)%eval_A(st, A_2)
+         A_2 = this%dx*A_2
 
-            associate( &
-               i_a => (i-1)*this%n_e + 1, &
-               i_b => (i-1)*this%n_e + this%n_e)
+         call this%eq(3)%eval_A(st, A_3)
+         A_3 = this%dx*A_3
 
-               call this%eq(i)%eval_A(st, B(i_a:i_b,:))
+         A_21 = MATMUL(A_2, A_1)
+         A_31 = MATMUL(A_3, A_1)
 
-               do j = 1, 3
+         I = identity_matrix(this%n_e)
 
-                  associate( &
-                     j_a => (j-1)*this%n_e + 1, &
-                     j_b => (j-1)*this%n_e + this%n_e)
+         ! First block row
 
-                     M(i_a:i_b,j_a:j_b) = -this%dx*A_IJ(i,j)*B(i_a:i_b,:)
+         U_12 = D_12*A_1
+         U_13 = D_13*A_1
+         R_1 = A_1
 
-                     if (i == j) then
-                        do k = i_a, i_b
-                           M(k,k) = M(k,k) + 1._RD
-                        end do
-                     endif
+         ! Second block row
 
-                  end associate
+         M_2 = I - (D_21*D_12)*A_21
+         U_23 = D_12*A_2 - D_21*D_13*A_21
+         R_2 = A_2 - D_21*A_21
 
-               end do
+         call LA_GETRF(M_2, ipiv)
+         call LA_GETRS(M_2, ipiv, U_23)
+         call LA_GETRS(M_2, ipiv, R_2)
 
-            end associate
+         ! Third block row
 
-         end do
+         S_3 = D_32*A_3 - D_31*D_12*A_31
 
-         ! Solve the linear system
+         M_3 = I - D_31*D_13*A_31 - MATMUL(S_3, U_23)
+         R_3 = A_3 - d_31*A_31 - MATMUL(S_3, R_2)
 
-         X = linear_solve(M, B)
+         call LA_GESV(M_3, R_3)
+
+         call LA_GETRS(M_3, ipiv, R_3)
+
+         ! Intermediate matrices
+
+         K_3 = R_3
+
+         K_2 = R_2 - MATMUL(U_23, K_3)
+
+         K_1 = R_1 - MATMUL(U_12, K_2) - MATMUL(U_13, K_3)
+
+         ! Jump matrix
+
+         J = B_1*K_1 + B_2*K_2 + B_3*K_3
 
          ! Assemble the difference equations
 
-         E_l = 0._RD
-         E_r = 0._RD
-
-         if (this%reverse) then
-
-            do i = 1, 3
-
-               associate( &
-                  i_a => (i-1)*this%n_e + 1, &
-                  i_b => (i-1)*this%n_e + this%n_e)
-
-                  E_r = E_r + this%dx*B_I(i)*X(i_a:i_b,:)
-
-               end associate
-
-            end do
-
-            do k = 1, this%n_e
-               E_l(k,k) = E_l(k,k) - 1._RD
-               E_r(k,k) = E_r(k,k) + 1._RD
-            end do
-
-         else
-
-            do i = 1, 3
-
-               associate( &
-                  i_a => (i-1)*this%n_e + 1, &
-                  i_b => (i-1)*this%n_e + this%n_e)
-
-                  E_l = E_l + this%dx*B_I(i)*X(i_a:i_b,:)
-
-               end associate
-
-            end do
-
-            do k = 1, this%n_e
-               E_l(k,k) = E_l(k,k) + 1._RD
-               E_r(k,k) = E_r(k,k) - 1._RD
-            end do
-
-         end if
+         E_l = J + I
+         E_r = J - I
 
          scl = ONE_${S}$
 
