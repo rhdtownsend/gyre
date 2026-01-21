@@ -127,16 +127,16 @@ contains
          ${T}$, intent(out)                       :: E_r(:,:)
          type(ext_${S}$), intent(out)             :: scl
 
-         real(RD), parameter :: D_12 = -sqrt(15._RD)/15._RD
-         real(RD), parameter :: D_13 = -sqrt(15._RD)/30._RD
-         real(RD), parameter :: D_21 = sqrt(15._RD)/24._RD
-         real(RD), parameter :: D_23 = -sqrt(15._RD)/24._RD
-         real(RD), parameter :: D_31 = sqrt(15._RD)/30._RD
-         real(RD), parameter :: D_32 = sqrt(15._RD)/15._RD
+         real(RD), parameter :: D_12 = sqrt(15._RD)/15._RD
+         real(RD), parameter :: D_13 = sqrt(15._RD)/30._RD
+         real(RD), parameter :: D_21 = -sqrt(15._RD)/24._RD
+         real(RD), parameter :: D_23 = sqrt(15._RD)/24._RD
+         real(RD), parameter :: D_31 = -sqrt(15._RD)/30._RD
+         real(RD), parameter :: D_32 = -sqrt(15._RD)/15._RD
 
-         real(RD), parameter :: B_1 = 5._RD/18._RD
-         real(RD), parameter :: B_2 = 4._RD/9._RD
-         real(RD), parameter :: B_3 = 5._RD/18._RD
+         real(RD), parameter :: B_1 = 5._RD/36._RD
+         real(RD), parameter :: B_2 = 2._RD/9._RD
+         real(RD), parameter :: B_3 = 5._RD/36._RD
 
          ${T}$  :: A_1(this%n_e,this%n_e)
          ${T}$  :: A_2(this%n_e,this%n_e)
@@ -188,7 +188,7 @@ contains
          ! Second block row
 
          M_2 = I - (D_21*D_12)*A_21
-         U_23 = D_12*A_2 - D_21*D_13*A_21
+         U_23 = D_23*A_2 - (D_21*D_13)*A_21
          R_2 = A_2 - D_21*A_21
 
          call LA_GETRF(M_2, ipiv)
@@ -197,14 +197,12 @@ contains
 
          ! Third block row
 
-         S_3 = D_32*A_3 - D_31*D_12*A_31
+         S_3 = D_32*A_3 - (D_31*D_12)*A_31
 
-         M_3 = I - D_31*D_13*A_31 - MATMUL(S_3, U_23)
-         R_3 = A_3 - d_31*A_31 - MATMUL(S_3, R_2)
+         M_3 = I - (D_31*D_13)*A_31 - MATMUL(S_3, U_23)
+         R_3 = A_3 - D_31*A_31 - MATMUL(S_3, R_2)
 
          call LA_GESV(M_3, R_3)
-
-         call LA_GETRS(M_3, ipiv, R_3)
 
          ! Intermediate matrices
 

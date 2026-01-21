@@ -124,11 +124,11 @@ contains
          ${T}$, intent(out)                       :: E_r(:,:)
          type(ext_${S}$), intent(out)             :: scl
 
-         real(RD), parameter :: D_12 = -SQRT(3._RD)/6._RD
-         real(RD), parameter :: D_21 = SQRT(3._RD)/6._RD
+         real(RD), parameter :: D_12 = SQRT(3._RD)/6._RD
+         real(RD), parameter :: D_21 = -SQRT(3._RD)/6._RD
 
-         real(RD), parameter :: B_1 = 1._RD/2._RD
-         real(RD), parameter :: B_2 = 1._RD/2._RD
+         real(RD), parameter :: B_1 = 1._RD/4._RD
+         real(RD), parameter :: B_2 = 1._RD/4._RD
 
          ${T}$ :: A_1(this%n_e,this%n_e)
          ${T}$ :: A_2(this%n_e,this%n_e)
