@@ -130,14 +130,7 @@ contains
          real(RD), parameter :: B_1 = 1._RD/4._RD
          real(RD), parameter :: B_2 = 1._RD/4._RD
 
-         ${T}$ :: A_1(this%n_e,this%n_e)
-         ${T}$ :: A_2(this%n_e,this%n_e)
-         ${T}$ :: A_21(this%n_e,this%n_e)
          ${T}$ :: I(this%n_e,this%n_e)
-         ${T}$ :: U_12(this%n_e,this%n_e)
-         ${T}$ :: M_2(this%n_e,this%n_e)
-         ${T}$ :: R_1(this%n_e,this%n_e)
-         ${T}$ :: R_2(this%n_e,this%n_e)
          ${T}$ :: K_1(this%n_e,this%n_e)
          ${T}$ :: K_2(this%n_e,this%n_e)
          ${T}$ :: J(this%n_e,this%n_e)
@@ -148,37 +141,40 @@ contains
          ! intermediate points. The implementation follows the
          ! approach in the StORM code
 
-         call this%eq(1)%eval_A(st, A_1)
-         A_1 = this%dx*A_1
-
-         call this%eq(2)%eval_A(st, A_2)
-         A_2 = this%dx*A_2
-
-         A_21 = MATMUL(A_2, A_1)
-
          I = identity_matrix(this%n_e)
 
-         ! First block row
+         ! Evaluate the jump matrix. Use an associate construct to
+         ! reduce the amount of local storage required (but be careful
+         ! not to alias lhs and rhs!)
 
-         U_12 = D_12*A_1
-         R_1 = A_1
+         associate( &
+            A_1 => E_l, &
+            A_2 => E_r, &
+            A_21 => J, &
+            M_2 => K_1)
 
-         ! Second block row
+            call this%eq(1)%eval_A(st, A_1)
+            A_1 = this%dx*A_1
 
-         M_2 = I - (D_21*D_12)*A_21
-         R_2 = A_2 - D_21*A_21
+            call this%eq(2)%eval_A(st, A_2)
+            A_2 = this%dx*A_2
 
-         call LA_GESV(M_2, R_2)
+            A_21 = D_21*MATMUL(A_2, A_1)
 
-         ! Intermediate matrices
+            M_2 = I - D_12*A_21
+            K_2 = A_2 - A_21
 
-         K_2 = R_2
+            call LA_GESV(M_2, K_2)
 
-         K_1 = R_1 - MATMUL(U_12, K_2)
+            !
 
-         ! Jump matrix
+            K_1 = MATMUL(A_1, I-D_12*K_2)
 
-         J = B_1*K_1 + B_2*K_2
+            !
+
+            J = B_1*K_1 + B_2*K_2
+
+         end associate
 
          ! Assemble the difference equations
 

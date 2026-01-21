@@ -26,6 +26,7 @@ module colloc_gl2_diff_m
    use diff_m
    use eqns_m
    use ext_m
+   use linalg_m
    use math_m
    use point_m
    use state_m
@@ -95,17 +96,10 @@ contains
 
          ! Construct the colloc_gl2_diff type
 
-         df%reverse = pt_a%x >= 0.5_RD
-
          pt%s = pt_a%s
 
-         if (df%reverse) then
-            df%dx = pt_a%x - pt_b%x
-            pt%x = pt_b%x + C_I*df%dx
-         else
-            df%dx = pt_b%x - pt_a%x
-            pt%x = pt_a%x + C_I*df%dx
-         endif
+         df%dx = pt_b%x - pt_a%x
+         pt%x = pt_a%x + C_I*df%dx
 
          call eqns_factory(pt, df%eq)
 
@@ -127,35 +121,27 @@ contains
          ${T}$, intent(out)                       :: E_r(:,:)
          type(ext_${S}$), intent(out)             :: scl
 
-         integer  :: i
-         integer  :: j
-         real(RD) :: alpha
-         real(RD) :: beta
+         real(RD), parameter :: B_1 = 1._RD/2._RD
+
+         integer :: i
+         integer :: j
 
          ! Build the difference equations
-
-         call this%eq(1)%eval_A(st, E_l)
 
          ! Algorithm note: this is equivalent to the modified midpoint
          ! method
 
-         alpha = 0.5_RD*this%dx
-
-         if (this%reverse) then
-            beta = -1._RD
-         else
-            beta = 1._RD
-         end if
+         call this%eq(1)%eval_A(st, E_l)
 
          do j = 1, this%n_e
 
             do i = 1, this%n_e
-               E_l(i,j) = alpha*E_l(i,j)
+               E_l(i,j) = (this%dx*B_1)*E_l(i,j)
                E_r(i,j) = E_l(i,j)
             end do
 
-            E_l(j,j) = E_l(j,j) + beta
-            E_r(j,j) = E_r(j,j) - beta
+            E_l(j,j) = E_l(j,j) + 1._RD
+            E_r(j,j) = E_r(j,j) - 1._RD
 
          end do
 
