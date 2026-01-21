@@ -348,7 +348,10 @@ contains
                      end if
                   end do
 
-                  if (piv == 0._RD) cycle reduce_R_loop
+                  if (piv == 0._RD) then
+                     this%D(n+1) = 0._RD
+                     cycle reduce_R_loop
+                  end if
 
                   ! If necessary, swap rows to place the pivot
                   ! on the diagonal
