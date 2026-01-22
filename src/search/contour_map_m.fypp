@@ -146,8 +146,16 @@ contains
 
             ! Evaluate cell codes
 
-            code_re = cell_code_(cm%f(i_re:i_re+1,i_im:i_im+1)%re)
-            code_im = cell_code_(cm%f(i_re:i_re+1,i_im:i_im+1)%im)
+            associate( &
+               f_1 => cm%f(i_re,i_im), &
+               f_2 => cm%f(i_re+1,i_im), &
+               f_3 => cm%f(i_re+1,i_im+1), &
+               f_4 => cm%f(i_re,i_im+1))
+
+               code_re = cell_code_(f_1%re, f_2%re, f_3%re, f_4%re)
+               code_im = cell_code_(f_1%im, f_2%im, f_3%im, f_4%im)
+
+            end associate
 
             ! Add segments based on the codes
 
@@ -157,7 +165,7 @@ contains
             ! Check whether an intersection is at all possible
 
             if (code_re /= 0 .AND. code_re /= 15 .AND. &
-               code_im /= 0 .AND. code_im /= 15) then
+                code_im /= 0 .AND. code_im /= 15) then
 
                ! Perform detailed intersection check
 
@@ -581,22 +589,28 @@ contains
 
    !****
 
-   function cell_code_(f) result(code)
+   function cell_code_(f_1, f_2, f_3, f_4) result(code)
 
-      class(ext_rt), intent(in) :: f(:,:)
+      class(ext_rt), intent(in) :: f_1
+      class(ext_rt), intent(in) :: f_2
+      class(ext_rt), intent(in) :: f_3
+      class(ext_rt), intent(in) :: f_4
       integer                   :: code
 
-      @:CHECK_BOUNDS(SIZE(f, 1), 2)
-      @:CHECK_BOUNDS(SIZE(f, 2), 2)
+      ! NB old code passed f in as a 2x2 array; but this seems to
+      ! cause problems when passing in the %re, %im parts
+
+      !@:CHECK_BOUNDS(SIZE(f, 1), 2)
+      !@:CHECK_BOUNDS(SIZE(f, 2), 2)
 
       ! Evaluate the cell code
 
       code = 0
 
-      if (f(1,1) > 0._RD) code = code + 1
-      if (f(2,1) > 0._RD) code = code + 2
-      if (f(2,2) > 0._RD) code = code + 4
-      if (f(1,2) > 0._RD) code = code + 8
+      if (f_1 > 0._RD) code = code + 1
+      if (f_2 > 0._RD) code = code + 2
+      if (f_3 > 0._RD) code = code + 4
+      if (f_4 > 0._RD) code = code + 8
 
       ! Finish
 
