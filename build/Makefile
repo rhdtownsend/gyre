@@ -17,7 +17,7 @@ ifeq ($(FRONTENDS),yes)
 endif
 
 ifeq ($(TOOLS),yes)
-   BIN_TARGETS += eval_lambda eval_tidal_coeff eval_love build_poly poly_to_fgong poly_to_txt build_tar_fit test_ext
+   BIN_TARGETS += eval_lambda eval_tidal_coeff eval_love build_poly poly_to_fgong poly_to_txt build_tar_fit
 endif
 
 ifeq ($(IFACES),yes)
