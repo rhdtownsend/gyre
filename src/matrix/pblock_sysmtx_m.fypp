@@ -174,6 +174,8 @@ contains
             real(RD) :: piv
             integer  :: i_piv
             ${T}$    :: alpha
+            ${T}$    :: beta
+            ${T}$    :: gamma
 
             if(PRESENT(full)) then
                full_ = full
@@ -280,17 +282,17 @@ contains
 
                               do s = 1, n_e
 
-                                 alpha = G(i_piv,s)
-                                 G(i_piv,s) = G(j,s)
-                                 G(j,s) = alpha
-
                                  alpha = U(i_piv,s)
                                  U(i_piv,s) = U(j,s)
                                  U(j,s) = alpha
 
-                                 alpha = E(i_piv,s)
+                                 beta = G(i_piv,s)
+                                 G(i_piv,s) = G(j,s)
+                                 G(j,s) = beta
+
+                                 gamma = E(i_piv,s)
                                  E(i_piv,s) = E(j,s)
-                                 E(j,s) = alpha
+                                 E(j,s) = gamma
 
                               end do
 
@@ -304,13 +306,21 @@ contains
 
                            ! Eliminate elements below the diagonal
 
+                           alpha = 1._RD/U(j,j)
+
                            do i = j+1, 2*n_e
-                              alpha = U(i,j)/U(j,j)
-                              do s = 1, n_e
-                                 G(i,s) = G(i,s) - alpha*G(j,s)
-                                 U(i,s) = U(i,s) - alpha*U(j,s)
-                                 E(i,s) = E(i,s) - alpha*E(j,s)
+
+                              beta = alpha*U(i,j)
+
+                              do concurrent(s = j+1:n_e)
+                                 U(i,s) = U(i,s) - beta*U(j,s)
                               end do
+
+                              do concurrent(s = 1:n_e)
+                                 G(i,s) = G(i,s) - beta*G(j,s)
+                                 E(i,s) = E(i,s) - beta*E(j,s)
+                              end do
+
                            end do
 
                            ! Update the diagonal product
