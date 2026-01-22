@@ -66,6 +66,18 @@ check_output ()
 	return 1
     fi
 
+    # Check for comparability of the two files (h5diff
+    # still returns 0 if they are not comparable, so
+    # this extra check is required)
+
+    ! h5diff -c $file_a $file_b | grep -q 'Not comparable'
+    retval=$?
+
+    if [ $retval -ne 0 ]; then
+	echo " ...failed: $file_a and $file_b are not comparable"
+	return $retval
+    fi
+
     # Do the test
 
     h5diff -q $h5diff_flags $file_a $file_b
