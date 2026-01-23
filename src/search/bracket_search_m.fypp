@@ -200,7 +200,7 @@ contains
 
       ! Set up the bracket array
 
-      !$OMP DO ORDERED
+      !$OMP DO ORDERED SCHEDULE(STATIC, 1)
       bracket_loop : do i = 1, SIZE(br)
 
          br(i)%omega_a = omega(i)
@@ -262,7 +262,7 @@ contains
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      !$OMP DO PRIVATE(x_a, x_b, f_x_a, f_x_b, x_root, f_x_root, stat, n_iter) SCHEDULE(GUIDED)
+      !$OMP DO PRIVATE(x_a, x_b, f_x_a, f_x_b, x_root, f_x_root, stat, n_iter) SCHEDULE(DYNAMIC)
       bracket_loop : do i = 1, SIZE(br)
 
          if (.NOT. br(i)%active) cycle bracket_loop

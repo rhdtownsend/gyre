@@ -267,7 +267,7 @@ contains
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      !$OMP DO PRIVATE(x_a, x_b, x_c, f_x_a, f_x_b, f_x_c, x_minim, stat, n_iter)
+      !$OMP DO PRIVATE(x_a, x_b, x_c, f_x_a, f_x_b, f_x_c, x_minim, stat, n_iter) SCHEDULE(DYNAMIC)
       bracket_loop : do i = 1, SIZE(br)
 
          if (.NOT. br(i)%active) cycle bracket_loop

@@ -252,7 +252,7 @@ contains
 
       call SYSTEM_CLOCK(c_beg, c_rate)
 
-      !$OMP DO PRIVATE(omega_r, z_a, z_b, f_z_a, f_z_b, z_root, f_z_root, stat, n_iter)
+      !$OMP DO PRIVATE(omega_r, z_a, z_b, f_z_a, f_z_b, z_root, f_z_root, stat, n_iter) SCHEDULE(DYNAMIC)
       prox_loop : do i = 1, SIZE(pr)
 
          if (.NOT. pr(i)%active) cycle prox_loop
@@ -643,7 +643,7 @@ contains
 
       ! Process the modes in order
 
-      !$OMP DO ORDERED PRIVATE(wv, md, culled) SCHEDULE(static, 1)
+      !$OMP DO ORDERED PRIVATE(wv, md, culled) SCHEDULE(STATIC, 1)
       prox_loop: do i = 1, COUNT(pr%active)
 
          if (.NOT. pr(i)%active) cycle prox_loop
