@@ -160,7 +160,7 @@ contains
 
       bd%cx => cx
 
-      ! Store structore coefficients
+      ! Store structure coefficients
 
       call check_model(ml, [I_V_2,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
 
@@ -185,6 +185,8 @@ contains
       case ('GAMMA2')
          bd%V_g_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2/ml%coeff(I_GAMMA_1, pt_o)
          bd%U_o = ml%coeff(I_V_2, pt_o)
+      case default
+         @:ABORT('invalid outer_bound')
       end select
 
       bd%V_2_o = ml%coeff(I_V_2, pt_o)
@@ -211,8 +213,8 @@ contains
    subroutine build_i(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)        :: st
-      real(RD), intent(out)              :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       ! Evaluate the inner boundary conditions
 
@@ -229,8 +231,8 @@ contains
    subroutine build_i_regular_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)        :: st
-      real(RD), intent(out)              :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       real(RD) :: omega_c
       real(RD) :: lambda
@@ -272,8 +274,8 @@ contains
    subroutine build_i_zero_r_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -301,8 +303,8 @@ contains
    subroutine build_i_zero_h_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       real(RD) :: omega_c
       real(RD) :: lambda
@@ -343,10 +345,10 @@ contains
    subroutine build_o(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)        :: st
-      real(RD), intent(out)              :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
-      ! Evaluate the inner boundary conditions
+      ! Evaluate the outer boundary conditions
 
       call this%build_o_(st, B)
 
@@ -361,8 +363,8 @@ contains
    subroutine build_o_vacuum_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       real(RD) :: omega_c
       real(RD) :: lambda
@@ -406,8 +408,8 @@ contains
    subroutine build_o_zero_r_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       real(RD) :: l_e
 
@@ -443,8 +445,8 @@ contains
    subroutine build_o_zero_h_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       real(RD) :: omega_c
       real(RD) :: lambda
@@ -489,8 +491,8 @@ contains
    subroutine build_o_dziem_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       real(RD) :: omega_c
       real(RD) :: lambda
@@ -535,8 +537,8 @@ contains
    subroutine build_o_decomp_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       real(RD) :: omega_c
       real(RD) :: lambda
@@ -635,8 +637,8 @@ contains
    subroutine build_o_jcd_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       real(RD) :: omega_c
       real(RD) :: lambda
@@ -690,8 +692,8 @@ contains
    subroutine build_o_gamma1_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       real(RD) :: omega_c
       real(RD) :: l_e
@@ -735,8 +737,8 @@ contains
    subroutine build_o_gamma2_(this, st, B)
 
       class(${P}$_ad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: B(:,:)
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: B(:,:)
 
       real(RD) :: omega_c
       real(RD) :: l_e

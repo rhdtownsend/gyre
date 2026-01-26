@@ -212,7 +212,6 @@ contains
          U => this%U, &
          c_1 => this%c_1, &
          Omega_rot => this%Omega_rot, &
-         x => this%x, &
          alpha_omg => this%cx%alpha_omg, &
          m => this%cx%m, &
          angular_cache => this%cx%angular_cache)
