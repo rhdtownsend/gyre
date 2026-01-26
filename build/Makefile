@@ -81,7 +81,11 @@ test_ext_USES = $(libgyre_SRCS)
 test_ext_LIBS = libgyre
 
 libgyre_SRCS = adhoc_angular_m.fypp							\
-   ad_bound_m.fypp ad_bvp_m.fypp  ad_eqns_m.fypp ad_trans_m.fypp 			\
+   gyre_ad_bound_m.fypp dziem_ad_bound_m.fypp jcd_ad_bound_m.fypp rjcd_ad_bound_m.fypp	\
+   mix_ad_bound_m.fypp lagp_ad_bound_m.fypp ad_bvp_m.fypp gyre_ad_eqns_m.fypp 		\
+   dziem_ad_eqns_m.fypp jcd_ad_eqns_m.fypp rjcd_ad_eqns_m.fypp mix_ad_eqns_m.fypp       \
+   lagp_ad_eqns_m.fypp gyre_ad_trans_m.fypp dziem_ad_trans_m.fypp jcd_ad_trans_m.fypp   \
+   rjcd_ad_trans_m.fypp mix_ad_trans_m.fypp lagp_ad_trans_m.fypp			\
    amdl_file_m.fypp									\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp anapoly_5_model_m.fypp			\
    anapoly_5_1_model_m.fypp angular_m.fypp angular_factory_m.fypp atmos_m.fypp		\
@@ -117,7 +121,7 @@ libgyre_SRCS = adhoc_angular_m.fypp							\
    string_m.fypp summary_m.fypp sysmtx_factory_m.fypp sysmtx_m.fypp			\
    tar_eigen_m.fypp tar_fit_m.fypp tar_angular_m.fypp tidal_coeff_m.fypp		\
    tidal_resp_m.fypp tidal_context_m.fypp tide_par_m.fypp				\
-   tnad_bvp_m.fypp tnad_diff_m.fypp tnad_eqns_m.fypp					\
+   tnad_bvp_m.fypp tnad_diff_m.fypp tnad_eqns_m.fypp trans_m.fypp			\
    trapz_diff_m.fypp txt_writer_m.fypp util_m.fypp version_m.fypp			\
    wave_m.fypp wdec_file_m.fypp writer_m.fypp
 
@@ -129,7 +133,7 @@ libgyre_mesa_LIBS = libgyre
 
 FFLAGS = -g -I$(FORUM_INC_DIR)
 
-FPPFLAGS = -I$(FORUM_INC_DIR)
+FPPFLAGS = -I$(FORUM_INC_DIR) -m os
 
 LDFLAGS = -g `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB_DIR) -lforum
 
@@ -152,3 +156,7 @@ check_src:
 check_src : SRC_DIRS ?= ../src
 
 .PHONY: all linter check_src
+
+# Source-file specific flags
+
+ad_eqns_m.f90: FPPFLAGS += -m ad_eqns
