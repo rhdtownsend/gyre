@@ -60,11 +60,11 @@ module rad_bound_m
       type(point_t)            :: pt_i
       type(point_t)            :: pt_o
       real(RD)                 :: V_o
+      real(RD)                 :: V_g_o
       real(RD)                 :: As_o
       real(RD)                 :: U_o
       real(RD)                 :: c_1_i
       real(RD)                 :: c_1_o
-      real(RD)                 :: Gamma_1_o
       integer                  :: type_i
       integer                  :: type_o
    contains
@@ -176,15 +176,14 @@ contains
       case (DZIEM_TYPE)
          bd%V_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2
       case (ISOTHRM_TYPE)
-         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_o, &
-            bd%As_o, bd%c_1_o, bd%Gamma_1_o)
+          call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_g_o, &
+            bd%As_o, bd%c_1_o)
       case (UNNO_TYPE)
-         call eval_atmos_coeffs_unno(ml, pt_o, bd%V_o, &
-            bd%As_o, bd%c_1_o, bd%Gamma_1_o)
-         bd%U_o = ml%coeff(I_U, pt_o)
+         call eval_atmos_coeffs_unno(ml, pt_o, bd%V_g_o, &
+            bd%As_o, bd%c_1_o)
       case (JCD_TYPE)
-         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_o, &
-            bd%As_o, bd%c_1_o, bd%Gamma_1_o)
+         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_g_o, &
+            bd%As_o, bd%c_1_o)
       end select
 
       bd%U_o = ml%coeff(I_U, pt_o)
@@ -441,22 +440,21 @@ contains
 
       associate( &
          omega => st%omega, &
-         V => this%V_o, &
+         V_g => this%V_g_o, &
          As => this%As_o, &
          c_1 => this%c_1_o, &
-         Gamma_1 => this%Gamma_1_o, &
          alpha_omg => this%cx%alpha_omg)
 
          omega_c = omega
 
          ! Evaluate selected elements of the Jacobian matrix
 
-         a_11 = V/Gamma_1 - 3._RD
-         a_12 = -V/Gamma_1
+         a_11 = V_g - 3._RD
+         a_12 = -V_g
 
          ! Evaluate the eigenvalue for the wave we want to keep
 
-         chi = atmos_chi(V, As, c_1, Gamma_1, alpha_omg, omega_c, 0._RD)
+         chi = atmos_chi(V_g, As, c_1, alpha_omg, omega_c, 0._RD)
 
          ! Set up the boundary conditions
 
@@ -493,18 +491,17 @@ contains
 
       associate( &
          omega => st%omega, &
-         V => this%V_o, &
+         V_g => this%V_g_o, &
          As => this%As_o, &
          c_1 => this%c_1_o, &
-         Gamma_1 => this%Gamma_1_o, &
          alpha_omg => this%cx%alpha_omg)
 
          omega_c = omega
 
-         chi = atmos_chi(V, As, c_1, Gamma_1, alpha_omg, omega_c, 0._RD)
+         chi = atmos_chi(V_g, As, c_1, alpha_omg, omega_c, 0._RD)
 
-         b_11 = V/Gamma_1 - 3._RD
-         b_12 = -V/Gamma_1
+         b_11 = V_g - 3._RD
+         b_12 = -V_g
 
          ! Set up the boundary conditions
 

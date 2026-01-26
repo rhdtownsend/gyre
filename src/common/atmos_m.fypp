@@ -56,12 +56,11 @@ module atmos_m
 
 contains
 
-   function atmos_chi_r_(V, As, c_1, Gamma_1, alpha_omg, omega, lambda) result(chi)
+   function atmos_chi_r_(V_g, As, c_1, alpha_omg, omega, lambda) result(chi)
 
-      real(RD), intent(in) :: V
+      real(RD), intent(in) :: V_g
       real(RD), intent(in) :: As
       real(RD), intent(in) :: c_1
-      real(RD), intent(in) :: Gamma_1
       real(RD), intent(in) :: alpha_omg
       real(RD), intent(in) :: omega
       real(RD), intent(in) :: lambda
@@ -78,8 +77,8 @@ contains
 
       ! Calculate the atmospheric radial wavenumber (real frequencies)
 
-      a_11 = V/Gamma_1 - 3._RD
-      a_12 = lambda/(c_1*alpha_omg*omega**2) - V/Gamma_1
+      a_11 = V_g - 3._RD
+      a_12 = lambda/(c_1*alpha_omg*omega**2) - V_g
       a_21 = c_1*alpha_omg*omega**2 - As
       a_22 = As + 1._RD
 
@@ -115,12 +114,11 @@ contains
 
    !****
 
-   function atmos_chi_c_(V, As, c_1, Gamma_1, alpha_omg, omega, lambda, branch) result(chi)
+   function atmos_chi_c_(V_g, As, c_1, alpha_omg, omega, lambda, branch) result(chi)
 
-      real(RD), intent(in)     :: V
+      real(RD), intent(in)     :: V_g
       real(RD), intent(in)     :: As
       real(RD), intent(in)     :: c_1
-      real(RD), intent(in)     :: Gamma_1
       real(RD), intent(in)     :: alpha_omg
       complex(RD), intent(in)  :: omega
       complex(RD), intent(in)  :: lambda
@@ -138,8 +136,8 @@ contains
 
       ! Calculate the atmospheric radial wavenumber (complex frequencies)
 
-      a_11 = V/Gamma_1 - 3._RD
-      a_12 = lambda/(c_1*alpha_omg*omega**2) - V/Gamma_1
+      a_11 = V_g - 3._RD
+      a_12 = lambda/(c_1*alpha_omg*omega**2) - V_g
       a_21 = c_1*alpha_omg*omega**2 - As
       a_22 = As + 1._RD
 
@@ -215,12 +213,11 @@ contains
 
    !****
 
-   subroutine eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, lambda, omega_cutoff_lo, omega_cutoff_hi)
+   subroutine eval_atmos_cutoff_freqs(V_g, As, c_1, lambda, omega_cutoff_lo, omega_cutoff_hi)
 
-      real(RD), intent(in)  :: V
+      real(RD), intent(in)  :: V_g
       real(RD), intent(in)  :: As
       real(RD), intent(in)  :: c_1
-      real(RD), intent(in)  :: Gamma_1
       real(RD), intent(in)  :: lambda
       real(RD), intent(out) :: omega_cutoff_lo
       real(RD), intent(out) :: omega_cutoff_hi
@@ -231,8 +228,8 @@ contains
 
       ! Evaluate the atmospheric cutoff frequencies from the supplied coefficients
 
-      a = -4._RD*V/Gamma_1*c_1**2
-      b = ((As - V/Gamma_1 + 4._RD)**2 + 4._RD*V/Gamma_1*As + 4._RD*lambda)*c_1
+      a = -4._RD*V_g*c_1**2
+      b = ((As - V_g + 4._RD)**2 + 4._RD*V_g*As + 4._RD*lambda)*c_1
       c = -4._RD*lambda*As
 
       omega_cutoff_lo = sqrt((-b + sqrt(b**2 - 4._RD*a*c))/(2._RD*a))
@@ -248,21 +245,19 @@ contains
 
    !****
 
-   subroutine eval_atmos_coeffs_unno(ml, pt, V, As, c_1, Gamma_1)
+   subroutine eval_atmos_coeffs_unno(ml, pt, V_g, As, c_1)
 
       class(model_t), intent(in) :: ml
       type(point_t), intent(in)  :: pt
-      real(RD), intent(out)      :: V
+      real(RD), intent(out)      :: V_g
       real(RD), intent(out)      :: As
       real(RD), intent(out)      :: c_1
-      real(RD), intent(out)      :: Gamma_1
 
       ! Evaluate atmosphere coefficients ([Unn1989] formulation)
 
-      V = ml%coeff(I_V_2, pt)*pt%x**2
+      V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
       As = ml%coeff(I_AS, pt)
       c_1 = ml%coeff(I_C_1, pt)
-      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
       ! Finish
 
@@ -272,22 +267,20 @@ contains
 
    !****
 
-   subroutine eval_atmos_coeffs_isothrm(ml, pt, V, As, c_1, Gamma_1)
+   subroutine eval_atmos_coeffs_isothrm(ml, pt, V_g, As, c_1)
 
       class(model_t), intent(in) :: ml
       type(point_t), intent(in)  :: pt
-      real(RD), intent(out)      :: V
+      real(RD), intent(out)      :: V_g
       real(RD), intent(out)      :: As
       real(RD), intent(out)      :: c_1
-      real(RD), intent(out)      :: Gamma_1
 
       ! Evaluate atmosphere coefficients for an isothermal, massless
       ! atmosphere
 
-      V = ml%coeff(I_V_2, pt)*pt%x**2
+      V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
       As = ml%coeff(I_V_2, pt)*pt%x**2*(1._RD-1._RD/ml%coeff(I_GAMMA_1, pt))
       c_1 = ml%coeff(I_C_1, pt)
-      Gamma_1 = ml%coeff(I_GAMMA_1, pt)
 
       ! Finish
 

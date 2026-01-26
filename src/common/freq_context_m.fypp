@@ -189,10 +189,9 @@ contains
       real(RD), intent(out)        :: omega_cutoff_hi
 
       character(LEN(os_p%outer_bound)) :: outer_bound
-      real(RD)                         :: V
+      real(RD)                         :: V_g
       real(RD)                         :: As
       real(RD)                         :: c_1
-      real(RD)                         :: Gamma_1
       logical, save                    :: warned = .FALSE.
 
       ! Evaluate the cutoff frequencies
@@ -215,18 +214,18 @@ contains
 
       case ('ISOTHERMAL')
 
-         call eval_atmos_coeffs_isothrm(ml, pt, V, As, c_1, Gamma_1)
-         call eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, md_p%l*(md_p%l+1._RD), omega_cutoff_lo, omega_cutoff_hi)
+         call eval_atmos_coeffs_isothrm(ml, pt, V_g, As, c_1)
+         call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._RD), omega_cutoff_lo, omega_cutoff_hi)
 
       case ('UNNO')
 
-         call eval_atmos_coeffs_unno(ml, pt, V, As, c_1, Gamma_1)
-         call eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, md_p%l*(md_p%l+1._RD), omega_cutoff_lo, omega_cutoff_hi)
+         call eval_atmos_coeffs_unno(ml, pt, V_g, As, c_1)
+         call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._RD), omega_cutoff_lo, omega_cutoff_hi)
 
       case ('JCD')
 
-         call eval_atmos_coeffs_isothrm(ml, pt, V, As, c_1, Gamma_1)
-         call eval_atmos_cutoff_freqs(V, As, c_1, Gamma_1, md_p%l*(md_p%l+1._RD), omega_cutoff_lo, omega_cutoff_hi)
+         call eval_atmos_coeffs_isothrm(ml, pt, V_g, As, c_1)
+         call eval_atmos_cutoff_freqs(V_g, As, c_1, md_p%l*(md_p%l+1._RD), omega_cutoff_lo, omega_cutoff_hi)
 
       case default
 
