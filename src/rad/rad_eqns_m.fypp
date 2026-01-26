@@ -17,7 +17,9 @@
 
 #:include 'gyre.inc'
 
-module rad_eqns_m
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_rad_eqns_m
 
    ! Uses
 
@@ -27,10 +29,7 @@ module rad_eqns_m
    use eqns_m
    use model_m
    use model_util_m
-   use mode_par_m
-   use osc_par_m
    use point_m
-   use rad_trans_m
    use state_m
 
    use ISO_FORTRAN_ENV
@@ -41,10 +40,11 @@ module rad_eqns_m
 
    ! Derived-type definitions
 
-   type, extends (eqns_rt) :: rad_eqns_t
+   type, extends (eqns_rt) :: ${P}$_rad_eqns_t
       private
       type(context_t), pointer :: cx => null()
-      type(rad_trans_t)        :: tr
+      real(RD)                 :: V_2
+      real(RD)                 :: dV_2
       real(RD)                 :: V_g
       real(RD)                 :: As
       real(RD)                 :: U
@@ -54,17 +54,17 @@ module rad_eqns_m
       private
       procedure, public :: eval_A
       procedure, public :: eval_C
-   end type rad_eqns_t
+   end type ${P}$_rad_eqns_t
 
    ! Interfaces
 
-   interface rad_eqns_t
-      module procedure rad_eqns_t_
-   end interface rad_eqns_t
+   interface ${P}$_rad_eqns_t
+      module procedure ${P}$_rad_eqns_t_
+   end interface ${P}$_rad_eqns_t
 
    ! Access specifiers
 
-   public :: rad_eqns_t
+   public :: ${P}$_rad_eqns_t
 
    ! Default access
 
@@ -72,21 +72,17 @@ module rad_eqns_m
 
 contains
 
-   function rad_eqns_t_(cx, pt, md_p, os_p) result(eq)
+   function ${P}$_rad_eqns_t_(cx, pt) result(eq)
 
       class(context_t), pointer, intent(in) :: cx
       type(point_t), intent(in)             :: pt
-      type(mode_par_t), intent(in)          :: md_p
-      type(osc_par_t), intent(in)           :: os_p
-      type(rad_eqns_t)                      :: eq
+      type(${P}$_rad_eqns_t)                :: eq
 
       class(model_t), pointer :: ml
 
-      ! Construct the rad_eqns_t
+      ! Construct the ${P}$_rad_eqns_t
 
       eq%cx => cx
-
-      eq%tr = rad_trans_t(cx, pt, md_p, os_p)
 
       ! Store structure coefficients
 
@@ -96,7 +92,9 @@ contains
 
       @:ASSERT(.NOT. ml%is_vacuum(pt), 'vacuum point')
 
-      eq%V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+      eq%V_2 = ml%coeff(I_V_2, pt)
+      eq%dV_2 = ml%dcoeff(I_V_2, pt)
+      eq%V_g = eq%V_2*pt%x**2/ml%coeff(I_GAMMA_1, pt)
       eq%As = ml%coeff(I_AS, pt)
       eq%U = ml%coeff(I_U, pt)
       eq%c_1 = ml%coeff(I_C_1, pt)
@@ -111,15 +109,15 @@ contains
 
       return
 
-   end function rad_eqns_t_
+   end function ${P}$_rad_eqns_t_
 
    !****
 
    subroutine eval_A(this, st, A)
 
-      class(rad_eqns_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: A(:,:)
+      class(${P}$_rad_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: A(:,:)
 
       real(RD) :: omega_c
       real(RD) :: om2
@@ -132,6 +130,8 @@ contains
 
       associate ( &
          omega => st%omega, &
+         V_2 => this%V_2, &
+         dV_2 => this%dV_2, &
          V_g => this%V_g, &
          As => this%As, &
          U => this%U, &
@@ -143,19 +143,11 @@ contains
 
          om2 = c_1*alpha_omg*omega_c**2
 
-         ! Set up the matrix
-
          invx = 1._RD/x
 
-         A(1,1) = invx*(V_g - 1._RD)
-         A(1,2) = invx*(-V_g)
+         ! Set up the matrix
 
-         A(2,1) = invx*(om2 + U - As)
-         A(2,2) = invx*(As - U + 3._RD)
-
-         ! Apply the variables transformation
-
-         call this%tr%trans_eqns(A, st)
+         #:include 'A.inc'
 
       end associate
 
@@ -169,9 +161,11 @@ contains
 
    subroutine eval_C(this, st, C)
 
-      class(rad_eqns_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: C(:,:)
+      class(${P}$_rad_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: C(:,:)
+
+      real(RD) :: omega_c
 
       @:CHECK_BOUNDS(SIZE(C, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
@@ -179,17 +173,17 @@ contains
       ! Evaluate the match matrix
 
       associate ( &
-         U => this%U)
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         alpha_omg => this%cx%alpha_omg)
 
-         C(1,1) = 1._RD
-         C(1,2) = 0._RD
+         omega_c = omega
 
-         C(2,1) = -U
-         C(2,2) = U
+         ! Set up the matrix
 
-         ! Apply the variables transformation
-
-         call this%tr%trans_cond(C, st)
+         #:include 'C.inc'
 
       end associate
 
@@ -199,4 +193,4 @@ contains
 
    end subroutine eval_C
 
-end module rad_eqns_m
+end module ${P}$_rad_eqns_m
