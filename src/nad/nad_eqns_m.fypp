@@ -58,10 +58,7 @@ module ${P}$_nad_eqns_m
       real(RD)                 :: Gamma_1
       real(RD)                 :: ups_T
       real(RD)                 :: nabla_ad
-      real(RD)                 :: dnabla_ad
       real(RD)                 :: nabla
-      real(RD)                 :: c_lum
-      real(RD)                 :: dc_lum
       real(RD)                 :: c_rad
       real(RD)                 :: dc_rad
       real(RD)                 :: c_thn
@@ -69,12 +66,13 @@ module ${P}$_nad_eqns_m
       real(RD)                 :: c_thk
       real(RD)                 :: c_eps
       real(RD)                 :: c_egv
-      real(RD)                 :: eps_rho
-      real(RD)                 :: eps_T
-      real(RD)                 :: kap_rho
-      real(RD)                 :: kap_T
-      real(RD)                 :: Omega_rot
+      complex(RD)              :: c_eps_ad
+      complex(RD)              :: c_eps_S
+      real(RD)                 :: c_kap_ad
+      real(RD)                 :: c_kap_S
+      real(RD)                 :: c_dif
       real(RD)                 :: f_conv
+      real(RD)                 :: Omega_rot
       real(RD)                 :: x
       complex(RD)              :: lambda
       complex(RD)              :: l_i
@@ -108,6 +106,8 @@ contains
       type(${P}$_nad_eqns_t)               :: eq
 
       class(model_t), pointer :: ml
+      complex(RD)             :: eps_rho
+      complex(RD)             :: eps_T
 
       ! Construct the ${P}$_nad_eqns_t
 
@@ -136,11 +136,8 @@ contains
       eq%c_1 = ml%coeff(I_C_1, pt)
       eq%Gamma_1 = ml%coeff(I_GAMMA_1, pt)
       eq%nabla_ad = ml%coeff(I_NABLA_AD, pt)
-      eq%dnabla_ad = ml%dcoeff(I_NABLA_AD, pt)
       eq%nabla = ml%coeff(I_NABLA, pt)
       eq%ups_T = ml%coeff(I_UPS_T, pt)
-      eq%c_lum = ml%coeff(I_C_LUM, pt)
-      eq%dc_lum = ml%dcoeff(I_C_LUM, pt)
       eq%c_rad = ml%coeff(I_C_RAD, pt)
       eq%dc_rad = ml%dcoeff(I_C_RAD, pt)
       eq%c_thn = ml%coeff(I_C_THN, pt)
@@ -148,19 +145,22 @@ contains
       eq%c_thk = ml%coeff(I_C_THK, pt)
       eq%c_eps = ml%coeff(I_C_EPS, pt)
       eq%c_egv = ml%coeff(I_C_EGV, pt)
-      eq%kap_rho = ml%coeff(I_KAP_RHO, pt)
-      eq%kap_T = ml%coeff(I_KAP_T, pt)
 
-      eq%Omega_rot = cx%Omega_rot(pt)
+      eq%c_kap_ad = eq%nabla_ad*cx%alpha_kat*ml%coeff(I_KAP_T, pt) + cx%alpha_kar*ml%coeff(I_KAP_RHO, pt)/eq%Gamma_1
+      eq%c_kap_S = cx%alpha_kat*ml%coeff(I_KAP_T, pt) - eq%ups_T*cx%alpha_kar*ml%coeff(I_KAP_RHO, pt)
+
+      eq%c_dif = -4._RD*eq%nabla_ad*eq%V*eq%nabla + eq%nabla_ad*(ml%dcoeff(I_NABLA_AD, pt) + eq%V)
 
       select case (os_p%conv_scheme)
       case ('FROZEN_PESNELL_1')
          eq%f_conv = eq%c_rad*(3._RD + eq%dc_rad)
       case ('FROZEN_PESNELL_4')
-         eq%f_conv = eq%c_lum*(3._RD + eq%dc_lum) - (eq%c_lum - eq%c_rad)
+         eq%f_conv = ml%coeff(I_C_LUM, pt)*(3._RD + ml%dcoeff(I_C_LUM, pt)) - (ml%coeff(I_C_LUM, pt) - eq%c_rad)
       case default
          @:ABORT('invalid conv_scheme')
       end select
+
+      eq%Omega_rot = cx%Omega_rot(pt)
 
       if (cx%angular_cache) then
          eq%lambda = cx%lambda(eq%Omega_rot, state_ct(0._RD))
@@ -168,8 +168,10 @@ contains
       end if
 
       if (cx%epsilon_cache) then
-         eq%eps_rho = cx%eps_rho(state_ct(0._RD), pt)
-         eq%eps_T = cx%eps_T(state_ct(0._RD), pt)
+         eps_rho = cx%eps_rho(state_ct(0._RD), pt)
+         eps_T = cx%eps_T(state_ct(0._RD), pt)
+         eq%c_eps_ad = eq%c_eps*(eq%nabla_ad*eps_T + eps_rho/eq%Gamma_1)
+         eq%c_eps_S = eq%c_eps*(eps_T - eq%ups_T*eps_rho)
       end if
 
       ! Other initializations
@@ -200,14 +202,10 @@ contains
       complex(RD) :: eta
       complex(RD) :: f_rht
       complex(RD) :: df_rht
-      complex(RD) :: conv_term
       complex(RD) :: eps_rho
       complex(RD) :: eps_T
       complex(RD) :: c_eps_ad
       complex(RD) :: c_eps_S
-      real(RD)    :: c_kap_ad
-      real(RD)    :: c_kap_S
-      real(RD)    :: c_dif
       real(RD)    :: invx
 
       @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
@@ -227,11 +225,8 @@ contains
          c_1 => this%c_1, &
          Gamma_1 => this%Gamma_1, &
          nabla_ad => this%nabla_ad, &
-         dnabla_ad => this%dnabla_ad, &
          nabla => this%nabla, &
          ups_T => this%ups_T, &
-         c_lum => this%c_lum, &
-         dc_lum => this%dc_lum, &
          c_rad => this%c_rad, &
          dc_rad => this%dc_rad, &
          c_thn => this%c_thn, &
@@ -239,14 +234,14 @@ contains
          c_thk => this%c_thk, &
          c_eps => this%c_eps, &
          c_egv => this%c_egv, &
-         kap_rho => this%kap_rho, &
-         kap_T => this%kap_T, &
+         c_kap_ad => this%c_kap_ad, &
+         c_kap_S => this%c_kap_S, &
+         c_dif => this%c_dif, &
+         f_conv => this%f_conv, &
          Omega_rot => this%Omega_rot, &
          Omega_rot_i => this%cx%Omega_rot_i, &
-         f_conv => this%f_conv, &
          x => this%x, &
          pt => this%pt, &
-         x_atm => this%cx%x_atm, &
          alpha_grv => this%cx%alpha_grv, &
          alpha_thm => this%cx%alpha_thm, &
          alpha_hfl => this%cx%alpha_hfl, &
@@ -254,8 +249,6 @@ contains
          alpha_omg => this%cx%alpha_omg, &
          alpha_gam => this%cx%alpha_gam, &
          alpha_pi => this%cx%alpha_pi, &
-         alpha_kar => this%cx%alpha_kar, &
-         alpha_kat => this%cx%alpha_kat, &
          alpha_egv => this%cx%alpha_egv, &
          m => this%cx%m, &
          angular_cache => this%cx%angular_cache, &
@@ -280,20 +273,14 @@ contains
          df_rht = -0.25_RD*alpha_rht*i_omega_c*c_thn*dc_thn/f_rht
 
          if (epsilon_cache) then
-            eps_rho = this%eps_rho
-            eps_T = this%eps_T
+            c_eps_ad = this%c_eps_ad
+            c_eps_S = this%c_eps_S
          else
             eps_rho = this%cx%eps_rho(st, pt)
             eps_T = this%cx%eps_T(st, pt)
+            c_eps_ad = c_eps*(nabla_ad*eps_T + eps_rho/Gamma_1)
+            c_eps_S = c_eps*(eps_T - ups_T*eps_rho)
          end if
-
-         c_eps_ad = c_eps*(nabla_ad*eps_T + eps_rho/Gamma_1)
-         c_eps_S = c_eps*(eps_T - ups_T*eps_rho)
-
-         c_kap_ad = nabla_ad*alpha_kat*kap_T + alpha_kar*kap_rho/Gamma_1
-         c_kap_S = alpha_kat*kap_T - ups_T*alpha_kar*kap_rho
-
-         c_dif = -4._RD*nabla_ad*V*nabla + nabla_ad*(dnabla_ad + V)
 
          invx = 1._RD/x
 
