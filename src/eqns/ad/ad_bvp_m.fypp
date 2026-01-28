@@ -153,44 +153,22 @@ contains
 
       select case(os_p%variables_set)
       case('GYRE')
-         allocate(gyre_ad_trans_t::bp%tr(gr%n))
+         bp%tr = gyre_ad_trans_t(cx, gr%pt)
       case('DZIEM')
-         allocate(dziem_ad_trans_t::bp%tr(gr%n))
+         bp%tr = dziem_ad_trans_t(cx, gr%pt)
       case('JCD')
-         if (md_p%l == 0) then
-            allocate(rjcd_ad_trans_t::bp%tr(gr%n))
+         if (cx%l == 0) then
+            bp%tr = rjcd_ad_trans_t(cx, gr%pt)
          else
-            allocate(jcd_ad_trans_t::bp%tr(gr%n))
+            bp%tr = jcd_ad_trans_t(cx, gr%pt)
          end if
       case('MIX')
-         allocate(mix_ad_trans_t::bp%tr(gr%n))
+         bp%tr = mix_ad_trans_t(cx, gr%pt)
       case('LAGP')
-         allocate(lagp_ad_trans_t::bp%tr(gr%n))
+         bp%tr = lagp_ad_trans_t(cx, gr%pt)
       case default
          @:ABORT('invalid variables_set')
       end select
-
-      !$OMP PARALLEL DO
-      do j = 1, gr%n
-
-         select type(tr => bp%tr(j))
-         type is(gyre_ad_trans_t)
-            tr = gyre_ad_trans_t(cx, gr%pt(j))
-         type is(dziem_ad_trans_t)
-            tr = dziem_ad_trans_t(cx, gr%pt(j))
-         type is(jcd_ad_trans_t)
-            tr = jcd_ad_trans_t(cx, gr%pt(j))
-         type is(rjcd_ad_trans_t)
-            tr = rjcd_ad_trans_t(cx, gr%pt(j))
-         type is(mix_ad_trans_t)
-            tr = mix_ad_trans_t(cx, gr%pt(j))
-         type is(lagp_ad_trans_t)
-            tr = lagp_ad_trans_t(cx, gr%pt(j))
-         class default
-            @:ABORT('invalid type')
-         end select
-
-      end do
 
       if (os_p%quasiad_eigfuncs) then
          bp%qe = qad_eval_t(cx, gr, os_p)
@@ -218,50 +196,26 @@ contains
          type(point_t), intent(in)                :: pt(:)
          class(eqns_rt), allocatable, intent(out) :: eq(:)
 
-         integer :: n
-         integer :: i
-
-         n = SIZE(pt)
+         ! Initialize the equations
 
          select case(os_p%variables_set)
          case('GYRE')
-            allocate(gyre_ad_eqns_t::eq(n))
+            eq = gyre_ad_eqns_t(cx, pt)
          case('DZIEM')
-            allocate(dziem_ad_eqns_t::eq(n))
+            eq = dziem_ad_eqns_t(cx, pt)
          case('JCD')
             if (md_p%l == 0) then
-            allocate(rjcd_ad_eqns_t::eq(n))
+               eq = rjcd_ad_eqns_t(cx, pt)
             else
-               allocate(jcd_ad_eqns_t::eq(n))
+               eq = jcd_ad_eqns_t(cx, pt)
             end if
          case('MIX')
-            allocate(mix_ad_eqns_t::eq(n))
+            eq = mix_ad_eqns_t(cx, pt)
          case('LAGP')
-            allocate(lagp_ad_eqns_t::eq(n))
+            eq = lagp_ad_eqns_t(cx, pt)
          case default
             @:ABORT('invalid variables_set')
          end select
-
-         do i = 1, n
-
-            select type(eq)
-            type is(gyre_ad_eqns_t)
-               eq(i) = gyre_ad_eqns_t(cx, pt(i))
-            type is(dziem_ad_eqns_t)
-               eq(i) = dziem_ad_eqns_t(cx, pt(i))
-            type is(jcd_ad_eqns_t)
-               eq(i) = jcd_ad_eqns_t(cx, pt(i))
-            type is(rjcd_ad_eqns_t)
-               eq(i) = rjcd_ad_eqns_t(cx, pt(i))
-            type is(mix_ad_eqns_t)
-               eq(i) = mix_ad_eqns_t(cx, pt(i))
-            type is(lagp_ad_eqns_t)
-               eq(i) = lagp_ad_eqns_t(cx, pt(i))
-            class default
-               @:ABORT('invalid type')
-            end select
-
-         end do
 
          ! Finish
 

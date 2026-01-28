@@ -61,7 +61,8 @@ module ${P}$_nad_trans_m
    ! Interfaces
 
    interface ${P}$_nad_trans_t
-      module procedure ${P}$_nad_trans_t_
+      module procedure ${P}$_nad_trans_t_0_
+      module procedure ${P}$_nad_trans_t_1_
    end interface ${P}$_nad_trans_t
 
    ! Access specifiers
@@ -74,7 +75,7 @@ module ${P}$_nad_trans_m
 
 contains
 
-   function ${P}$_nad_trans_t_(cx, pt) result(tr)
+   function ${P}$_nad_trans_t_0_(cx, pt) result(tr)
 
       type(context_t), pointer, intent(in) :: cx
       type(point_t), intent(in)            :: pt
@@ -82,7 +83,7 @@ contains
 
       class(model_t), pointer :: ml
 
-      ! Construct the ${P}$_nad_trans_t
+      ! Construct the ${P}$_nad_trans type
 
       tr%cx => cx
 
@@ -115,7 +116,29 @@ contains
 
       return
 
-   end function ${P}$_nad_trans_t_
+   end function ${P}$_nad_trans_t_0_
+
+   !****
+
+   function ${P}$_nad_trans_t_1_(cx, pt) result(tr)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt(:)
+      type(${P}$_nad_trans_t)              :: tr(SIZE(pt))
+
+      integer :: j
+
+      ! Construct the array of ${P}$_nad_trans types
+
+      do j = 1, SIZE(pt)
+         tr(j) = ${P}$_nad_trans_t(cx, pt(j))
+      end do
+
+      ! Finish
+
+      return
+
+   end function ${P}$_nad_trans_t_1_
 
    !****
 

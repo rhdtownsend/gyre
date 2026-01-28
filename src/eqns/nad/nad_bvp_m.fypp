@@ -151,44 +151,22 @@ contains
 
       select case(os_p%variables_set)
       case('GYRE')
-         allocate(gyre_nad_trans_t::bp%tr(gr%n))
+         bp%tr = gyre_nad_trans_t(cx, gr%pt)
       case('DZIEM')
-         allocate(dziem_nad_trans_t::bp%tr(gr%n))
+         bp%tr = dziem_nad_trans_t(cx, gr%pt)
       case('JCD')
-         if (md_p%l == 0) then
-            allocate(rjcd_nad_trans_t::bp%tr(gr%n))
+         if (cx%l == 0) then
+            bp%tr = rjcd_nad_trans_t(cx, gr%pt)
          else
-            allocate(jcd_nad_trans_t::bp%tr(gr%n))
+            bp%tr = jcd_nad_trans_t(cx, gr%pt)
          end if
       case('MIX')
-         allocate(mix_nad_trans_t::bp%tr(gr%n))
+         bp%tr = mix_nad_trans_t(cx, gr%pt)
       case('LAGP')
-         allocate(lagp_nad_trans_t::bp%tr(gr%n))
+         bp%tr = lagp_nad_trans_t(cx, gr%pt)
       case default
          @:ABORT('invalid variables_set')
       end select
-
-      !$OMP PARALLEL DO
-      do j = 1, gr%n
-
-         select type(tr => bp%tr(j))
-         type is(gyre_nad_trans_t)
-            tr = gyre_nad_trans_t(cx, gr%pt(j))
-         type is(dziem_nad_trans_t)
-            tr = dziem_nad_trans_t(cx, gr%pt(j))
-         type is(jcd_nad_trans_t)
-            tr = jcd_nad_trans_t(cx, gr%pt(j))
-         type is(rjcd_nad_trans_t)
-            tr = rjcd_nad_trans_t(cx, gr%pt(j))
-         type is(mix_nad_trans_t)
-            tr = mix_nad_trans_t(cx, gr%pt(j))
-         type is(lagp_nad_trans_t)
-            tr = lagp_nad_trans_t(cx, gr%pt(j))
-         class default
-            @:ABORT('invalid type')
-         end select
-
-      end do
 
       bp%md_p = md_p
       bp%nm_p = nm_p

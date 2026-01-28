@@ -112,38 +112,21 @@ contains
 
       select case(os_p%variables_set)
       case('GYRE')
-         allocate(gyre_nad_eqns_t::df%eq)
+         df%eq = gyre_nad_eqns_t(cx, pt_m, os_p)
       case('DZIEM')
-         allocate(dziem_nad_eqns_t::df%eq)
+         df%eq = dziem_nad_eqns_t(cx, pt_m, os_p)
       case('JCD')
          if (cx%l == 0) then
-            allocate(rjcd_nad_eqns_t::df%eq)
+            df%eq = rjcd_nad_eqns_t(cx, pt_m, os_p)
          else
-            allocate(jcd_nad_eqns_t::df%eq)
+            df%eq = jcd_nad_eqns_t(cx, pt_m, os_p)
          end if
       case('MIX')
-         allocate(mix_nad_eqns_t::df%eq)
+         df%eq = mix_nad_eqns_t(cx, pt_m, os_p)
       case('LAGP')
-         allocate(lagp_nad_eqns_t::df%eq)
+         df%eq = lagp_nad_eqns_t(cx, pt_m, os_p)
       case default
          @:ABORT('invalid variables_set')
-      end select
-
-      select type(eq => df%eq)
-      type is(gyre_nad_eqns_t)
-         eq = gyre_nad_eqns_t(cx, pt_m, os_p)
-      type is(dziem_nad_eqns_t)
-         eq = dziem_nad_eqns_t(cx, pt_m, os_p)
-      type is(jcd_nad_eqns_t)
-         eq = jcd_nad_eqns_t(cx, pt_m, os_p)
-      type is(rjcd_nad_eqns_t)
-         eq = rjcd_nad_eqns_t(cx, pt_m, os_p)
-      type is(mix_nad_eqns_t)
-         eq = mix_nad_eqns_t(cx, pt_m, os_p)
-      type is(lagp_nad_eqns_t)
-         eq = lagp_nad_eqns_t(cx, pt_m, os_p)
-      class default
-         @:ABORT('invalid type')
       end select
 
       ! Set up midpoint Omega_rot (used for regularization of colloc
@@ -171,43 +154,22 @@ contains
 
          select case(os_p%variables_set)
          case('GYRE')
-            allocate(gyre_nad_eqns_t::eq(n))
+            eq = gyre_nad_eqns_t(cx, pt, os_p)
          case('DZIEM')
-            allocate(dziem_nad_eqns_t::eq(n))
+            eq = dziem_nad_eqns_t(cx, pt, os_p)
          case('JCD')
             if (cx%l == 0) then
-            allocate(rjcd_nad_eqns_t::eq(n))
+               eq = rjcd_nad_eqns_t(cx, pt, os_p)
             else
-               allocate(jcd_nad_eqns_t::eq(n))
+               eq = jcd_nad_eqns_t(cx, pt, os_p)
             end if
          case('MIX')
-            allocate(mix_nad_eqns_t::eq(n))
+            eq = mix_nad_eqns_t(cx, pt, os_p)
          case('LAGP')
-            allocate(lagp_nad_eqns_t::eq(n))
+            eq = lagp_nad_eqns_t(cx, pt, os_p)
          case default
             @:ABORT('invalid variables_set')
          end select
-
-         do i = 1, n
-
-            select type(eq)
-            type is(gyre_nad_eqns_t)
-               eq(i) = gyre_nad_eqns_t(cx, pt(i), os_p)
-            type is(dziem_nad_eqns_t)
-               eq(i) = dziem_nad_eqns_t(cx, pt(i), os_p)
-            type is(jcd_nad_eqns_t)
-               eq(i) = jcd_nad_eqns_t(cx, pt(i), os_p)
-            type is(rjcd_nad_eqns_t)
-               eq(i) = rjcd_nad_eqns_t(cx, pt(i), os_p)
-            type is(mix_nad_eqns_t)
-               eq(i) = mix_nad_eqns_t(cx, pt(i), os_p)
-            type is(lagp_nad_eqns_t)
-               eq(i) = lagp_nad_eqns_t(cx, pt(i), os_p)
-            class default
-               @:ABORT('invalid type')
-            end select
-
-         end do
 
          ! Finish
 

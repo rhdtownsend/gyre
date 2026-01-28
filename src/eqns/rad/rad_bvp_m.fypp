@@ -152,38 +152,18 @@ contains
 
       select case(os_p%variables_set)
       case('GYRE')
-         allocate(gyre_rad_trans_t::bp%tr(gr%n))
+         bp%tr = gyre_rad_trans_t(cx, gr%pt)
       case('DZIEM')
-         allocate(dziem_rad_trans_t::bp%tr(gr%n))
+         bp%tr = dziem_rad_trans_t(cx, gr%pt)
       case('JCD')
-         allocate(jcd_rad_trans_t::bp%tr(gr%n))
+         bp%tr = jcd_rad_trans_t(cx, gr%pt)
       case('MIX')
-         allocate(mix_rad_trans_t::bp%tr(gr%n))
+         bp%tr = mix_rad_trans_t(cx, gr%pt)
       case('LAGP')
-         allocate(lagp_rad_trans_t::bp%tr(gr%n))
+         bp%tr = lagp_rad_trans_t(cx, gr%pt)
       case default
          @:ABORT('invalid variables_set')
       end select
-
-      !$OMP PARALLEL DO
-      do j = 1, gr%n
-
-         select type(tr => bp%tr(j))
-         type is(gyre_rad_trans_t)
-            tr = gyre_rad_trans_t(cx, gr%pt(j))
-         type is(dziem_rad_trans_t)
-            tr = dziem_rad_trans_t(cx, gr%pt(j))
-         type is(jcd_rad_trans_t)
-            tr = jcd_rad_trans_t(cx, gr%pt(j))
-         type is(mix_rad_trans_t)
-            tr = mix_rad_trans_t(cx, gr%pt(j))
-         type is(lagp_rad_trans_t)
-            tr = lagp_rad_trans_t(cx, gr%pt(j))
-         class default
-            @:ABORT('invalid type')
-         end select
-
-      end do
 
       if (os_p%quasiad_eigfuncs) then
          bp%qe = qad_eval_t(cx, gr, os_p)
@@ -210,44 +190,24 @@ contains
          type(point_t), intent(in)                :: pt(:)
          class(eqns_rt), allocatable, intent(out) :: eq(:)
 
-         integer :: n
-         integer :: i
-
-         n = SIZE(pt)
+         ! Initialize the equations
 
          select case(os_p%variables_set)
          case('GYRE')
-            allocate(gyre_rad_eqns_t::eq(n))
+            eq = gyre_rad_eqns_t(cx, pt)
          case('DZIEM')
-            allocate(dziem_rad_eqns_t::eq(n))
+            eq = dziem_rad_eqns_t(cx, pt)
          case('JCD')
-            allocate(jcd_rad_eqns_t::eq(n))
+            eq = jcd_rad_eqns_t(cx, pt)
          case('MIX')
-            allocate(mix_rad_eqns_t::eq(n))
+            eq = mix_rad_eqns_t(cx, pt)
          case('LAGP')
-            allocate(lagp_rad_eqns_t::eq(n))
+            eq = lagp_rad_eqns_t(cx, pt)
          case default
             @:ABORT('invalid variables_set')
          end select
 
-         do i = 1, n
-
-            select type(eq)
-            type is(gyre_rad_eqns_t)
-               eq(i) = gyre_rad_eqns_t(cx, pt(i))
-            type is(dziem_rad_eqns_t)
-               eq(i) = dziem_rad_eqns_t(cx, pt(i))
-            type is(jcd_rad_eqns_t)
-               eq(i) = jcd_rad_eqns_t(cx, pt(i))
-            type is(mix_rad_eqns_t)
-               eq(i) = mix_rad_eqns_t(cx, pt(i))
-            type is(lagp_rad_eqns_t)
-               eq(i) = lagp_rad_eqns_t(cx, pt(i))
-            class default
-               @:ABORT('invalid type')
-            end select
-
-         end do
+         ! Finish
 
          return
 

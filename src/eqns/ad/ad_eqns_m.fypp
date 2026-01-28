@@ -63,7 +63,8 @@ module ${P}$_ad_eqns_m
    ! Interfaces
 
    interface ${P}$_ad_eqns_t
-      module procedure ${P}$_ad_eqns_t_
+      module procedure ${P}$_ad_eqns_t_0_
+      module procedure ${P}$_ad_eqns_t_1_
    end interface ${P}$_ad_eqns_t
 
    ! Access specifiers
@@ -76,7 +77,7 @@ module ${P}$_ad_eqns_m
 
 contains
 
-   function ${P}$_ad_eqns_t_(cx, pt) result(eq)
+   function ${P}$_ad_eqns_t_0_(cx, pt) result(eq)
 
       type(context_t), pointer, intent(in) :: cx
       type(point_t), intent(in)            :: pt
@@ -121,7 +122,29 @@ contains
 
       return
 
-   end function ${P}$_ad_eqns_t_
+   end function ${P}$_ad_eqns_t_0_
+
+   !****
+
+   function ${P}$_ad_eqns_t_1_(cx, pt) result(eq)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt(:)
+      type(${P}$_ad_eqns_t)                :: eq(SIZE(pt))
+
+      integer :: j
+
+      ! Construct the array of ${P}$_ad_eqns types
+
+      do j = 1, SIZE(pt)
+         eq(j) = ${P}$_ad_eqns_t(cx, pt(j))
+      end do
+
+      ! Finish
+
+      return
+
+   end function ${P}$_ad_eqns_t_1_
 
    !****
 
