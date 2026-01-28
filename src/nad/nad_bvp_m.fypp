@@ -30,14 +30,12 @@ module nad_bvp_m
    use grid_m
    use model_m
    use mode_par_m
-   use nad_bound_m
-   use nad_diff_m
-   use nad_trans_m
    use num_par_m
    use osc_par_m
    use point_m
    use state_m
    use sysmtx_m
+   use trans_m
    use wave_m
 
    use ISO_FORTRAN_ENV
@@ -50,12 +48,12 @@ module nad_bvp_m
 
    type, extends(bvp_ct) :: nad_bvp_t
       private
-      type(context_t), pointer       :: cx => null()
-      type(grid_t)                   :: gr
-      type(nad_trans_t), allocatable :: tr(:)
-      type(mode_par_t)               :: md_p
-      type(num_par_t)                :: nm_p
-      type(osc_par_t)                :: os_p
+      type(context_t), pointer     :: cx => null()
+      class(trans_ct), allocatable :: tr(:)
+      type(grid_t)                 :: gr
+      type(mode_par_t)             :: md_p
+      type(num_par_t)              :: nm_p
+      type(osc_par_t)              :: os_p
    end type nad_bvp_t
 
    ! Interfaces
@@ -82,6 +80,20 @@ contains
 
    function nad_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
 
+      use gyre_nad_bound_m
+      use dziem_nad_bound_m
+      use jcd_nad_bound_m
+      use rjcd_nad_bound_m
+      use mix_nad_bound_m
+      use lagp_nad_bound_m
+
+      use gyre_nad_trans_m
+      use dziem_nad_trans_m
+      use jcd_nad_trans_m
+      use rjcd_nad_trans_m
+      use mix_nad_trans_m
+      use lagp_nad_trans_m
+
       class(context_t), pointer, intent(in) :: cx
       type(grid_t), intent(in)              :: gr
       type(mode_par_t), intent(in)          :: md_p
@@ -97,7 +109,24 @@ contains
 
       ! Initialize the boundary conditions
 
-      bd = nad_bound_t(cx, md_p, os_p)
+      select case(os_p%variables_set)
+      case('GYRE')
+         bd = gyre_ad_bound_t(cx, os_p)
+      case('DZIEM')
+         bd = dziem_ad_bound_t(cx, os_p)
+      case('JCD')
+         if (md_p%l == 0) then
+            bd = rjcd_ad_bound_t(cx, os_p)
+         else
+            bd = jcd_ad_bound_t(cx, os_p)
+         end if
+      case('MIX')
+         bd = mix_ad_bound_t(cx, os_p)
+      case('LAGP')
+         bd = lagp_ad_bound_t(cx, os_p)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
 
       ! Initialize the difference equations
 
@@ -105,7 +134,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, gr%n-1
-         allocate(de(j)%df, SOURCE=nad_diff_t(cx, gr%pt(j), gr%pt(j+1), md_p, nm_p, os_p))
+         allocate(de(j)%df, SOURCE=nad_diff_t(cx, gr%pt(j), gr%pt(j+1), nm_p))
       end do
 
       ! Initialize the bvp_t
@@ -117,11 +146,45 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      allocate(bp%tr(gr%n))
+      select case(os_p%variables_set)
+      case('GYRE')
+         allocate(gyre_ad_trans_t::bp%tr(gr%n))
+      case('DZIEM')
+         allocate(dziem_ad_trans_t::bp%tr(gr%n))
+      case('JCD')
+         if (md_p%l == 0) then
+            allocate(rjcd_ad_trans_t::bp%tr(gr%n))
+         else
+            allocate(jcd_ad_trans_t::bp%tr(gr%n))
+         end if
+      case('MIX')
+         allocate(mix_ad_trans_t::bp%tr(gr%n))
+      case('LAGP')
+         allocate(lagp_ad_trans_t::bp%tr(gr%n))
+      case default
+         @:ABORT('invalid variables_set')
+      end select
 
       !$OMP PARALLEL DO
       do j = 1, gr%n
-         bp%tr(j) = nad_trans_t(cx, gr%pt(j), md_p, os_p)
+
+         select type(tr => bp%tr(j))
+         type is(gyre_ad_trans_t)
+            tr = gyre_ad_trans_t(cx, gr%pt(j))
+         type is(dziem_ad_trans_t)
+            tr = dziem_ad_trans_t(cx, gr%pt(j))
+         type is(jcd_ad_trans_t)
+            tr = jcd_ad_trans_t(cx, gr%pt(j))
+         type is(rjcd_ad_trans_t)
+            tr = rjcd_ad_trans_t(cx, gr%pt(j))
+         type is(mix_ad_trans_t)
+            tr = mix_ad_trans_t(cx, gr%pt(j))
+         type is(lagp_ad_trans_t)
+            tr = lagp_ad_trans_t(cx, gr%pt(j))
+         class default
+            @:ABORT('invalid type')
+         end select
+
       end do
 
       bp%md_p = md_p
@@ -155,7 +218,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
-         call bp%tr(j)%trans_vars(y(:,j), st, from=.FALSE.)
+         call bp%tr(j)%transform(st, y(:,j))
       end do
 
       ! Construct the wave_t
@@ -194,7 +257,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
-         call bp%tr(j)%trans_vars(y(:,j), st, from=.FALSE.)
+         call bp%tr(j)%transform(st, y(:,j))
       end do
 
       ! Construct the wave_t

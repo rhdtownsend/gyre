@@ -17,7 +17,9 @@
 
 #:include 'gyre.inc'
 
-module nad_eqns_m
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_nad_eqns_m
 
    ! Uses
 
@@ -28,9 +30,7 @@ module nad_eqns_m
    use linalg_m
    use math_m
    use model_m
-   use mode_par_m
    use model_util_m
-   use nad_trans_m
    use osc_par_m
    use point_m
    use state_m
@@ -48,11 +48,12 @@ module nad_eqns_m
 
    ! Derived-type definitions
 
-   type, extends(eqns_ct) :: nad_eqns_t
+   type, extends(eqns_ct) :: ${P}$_nad_eqns_t
       private
       type(context_t), pointer :: cx => null()
-      type(nad_trans_t)        :: tr
       type(point_t)            :: pt
+      real(RD)                 :: V_2
+      real(RD)                 :: dV_2
       real(RD)                 :: V
       real(RD)                 :: V_g
       real(RD)                 :: As
@@ -86,17 +87,17 @@ module nad_eqns_m
       private
       procedure, public :: eval_A
       procedure, public :: eval_C
-   end type nad_eqns_t
+   end type ${P}$_nad_eqns_t
 
    ! Interfaces
 
-   interface nad_eqns_t
-      module procedure nad_eqns_t_
-   end interface nad_eqns_t
+   interface ${P}$_nad_eqns_t
+      module procedure ${P}$_nad_eqns_t_
+   end interface ${P}$_nad_eqns_t
 
    ! Access specifiers
 
-   public :: nad_eqns_t
+   public :: ${P}$_nad_eqns_t
 
    ! Default access
 
@@ -104,22 +105,18 @@ module nad_eqns_m
 
 contains
 
-   function nad_eqns_t_(cx, pt, md_p, os_p) result(eq)
+   function ${P}$_nad_eqns_t_(cx, pt, os_p) result(eq)
 
       type(context_t), pointer, intent(in) :: cx
       type(point_t), intent(in)            :: pt
-      type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
-      type(nad_eqns_t)                     :: eq
+      type(${P}$_nad_eqns_t)               :: eq
 
       class(model_t), pointer :: ml
-      type(point_t)           :: pt_o
 
-      ! Construct the nad_eqns_t
+      ! Construct the ${P}$_nad_eqns_t
 
       eq%cx => cx
-
-      eq%tr = nad_trans_t(cx, pt, md_p, os_p)
 
       eq%pt = pt
 
@@ -134,8 +131,10 @@ contains
 
       @:ASSERT(.NOT. ml%is_vacuum(pt), 'vacuum point')
 
-      eq%V = ml%coeff(I_V_2, pt)*pt%x**2
-      eq%V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+      eq%V_2 = ml%coeff(I_V_2, pt)*pt%x**2
+      eq%dV_2 = ml%dcoeff(I_V_2, pt)*pt%x**2
+      eq%V = eq%V_2*pt%x**2
+      eq%V_g = eq%V/ml%coeff(I_GAMMA_1, pt)
       eq%As = ml%coeff(I_AS, pt)
       eq%As_iso = eq%As*MERGE(MERGE(cx%alpha_pi, cx%alpha_gam, pt%x<cx%x_atm), 1._RD, eq%As > 0._RD)
       eq%U = ml%coeff(I_U, pt)
@@ -188,15 +187,15 @@ contains
 
       return
 
-   end function nad_eqns_t_
+   end function ${P}$_nad_eqns_t_
 
    !****
 
    subroutine eval_A(this, st, A)
 
-      class(nad_eqns_t), intent(in) :: this
-      class(state_ct), intent(in)   :: st
-      complex(RD), intent(out)      :: A(:,:)
+      class(${P}$_nad_eqns_t), intent(in) :: this
+      class(state_ct), intent(in)         :: st
+      complex(RD), intent(out)            :: A(:,:)
 
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
@@ -223,6 +222,7 @@ contains
 
       associate ( &
          omega => st%omega, &
+         V_2 => this%V_2, &
          V => this%V, &
          V_g => this%V_g, &
          As => this%As, &
@@ -308,55 +308,11 @@ contains
 
          c_dif = -4._RD*nabla_ad*V*nabla + nabla_ad*(dnabla_ad + V)
 
-         ! Set up the matrix
-
          invx = 1._RD/x
 
-         A(1,1) = invx*(V_g - 1._RD - l_i)
-         A(1,2) = invx*(eta - V_g*alpha_gam)
-         A(1,3) = invx*alpha_grv*eta
-         A(1,4) = 0._RD
-         A(1,5) = invx*ups_T
-         A(1,6) = 0._RD
+         ! Set up the matrix
 
-         A(2,1) = invx*(om2 - As_iso)
-         A(2,2) = invx*(As - U + 3._RD - l_i)
-         A(2,3) = invx*alpha_grv*(0._RD)
-         A(2,4) = invx*alpha_grv*(-1._RD)
-         A(2,5) = invx*ups_T
-         A(2,6) = 0._RD
-
-         A(3,1) = 0._RD
-         A(3,2) = 0._RD
-         A(3,3) = invx*alpha_grv*(3._RD - U - l_i)
-         A(3,4) = invx*alpha_grv*(1._RD)
-         A(3,5) = 0._RD
-         A(3,6) = 0._RD
-
-         A(4,1) = invx*alpha_grv*(U*As)
-         A(4,2) = invx*alpha_grv*(U*V_g)
-         A(4,3) = invx*alpha_grv*(lambda)
-         A(4,4) = invx*alpha_grv*(-U - l_i + 2._RD)
-         A(4,5) = invx*alpha_grv*(-U*ups_T)
-         A(4,6) = 0._RD
-
-         A(5,1) = invx*V*(nabla_ad*(U - om2) - 4._RD*(nabla_ad - nabla) + c_kap_ad*V*nabla + c_dif)/f_rh
-         A(5,2) = invx*V*(eta*(nabla_ad - nabla) - c_kap_ad*V*nabla - c_dif)/f_rh
-         A(5,3) = invx*alpha_grv*(V*eta*(nabla_ad - nabla))/f_rh
-         A(5,4) = invx*alpha_grv*(V*nabla_ad)/f_rh
-         A(5,5) = invx*(V*nabla*(4._RD*f_rh - c_kap_S)/f_rh - df_rh - (l_i - 2._RD))
-         A(5,6) = invx*(-V*nabla/(c_rad*f_rh))
-
-         A(6,1) = invx*(alpha_hfl*lambda*(nabla_ad/nabla - 1._RD)*c_rad - V*c_eps_ad - alpha_egv*c_egv*nabla_ad*V)
-         A(6,2) = invx*(V*c_eps_ad - lambda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term + alpha_egv*c_egv*nabla_ad*V)
-         A(6,3) = invx*alpha_grv*conv_term
-         A(6,4) = invx*alpha_grv*(0._RD)
-         A(6,5) = invx*(c_eps_S - alpha_hfl*lambda*c_rad/(nabla*V) + alpha_thm*i_omega_c*c_thk + alpha_egv*c_egv)
-         A(6,6) = invx*(-1._RD - l_i)
-
-         ! Apply the variables transformation
-
-         call this%tr%trans_eqns(A, st)
+         #:include 'A.inc'
 
       end associate
 
@@ -370,9 +326,9 @@ contains
 
    subroutine eval_C(this, st, C)
 
-      class(nad_eqns_t), intent(in) :: this
-      class(state_ct), intent(in)   :: st
-      complex(RD), intent(out)      :: C(:,:)
+      class(${P}$_nad_eqns_t), intent(in) :: this
+      class(state_ct), intent(in)         :: st
+      complex(RD), intent(out)            :: C(:,:)
 
       @:CHECK_BOUNDS(SIZE(C, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
@@ -384,51 +340,9 @@ contains
          U => this%U, &
          nabla_ad => this%nabla_ad)
 
-         C(1,1) = 1._RD
-         C(1,2) = 0._RD
-         C(1,3) = 0._RD
-         C(1,4) = 0._RD
-         C(1,5) = 0._RD
-         C(1,6) = 0._RD
+         ! Set up the matrix
 
-         C(2,1) = -U
-         C(2,2) = U
-         C(2,3) = 0._RD
-         C(2,4) = 0._RD
-         C(2,5) = 0._RD
-         C(2,6) = 0._RD
-
-         C(3,1) = 0._RD
-         C(3,2) = 0._RD
-         C(3,3) = 1._RD
-         C(3,4) = 0._RD
-         C(3,5) = 0._RD
-         C(3,6) = 0._RD
-
-         C(4,1) = U
-         C(4,2) = 0._RD
-         C(4,3) = 0._RD
-         C(4,4) = 1._RD
-         C(4,5) = 0._RD
-         C(4,6) = 0._RD
-
-         C(5,1) = -V*nabla_ad
-         C(5,2) = V*nabla_ad
-         C(5,3) = 0._RD
-         C(5,4) = 0._RD
-         C(5,5) = 1._RD
-         C(5,6) = 0._RD
-
-         C(6,1) = 0._RD
-         C(6,2) = 0._RD
-         C(6,3) = 0._RD
-         C(6,4) = 0._RD
-         C(6,5) = 0._RD
-         C(6,6) = 1._RD
-
-         ! Apply the variables transformation
-
-         call this%tr%trans_cond(C, st)
+         #:include 'C.inc'
 
       end associate
 
@@ -438,4 +352,4 @@ contains
 
    end subroutine eval_C
 
-end module nad_eqns_m
+end module ${P}$_nad_eqns_m

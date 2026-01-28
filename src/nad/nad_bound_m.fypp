@@ -17,7 +17,9 @@
 
 #:include 'gyre.inc'
 
-module nad_bound_m
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_nad_bound_m
 
    ! Uses
 
@@ -27,10 +29,8 @@ module nad_bound_m
    use bound_m
    use context_m
    use math_m
-   use mode_par_m
    use model_m
    use model_util_m
-   use nad_trans_m
    use osc_par_m
    use point_m
    use state_m
@@ -41,61 +41,52 @@ module nad_bound_m
 
    implicit none (type, external)
 
-   ! Parameter definitions
-
-   integer, parameter :: REGULAR_TYPE = 1
-   integer, parameter :: ZERO_R_TYPE = 2
-   integer, parameter :: ZERO_H_TYPE = 3
-   integer, parameter :: VACUUM_TYPE = 4
-   integer, parameter :: DZIEM_TYPE = 5
-   integer, parameter :: ISOTHRM_TYPE = 6
-   integer, parameter :: UNNO_TYPE = 7
-   integer, parameter :: JCD_TYPE = 8
-
    ! Derived-type definitions
 
-   type, extends(bound_ct) :: nad_bound_t
+   type, extends(bound_ct) :: ${P}$_nad_bound_t
       private
-      type(context_t), pointer  :: cx => null()
-      type(nad_trans_t)         :: tr_i
-      type(nad_trans_t)         :: tr_o
-      real(RD)                  :: V_o
-      real(RD)                  :: V_g_o
-      real(RD)                  :: As_o
-      real(RD)                  :: U_o
-      real(RD)                  :: c_1_i
-      real(RD)                  :: c_1_o
-      real(RD)                  :: nabla_ad_o
-      real(RD)                  :: c_thn_o
-      real(RD)                  :: ups_T_o
-      real(RD)                  :: Omega_rot_o
-      integer                   :: type_i
-      integer                   :: type_o
-      character(:), allocatable :: branch_o
+      type(context_t), pointer   :: cx => null()
+      real(RD)                   :: V_2_i
+      real(RD)                   :: V_2_o
+      real(RD)                   :: V_o
+      real(RD)                   :: V_g_o
+      real(RD)                   :: As_o
+      real(RD)                   :: U_o
+      real(RD)                   :: c_1_i
+      real(RD)                   :: c_1_o
+      real(RD)                   :: nabla_ad_o
+      real(RD)                   :: c_thn_o
+      real(RD)                   :: ups_T_o
+      real(RD)                   :: Omega_rot_o
+      character(:), allocatable  :: branch_o
+      procedure(build_), pointer :: build_i_
+      procedure(build_), pointer :: build_o_
    contains
       private
       procedure, public :: build_i
-      procedure         :: build_regular_i_
-      procedure         :: build_zero_r_i_
-      procedure         :: build_zero_h_i_
       procedure, public :: build_o
-      procedure         :: build_vacuum_o_
-      procedure         :: build_zero_r_o_
-      procedure         :: build_zero_h_o_
-      procedure         :: build_dziem_o_
-      procedure         :: build_decomp_o_
-      procedure         :: build_jcd_o_
-   end type nad_bound_t
+   end type ${P}$_nad_bound_t
 
    ! Interfaces
 
-   interface nad_bound_t
-      module procedure nad_bound_t_
-   end interface nad_bound_t
+   interface
+      subroutine build_(this, st, B)
+         use forum_m, only: RD
+         use state_m
+         import ${P}$_nad_bound_t
+         class(${P}$_nad_bound_t), intent(in) :: this
+         class(state_ct), intent(in)          :: st
+         complex(RD), intent(out)             :: B(:,:)
+      end subroutine build_
+   end interface
+
+   interface ${P}$_nad_bound_t
+      module procedure ${P}$_nad_bound_t_
+   end interface ${P}$_nad_bound_t
 
    ! Access specifiers
 
-   public :: nad_bound_t
+   public :: ${P}$_nad_bound_t
 
    ! Default access
 
@@ -103,18 +94,17 @@ module nad_bound_m
 
 contains
 
-   function nad_bound_t_(cx, md_p, os_p) result(bd)
+   function ${P}$_nad_bound_t_(cx, os_p) result(bd)
 
       type(context_t), pointer, intent(in) :: cx
-      type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
-      type(nad_bound_t)                    :: bd
+      type(${P}$_nad_bound_t)              :: bd
 
       class(model_t), pointer :: ml
       type(point_t)           :: pt_i
       type(point_t)           :: pt_o
 
-      ! Construct the nad_bound_t
+      ! Construct the ${P}$_nad_bound_t
 
       ml => cx%model()
       pt_i = cx%point_i()
@@ -123,47 +113,47 @@ contains
       select case (os_p%inner_bound)
       case ('REGULAR')
          @:ASSERT(pt_i%x == 0._RD, 'boundary condition invalid for x /= 0')
-         bd%type_i = REGULAR_TYPE
+         bd%build_i_ => build_i_regular_
       case ('ZERO_R')
          @:ASSERT(pt_i%x /= 0._RD, 'boundary condition invalid for x == 0')
-         bd%type_i = ZERO_R_TYPE
+         bd%build_i_ => build_i_zero_r_
       case ('ZERO_H')
          @:ASSERT(pt_i%x /= 0._RD, 'boundary condition invalid for x == 0')
-         bd%type_i = ZERO_H_TYPE
+         bd%build_i_ => build_i_zero_h_
       case default
          @:ABORT('invalid inner_bound')
       end select
 
       select case (os_p%outer_bound)
       case ('VACUUM')
-         bd%type_o = VACUUM_TYPE
+         bd%build_o_ => build_o_vacuum_
       case ('ZERO_R')
-         bd%type_o = ZERO_R_TYPE
+         bd%build_o_ => build_o_zero_r_
       case ('ZERO_H')
-         bd%type_o = ZERO_H_TYPE
+         bd%build_o_ => build_o_zero_h_
       case ('DZIEM')
          if (ml%is_vacuum(pt_o)) then
-            bd%type_o = VACUUM_TYPE
+            bd%build_o_ => build_o_vacuum_
          else
-            bd%type_o = DZIEM_TYPE
-         endif
+            bd%build_o_ => build_o_dziem_
+         end if
       case ('ISOTHERMAL')
          if (ml%is_vacuum(pt_o)) then
-            bd%type_o = VACUUM_TYPE
+            bd%build_o_ => build_o_vacuum_
          else
-            bd%type_o = ISOTHRM_TYPE
+            bd%build_o_ => build_o_decomp_
          end if
       case ('UNNO')
          if (ml%is_vacuum(pt_o)) then
-            bd%type_o = VACUUM_TYPE
+            bd%build_o_ => build_o_vacuum_
          else
-            bd%type_o = UNNO_TYPE
+            bd%build_o_ => build_o_decomp_
          end if
       case ('JCD')
          if (ml%is_vacuum(pt_o)) then
-            bd%type_o = VACUUM_TYPE
+            bd%build_o_ => build_o_vacuum_
          else
-            bd%type_o = JCD_TYPE
+            bd%build_o_ => build_o_jcd_
          end if
       case default
          @:ABORT('invalid outer_bound')
@@ -171,32 +161,36 @@ contains
 
       bd%cx => cx
 
-      bd%tr_i = nad_trans_t(cx, pt_i, md_p, os_p)
-      bd%tr_o = nad_trans_t(cx, pt_o, md_p, os_p)
-
       ! Store structure coefficients
 
       call check_model(ml, [I_V_2,I_U,I_C_1,I_GAMMA_1,I_NABLA_AD,I_C_THN,I_OMEGA_ROT])
 
       bd%c_1_i = ml%coeff(I_C_1, pt_i)
+      bd%V_2_i = ml%coeff(I_V_2, pt_i)
 
-      select case (bd%type_o)
-      case (VACUUM_TYPE,ZERO_R_TYPE,ZERO_H_TYPE)
+      select case (os_p%outer_bound)
+      case ('VACUUM', 'ZERO_R', 'ZERO_H')
          bd%V_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2
-      case (DZIEM_TYPE)
+      case ('DZIEM')
          bd%V_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2
-      case (ISOTHRM_TYPE)
+      case ('ISOTHERMAL')
          call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_g_o, &
             bd%As_o, bd%c_1_o)
-      case (UNNO_TYPE)
+      case ('UNNO')
          call eval_atmos_coeffs_unno(ml, pt_o, bd%V_g_o, &
             bd%As_o, bd%c_1_o)
          bd%U_o = ml%coeff(I_U, pt_o)
-      case (JCD_TYPE)
+      case ('JCD')
          call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_g_o, &
             bd%As_o, bd%c_1_o)
+      case ('GAMMA2')
+         bd%V_g_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2/ml%coeff(I_GAMMA_1, pt_o)
+         bd%U_o = ml%coeff(I_V_2, pt_o)
+      case default
+         @:ABORT('invalid outer_bound')
       end select
 
+      bd%V_2_o = ml%coeff(I_V_2, pt_o)
       bd%U_o = ml%coeff(I_U, pt_o)
       bd%c_1_o = ml%coeff(I_C_1, pt_o)
       bd%nabla_ad_o = ml%coeff(I_NABLA_AD, pt_o)
@@ -217,32 +211,19 @@ contains
 
       return
 
-   end function nad_bound_t_
+   end function ${P}$_nad_bound_t_
 
    !****
 
    subroutine build_i(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
 
       ! Evaluate the inner boundary conditions
 
-      select case (this%type_i)
-      case (REGULAR_TYPE)
-         call this%build_regular_i_(st, B)
-      case (ZERO_R_TYPE)
-         call this%build_zero_r_i_(st, B)
-      case (ZERO_H_TYPE)
-         call this%build_zero_h_i_(st, B)
-      case default
-         @:ABORT('invalid type_i')
-      end select
-
-      ! Apply the variables transformation
-
-      call this%tr_i%trans_cond(B, st)
+      call this%build_i_(st, B)
 
       ! Finish
 
@@ -252,14 +233,15 @@ contains
 
    !****
 
-   subroutine build_regular_i_(this, st, B)
+   subroutine build_i_regular_(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
 
-      complex(RD) :: omega_c
-      complex(RD) :: l_i
+      real(RD) :: omega_c
+      real(RD) :: lambda
+      real(RD) :: l_i
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -268,6 +250,7 @@ contains
 
       associate( &
          omega => st%omega, &
+         V_2 => this%V_2_i, &
          c_1 => this%c_1_i, &
          Omega_rot => this%cx%Omega_rot_i, &
          alpha_grv => this%cx%alpha_grv, &
@@ -276,30 +259,12 @@ contains
 
          omega_c = omega - m*Omega_rot
 
+         lambda = this%cx%lambda(Omega_rot, st)
          l_i = this%cx%l_e(Omega_rot, st)
 
-         ! Set up the boundary conditions
+         ! Set up the matrix
 
-         B(1,1) = c_1*alpha_omg*omega_c**2
-         B(1,2) = -l_i
-         B(1,3) = alpha_grv*(-l_i)
-         B(1,4) = alpha_grv*(0._RD)
-         B(1,5) = 0._RD
-         B(1,6) = 0._RD
-
-         B(2,1) = alpha_grv*(0._RD)
-         B(2,2) = alpha_grv*(0._RD)
-         B(2,3) = alpha_grv*(l_i)
-         B(2,4) = alpha_grv*(-1._RD) + (1._RD - alpha_grv)
-         B(2,5) = alpha_grv*(0._RD)
-         B(2,6) = alpha_grv*(0._RD)
-
-         B(3,1) = 0._RD
-         B(3,2) = 0._RD
-         B(3,3) = alpha_grv*(0._RD)
-         B(3,4) = alpha_grv*(0._RD)
-         B(3,5) = 1._RD
-         B(3,6) = 0._RD
+         #:include 'B_i_regular.inc'
 
       end associate
 
@@ -307,47 +272,28 @@ contains
 
       return
 
-   end subroutine build_regular_i_
+   end subroutine build_i_regular_
 
    !****
 
-   subroutine build_zero_r_i_(this, st, B)
+   subroutine build_i_zero_r_(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
-      ! Evaluate the inner boundary conditions (zero
-      ! radial displacement/gravity)
+      ! Evaluate the inner boundary conditions (zero radial
+      ! displacement/gravity)
 
       associate( &
          alpha_grv => this%cx%alpha_grv)
 
-         ! Set up the boundary conditions
+         ! Set up the matrix
 
-         B(1,1) = 1._RD
-         B(1,2) = 0._RD
-         B(1,3) = alpha_grv*(0._RD)
-         B(1,4) = alpha_grv*(0._RD)
-         B(1,5) = 0._RD
-         B(1,6) = 0._RD
-
-         B(2,1) = alpha_grv*(0._RD)
-         B(2,2) = alpha_grv*(0._RD)
-         B(2,3) = alpha_grv*(0._RD)
-         B(2,4) = alpha_grv*(1._RD) + (1._RD - alpha_grv)
-         B(2,5) = alpha_grv*(0._RD)
-         B(2,6) = alpha_grv*(0._RD)
-
-         B(3,1) = 0._RD
-         B(3,2) = 0._RD
-         B(3,3) = alpha_grv*(0._RD)
-         B(3,4) = alpha_grv*(0._RD)
-         B(3,5) = 1._RD
-         B(3,6) = 0._RD
+         #:include 'B_i_zero_r.inc'
 
       end associate
 
@@ -355,15 +301,18 @@ contains
 
       return
 
-   end subroutine build_zero_r_i_
+   end subroutine build_i_zero_r_
 
    !****
 
-   subroutine build_zero_h_i_(this, st, B)
+   subroutine build_i_zero_h_(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
+
+      real(RD) :: omega_c
+      real(RD) :: lambda
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -372,30 +321,21 @@ contains
       ! horizontal displacement/gravity)
 
       associate( &
-         alpha_grv => this%cx%alpha_grv)
+         omega => st%omega, &
+         V_2 => this%V_2_i, &
+         c_1 => this%c_1_i, &
+         Omega_rot => this%cx%Omega_rot_i, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m)
 
-         ! Set up the boundary conditions
+         omega_c = omega - m*Omega_rot
 
-         B(1,1) = 0._RD
-         B(1,2) = 1._RD
-         B(1,3) = alpha_grv*(1._RD)
-         B(1,4) = alpha_grv*(0._RD)
-         B(1,5) = 0._RD
-         B(1,6) = 0._RD
+         lambda = this%cx%lambda(Omega_rot, st)
 
-         B(2,1) = alpha_grv*(0._RD)
-         B(2,2) = alpha_grv*(0._RD)
-         B(2,3) = alpha_grv*(0._RD)
-         B(2,4) = alpha_grv*(1._RD) + (1._RD - alpha_grv)
-         B(2,5) = alpha_grv*(0._RD)
-         B(2,6) = alpha_grv*(0._RD)
+         ! Set up the matrix
 
-         B(3,1) = 0._RD
-         B(3,2) = 0._RD
-         B(3,3) = alpha_grv*(0._RD)
-         B(3,4) = alpha_grv*(0._RD)
-         B(3,5) = 1._RD
-         B(3,6) = 0._RD
+         #:include 'B_i_zero_h.inc'
 
       end associate
 
@@ -403,40 +343,19 @@ contains
 
       return
 
-   end subroutine build_zero_h_i_
+   end subroutine build_i_zero_h_
 
    !****
 
    subroutine build_o(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
 
       ! Evaluate the outer boundary conditions
 
-      select case (this%type_o)
-      case (VACUUM_TYPE)
-         call this%build_vacuum_o_(st, B)
-      case (ZERO_R_TYPE)
-         call this%build_zero_r_o_(st, B)
-      case (ZERO_H_TYPE)
-         call this%build_zero_h_o_(st, B)
-      case (DZIEM_TYPE)
-         call this%build_dziem_o_(st, B)
-      case (ISOTHRM_TYPE)
-         call this%build_decomp_o_(st, B)
-      case (UNNO_TYPE)
-         call this%build_decomp_o_(st, B)
-      case (JCD_TYPE)
-         call this%build_jcd_o_(st, B)
-      case default
-         @:ABORT('invalid type_o')
-      end select
-
-      ! Apply the variables transformation
-
-      call this%tr_o%trans_cond(B, st)
+      call this%build_o_(st, B)
 
       ! Finish
 
@@ -446,14 +365,15 @@ contains
 
    !****
 
-   subroutine build_vacuum_o_(this, st, B)
+   subroutine build_o_vacuum_(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
 
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
+      complex(RD) :: lambda
       complex(RD) :: l_e
       complex(RD) :: f_rht
 
@@ -465,7 +385,9 @@ contains
       associate( &
          omega => st%omega, &
          V => this%V_o, &
+         V_2 => this%V_2_o, &
          U => this%U_o, &
+         c_1 => this%c_1_o, &
          nabla_ad => this%nabla_ad_o, &
          c_thn => this%c_thn_o, &
          Omega_rot => this%Omega_rot_o, &
@@ -479,32 +401,14 @@ contains
 
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
+         lambda = this%cx%lambda(Omega_rot, st)
          l_e = this%cx%l_e(Omega_rot, st)
 
          f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
 
-         ! Set up the boundary conditions
+         ! Set up the matrix
 
-         B(1,1) = 1._RD
-         B(1,2) = -1._RD
-         B(1,3) = alpha_grv*(0._RD)
-         B(1,4) = alpha_grv*(0._RD)
-         B(1,5) = 0._RD
-         B(1,6) = 0._RD
-
-         B(2,1) = alpha_grv*alpha_gbc*(U)
-         B(2,2) = alpha_grv*(0._RD)
-         B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
-         B(2,4) = alpha_grv*(1._RD)
-         B(2,5) = alpha_grv*(0._RD)
-         B(2,6) = alpha_grv*(0._RD)
-
-         B(3,1) = 2._RD - 4._RD*nabla_ad*V
-         B(3,2) = 4._RD*nabla_ad*V
-         B(3,3) = alpha_grv*(0._RD)
-         B(3,4) = alpha_grv*(0._RD)
-         B(3,5) = 4._RD*f_rht
-         B(3,6) = -1._RD
+         #:include 'B_o_vacuum.inc'
 
       end associate
 
@@ -512,15 +416,15 @@ contains
 
       return
 
-   end subroutine build_vacuum_o_
+   end subroutine build_o_vacuum_
 
    !****
 
-   subroutine build_zero_r_o_(this, st, B)
+   subroutine build_o_zero_r_(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
 
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
@@ -554,28 +458,9 @@ contains
 
          f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
 
-         ! Set up the boundary conditions
+         ! Set up the matrix
 
-         B(1,1) = 1._RD
-         B(1,2) = 0._RD
-         B(1,3) = alpha_grv*(0._RD)
-         B(1,4) = alpha_grv*(0._RD)
-         B(1,5) = 0._RD
-         B(1,6) = 0._RD
-
-         B(2,1) = alpha_grv*alpha_gbc*(U)
-         B(2,2) = alpha_grv*(0._RD)
-         B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
-         B(2,4) = alpha_grv*(1._RD)
-         B(2,5) = alpha_grv*(0._RD)
-         B(2,6) = alpha_grv*(0._RD)
-
-         B(3,1) = 2._RD - 4._RD*nabla_ad*V
-         B(3,2) = 4._RD*nabla_ad*V
-         B(3,3) = alpha_grv*(0._RD)
-         B(3,4) = alpha_grv*(0._RD)
-         B(3,5) = 4._RD*f_rht
-         B(3,6) = -1._RD
+         #:include 'B_o_zero_r.inc'
 
       end associate
 
@@ -583,19 +468,20 @@ contains
 
       return
 
-   end subroutine build_zero_r_o_
+   end subroutine build_o_zero_r_
 
    !****
 
-   subroutine build_zero_h_o_(this, st, B)
+   subroutine build_o_zero_h_(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
 
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: l_e
+      complex(RD) :: lambda
       complex(RD) :: f_rht
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
@@ -621,32 +507,14 @@ contains
 
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
+         lambda = this%cx%lambda(Omega_rot, st)
          l_e = this%cx%l_e(Omega_rot, st)
 
          f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
 
          ! Set up the boundary conditions
 
-         B(1,1) = 0._RD
-         B(1,2) = 1._RD
-         B(1,3) = alpha_grv*(1._RD)
-         B(1,4) = alpha_grv*(0._RD)
-         B(1,5) = 0._RD
-         B(1,6) = 0._RD
-
-         B(2,1) = alpha_grv*alpha_gbc*(U)
-         B(2,2) = alpha_grv*(0._RD)
-         B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
-         B(2,4) = alpha_grv*(1._RD)
-         B(2,5) = alpha_grv*(0._RD)
-         B(2,6) = alpha_grv*(0._RD)
-
-         B(3,1) = 2._RD - 4._RD*nabla_ad*V
-         B(3,2) = 4._RD*nabla_ad*V
-         B(3,3) = alpha_grv*(0._RD)
-         B(3,4) = alpha_grv*(0._RD)
-         B(3,5) = 4._RD*f_rht
-         B(3,6) = -1._RD
+         #:include 'B_o_zero_h.inc'
 
       end associate
 
@@ -654,15 +522,15 @@ contains
 
       return
 
-   end subroutine build_zero_h_o_
+   end subroutine build_o_zero_h_
 
    !****
 
-   subroutine build_dziem_o_(this, st, B)
+   subroutine build_o_dziem_(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
 
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
@@ -700,26 +568,7 @@ contains
 
          ! Set up the boundary conditions
 
-         B(1,1) = 1._RD + (lambda/(c_1*alpha_omg*omega_c**2) - 4._RD - c_1*alpha_omg*omega_c**2)/V
-         B(1,2) = -1._RD
-         B(1,3) = alpha_grv*((lambda/(c_1*alpha_omg*omega_c**2) - l_e - 1._RD)/V)
-         B(1,4) = alpha_grv*(0._RD)
-         B(1,5) = 0._RD
-         B(1,6) = 0._RD
-
-         B(2,1) = alpha_grv*alpha_gbc*(U)
-         B(2,2) = alpha_grv*(0._RD)
-         B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
-         B(2,4) = alpha_grv*(1._RD)
-         B(2,5) = alpha_grv*(0._RD)
-         B(2,6) = alpha_grv*(0._RD)
-
-         B(3,1) = 2._RD - 4._RD*nabla_ad*V
-         B(3,2) = 4._RD*nabla_ad*V
-         B(3,3) = alpha_grv*(0._RD)
-         B(3,4) = alpha_grv*(0._RD)
-         B(3,5) = 4._RD*f_rht
-         B(3,6) = -1._RD
+         #:include 'B_o_dziem.inc'
 
       end associate
 
@@ -727,15 +576,15 @@ contains
 
       return
 
-   end subroutine build_dziem_o_
+   end subroutine build_o_dziem_
 
    !****
 
-   subroutine build_decomp_o_(this, st, B)
+   subroutine build_o_decomp_(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
 
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
@@ -807,28 +656,9 @@ contains
          G_1 = (l_e*H_(-l_e, chi) + (l_e+1._RD)*H_(l_e+1._RD, chi))/(2._RD*l_e + 1._RD)
          G_2 = (H_(-l_e, chi) - H_(l_e+1._RD, chi))/(2._RD*l_e + 1._RD)
 
-         ! Set up the boundary conditions
+         ! Set up the matrix
 
-         B(1,1) = -(chi - a_11)
-         B(1,2) = a_12
-         B(1,3) = -alpha_grv*G_1
-         B(1,4) = alpha_grv*G_2
-         B(1,5) = 0._RD
-         B(1,6) = 0._RD
-
-         B(2,1) = alpha_grv*alpha_gbc*(U)
-         B(2,2) = alpha_grv*(0._RD)
-         B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
-         B(2,4) = alpha_grv*(1._RD)
-         B(2,5) = alpha_grv*(0._RD)
-         B(2,6) = alpha_grv*(0._RD)
-
-         B(3,1) = 2._RD - 4._RD*nabla_ad*V
-         B(3,2) = 4._RD*nabla_ad*V
-         B(3,3) = alpha_grv*(0._RD)
-         B(3,4) = alpha_grv*(0._RD)
-         B(3,5) = 4._RD*f_rht
-         B(3,6) = -1._RD
+         #:include 'B_o_decomp.inc'
 
       end associate
 
@@ -856,15 +686,15 @@ contains
 
       end function H_
 
-   end subroutine build_decomp_o_
+   end subroutine build_o_decomp_
 
    !****
 
-   subroutine build_jcd_o_(this, st, B)
+   subroutine build_o_jcd_(this, st, B)
 
-      class(nad_bound_t), intent(in) :: this
-      class(state_ct), intent(in)    :: st
-      complex(RD), intent(out)       :: B(:,:)
+      class(${P}$_nad_bound_t), intent(in) :: this
+      class(state_ct), intent(in)          :: st
+      complex(RD), intent(out)             :: B(:,:)
 
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
@@ -913,26 +743,7 @@ contains
 
          ! Set up the boundary conditions
 
-         B(1,1) = chi - b_11
-         B(1,2) = -b_12
-         B(1,3) = alpha_grv*((lambda/(c_1*alpha_omg*omega_c**2) - l_e - 1._RD)*b_12/(V_g + As))
-         B(1,4) = alpha_grv*(0._RD)
-         B(1,5) = 0._RD
-         B(1,6) = 0._RD
-
-         B(2,1) = alpha_grv*alpha_gbc*(U)
-         B(2,2) = alpha_grv*(0._RD)
-         B(2,3) = alpha_grv*(l_e + 1._RD) + (1._RD - alpha_grv)
-         B(2,4) = alpha_grv*(1._RD)
-         B(2,5) = alpha_grv*(0._RD)
-         B(2,6) = alpha_grv*(0._RD)
-
-         B(3,1) = 2._RD - 4._RD*nabla_ad*V
-         B(3,2) = 4._RD*nabla_ad*V
-         B(3,3) = alpha_grv*(0._RD)
-         B(3,4) = alpha_grv*(0._RD)
-         B(3,5) = 4._RD*f_rht
-         B(3,6) = -1._RD
+         #:include 'B_o_jcd.inc'
 
       end associate
 
@@ -940,6 +751,6 @@ contains
 
       return
 
-   end subroutine build_jcd_o_
+   end subroutine build_o_jcd_
 
-end module nad_bound_m
+end module ${P}$_nad_bound_m

@@ -30,9 +30,7 @@ module nad_diff_m
    use trapz_diff_m
    use ext_m
    use math_m
-   use mode_par_m
    use model_m
-   use nad_eqns_m
    use num_par_m
    use osc_par_m
    use point_m
@@ -74,19 +72,25 @@ module nad_diff_m
 
 contains
 
-   function nad_diff_t_(cx, pt_a, pt_b, md_p, nm_p, os_p) result(df)
+   function nad_diff_t_(cx, pt_a, pt_b, nm_p, os_p) result(df)
+
+      use gyre_nad_eqns_m
+      use dziem_nad_eqns_m
+      use jcd_nad_eqns_m
+      use rjcd_nad_eqns_m
+      use mix_nad_eqns_m
+      use lagp_nad_eqns_m
 
       type(context_t), pointer, intent(in) :: cx
       type(point_t), intent(in)            :: pt_a
       type(point_t), intent(in)            :: pt_b
-      type(mode_par_t), intent(in)         :: md_p
       type(num_par_t), intent(in)          :: nm_p
       type(osc_par_t), intent(in)          :: os_p
       type(nad_diff_t)                     :: df
 
       type(point_t) :: pt_m
 
-      ! Construct the nad_diff_t
+      ! Construct the nad_diff type
 
       df%cx => cx
 
@@ -106,7 +110,43 @@ contains
       pt_m%s = pt_a%s
       pt_m%x = pt_a%x + 0.5_RD*df%dx
 
-      df%eq = nad_eqns_t(cx, pt_m, md_p, os_p)
+      select case(os_p%variables_set)
+      case('GYRE')
+         allocate(gyre_nad_eqns_t::df%eq)
+      case('DZIEM')
+         allocate(dziem_nad_eqns_t::df%eq)
+      case('JCD')
+         if (md_p%l == 0) then
+            allocate(rjcd_nad_eqns_t::df%eq)
+         else
+            allocate(jcd_nad_eqns_t::df%eq)
+         end if
+      case('MIX')
+         allocate(mix_nad_eqns_t::df%eq)
+      case('LAGP')
+         allocate(lagp_nad_eqns_t::df%eq)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
+
+      select type(eq => df%eq)
+      type is(gyre_nad_eqns_t)
+         eq = gyre_nad_eqns_t(cx, pt_m)
+      type is(dziem_nad_eqns_t)
+         eq = dziem_nad_eqns_t(cx, pt_m)
+      type is(jcd_nad_eqns_t)
+         eq = jcd_nad_eqns_t(cx, pt_m)
+      type is(rjcd_nad_eqns_t)
+         eq = rjcd_nad_eqns_t(cx, pt_m)
+      type is(mix_nad_eqns_t)
+         eq = mix_nad_eqns_t(cx, pt_m)
+      type is(lagp_nad_eqns_t)
+         eq = lagp_nad_eqns_t(cx, pt_m)
+      class default
+         @:ABORT('invalid type')
+      end select
+
+      df%eq = nad_eqns_t(cx, pt_m)
 
       ! Set up midpoint Omega_rot (used for regularization of colloc
       ! schemes)
@@ -126,19 +166,52 @@ contains
          type(point_t), intent(in)                :: pt(:)
          class(eqns_ct), allocatable, intent(out) :: eq(:)
 
-         type(nad_eqns_t), allocatable :: eq_(:)
-         integer                       :: n
-         integer                       :: i
+         integer :: n
+         integer :: i
 
          n = SIZE(pt)
 
-         allocate(eq_(n))
+         select case(os_p%variables_set)
+         case('GYRE')
+            allocate(gyre_nad_eqns_t::eq(n))
+         case('DZIEM')
+            allocate(dziem_nad_eqns_t::eq(n))
+         case('JCD')
+            if (md_p%l == 0) then
+            allocate(rjcd_nad_eqns_t::eq(n))
+            else
+               allocate(jcd_nad_eqns_t::eq(n))
+            end if
+         case('MIX')
+            allocate(mix_nad_eqns_t::eq(n))
+         case('LAGP')
+            allocate(lagp_nad_eqns_t::eq(n))
+         case default
+            @:ABORT('invalid variables_set')
+         end select
 
          do i = 1, n
-            eq_(i) = nad_eqns_t(cx, pt(i), md_p, os_p)
+
+            select type(eq)
+            type is(gyre_nad_eqns_t)
+               eq(i) = gyre_nad_eqns_t(cx, pt(i))
+            type is(dziem_nad_eqns_t)
+               eq(i) = dziem_nad_eqns_t(cx, pt(i))
+            type is(jcd_nad_eqns_t)
+               eq(i) = jcd_nad_eqns_t(cx, pt(i))
+            type is(rjcd_nad_eqns_t)
+               eq(i) = rjcd_nad_eqns_t(cx, pt(i))
+            type is(mix_nad_eqns_t)
+               eq(i) = mix_nad_eqns_t(cx, pt(i))
+            type is(lagp_nad_eqns_t)
+               eq(i) = lagp_nad_eqns_t(cx, pt(i))
+            class default
+               @:ABORT('invalid type')
+            end select
+
          end do
 
-         eq = eq_
+         ! Finish
 
          return
 
