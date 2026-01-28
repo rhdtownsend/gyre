@@ -19,19 +19,10 @@
 import sympy as sp
 import sympy.printing.fortran as spf
 
-# Declare solution variables
+# Declare structure coefficients
 
 x = sp.Symbol('x')
 invx = sp.Symbol('invx')
-
-y_1 = sp.Function('y_1')
-y_2 = sp.Function('y_2')
-y_3 = sp.Function('y_3')
-y_4 = sp.Function('y_4')
-y_5 = sp.Function('y_5')
-y_6 = sp.Function('y_6')
-
-# Declare structure coefficients
 
 class V_2(sp.Function):
     @classmethod
@@ -150,7 +141,7 @@ B_o_zero_h = sp.Matrix([
 B_o_dziem = sp.Matrix([
     [1 + (lamda/(c_1(x)*alpha_omg*omega_c**2) - 4 - c_1(x)*alpha_omg*omega_c**2)/V,
      -1,
-     alpha_grv*((lamda/(c_1(x)*alpha_omg*omega_c**2) - l_e - 1)/V),
+     alpha_grv*(lamda/(c_1(x)*alpha_omg*omega_c**2) - l_e - 1)/V,
      0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e+1, alpha_grv]
 ])

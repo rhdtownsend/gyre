@@ -1,5 +1,5 @@
 ! Module  : ad_trans_m
-! Purpose : adiabatic variables/equations transformations
+! Purpose : adiabatic variables transformations
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -47,7 +47,6 @@ module ${P}$_ad_trans_m
       real(RD)                 :: U
       real(RD)                 :: c_1
       real(RD)                 :: Omega_rot
-      real(RD)                 :: x
       real(RD)                 :: lambda
    contains
       private
@@ -104,8 +103,6 @@ contains
       end if
 
       ! Other initializations
-
-      tr%x = pt%x
 
       tr%n_e = 4
 

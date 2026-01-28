@@ -85,13 +85,6 @@ contains
 
    function ad_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
 
-      use gyre_ad_eqns_m
-      use dziem_ad_eqns_m
-      use jcd_ad_eqns_m
-      use rjcd_ad_eqns_m
-      use mix_ad_eqns_m
-      use lagp_ad_eqns_m
-
       use gyre_ad_bound_m
       use dziem_ad_bound_m
       use jcd_ad_bound_m
@@ -217,6 +210,13 @@ contains
    contains
 
       subroutine eqns_factory_(pt, eq)
+
+         use gyre_ad_eqns_m
+         use dziem_ad_eqns_m
+         use jcd_ad_eqns_m
+         use rjcd_ad_eqns_m
+         use mix_ad_eqns_m
+         use lagp_ad_eqns_m
 
          type(point_t), intent(in)                :: pt(:)
          class(eqns_rt), allocatable, intent(out) :: eq(:)

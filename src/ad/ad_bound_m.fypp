@@ -46,8 +46,8 @@ module ${P}$_ad_bound_m
       private
       type(context_t), pointer   :: cx => null()
       real(RD)                   :: V_2_i
-      real(RD)                   :: V_o
       real(RD)                   :: V_2_o
+      real(RD)                   :: V_o
       real(RD)                   :: V_g_o
       real(RD)                   :: As_o
       real(RD)                   :: U_o
