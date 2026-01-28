@@ -1,5 +1,5 @@
 ! Module  : rad_trans_m
-! Purpose : radial adiabatic variables/equations transformations
+! Purpose : radial adiabatic variables transformations
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -46,7 +46,6 @@ module ${P}$_rad_trans_m
       real(RD)                 :: V_2
       real(RD)                 :: U
       real(RD)                 :: c_1
-      real(RD)                 :: x
    contains
       private
       procedure, public :: transform
@@ -96,8 +95,6 @@ contains
       tr%c_1 = ml%coeff(I_C_1, pt)
 
       ! Other initializations
-
-      tr%x = pt%x
 
       tr%n_e = 2
 
