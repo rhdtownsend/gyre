@@ -69,9 +69,14 @@ export LIB_DIR ?= $(CURDIR)/lib
 export INC_DIR ?= $(CURDIR)/include
 
 export SRC_DIR := $(CURDIR)/src
-export SRC_DIRS := $(addprefix $(SRC_DIR)/,ad ad/gyre ad/dziem ad/jcd ad/rjcd ad/mix ad/lagp angular bvp common context diff ext	\
+export SRC_DIRS := $(addprefix $(SRC_DIR)/, eqns \
+   eqns/ad eqns/ad/gyre eqns/ad/dziem eqns/ad/jcd eqns/ad/rjcd eqns/ad/mix eqns/ad/lagp \
+   eqns/rad eqns/rad/gyre eqns/rad/dziem eqns/rad/jcd eqns/rad/mix eqns/rad/lagp \
+   eqns/nad eqns/nad/gyre eqns/nad/dziem eqns/nad/jcd eqns/nad/rjcd eqns/nad/mix eqns/nad/lagp \
+   eqns/tnad eqns/sad \
+   angular bvp common context diff ext	\
    frontend/gyre frontend/tools grid include interp lib math matrix mode model  \
-   nad output par poly rad sad search tar tide tnad)
+   output par poly search tar tide)
 
 ifeq ($(FORUM),yes)
    export FORUM_LIB_DIR = $(LIB_DIR)

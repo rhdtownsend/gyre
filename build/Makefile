@@ -80,13 +80,34 @@ test_ext_SRCS = test_ext.fypp
 test_ext_USES = $(libgyre_SRCS)
 test_ext_LIBS = libgyre
 
-libgyre_SRCS = adhoc_angular_m.fypp							\
-   gyre_ad_bound_m.fypp dziem_ad_bound_m.fypp jcd_ad_bound_m.fypp rjcd_ad_bound_m.fypp	\
-   mix_ad_bound_m.fypp lagp_ad_bound_m.fypp ad_bvp_m.fypp gyre_ad_eqns_m.fypp 		\
-   dziem_ad_eqns_m.fypp jcd_ad_eqns_m.fypp rjcd_ad_eqns_m.fypp mix_ad_eqns_m.fypp       \
-   lagp_ad_eqns_m.fypp gyre_ad_trans_m.fypp dziem_ad_trans_m.fypp jcd_ad_trans_m.fypp   \
-   rjcd_ad_trans_m.fypp mix_ad_trans_m.fypp lagp_ad_trans_m.fypp			\
-   amdl_file_m.fypp									\
+ad_SRCS = ad_bvp_m.fypp \
+   gyre_ad_bound_m.fypp dziem_ad_bound_m.fypp jcd_ad_bound_m.fypp \
+   rjcd_ad_bound_m.fypp mix_ad_bound_m.fypp lagp_ad_bound_m.fypp \
+   gyre_ad_eqns_m.fypp dziem_ad_eqns_m.fypp jcd_ad_eqns_m.fypp \
+   rjcd_ad_eqns_m.fypp mix_ad_eqns_m.fypp lagp_ad_eqns_m.fypp \
+   gyre_ad_trans_m.fypp dziem_ad_trans_m.fypp jcd_ad_trans_m.fypp \
+   rjcd_ad_trans_m.fypp mix_ad_trans_m.fypp lagp_ad_trans_m.fypp
+
+rad_SRCS = rad_bvp_m.fypp \
+   gyre_rad_bound_m.fypp dziem_rad_bound_m.fypp jcd_rad_bound_m.fypp \
+   mix_rad_bound_m.fypp lagp_rad_bound_m.fypp \
+   gyre_rad_eqns_m.fypp dziem_rad_eqns_m.fypp jcd_rad_eqns_m.fypp \
+   mix_rad_eqns_m.fypp lagp_rad_eqns_m.fypp \
+   gyre_rad_trans_m.fypp dziem_rad_trans_m.fypp jcd_rad_trans_m.fypp \
+   mix_rad_trans_m.fypp lagp_rad_trans_m.fypp
+
+nad_SRCS = nad_bvp_m.fypp nad_diff_m.fypp \
+   gyre_nad_bound_m.fypp dziem_nad_bound_m.fypp jcd_nad_bound_m.fypp \
+   rjcd_nad_bound_m.fypp mix_nad_bound_m.fypp lagp_nad_bound_m.fypp \
+   gyre_nad_eqns_m.fypp dziem_nad_eqns_m.fypp jcd_nad_eqns_m.fypp \
+   rjcd_nad_eqns_m.fypp mix_nad_eqns_m.fypp lagp_nad_eqns_m.fypp \
+   gyre_nad_trans_m.fypp dziem_nad_trans_m.fypp jcd_nad_trans_m.fypp \
+   rjcd_nad_trans_m.fypp mix_nad_trans_m.fypp lagp_nad_trans_m.fypp
+
+tnad_SRCS = tnad_bvp_m.fypp tnad_diff_m.fypp tnad_eqns_m.fypp tnad_trans_m.fypp
+
+libgyre_SRCS = $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS)				\
+   adhoc_angular_m.fypp amdl_file_m.fypp						\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp anapoly_5_model_m.fypp			\
    anapoly_5_1_model_m.fypp angular_m.fypp angular_factory_m.fypp atmos_m.fypp		\
    b3_file_m.fypp band_sysmtx_m.fypp blas_lapack_m.fypp					\
@@ -106,22 +127,18 @@ libgyre_SRCS = adhoc_angular_m.fypp							\
    magnus_diff_m.fypp match_diff_m.fypp mesa_file_m.fypp minim_m.fypp			\
    minmod_search_m.fypp mirk_diff_m.fypp mode_m.fypp mode_par_m.fypp			\
    model_factory_m.fypp model_m.fypp model_par_m.fypp					\
-   model_util_m.fypp nad_bound_m.fypp nad_bvp_m.fypp nad_diff_m.fypp			\
-   nad_eqns_m.fypp nad_trans_m.fypp							\
-   num_par_m.fypp orbit_par_m.fypp osc_file_m.fypp osc_par_m.fypp			\
+   model_util_m.fypp num_par_m.fypp orbit_par_m.fypp osc_file_m.fypp osc_par_m.fypp	\
    out_par_m.fypp out_util_m.fypp parfait_file_m.fypp					\
    parfait_model_m.fypp parfaitd_file_m.fypp parfaitd_model_m.fypp			\
    pblock_sysmtx_m.fypp   point_m.fypp poly_file_m.fypp poly_model_m.fypp		\
    prox_search_m.fypp qad_eval_m.fypp 							\
-   rad_bound_m.fypp rad_bvp_m.fypp rad_eqns_m.fypp rad_trans_m.fypp			\
    resp_m.fypp root_m.fypp rot_par_m.fypp rowpp_sysmtx_m.fypp 				\
    sad_bound_m.fypp sad_bvp_m.fypp sad_eqns_m.fypp sad_trans_m.fypp			\
    sblock_sysmtx_m.fypp scan_m.fypp scan_par_m.fypp search_m.fypp special_m.fypp	\
    sph_angular_m.fypp state_m.fypp status_m.fypp					\
    string_m.fypp summary_m.fypp sysmtx_factory_m.fypp sysmtx_m.fypp			\
    tar_eigen_m.fypp tar_fit_m.fypp tar_angular_m.fypp tidal_coeff_m.fypp		\
-   tidal_resp_m.fypp tidal_context_m.fypp tide_par_m.fypp				\
-   tnad_bvp_m.fypp tnad_diff_m.fypp tnad_eqns_m.fypp trans_m.fypp			\
+   tidal_resp_m.fypp tidal_context_m.fypp tide_par_m.fypp trans_m.fypp			\
    trapz_diff_m.fypp txt_writer_m.fypp util_m.fypp version_m.fypp			\
    wave_m.fypp wdec_file_m.fypp writer_m.fypp
 
