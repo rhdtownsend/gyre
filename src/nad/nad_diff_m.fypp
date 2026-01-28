@@ -48,7 +48,7 @@ module nad_diff_m
       private
       type(context_t), pointer    :: cx => null()
       class(diff_ct), allocatable :: df
-      type(nad_eqns_t)            :: eq
+      class(eqns_ct), allocatable :: eq
       real(RD)                    :: Omega_rot
       real(RD)                    :: dx
    contains
@@ -75,11 +75,11 @@ contains
    function nad_diff_t_(cx, pt_a, pt_b, nm_p, os_p) result(df)
 
       use gyre_nad_eqns_m
-      use dziem_nad_eqns_m
-      use jcd_nad_eqns_m
-      use rjcd_nad_eqns_m
-      use mix_nad_eqns_m
-      use lagp_nad_eqns_m
+     use dziem_nad_eqns_m
+     use jcd_nad_eqns_m
+     use rjcd_nad_eqns_m
+     use mix_nad_eqns_m
+     use lagp_nad_eqns_m
 
       type(context_t), pointer, intent(in) :: cx
       type(point_t), intent(in)            :: pt_a
@@ -116,7 +116,7 @@ contains
       case('DZIEM')
          allocate(dziem_nad_eqns_t::df%eq)
       case('JCD')
-         if (md_p%l == 0) then
+         if (cx%l == 0) then
             allocate(rjcd_nad_eqns_t::df%eq)
          else
             allocate(jcd_nad_eqns_t::df%eq)
@@ -131,22 +131,20 @@ contains
 
       select type(eq => df%eq)
       type is(gyre_nad_eqns_t)
-         eq = gyre_nad_eqns_t(cx, pt_m)
+         eq = gyre_nad_eqns_t(cx, pt_m, os_p)
       type is(dziem_nad_eqns_t)
-         eq = dziem_nad_eqns_t(cx, pt_m)
+         eq = dziem_nad_eqns_t(cx, pt_m, os_p)
       type is(jcd_nad_eqns_t)
-         eq = jcd_nad_eqns_t(cx, pt_m)
+         eq = jcd_nad_eqns_t(cx, pt_m, os_p)
       type is(rjcd_nad_eqns_t)
-         eq = rjcd_nad_eqns_t(cx, pt_m)
+         eq = rjcd_nad_eqns_t(cx, pt_m, os_p)
       type is(mix_nad_eqns_t)
-         eq = mix_nad_eqns_t(cx, pt_m)
+         eq = mix_nad_eqns_t(cx, pt_m, os_p)
       type is(lagp_nad_eqns_t)
-         eq = lagp_nad_eqns_t(cx, pt_m)
+         eq = lagp_nad_eqns_t(cx, pt_m, os_p)
       class default
          @:ABORT('invalid type')
       end select
-
-      df%eq = nad_eqns_t(cx, pt_m)
 
       ! Set up midpoint Omega_rot (used for regularization of colloc
       ! schemes)
@@ -177,7 +175,7 @@ contains
          case('DZIEM')
             allocate(dziem_nad_eqns_t::eq(n))
          case('JCD')
-            if (md_p%l == 0) then
+            if (cx%l == 0) then
             allocate(rjcd_nad_eqns_t::eq(n))
             else
                allocate(jcd_nad_eqns_t::eq(n))
@@ -194,17 +192,17 @@ contains
 
             select type(eq)
             type is(gyre_nad_eqns_t)
-               eq(i) = gyre_nad_eqns_t(cx, pt(i))
+               eq(i) = gyre_nad_eqns_t(cx, pt(i), os_p)
             type is(dziem_nad_eqns_t)
-               eq(i) = dziem_nad_eqns_t(cx, pt(i))
+               eq(i) = dziem_nad_eqns_t(cx, pt(i), os_p)
             type is(jcd_nad_eqns_t)
-               eq(i) = jcd_nad_eqns_t(cx, pt(i))
+               eq(i) = jcd_nad_eqns_t(cx, pt(i), os_p)
             type is(rjcd_nad_eqns_t)
-               eq(i) = rjcd_nad_eqns_t(cx, pt(i))
+               eq(i) = rjcd_nad_eqns_t(cx, pt(i), os_p)
             type is(mix_nad_eqns_t)
-               eq(i) = mix_nad_eqns_t(cx, pt(i))
+               eq(i) = mix_nad_eqns_t(cx, pt(i), os_p)
             type is(lagp_nad_eqns_t)
-               eq(i) = lagp_nad_eqns_t(cx, pt(i))
+               eq(i) = lagp_nad_eqns_t(cx, pt(i), os_p)
             class default
                @:ABORT('invalid type')
             end select

@@ -52,7 +52,7 @@ As = sp.Symbol('As')
 As_iso = sp.Symbol('As_iso')
 
 nabla = sp.Symbol('nabla')
-nabla_ad = sp.Symbol('nabla')
+nabla_ad = sp.Symbol('nabla_ad')
 ups_T = sp.Symbol('ups_T')
 
 c_kap_ad = sp.Symbol('c_kap_ad')
@@ -64,8 +64,8 @@ c_rad = sp.Symbol('c_rad')
 c_thk = sp.Symbol('c_thk')
 c_egv = sp.Symbol('c_egv')
 
-f_rh = sp.Symbol('f_rh')
-df_rh = sp.Symbol('df_rh')
+f_rht = sp.Symbol('f_rht')
+df_rht = sp.Symbol('df_rht')
 
 conv_term = sp.Symbol('conv_term')
 
@@ -123,12 +123,12 @@ A = sp.Matrix([
      alpha_grv*(-U(x) - l_i + 2),
      -alpha_grv*U(x)*ups_T,
      0],
-    [V*(nabla_ad*(U(x) - c_1(x)*alpha_omg*omega_c**2) - 4*(nabla_ad - nabla) + c_kap_ad*V*nabla + c_dif)/f_rh,
-     V*(lamda/(c_1(x)*alpha_omg*omega_c**2)*(nabla_ad - nabla) - c_kap_ad*V*nabla - c_dif)/f_rh,
-     alpha_grv*(V*lamda/(c_1(x)*alpha_omg*omega_c**2)*(nabla_ad - nabla))/f_rh,
-     alpha_grv*(V*nabla_ad)/f_rh,
-     V*nabla*(4*f_rh - c_kap_S)/f_rh - df_rh - (l_i - 2),
-     -V*nabla/(c_rad*f_rh)],
+    [V*(nabla_ad*(U(x) - c_1(x)*alpha_omg*omega_c**2) - 4*(nabla_ad - nabla) + c_kap_ad*V*nabla + c_dif)/f_rht,
+     V*(lamda/(c_1(x)*alpha_omg*omega_c**2)*(nabla_ad - nabla) - c_kap_ad*V*nabla - c_dif)/f_rht,
+     alpha_grv*(V*lamda/(c_1(x)*alpha_omg*omega_c**2)*(nabla_ad - nabla))/f_rht,
+     alpha_grv*(V*nabla_ad)/f_rht,
+     V*nabla*(4*f_rht - c_kap_S)/f_rht - df_rht - (l_i - 2),
+     -V*nabla/(c_rad*f_rht)],
     [alpha_hfl*lamda*(nabla_ad/nabla - 1)*c_rad - V*c_eps_ad - alpha_egv*c_egv*nabla_ad*V,
      V*c_eps_ad - lamda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term + alpha_egv*c_egv*nabla_ad*V,
      alpha_grv*conv_term,
@@ -151,7 +151,7 @@ C = sp.Matrix([
 # Inner boundary condition matrices
 
 B_i_regular = sp.Matrix([
-    [c_1(x)*alpha_omg*omega_c**2, -l_i, alpha_grv*l_i, 0, 0, 0],
+    [c_1(x)*alpha_omg*omega_c**2, -l_i, -alpha_grv*l_i, 0, 0, 0],
     [0, 0, alpha_grv*l_i, 1-2*alpha_grv, 0, 0],
     [0, 0, 0, 0, 1, 0]
 ])
@@ -173,19 +173,19 @@ B_i_zero_h = sp.Matrix([
 B_o_vacuum = sp.Matrix([
     [1, -1, 0, 0, 0, 0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
-    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rh, -1]
+    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
 B_o_zero_r = sp.Matrix([
     [1, 0, 0, 0, 0, 0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
-    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rh, -1]
+    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
 B_o_zero_h = sp.Matrix([
     [0, 1, alpha_grv, 0, 0, 0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
-    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rh, -1]
+    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
 B_o_dziem = sp.Matrix([
@@ -196,13 +196,13 @@ B_o_dziem = sp.Matrix([
      0,
      0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
-    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rh, -1]
+    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
 B_o_decomp = sp.Matrix([
     [-(chi-a_11), a_12, -alpha_grv*G_1, alpha_grv*G_2, 0, 0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
-    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rh, -1]
+    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
 B_o_jcd = sp.Matrix([
@@ -213,7 +213,7 @@ B_o_jcd = sp.Matrix([
      0,
      0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
-    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rh, -1]
+    [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
 # Code generation routines

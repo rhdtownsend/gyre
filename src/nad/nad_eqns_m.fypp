@@ -131,8 +131,8 @@ contains
 
       @:ASSERT(.NOT. ml%is_vacuum(pt), 'vacuum point')
 
-      eq%V_2 = ml%coeff(I_V_2, pt)*pt%x**2
-      eq%dV_2 = ml%dcoeff(I_V_2, pt)*pt%x**2
+      eq%V_2 = ml%coeff(I_V_2, pt)
+      eq%dV_2 = ml%dcoeff(I_V_2, pt)
       eq%V = eq%V_2*pt%x**2
       eq%V_g = eq%V/ml%coeff(I_GAMMA_1, pt)
       eq%As = ml%coeff(I_AS, pt)
@@ -203,8 +203,8 @@ contains
       complex(RD) :: l_i
       complex(RD) :: om2
       complex(RD) :: eta
-      complex(RD) :: f_rh
-      complex(RD) :: df_rh
+      complex(RD) :: f_rht
+      complex(RD) :: df_rht
       complex(RD) :: conv_term
       complex(RD) :: eps_rho
       complex(RD) :: eps_T
@@ -223,6 +223,7 @@ contains
       associate ( &
          omega => st%omega, &
          V_2 => this%V_2, &
+         dV_2 => this%dV_2, &
          V => this%V, &
          V_g => this%V_g, &
          As => this%As, &
@@ -280,8 +281,8 @@ contains
          om2 = c_1*alpha_omg*omega_c**2
          eta = lambda/om2
 
-         f_rh = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
-         df_rh = -0.25_RD*alpha_rht*i_omega_c*c_thn*dc_thn/f_rh
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
+         df_rht = -0.25_RD*alpha_rht*i_omega_c*c_thn*dc_thn/f_rht
 
          select case (conv_scheme)
          case (P1_CONV_SCHEME)
@@ -330,15 +331,34 @@ contains
       class(state_ct), intent(in)         :: st
       complex(RD), intent(out)            :: C(:,:)
 
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
+
       @:CHECK_BOUNDS(SIZE(C, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
 
       ! Evaluate the match matrix
 
       associate ( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         dV_2 => this%dV_2, &
          V => this%V, &
          U => this%U, &
-         nabla_ad => this%nabla_ad)
+         c_1 => this%c_1, &
+         nabla_ad => this%nabla_ad, &
+         Omega_rot => this%Omega_rot, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m, &
+         angular_cache => this%cx%angular_cache)
+
+         omega_c = omega - m*Omega_rot
+
+         if (angular_cache) then
+            lambda = this%lambda
+         else
+            lambda = this%cx%lambda(Omega_rot, st)
+         end if
 
          ! Set up the matrix
 

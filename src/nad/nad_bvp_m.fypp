@@ -23,6 +23,7 @@ module nad_bvp_m
 
    use forum_m, only: RD
 
+   use bound_m
    use bvp_m
    use context_m
    use diff_element_m
@@ -94,6 +95,8 @@ contains
       use mix_nad_trans_m
       use lagp_nad_trans_m
 
+      use nad_diff_m
+
       class(context_t), pointer, intent(in) :: cx
       type(grid_t), intent(in)              :: gr
       type(mode_par_t), intent(in)          :: md_p
@@ -101,7 +104,7 @@ contains
       type(osc_par_t), intent(in)           :: os_p
       type(nad_bvp_t)                       :: bp
 
-      type(nad_bound_t)                  :: bd
+      class(bound_ct), allocatable       :: bd
       integer                            :: j
       type(diff_element_ct), allocatable :: de(:)
 
@@ -111,19 +114,19 @@ contains
 
       select case(os_p%variables_set)
       case('GYRE')
-         bd = gyre_ad_bound_t(cx, os_p)
+         bd = gyre_nad_bound_t(cx, os_p)
       case('DZIEM')
-         bd = dziem_ad_bound_t(cx, os_p)
+         bd = dziem_nad_bound_t(cx, os_p)
       case('JCD')
-         if (md_p%l == 0) then
-            bd = rjcd_ad_bound_t(cx, os_p)
+         if (cx%l == 0) then
+            bd = rjcd_nad_bound_t(cx, os_p)
          else
-            bd = jcd_ad_bound_t(cx, os_p)
+            bd = jcd_nad_bound_t(cx, os_p)
          end if
       case('MIX')
-         bd = mix_ad_bound_t(cx, os_p)
+         bd = mix_nad_bound_t(cx, os_p)
       case('LAGP')
-         bd = lagp_ad_bound_t(cx, os_p)
+         bd = lagp_nad_bound_t(cx, os_p)
       case default
          @:ABORT('invalid variables_set')
       end select
@@ -134,7 +137,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, gr%n-1
-         allocate(de(j)%df, SOURCE=nad_diff_t(cx, gr%pt(j), gr%pt(j+1), nm_p))
+         allocate(de(j)%df, SOURCE=nad_diff_t(cx, gr%pt(j), gr%pt(j+1), nm_p, os_p))
       end do
 
       ! Initialize the bvp_t
@@ -148,19 +151,19 @@ contains
 
       select case(os_p%variables_set)
       case('GYRE')
-         allocate(gyre_ad_trans_t::bp%tr(gr%n))
+         allocate(gyre_nad_trans_t::bp%tr(gr%n))
       case('DZIEM')
-         allocate(dziem_ad_trans_t::bp%tr(gr%n))
+         allocate(dziem_nad_trans_t::bp%tr(gr%n))
       case('JCD')
          if (md_p%l == 0) then
-            allocate(rjcd_ad_trans_t::bp%tr(gr%n))
+            allocate(rjcd_nad_trans_t::bp%tr(gr%n))
          else
-            allocate(jcd_ad_trans_t::bp%tr(gr%n))
+            allocate(jcd_nad_trans_t::bp%tr(gr%n))
          end if
       case('MIX')
-         allocate(mix_ad_trans_t::bp%tr(gr%n))
+         allocate(mix_nad_trans_t::bp%tr(gr%n))
       case('LAGP')
-         allocate(lagp_ad_trans_t::bp%tr(gr%n))
+         allocate(lagp_nad_trans_t::bp%tr(gr%n))
       case default
          @:ABORT('invalid variables_set')
       end select
@@ -169,18 +172,18 @@ contains
       do j = 1, gr%n
 
          select type(tr => bp%tr(j))
-         type is(gyre_ad_trans_t)
-            tr = gyre_ad_trans_t(cx, gr%pt(j))
-         type is(dziem_ad_trans_t)
-            tr = dziem_ad_trans_t(cx, gr%pt(j))
-         type is(jcd_ad_trans_t)
-            tr = jcd_ad_trans_t(cx, gr%pt(j))
-         type is(rjcd_ad_trans_t)
-            tr = rjcd_ad_trans_t(cx, gr%pt(j))
-         type is(mix_ad_trans_t)
-            tr = mix_ad_trans_t(cx, gr%pt(j))
-         type is(lagp_ad_trans_t)
-            tr = lagp_ad_trans_t(cx, gr%pt(j))
+         type is(gyre_nad_trans_t)
+            tr = gyre_nad_trans_t(cx, gr%pt(j))
+         type is(dziem_nad_trans_t)
+            tr = dziem_nad_trans_t(cx, gr%pt(j))
+         type is(jcd_nad_trans_t)
+            tr = jcd_nad_trans_t(cx, gr%pt(j))
+         type is(rjcd_nad_trans_t)
+            tr = rjcd_nad_trans_t(cx, gr%pt(j))
+         type is(mix_nad_trans_t)
+            tr = mix_nad_trans_t(cx, gr%pt(j))
+         type is(lagp_nad_trans_t)
+            tr = lagp_nad_trans_t(cx, gr%pt(j))
          class default
             @:ABORT('invalid type')
          end select

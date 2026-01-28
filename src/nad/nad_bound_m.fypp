@@ -165,38 +165,39 @@ contains
 
       call check_model(ml, [I_V_2,I_U,I_C_1,I_GAMMA_1,I_NABLA_AD,I_C_THN,I_OMEGA_ROT])
 
-      bd%c_1_i = ml%coeff(I_C_1, pt_i)
-      bd%V_2_i = ml%coeff(I_V_2, pt_i)
+      ! Inner boundary
 
-      select case (os_p%outer_bound)
-      case ('VACUUM', 'ZERO_R', 'ZERO_H')
-         bd%V_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2
-      case ('DZIEM')
-         bd%V_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2
-      case ('ISOTHERMAL')
-         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_g_o, &
-            bd%As_o, bd%c_1_o)
-      case ('UNNO')
-         call eval_atmos_coeffs_unno(ml, pt_o, bd%V_g_o, &
-            bd%As_o, bd%c_1_o)
-         bd%U_o = ml%coeff(I_U, pt_o)
-      case ('JCD')
-         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_g_o, &
-            bd%As_o, bd%c_1_o)
-      case ('GAMMA2')
-         bd%V_g_o = ml%coeff(I_V_2, pt_o)*pt_o%x**2/ml%coeff(I_GAMMA_1, pt_o)
-         bd%U_o = ml%coeff(I_V_2, pt_o)
-      case default
-         @:ABORT('invalid outer_bound')
-      end select
+      bd%V_2_i = ml%coeff(I_V_2, pt_i)
+      bd%c_1_i = ml%coeff(I_C_1, pt_i)
+
+      ! Outer boundary
 
       bd%V_2_o = ml%coeff(I_V_2, pt_o)
+
       bd%U_o = ml%coeff(I_U, pt_o)
       bd%c_1_o = ml%coeff(I_C_1, pt_o)
       bd%nabla_ad_o = ml%coeff(I_NABLA_AD, pt_o)
       bd%c_thn_o = ml%coeff(I_C_THN, pt_o)
 
       bd%Omega_rot_o = cx%Omega_rot(pt_o)
+
+      select case (os_p%outer_bound)
+      case ('VACUUM', 'ZERO_R', 'ZERO_H')
+         bd%V_o = bd%V_2_o*pt_o%x**2
+      case ('DZIEM')
+         bd%V_o = bd%V_2_o*pt_o%x**2
+      case ('ISOTHERMAL')
+         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_g_o, &
+            bd%As_o, bd%c_1_o)
+      case ('UNNO')
+         call eval_atmos_coeffs_unno(ml, pt_o, bd%V_g_o, &
+            bd%As_o, bd%c_1_o)
+      case ('JCD')
+         call eval_atmos_coeffs_isothrm(ml, pt_o, bd%V_g_o, &
+            bd%As_o, bd%c_1_o)
+      case default
+         @:ABORT('invalid outer_bound')
+      end select
 
       ! Other initializations
 
@@ -239,9 +240,9 @@ contains
       class(state_ct), intent(in)          :: st
       complex(RD), intent(out)             :: B(:,:)
 
-      real(RD) :: omega_c
-      real(RD) :: lambda
-      real(RD) :: l_i
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_i
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -311,8 +312,8 @@ contains
       class(state_ct), intent(in)          :: st
       complex(RD), intent(out)             :: B(:,:)
 
-      real(RD) :: omega_c
-      real(RD) :: lambda
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -384,8 +385,8 @@ contains
 
       associate( &
          omega => st%omega, &
-         V => this%V_o, &
          V_2 => this%V_2_o, &
+         V => this%V_o, &
          U => this%U_o, &
          c_1 => this%c_1_o, &
          nabla_ad => this%nabla_ad_o, &
@@ -428,6 +429,7 @@ contains
 
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
+      complex(RD) :: lambda
       complex(RD) :: l_e
       complex(RD) :: f_rht
 
@@ -439,8 +441,10 @@ contains
 
       associate( &
          omega => st%omega, &
+         V_2 => this%V_2_o, &
          V => this%V_o, &
          U => this%U_o, &
+         c_1 => this%c_1_o, &
          nabla_ad => this%nabla_ad_o, &
          c_thn => this%c_thn_o, &
          Omega_rot => this%Omega_rot_o, &
@@ -454,6 +458,7 @@ contains
 
          i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
 
+         lambda = this%cx%lambda(Omega_rot, st)
          l_e = this%cx%l_e(Omega_rot, st)
 
          f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
@@ -492,8 +497,10 @@ contains
 
       associate( &
          omega => st%omega, &
+         V_2 => this%V_2_o, &
          V => this%V_o, &
          U => this%U_o, &
+         c_1 => this%c_1_o, &
          nabla_ad => this%nabla_ad_o, &
          c_thn => this%c_thn_o, &
          Omega_rot => this%Omega_rot_o, &
@@ -545,6 +552,7 @@ contains
 
       associate( &
          omega => st%omega, &
+         V_2 => this%V_2_o, &
          V => this%V_o, &
          U => this%U_o, &
          c_1 => this%c_1_o, &
@@ -611,6 +619,7 @@ contains
 
       associate( &
          omega => st%omega, &
+         V_2 => this%V_2_o, &
          V => this%V_o, &
          V_g => this%V_g_o, &
          As => this%As_o, &
@@ -712,6 +721,7 @@ contains
 
       associate( &
          omega => st%omega, &
+         V_2 => this%V_2_o, &
          V => this%V_o, &
          V_g => this%V_g_o, &
          As => this%As_o, &

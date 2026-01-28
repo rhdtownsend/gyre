@@ -27,9 +27,8 @@ module qad_eval_m
    use deriv_m
    use ext_m
    use grid_m
+   use gyre_nad_eqns_m
    use model_m
-   use mode_par_m
-   use nad_eqns_m
    use osc_par_m
    use point_m
    use state_m
@@ -44,10 +43,10 @@ module qad_eval_m
 
    type :: qad_eval_t
       private
-      type(context_t), pointer      :: cx => null()
-      type(nad_eqns_t), allocatable :: eq(:)
-      type(grid_t)                  :: gr
-      integer, public               :: n
+      type(context_t), pointer           :: cx => null()
+      type(gyre_nad_eqns_t), allocatable :: eq(:)
+      type(grid_t)                       :: gr
+      integer, public                    :: n
    contains
       private
       procedure, public :: y_qad
@@ -69,11 +68,10 @@ module qad_eval_m
 
 contains
 
-   function qad_eval_t_(cx, gr, md_p, os_p) result(qe)
+   function qad_eval_t_(cx, gr, os_p) result(qe)
 
       type(context_t), pointer, intent(in) :: cx
       type(grid_t), intent(in)             :: gr
-      type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
       type(qad_eval_t)                     :: qe
 
@@ -87,7 +85,7 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, gr%n
-         qe%eq(j) = nad_eqns_t(cx, gr%pt(j), md_p, os_p)
+         qe%eq(j) = gyre_nad_eqns_t(cx, gr%pt(j), os_p)
       end do
 
       ! Other initializations
@@ -112,12 +110,12 @@ contains
       real(RD), intent(in)          :: y_ad(:,:)
       complex(RD)                   :: y_qad(6,this%n)
 
-      integer         :: j
-      integer         :: s
-      complex(RD)     :: A(6,6)
-      complex(RD)     :: A_5(6,this%n)
-      complex(RD)     :: A_6(6,this%n)
-      complex(RD)     :: dy_6(this%n)
+      integer     :: j
+      integer     :: s
+      complex(RD) :: A(6,6)
+      complex(RD) :: A_5(6,this%n)
+      complex(RD) :: A_6(6,this%n)
+      complex(RD) :: dy_6(this%n)
 
       @:CHECK_BOUNDS(SIZE(y_ad, 1), 4)
       @:CHECK_BOUNDS(SIZE(y_ad, 2), this%n)
