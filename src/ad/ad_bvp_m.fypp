@@ -109,7 +109,6 @@ contains
       class(bound_rt), allocatable       :: bd
       integer                            :: j
       type(diff_element_rt), allocatable :: de(:)
-      type(osc_par_t)                    :: qad_os_p
 
       ! Construct the ad_bvp type
 
@@ -121,7 +120,7 @@ contains
       case('DZIEM')
          bd = dziem_ad_bound_t(cx, os_p)
       case('JCD')
-         if (md_p%l == 0) then
+         if (cx%l == 0) then
             bd = rjcd_ad_bound_t(cx, os_p)
          else
             bd = jcd_ad_bound_t(cx, os_p)
@@ -194,9 +193,7 @@ contains
       end do
 
       if (os_p%quasiad_eigfuncs) then
-         qad_os_p = os_p
-         qad_os_p%variables_set = 'GYRE'
-         bp%qe = qad_eval_t(cx, gr, md_p, qad_os_p)
+         bp%qe = qad_eval_t(cx, gr, os_p)
       endif
 
       bp%md_p = md_p
