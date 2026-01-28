@@ -41,11 +41,6 @@ module ${P}$_nad_eqns_m
 
    implicit none (type, external)
 
-   ! Parameter definitions
-
-   integer, parameter :: P1_CONV_SCHEME = 1
-   integer, parameter :: P4_CONV_SCHEME = 4
-
    ! Derived-type definitions
 
    type, extends(eqns_ct) :: ${P}$_nad_eqns_t
@@ -79,10 +74,10 @@ module ${P}$_nad_eqns_m
       real(RD)                 :: kap_rho
       real(RD)                 :: kap_T
       real(RD)                 :: Omega_rot
+      real(RD)                 :: f_conv
       real(RD)                 :: x
       complex(RD)              :: lambda
       complex(RD)              :: l_i
-      integer                  :: conv_scheme
    contains
       private
       procedure, public :: eval_A
@@ -158,6 +153,15 @@ contains
 
       eq%Omega_rot = cx%Omega_rot(pt)
 
+      select case (os_p%conv_scheme)
+      case ('FROZEN_PESNELL_1')
+         eq%f_conv = eq%c_rad*(3._RD + eq%dc_rad)
+      case ('FROZEN_PESNELL_4')
+         eq%f_conv = eq%c_lum*(3._RD + eq%dc_lum) - (eq%c_lum - eq%c_rad)
+      case default
+         @:ABORT('invalid conv_scheme')
+      end select
+
       if (cx%angular_cache) then
          eq%lambda = cx%lambda(eq%Omega_rot, state_ct(0._RD))
          eq%l_i = cx%l_e(cx%Omega_rot_i, state_ct(0._RD))
@@ -171,15 +175,6 @@ contains
       ! Other initializations
 
       eq%x = pt%x
-
-      select case (os_p%conv_scheme)
-      case ('FROZEN_PESNELL_1')
-         eq%conv_scheme = P1_CONV_SCHEME
-      case ('FROZEN_PESNELL_4')
-         eq%conv_scheme = P4_CONV_SCHEME
-      case default
-         @:ABORT('invalid conv_scheme')
-      end select
 
       eq%n_e = 6
 
@@ -248,9 +243,9 @@ contains
          kap_T => this%kap_T, &
          Omega_rot => this%Omega_rot, &
          Omega_rot_i => this%cx%Omega_rot_i, &
+         f_conv => this%f_conv, &
          x => this%x, &
          pt => this%pt, &
-         conv_scheme => this%conv_scheme, &
          x_atm => this%cx%x_atm, &
          alpha_grv => this%cx%alpha_grv, &
          alpha_thm => this%cx%alpha_thm, &
@@ -283,15 +278,6 @@ contains
 
          f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
          df_rht = -0.25_RD*alpha_rht*i_omega_c*c_thn*dc_thn/f_rht
-
-         select case (conv_scheme)
-         case (P1_CONV_SCHEME)
-            conv_term = lambda*c_rad*(3._RD + dc_rad)/om2
-         case (P4_CONV_SCHEME)
-            conv_term = lambda*(c_lum*(3._RD + dc_lum) - (c_lum - c_rad))/om2
-         case default
-            @:ABORT('invalid conv_scheme')
-         end select
 
          if (epsilon_cache) then
             eps_rho = this%eps_rho

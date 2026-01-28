@@ -67,7 +67,7 @@ c_egv = sp.Symbol('c_egv')
 f_rht = sp.Symbol('f_rht')
 df_rht = sp.Symbol('df_rht')
 
-conv_term = sp.Symbol('conv_term')
+f_conv = sp.Symbol('f_conv')
 
 lamda = sp.Symbol('lambda')
 l_i = sp.Symbol('l_i')
@@ -130,8 +130,8 @@ A = sp.Matrix([
      V*nabla*(4*f_rht - c_kap_S)/f_rht - df_rht - (l_i - 2),
      -V*nabla/(c_rad*f_rht)],
     [alpha_hfl*lamda*(nabla_ad/nabla - 1)*c_rad - V*c_eps_ad - alpha_egv*c_egv*nabla_ad*V,
-     V*c_eps_ad - lamda*c_rad*alpha_hfl*nabla_ad/nabla + conv_term + alpha_egv*c_egv*nabla_ad*V,
-     alpha_grv*conv_term,
+     V*c_eps_ad - lamda*c_rad*alpha_hfl*nabla_ad/nabla + lamda*f_conv/(c_1(x)*alpha_omg*omega_c**2) + alpha_egv*c_egv*nabla_ad*V,
+     alpha_grv*lamda*f_conv/(c_1(x)*alpha_omg*omega_c**2),
      0,
      c_eps_S - alpha_hfl*lamda*c_rad/(nabla*V) + alpha_thm*i_omega_c*c_thk + alpha_egv*c_egv,
      -1 - l_i]

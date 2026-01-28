@@ -13,15 +13,15 @@ A(4, 2) = V_g*alpha_grv*invx*U
 A(5, 2) = V*invx*(-V*c_kap_ad*nabla - c_dif + eta*(-nabla + nabla_ad))/ &
       f_rht
 A(6, 2) = invx*(V*alpha_egv*c_egv*nabla_ad + V*c_eps_ad - alpha_hfl* &
-      c_rad*lambda*nabla_ad/nabla + conv_term)
+      c_rad*lambda*nabla_ad/nabla + eta*f_conv)
 A(1, 3) = invx*(V_g*alpha_gam + alpha_grv*eta - eta)
 A(2, 3) = invx*(-As + alpha_grv*(-l_i - U + 3) + l_i + U - 3)
 A(3, 3) = alpha_grv*invx*(-l_i - U + 3)
 A(4, 3) = invx*(-V_g*alpha_grv*U + alpha_grv*lambda)
 A(5, 3) = invx*(V*alpha_grv*eta*(-nabla + nabla_ad)/f_rht - V*(-V* &
       c_kap_ad*nabla - c_dif + eta*(-nabla + nabla_ad))/f_rht)
-A(6, 3) = invx*(-V*alpha_egv*c_egv*nabla_ad - V*c_eps_ad + alpha_grv* &
-      conv_term + alpha_hfl*c_rad*lambda*nabla_ad/nabla - conv_term)
+A(6, 3) = invx*(-V*alpha_egv*c_egv*nabla_ad - V*c_eps_ad + alpha_grv*eta &
+      *f_conv + alpha_hfl*c_rad*lambda*nabla_ad/nabla - eta*f_conv)
 A(1, 4) = 0
 A(2, 4) = 0
 A(3, 4) = alpha_grv*invx
