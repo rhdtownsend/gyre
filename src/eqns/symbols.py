@@ -74,6 +74,8 @@ l_e = sp.Symbol('l_e')
 omega_c = sp.Symbol('omega_c')
 i_omega_c = sp.Symbol('i_omega_c')
 
+F_trb = sp.Symbol('F_trb')
+
 eta = sp.Symbol('eta')
 om2 = sp.Symbol('om2')
 
@@ -105,7 +107,7 @@ def generate_A(A, T):
 
     A = A.subs(((c_1(x)*alpha_omg*omega_c**2, om2), (lamda/om2, eta)))
 
-    # Convert to Fortran, with the invx scaling
+    # Convert to Fortran
 
     return spf.fcode(invx*A, assign_to='A', standard=2008, source_format='free')
 
@@ -145,10 +147,16 @@ def generate_C(C, T):
 
 def generate_R(T):
 
-    # Generate the reverse transformation matrix
+    # Invert the transformation matrix
 
     R = T.inv()
 
     # Convert to Fortran
 
     return spf.fcode(R, assign_to='R', standard=2008, source_format='free')
+
+def generate(expr, assign_to=None):
+
+    # Convert a generic expression to Fortran
+
+    return spf.fcode(expr, assign_to=assign_to, standard=2008, source_format='free')
