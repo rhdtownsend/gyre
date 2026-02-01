@@ -30,14 +30,11 @@ module tnad_diff_m
    use eqns_m
    use ext_m
    use math_m
-   use mode_par_m
    use model_m
-   use nad_eqns_m
    use num_par_m
    use osc_par_m
    use point_m
    use state_m
-   use tnad_eqns_m
 
    use ISO_FORTRAN_ENV
 
@@ -51,7 +48,7 @@ module tnad_diff_m
       private
       type(context_t), pointer    :: cx => null()
       class(diff_ct), allocatable :: df
-      type(nad_eqns_t)            :: eq
+      class(eqns_ct), allocatable :: eq
       real(RD)                    :: Omega_rot
       real(RD)                    :: dx
    contains
@@ -75,18 +72,18 @@ module tnad_diff_m
 
 contains
 
-   function tnad_diff_t_(cx, pt_a, pt_b, md_p, nm_p, os_p) result(df)
+   function tnad_diff_t_(cx, pt_a, pt_b, nm_p, os_p) result(df)
+
+      use gyre_tnad_eqns_m
 
       type(context_t), pointer, intent(in) :: cx
       type(point_t), intent(in)            :: pt_a
       type(point_t), intent(in)            :: pt_b
-      type(mode_par_t), intent(in)         :: md_p
       type(num_par_t), intent(in)          :: nm_p
       type(osc_par_t), intent(in)          :: os_p
       type(tnad_diff_t)                    :: df
 
-      type(tnad_eqns_t) :: eq
-      type(point_t)     :: pt_m
+      type(point_t) :: pt_m
 
       ! Construct the tnad_diff_t
 
@@ -108,7 +105,12 @@ contains
       pt_m%s = pt_a%s
       pt_m%x = pt_a%x + 0.5_RD*df%dx
 
-      df%eq = nad_eqns_t(cx, pt_m, md_p, os_p)
+      select case(os_p%variables_set)
+      case('GYRE')
+         allocate(gyre_tnad_eqns_t::df%eq)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
 
       ! Set up midpoint Omega_rot (used for regularization of colloc
       ! schemes)
@@ -128,20 +130,14 @@ contains
          type(point_t), intent(in)                :: pt(:)
          class(eqns_ct), allocatable, intent(out) :: eq(:)
 
-         type(tnad_eqns_t), allocatable :: eq_(:)
+         select case(os_p%variables_set)
+         case('GYRE')
+            eq = gyre_tnad_eqns_t(cx, pt, os_p)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
 
-         integer :: n
-         integer :: i
-
-         n = SIZE(pt)
-
-         allocate(eq_(n))
-
-         do i = 1, n
-            eq_(i) = tnad_eqns_t(cx, pt(i), md_p, os_p)
-         end do
-
-         eq = eq_
+         ! Finish
 
          return
 

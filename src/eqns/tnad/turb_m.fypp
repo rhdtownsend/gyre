@@ -1,0 +1,87 @@
+! Module  : turb_m
+! Purpose : turbulent convection support routines
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module turb_m
+
+   ! Uses
+
+   use forum_m, only: RD, TWOPI
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Access specifiers
+
+   public :: tau_conv
+   public :: nu_trb
+
+   ! Default access
+
+   private
+
+contains
+
+   function tau_conv(c_1, As)
+
+      real(RD), intent(in) :: c_1
+      real(RD), intent(in) :: As
+      real(RD)             :: tau_conv
+
+      ! Evaluate the convective turnover timescale
+
+      if (As < 0._RD) then
+         tau_conv = SQRT(-c_1/As)
+      else
+         tau_conv = HUGE(0._RD)
+      end if
+
+      ! Finish
+
+      return
+
+   end function tau_conv
+
+   !****
+
+   function nu_trb(omega_c, L_conv, tau_conv)
+
+      real(RD), intent(in) :: omega_c
+      real(RD), intent(in) :: L_conv
+      real(RD), intent(in) :: tau_conv
+      real(RD)             :: nu_trb
+
+      ! Evaluate the turbulent viscosity, following eqn. 68 of
+      ! Willems, Deloye & Kalogera (2010)
+
+      if (tau_conv == HUGE(0._RD)) then
+         nu_trb = 0._RD
+      else
+         nu_trb = (L_conv)**2/(tau_conv*(1._RD + tau_conv*ABS(omega_c)/TWOPI))
+      end if
+
+      ! Finish
+
+      return
+
+   end function nu_trb
+
+end module turb_m
