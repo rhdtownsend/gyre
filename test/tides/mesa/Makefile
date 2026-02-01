@@ -3,7 +3,7 @@
 
 # Variables
 
-SUBDIRS=spb
+SUBDIRS=spb solar
 
 # Rules
 

@@ -1,0 +1,44 @@
+&constants
+/
+
+&model
+  model_type = 'EVOL'
+  file = 'solar.mesa'
+  file_format = 'MESA'
+/
+
+&tide
+  l_max = 2
+  k_min = -20
+  k_max = 20
+/
+
+&osc
+  nonadiabatic = .TRUE.
+  alpha_trb = 1.6
+/
+
+&rot
+/
+
+&num
+  diff_scheme = 'COLLOC_GL4'
+/
+
+&orbit
+  q = 2.
+  e = 0.5
+  Omega_orb = 0.1
+  Omega_orb_units = 'CYC_PER_DAY'
+/
+
+&grid
+  w_osc = 10.
+  w_exp = 2.
+  w_ctr = 10.
+/
+
+&tides_output
+  summary_file = 'summary.h5'
+  summary_item_list = 'l,m,k,xi_r_ref,eul_Phi_ref'
+/
