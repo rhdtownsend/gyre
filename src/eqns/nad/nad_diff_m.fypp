@@ -147,11 +147,6 @@ contains
          type(point_t), intent(in)                :: pt(:)
          class(eqns_ct), allocatable, intent(out) :: eq(:)
 
-         integer :: n
-         integer :: i
-
-         n = SIZE(pt)
-
          select case(os_p%variables_set)
          case('GYRE')
             eq = gyre_nad_eqns_t(cx, pt, os_p)
