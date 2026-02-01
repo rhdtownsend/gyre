@@ -104,7 +104,8 @@ nad_SRCS = nad_bvp_m.fypp nad_diff_m.fypp \
    gyre_nad_trans_m.fypp dziem_nad_trans_m.fypp jcd_nad_trans_m.fypp \
    rjcd_nad_trans_m.fypp mix_nad_trans_m.fypp lagp_nad_trans_m.fypp
 
-tnad_SRCS = tnad_bvp_m.fypp tnad_diff_m.fypp tnad_eqns_m.fypp tnad_trans_m.fypp
+tnad_SRCS = tnad_bvp_m.fypp tnad_diff_m.fypp \
+   gyre_tnad_eqns_m.fypp
 
 libgyre_SRCS = $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS)				\
    adhoc_angular_m.fypp amdl_file_m.fypp						\
@@ -139,7 +140,7 @@ libgyre_SRCS = $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS)				\
    string_m.fypp summary_m.fypp sysmtx_factory_m.fypp sysmtx_m.fypp			\
    tar_eigen_m.fypp tar_fit_m.fypp tar_angular_m.fypp tidal_coeff_m.fypp		\
    tidal_resp_m.fypp tidal_context_m.fypp tide_par_m.fypp trans_m.fypp			\
-   trapz_diff_m.fypp txt_writer_m.fypp util_m.fypp version_m.fypp			\
+   trapz_diff_m.fypp turb_m.fypp txt_writer_m.fypp util_m.fypp version_m.fypp		\
    wave_m.fypp wdec_file_m.fypp writer_m.fypp
 
 libgyre_mesa_SRCS = gyre_mesa_m.fypp

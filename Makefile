@@ -73,7 +73,8 @@ export SRC_DIRS := $(addprefix $(SRC_DIR)/, eqns \
    eqns/ad eqns/ad/gyre eqns/ad/dziem eqns/ad/jcd eqns/ad/rjcd eqns/ad/mix eqns/ad/lagp \
    eqns/rad eqns/rad/gyre eqns/rad/dziem eqns/rad/jcd eqns/rad/mix eqns/rad/lagp \
    eqns/nad eqns/nad/gyre eqns/nad/dziem eqns/nad/jcd eqns/nad/rjcd eqns/nad/mix eqns/nad/lagp \
-   eqns/tnad eqns/sad \
+   eqns/tnad eqns/tnad/gyre \
+   eqns/sad \
    angular bvp common context diff ext	\
    frontend/gyre frontend/tools grid include interp lib math matrix mode model  \
    output par poly search tar tide)
