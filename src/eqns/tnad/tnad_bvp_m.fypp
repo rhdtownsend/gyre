@@ -151,19 +151,19 @@ contains
          associate(pt => gr%pt(j))
 
             V = ml%coeff(I_V_2, pt)*pt%x**2
+            As = ml%coeff(I_AS, pt)
 
             bp%V_g(j) = V/ml%coeff(I_C_1, pt)
             bp%c_1(j) = ml%coeff(I_C_1, pt)
             bp%ups_T(j) = ml%coeff(I_UPS_T, pt)
 
             if (pt%x /= 0._RD) then
-
-               As = ml%coeff(I_AS, pt)
-
                bp%L_conv(j) = MIN(1._RD/V, 1._RD)*cx%alpha_trb
-               bp%tau_conv(j) = tau_conv(As, bp%c_1(j))
-
+            else
+               bp%L_conv(j) = cx%alpha_trb
             end if
+
+            bp%tau_conv(j) = tau_conv(As, bp%c_1(j))
 
             bp%Omega_rot(j) = ml%coeff(I_OMEGA_ROT, pt)
 
@@ -282,16 +282,6 @@ contains
       type(wave_t)                  :: wv
 
       integer     :: j
-      complex(RD) :: omega_c
-      real(RD)    :: omega_c_r
-      complex(RD) :: i_omega_c
-      complex(RD) :: lambda
-      complex(RD) :: l_i
-      complex(RD) :: om2
-      complex(RD) :: eta
-      complex(RD) :: F_trb
-      complex(RD) :: Q(1,6)
-      complex(RD) :: y_trb
       complex(RD) :: y_c(6,bp%n)
 
       @:CHECK_BOUNDS(SIZE(y, 1), bp%n_e)
@@ -302,6 +292,38 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
+
+         y_c(:,j) = y(:,j)
+         y_c(2,j) = y_c(2,j) - y_trb_(j)
+
+      end do
+
+      ! Construct the wave_t
+
+      wv = wave_t(st, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
+
+      ! Finish
+
+      return
+
+   contains
+
+      function y_trb_(j) result(y_trb)
+
+         integer, intent(in) :: j
+         complex(RD)         :: y_trb
+
+         complex(RD) :: omega_c
+         real(RD)    :: omega_c_r
+         complex(RD) :: i_omega_c
+         complex(RD) :: lambda
+         complex(RD) :: l_i
+         complex(RD) :: om2
+         complex(RD) :: eta
+         complex(RD) :: F_trb
+         complex(RD) :: Q(1,6)
+
+         ! Evaluate y_trb
 
          associate( &
             omega => st%omega, &
@@ -341,24 +363,17 @@ contains
 
             #:include 'Q.inc'
 
-            ! Evaluate y_trb
-
-            y_trb = DOT_PRODUCT(Q(1,:), y(:,j))
-
          end associate
 
-         y_c(:,j) = y(:,j)
-         y_c(2,j) = y_c(2,j) - y_trb
+         ! Evaluate y_trb
 
-      end do
+         y_trb = DOT_PRODUCT(Q(1,:), y(:,j))
 
-      ! Construct the wave_t
+         ! Finish
 
-      wv = wave_t(st, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
+         return
 
-      ! Finish
-
-      return
+      end function y_trb_
 
    end function wave_t_y_
 

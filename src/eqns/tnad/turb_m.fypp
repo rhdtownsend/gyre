@@ -40,10 +40,10 @@ module turb_m
 
 contains
 
-   function tau_conv(c_1, As)
+   function tau_conv(As, c_1)
 
-      real(RD), intent(in) :: c_1
       real(RD), intent(in) :: As
+      real(RD), intent(in) :: c_1
       real(RD)             :: tau_conv
 
       ! Evaluate the convective turnover timescale
