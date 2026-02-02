@@ -107,7 +107,12 @@ nad_SRCS = nad_bvp_m.fypp nad_diff_m.fypp \
 tnad_SRCS = tnad_bvp_m.fypp tnad_diff_m.fypp \
    gyre_tnad_eqns_m.fypp
 
-libgyre_SRCS = $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS)				\
+sad_SRCS = sad_bvp_m.fypp \
+  gyre_sad_bound_m.fypp \
+  gyre_sad_eqns_m.fypp \
+  gyre_sad_trans_m.fypp
+
+libgyre_SRCS = $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS) $(sad_SRCS)		\
    adhoc_angular_m.fypp amdl_file_m.fypp						\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp anapoly_5_model_m.fypp			\
    anapoly_5_1_model_m.fypp angular_m.fypp angular_factory_m.fypp atmos_m.fypp		\
@@ -134,7 +139,6 @@ libgyre_SRCS = $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS)				\
    pblock_sysmtx_m.fypp   point_m.fypp poly_file_m.fypp poly_model_m.fypp		\
    prox_search_m.fypp qad_eval_m.fypp 							\
    resp_m.fypp root_m.fypp rot_par_m.fypp rowpp_sysmtx_m.fypp 				\
-   sad_bound_m.fypp sad_bvp_m.fypp sad_eqns_m.fypp sad_trans_m.fypp			\
    sblock_sysmtx_m.fypp scan_m.fypp scan_par_m.fypp search_m.fypp special_m.fypp	\
    sph_angular_m.fypp state_m.fypp status_m.fypp					\
    string_m.fypp summary_m.fypp sysmtx_factory_m.fypp sysmtx_m.fypp			\

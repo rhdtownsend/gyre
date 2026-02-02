@@ -17,7 +17,9 @@
 
 #:include 'gyre.inc'
 
-module sad_eqns_m
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_sad_eqns_m
 
    ! Uses
 
@@ -27,10 +29,7 @@ module sad_eqns_m
    use eqns_m
    use model_m
    use model_util_m
-   use mode_par_m
-   use osc_par_m
    use point_m
-   use sad_trans_m
    use state_m
 
    use ISO_FORTRAN_ENV
@@ -41,11 +40,9 @@ module sad_eqns_m
 
    ! Derived-type definitions
 
-   type, extends(eqns_rt) :: sad_eqns_t
+   type, extends(eqns_rt) :: ${P}$_sad_eqns_t
       private
       type(context_t), pointer :: cx => null()
-      type(point_t)            :: pt
-      type(sad_trans_t)        :: tr
       real(RD)                 :: V_g
       real(RD)                 :: As
       real(RD)                 :: U
@@ -54,17 +51,18 @@ module sad_eqns_m
       private
       procedure, public :: eval_A
       procedure, public :: eval_C
-   end type sad_eqns_t
+   end type ${P}$_sad_eqns_t
 
    ! Interfaces
 
-   interface sad_eqns_t
-      module procedure sad_eqns_t_
-   end interface sad_eqns_t
+   interface ${P}$_sad_eqns_t
+      module procedure ${P}$_sad_eqns_t_0_
+      module procedure ${P}$_sad_eqns_t_1_
+   end interface ${P}$_sad_eqns_t
 
    ! Access specifiers
 
-   public :: sad_eqns_t
+   public :: ${P}$_sad_eqns_t
 
    ! Default access
 
@@ -72,21 +70,17 @@ module sad_eqns_m
 
 contains
 
-   function sad_eqns_t_(cx, pt, md_p, os_p) result(eq)
+   function ${P}$_sad_eqns_t_0_(cx, pt) result(eq)
 
       class(context_t), pointer, intent(in) :: cx
       type(point_t), intent(in)             :: pt
-      type(mode_par_t), intent(in)          :: md_p
-      type(osc_par_t), intent(in)           :: os_p
-      type(sad_eqns_t)                      :: eq
+      type(${P}$_sad_eqns_t)                :: eq
 
       class(model_t), pointer :: ml
 
-      ! Construct the sad_eqns_t
+      ! Construct the ${P}$_sad_eqns_t
 
       eq%cx => cx
-
-      eq%tr = sad_trans_t(cx, pt, md_p, os_p)
 
       ! Store structure coefficients
 
@@ -110,15 +104,37 @@ contains
 
       return
 
-   end function sad_eqns_t_
+   end function ${P}$_sad_eqns_t_0_
+
+   !****
+
+   function ${P}$_sad_eqns_t_1_(cx, pt) result(eq)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt(:)
+      type(${P}$_sad_eqns_t)               :: eq(SIZE(pt))
+
+      integer :: j
+
+      ! Construct the array of ${P}$_sad_eqns types
+
+      do j = 1, SIZE(pt)
+         eq(j) = ${P}$_sad_eqns_t(cx, pt(j))
+      end do
+
+      ! Finish
+
+      return
+
+   end function ${P}$_sad_eqns_t_1_
 
    !****
 
    subroutine eval_A(this, st, A)
 
-      class(sad_eqns_t), intent(in) :: this
-      class(state_rt), intent(in)   :: st
-      real(RD), intent(out)         :: A(:,:)
+      class(${P}$_sad_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: A(:,:)
 
       real(RD) :: l
       real(RD) :: lambda
@@ -134,23 +150,15 @@ contains
          As => this%As, &
          U => this%U, &
          x => this%x, &
-         l => this%cx%l)
+         l_e => this%cx%l)
 
-         lambda = l*(l+1._RD)
-
-         ! Set up the matrix
+         lambda = l_e*(l_e+1._RD)
 
          invx = 1._RD/x
 
-         A(1,1) = invx*(3._RD - U - l)
-         A(1,2) = invx*(1._RD)
+         ! Set up the matrix
 
-         A(2,1) = invx*(lambda - As*U - U*V_g)
-         A(2,2) = invx*(-U - l + 2._RD)
-
-         ! Apply the variables transformation
-
-         call this%tr%trans_eqns(A, st)
+         #:include 'A.inc'
 
       end associate
 
@@ -164,7 +172,7 @@ contains
 
    subroutine eval_C(this, st, C)
 
-      class(sad_eqns_t), intent(in) :: this
+      class(${P}$_sad_eqns_t), intent(in) :: this
       class(state_rt), intent(in)   :: st
       real(RD), intent(out)         :: C(:,:)
 
@@ -176,15 +184,9 @@ contains
       associate ( &
          U => this%U)
 
-         C(1,1) = 1._RD
-         C(1,2) = 0._RD
+         ! Set up the matrix
 
-         C(2,1) = -U
-         C(2,2) = 1._RD
-
-         ! Apply the variables transformation
-
-         call this%tr%trans_cond(C, st)
+         #:include 'C.inc'
 
       end associate
 
@@ -194,4 +196,4 @@ contains
 
    end subroutine eval_C
 
-end module sad_eqns_m
+end module ${P}$_sad_eqns_m

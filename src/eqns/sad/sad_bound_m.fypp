@@ -17,21 +17,20 @@
 
 #:include 'gyre.inc'
 
-module sad_bound_m
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_sad_bound_m
 
    ! Uses
 
    use forum_m, only: RD
 
-   use atmos_m
    use bound_m
    use context_m
    use model_m
    use model_util_m
-   use mode_par_m
    use osc_par_m
    use point_m
-   use sad_trans_m
    use state_m
 
    use ISO_FORTRAN_ENV
@@ -40,38 +39,40 @@ module sad_bound_m
 
    implicit none (type, external)
 
-   ! Parameter definitions
-
-   integer, parameter :: REGULAR_TYPE = 1
-   integer, parameter :: VACUUM_TYPE = 1
-
    ! Derived-type definitions
 
-   type, extends(bound_rt) :: sad_bound_t
+   type, extends(bound_rt) :: ${P}$_sad_bound_t
       private
-      type(context_t), pointer :: cx => null()
-      type(sad_trans_t)        :: tr_i
-      type(sad_trans_t)        :: tr_o
-      real(RD)                 :: U_o
-      integer                  :: type_i
-      integer                  :: type_o
+      type(context_t), pointer   :: cx => null()
+      real(RD)                   :: U_o
+      procedure(build_), pointer :: build_i_
+      procedure(build_), pointer :: build_o_
    contains
       private
       procedure, public :: build_i
-      procedure         :: build_regular_i_
       procedure, public :: build_o
-      procedure         :: build_vacuum_o_
-   end type sad_bound_t
+   end type ${P}$_sad_bound_t
 
    ! Interfaces
 
-   interface sad_bound_t
-      module procedure sad_bound_t_
-   end interface sad_bound_t
+   interface
+      subroutine build_(this, st, B)
+         use forum_m, only: RD
+         use state_m
+         import ${P}$_sad_bound_t
+         class(${P}$_sad_bound_t), intent(in) :: this
+         class(state_rt), intent(in)          :: st
+         real(RD), intent(out)                :: B(:,:)
+      end subroutine build_
+   end interface
+
+   interface ${P}$_sad_bound_t
+      module procedure ${P}$_sad_bound_t_
+   end interface ${P}$_sad_bound_t
 
    ! Access specifiers
 
-   public :: sad_bound_t
+   public :: ${P}$_sad_bound_t
 
    ! Default access
 
@@ -79,18 +80,17 @@ module sad_bound_m
 
 contains
 
-   function sad_bound_t_(cx, md_p, os_p) result(bd)
+   function ${P}$_sad_bound_t_(cx, os_p) result(bd)
 
       type(context_t), pointer, intent(in) :: cx
-      type(mode_par_t), intent(in)         :: md_p
       type(osc_par_t), intent(in)          :: os_p
-      type(sad_bound_t)                    :: bd
+      type(${P}$_sad_bound_t)              :: bd
 
       class(model_t), pointer :: ml
       type(point_t)           :: pt_i
       type(point_t)           :: pt_o
 
-      ! Construct the sad_bound_t
+      ! Construct the ${P}$_sad_bound_t
 
       ml => cx%model()
       pt_i = cx%point_i()
@@ -99,30 +99,19 @@ contains
       select case (os_p%inner_bound)
       case ('REGULAR')
          @:ASSERT(pt_i%x == 0._RD, 'boundary condition invalid for x /= 0')
-         bd%type_i = REGULAR_TYPE
+         bd%build_i_ => build_i_regular_
       case default
          @:ABORT('invalid inner_bound')
       end select
 
       select case (os_p%outer_bound)
       case ('VACUUM')
-         bd%type_o = VACUUM_TYPE
-      case ('DZIEM')
-         bd%type_o = VACUUM_TYPE
-      case ('ISOTHERMAL')
-         bd%type_o = VACUUM_TYPE
-      case ('UNNO')
-         bd%type_o = VACUUM_TYPE
-      case ('JCD')
-         bd%type_o = VACUUM_TYPE
+         bd%build_o_ => build_o_vacuum_
       case default
          @:ABORT('invalid outer_bound')
       end select
 
       bd%cx => cx
-
-      bd%tr_i = sad_trans_t(cx, pt_i, md_p, os_p)
-      bd%tr_o = sad_trans_t(cx, pt_o, md_p, os_p)
 
       ! Store structure coefficients
 
@@ -139,31 +128,19 @@ contains
 
       return
 
-   end function sad_bound_t_
+   end function ${P}$_sad_bound_t_
 
    !****
 
-   subroutine build_i (this, st, B)
+   subroutine build_i(this, st, B)
 
-      class(sad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)    :: st
-      real(RD), intent(out)          :: B(:,:)
-
-      @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
-      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      class(${P}$_sad_bound_t), intent(in) :: this
+      class(state_rt), intent(in)          :: st
+      real(RD), intent(out)                :: B(:,:)
 
       ! Evaluate the inner boundary conditions
 
-      select case (this%type_i)
-      case (REGULAR_TYPE)
-         call this%build_regular_i_(st, B)
-      case default
-         @:ABORT('invalid type_i')
-      end select
-
-      ! Apply the variables transformation
-
-      call this%tr_i%trans_cond(B, st)
+      call this%build_i_(st, B)
 
       ! Finish
 
@@ -173,11 +150,11 @@ contains
 
    !****
 
-   subroutine build_regular_i_(this, st, B)
+   subroutine build_i_regular_(this, st, B)
 
-      class(sad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)    :: st
-      real(RD), intent(out)          :: B(:,:)
+      class(${P}$_sad_bound_t), intent(in) :: this
+      class(state_rt), intent(in)          :: st
+      real(RD), intent(out)                :: B(:,:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_i)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -185,12 +162,11 @@ contains
       ! Evaluate the inner boundary conditions (regular-enforcing)
 
       associate (&
-         l => this%cx%l)
+         l_e => this%cx%l)
 
-         ! Set up the boundary conditions
+         ! Set up the matrix
 
-         B(1,1) = l
-         B(1,2) = -1._RD
+         #:include 'B_i_regular.inc'
 
       end associate
 
@@ -198,31 +174,19 @@ contains
 
       return
 
-   end subroutine build_regular_i_
+   end subroutine build_i_regular_
 
    !****
 
    subroutine build_o(this, st, B)
 
-      class(sad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)    :: st
-      real(RD), intent(out)          :: B(:,:)
-
-      @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
-      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      class(${P}$_sad_bound_t), intent(in) :: this
+      class(state_rt), intent(in)          :: st
+      real(RD), intent(out)                :: B(:,:)
 
       ! Evaluate the outer boundary conditions
 
-      select case (this%type_o)
-      case (VACUUM_TYPE)
-         call this%build_vacuum_o_(st, B)
-      case default
-         @:ABORT('invalid type_o')
-      end select
-
-      ! Apply the variables transformation
-
-      call this%tr_o%trans_cond(B, st)
+      call this%build_o_(st, B)
 
       ! Finish
 
@@ -232,11 +196,11 @@ contains
 
    !****
 
-   subroutine build_vacuum_o_(this, st, B)
+   subroutine build_o_vacuum_(this, st, B)
 
-      class(sad_bound_t), intent(in) :: this
-      class(state_rt), intent(in)    :: st
-      real(RD), intent(out)          :: B(:,:)
+      class(${P}$_sad_bound_t), intent(in) :: this
+      class(state_rt), intent(in)          :: st
+      real(RD), intent(out)                :: B(:,:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_o)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
@@ -245,12 +209,11 @@ contains
 
       associate ( &
          U => this%U_o, &
-         l => this%cx%l)
+         l_e => this%cx%l)
 
-         ! Set up the boundary conditions
+         ! Set up the matrix
 
-         B(1,1) = l + 1._RD - U
-         B(1,2) = 1._RD
+         #:include 'B_o_vacuum.inc'
 
       end associate
 
@@ -258,6 +221,6 @@ contains
 
       return
 
-   end subroutine build_vacuum_o_
+   end subroutine build_o_vacuum_
 
-end module sad_bound_m
+end module ${P}$_sad_bound_m

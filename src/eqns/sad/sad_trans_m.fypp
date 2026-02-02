@@ -1,4 +1,4 @@
-! Module  : sad_trans_m
+! Module  : rsd_trans_m
 ! Purpose : static adiabatic variables transformations
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
@@ -17,7 +17,9 @@
 
 #:include 'gyre.inc'
 
-module sad_trans_m
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_sad_trans_m
 
    ! Uses
 
@@ -26,10 +28,9 @@ module sad_trans_m
    use context_m
    use model_m
    use model_util_m
-   use mode_par_m
-   use osc_par_m
    use point_m
    use state_m
+   use trans_m
 
    use ISO_FORTRAN_ENV
 
@@ -37,36 +38,26 @@ module sad_trans_m
 
    implicit none (type, external)
 
-   ! Parameter definitions
-
-   integer, parameter :: SET = 0
-
    ! Derived-type definitions
 
-   type :: sad_trans_t
+   type, extends(trans_rt) :: ${P}$_sad_trans_t
       private
       type(context_t), pointer :: cx => null()
-      integer                  :: set
-      integer                  :: n_e
    contains
       private
-      procedure, public :: trans_eqns
-      procedure, public :: trans_cond
-      procedure, public :: trans_vars
-      procedure         :: G_
-      procedure         :: H_
-      procedure         :: dH_
-   end type sad_trans_t
+      procedure, public :: transform
+   end type ${P}$_sad_trans_t
 
    ! Interfaces
 
-   interface sad_trans_t
-      module procedure sad_trans_t_
-   end interface sad_trans_t
+   interface ${P}$_sad_trans_t
+      module procedure ${P}$_sad_trans_t_0_
+      module procedure ${P}$_sad_trans_t_1_
+   end interface ${P}$_sad_trans_t
 
    ! Access specifiers
 
-   public :: sad_trans_t
+   public :: ${P}$_sad_trans_t
 
    ! Default access
 
@@ -74,26 +65,23 @@ module sad_trans_m
 
 contains
 
-   function sad_trans_t_(cx, pt, md_p, os_p) result(tr)
+   function ${P}$_sad_trans_t_0_(cx, pt) result(tr)
 
       type(context_t), pointer, intent(in) :: cx
       type(point_t), intent(in)            :: pt
-      type(mode_par_t), intent(in)         :: md_p
-      type(osc_par_t), intent(in)          :: os_p
-      type(sad_trans_t)                    :: tr
+      type(${P}$_sad_trans_t)              :: tr
 
-      ! Construct the sad_trans_t
+      class(model_t), pointer :: ml
 
-      select case (os_p%variables_set)
-      case ('GYRE')
-         tr%set = SET
-      case default
-         @:ABORT('invalid variables_set')
-      end select
+      ! Construct the ${P}$_sad_trans type
 
       tr%cx => cx
 
       ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
 
       ! Other initializations
 
@@ -103,219 +91,57 @@ contains
 
       return
 
-   end function sad_trans_t_
+   end function ${P}$_sad_trans_t_0_
 
    !****
 
-   subroutine trans_eqns(this, A, st, from)
+   function ${P}$_sad_trans_t_1_(cx, pt) result(tr)
 
-      class(sad_trans_t), intent(in) :: this
-      real(RD), intent(inout)        :: A(:,:)
-      class(state_rt), intent(in)    :: st
-      logical, intent(in), optional  :: from
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt(:)
+      type(${P}$_sad_trans_t)              :: tr(SIZE(pt))
 
-      logical               :: from_
-      real(RD), allocatable :: G(:,:)
-      real(RD), allocatable :: H(:,:)
-      real(RD), allocatable :: dH(:,:)
+      integer :: j
 
-      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
-      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
+      ! Construct the array of ${P}$_sad_trans types
 
-      if (PRESENT(from)) then
-         from_ = from
-      else
-         from_ = .TRUE.
-      endif
-
-      ! Transform equations to/from GYRE's canonical form
-
-      if (from_) then
-
-         ! Convert from
-
-         if (this%set /= SET) then
-            G = this%G_(st)
-            H = this%H_(st)
-            dH = this%dH_(st)
-            A = MATMUL(G, MATMUL(A, H) - dH)
-         endif
-
-      else
-
-         ! Convert to
-
-         @:ABORT('not currently supported')
-
-      end if
+      do j = 1, SIZE(pt)
+         tr(j) = ${P}$_sad_trans_t(cx, pt(j))
+      end do
 
       ! Finish
 
       return
 
-   end subroutine trans_eqns
+   end function ${P}$_sad_trans_t_1_
 
    !****
 
-   subroutine trans_cond(this, C, st, from)
+   subroutine transform(this, st, y)
 
-      class(sad_trans_t), intent(in) :: this
-      real(RD), intent(inout)        :: C(:,:)
-      class(state_rt), intent(in)    :: st
-      logical, intent(in), optional  :: from
+      class(${P}$_sad_trans_t), intent(in) :: this
+      class(state_rt), intent(in)          :: st
+      real(RD), intent(inout)              :: y(:)
 
-      logical               :: from_
-      real(RD), allocatable :: G(:,:)
-      real(RD), allocatable :: H(:,:)
-
-      @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
-
-      if (PRESENT(from)) then
-         from_ = from
-      else
-         from_ = .TRUE.
-      endif
-
-      ! Transform boundary/match conditions to/from GYRE's canonical form
-
-      if (from_) then
-
-         ! Convert from
-
-         if (this%set /= SET) then
-            H = this%H_(st)
-            C = MATMUL(C, H)
-         endif
-
-      else
-
-         ! Convert to
-
-         if (this%set /= SET) then
-            G = this%G_(st)
-            C = MATMUL(C, G)
-         endif
-
-      end if
-
-      ! Finish
-
-      return
-
-   end subroutine trans_cond
-
-   !****
-
-   subroutine trans_vars(this, y, st, from)
-
-      class(sad_trans_t), intent(in) :: this
-      real(RD), intent(inout)        :: y(:)
-      class(state_rt), intent(in)    :: st
-      logical, intent(in), optional  :: from
-
-      logical               :: from_
-      real(RD), allocatable :: G(:,:)
-      real(RD), allocatable :: H(:,:)
+      real(RD) :: omega_c
+      real(RD) :: R(this%n_e,this%n_e)
 
       @:CHECK_BOUNDS(SIZE(y), this%n_e)
 
-      if (PRESENT(from)) then
-         from_ = from
-      else
-         from_ = .TRUE.
-      endif
+      ! Transform the variables to canonical form
 
-      ! Convert variables to/from GYRE's canonical form
+      ! Set up the transformation matrix
 
-      if (from_) then
+      #:include 'R.inc'
 
-         ! Convert from
+      ! Apply it
 
-         if (this%set /= SET) then
-            G = this%G_(st)
-            y = MATMUL(G, y)
-         endif
-
-      else
-
-         ! Convert to
-
-         if (this%set /= SET) then
-            H = this%H_(st)
-            y = MATMUL(H, y)
-         endif
-
-      end if
+      y = MATMUL(R, y)
 
       ! Finish
 
       return
 
-   end subroutine trans_vars
+   end subroutine transform
 
-   !****
-
-   function G_(this, st) result(G)
-
-      class(sad_trans_t), intent(in) :: this
-      class(state_rt), intent(in)    :: st
-      real(RD)                       :: G(this%n_e,this%n_e)
-
-      ! Evaluate the transformation matrix to convert variables from
-      ! GYRE's canonical form
-
-      select case (this%set)
-      case default
-         @:ABORT('invalid set')
-      end select
-
-      ! Finish
-
-      return
-
-   end function G_
-
-   !****
-
-   function H_(this, st) result(H)
-
-      class(sad_trans_t), intent(in) :: this
-      class(state_rt), intent(in)    :: st
-      real(RD)                       :: H(this%n_e,this%n_e)
-
-      ! Evaluate the transformation matrix to convert variables to
-      ! canonical form
-
-      select case (this%set)
-      case default
-         @:ABORT('invalid vars')
-      end select
-
-      ! Finish
-
-      return
-
-   end function H_
-
-   !****
-
-   function dH_(this, st) result(dH)
-
-      class(sad_trans_t), intent(in) :: this
-      class(state_rt), intent(in)    :: st
-      real(RD)                       :: dH(this%n_e,this%n_e)
-
-      ! Evaluate the derivative dH/dx of the transformation matrix H
-
-      select case (this%set)
-      case default
-         @:ABORT('invalid set')
-      end select
-
-      ! Finish
-
-      return
-
-   end function dH_
-
-end module sad_trans_m
+end module ${P}$_sad_trans_m

@@ -23,6 +23,7 @@ module sad_bvp_m
 
    use forum_m, only: RD
 
+   use bound_m
    use bvp_m
    use context_m
    use diff_element_m
@@ -36,12 +37,10 @@ module sad_bvp_m
    use num_par_m
    use osc_par_m
    use point_m
-   use sad_bound_m
-   use sad_eqns_m
-   use sad_trans_m
    use state_m
    use sysmtx_m
-   use util_m
+   use trans_m
+!   use util_m
    use wave_m
 
    use ISO_FORTRAN_ENV
@@ -54,12 +53,12 @@ module sad_bvp_m
 
    type, extends(bvp_rt) :: sad_bvp_t
       private
-      type(context_t), pointer       :: cx => null()
-      type(grid_t)                   :: gr
-      type(sad_trans_t), allocatable :: tr(:)
-      type(mode_par_t)               :: md_p
-      type(num_par_t)                :: nm_p
-      type(osc_par_t)                :: os_p
+      type(context_t), pointer     :: cx => null()
+      class(trans_rt), allocatable :: tr(:)
+      type(grid_t)                 :: gr
+      type(mode_par_t)             :: md_p
+      type(num_par_t)              :: nm_p
+      type(osc_par_t)              :: os_p
    end type sad_bvp_t
 
    ! Interfaces
@@ -85,6 +84,10 @@ contains
 
    function sad_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
 
+      use gyre_sad_bound_m
+
+      use gyre_sad_trans_m
+
       type(context_t), pointer, intent(in) :: cx
       type(grid_t), intent(in)             :: gr
       type(mode_par_t), intent(in)         :: md_p
@@ -92,19 +95,20 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(sad_bvp_t)                      :: bp
 
-      type(sad_bound_t)                  :: bd
+      class(bound_rt), allocatable       :: bd
       integer                            :: j
       type(diff_element_rt), allocatable :: de(:)
 
-      ! Construct the sad_bvp_t
-
-      if (os_p%alpha_grv /= 1._RD) then
-         @:WARN('alpha_grv is ignored in static equations')
-      endif
+      ! Construct the sad_bvp type
 
       ! Initialize the boundary conditions
 
-      bd = sad_bound_t(cx, md_p, os_p)
+      select case(os_p%variables_set)
+      case('GYRE')
+         bd = gyre_sad_bound_t(cx, os_p)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
 
       ! Initialize the difference equations
 
@@ -124,12 +128,12 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      allocate(bp%tr(gr%n))
-
-      !$OMP PARALLEL DO
-      do j = 1, gr%n
-         bp%tr(j) = sad_trans_t(cx, gr%pt(j), md_p, os_p)
-      end do
+      select case(os_p%variables_set)
+      case('GYRE')
+         bp%tr = gyre_sad_trans_t(cx, gr%pt)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
 
       bp%md_p = md_p
       bp%nm_p = nm_p
@@ -143,28 +147,61 @@ contains
 
       subroutine eqns_factory_(pt, eq)
 
+         use gyre_sad_eqns_m
+
          type(point_t), intent(in)                :: pt(:)
          class(eqns_rt), allocatable, intent(out) :: eq(:)
 
-         type(sad_eqns_t), allocatable :: eq_(:)
-         integer                       :: n
-         integer                       :: i
+         ! Initialize the equations
 
-         n = SIZE(pt)
+         select case(os_p%variables_set)
+         case('GYRE')
+            eq = gyre_sad_eqns_t(cx, pt)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
 
-         allocate(eq_(n))
-
-         do i = 1, n
-            eq_(i) = sad_eqns_t(cx, pt(i), md_p, os_p)
-         end do
-
-         eq = eq_
+         ! Finish
 
          return
 
       end subroutine eqns_factory_
 
    end function sad_bvp_t_
+
+   !****
+
+   function wave_t_hom_(bp, sm, st, id) result(wv)
+
+      class(sad_bvp_t), intent(in)    :: bp
+      class(sysmtx_rt), intent(inout) :: sm
+      type(state_rt), intent(in)      :: st
+      integer, intent(in)             :: id
+      type(wave_t)                    :: wv
+
+      real(RD) :: y(2,bp%n)
+      integer  :: j
+
+      ! Calculate the homogeneous solution vector
+
+      call bp%solve_hom(sm, st, y)
+
+      ! Convert to canonical form
+
+      !$OMP PARALLEL DO
+      do j = 1, bp%n
+         call bp%tr(j)%transform(st, y(:,j))
+      end do
+
+      ! Construct the wave type
+
+      wv = wave_t_y_(bp, st, y, id)
+
+      ! Finish
+
+      return
+
+   end function wave_t_hom_
 
    !****
 
@@ -192,10 +229,10 @@ contains
 
       !$OMP PARALLEL DO
       do j = 1, bp%n
-         call bp%tr(j)%trans_vars(y(:,j), st, from=.FALSE.)
+         call bp%tr(j)%transform(st, y(:,j))
       end do
 
-      ! Construct the wave_t
+      ! Construct the wave type
 
       wv = wave_t_y_(bp, st, y, id)
 
@@ -215,10 +252,10 @@ contains
       integer, intent(in)          :: id
       type(wave_t)                 :: wv
 
-      complex(RD)    :: y_c(6,bp%n)
       type(state_ct) :: st_c
+      complex(RD)    :: y_c(6,bp%n)
 
-      ! Set up complex eigenfunctions
+      ! Set up canonical eigenfunctions
 
       st_c = state_ct(CMPLX(st%omega, KIND=RD), st%omega)
 
