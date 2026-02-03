@@ -113,11 +113,12 @@ contains
 
       !****
 
-      subroutine build_and_factor_${S}$_(this, st, bd, de, full, f)
+      subroutine build_and_factor_${S}$_(this, st, bd_i, bd_o, de, full, f)
 
          class(sblock_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(bound_${S}$), intent(in)            :: bd
+         class(bound_${S}$), intent(in)            :: bd_i
+         class(bound_${S}$), intent(in)            :: bd_o
          class(diff_element_${S}$), intent(in)     :: de(:)
          logical, intent(in), optional             :: full
          ${T}$, intent(inout), optional            :: f(:)
@@ -305,8 +306,8 @@ contains
 
                ! Prepare the boundary matrix
 
-               call bd%build_i(st, R_2(:n_i,:n_e))
-               call bd%build_o(st, R_2(n_i+1:,n_e+1:))
+               call bd_i%build(st, R_2(:n_i,:n_e))
+               call bd_o%build(st, R_2(n_i+1:,n_e+1:))
 
                R_2(:n_i,n_e+1:) = 0._RD
                R_2(n_i+1:,:n_e) = 0._RD
@@ -461,11 +462,12 @@ contains
 
       !****
 
-      subroutine eval_det_${S}$_(this, st, bd, de, det)
+      subroutine eval_det_${S}$_(this, st, bd_i, bd_o, de, det)
 
          class(sblock_sysmtx_${S}$), intent(inout) :: this
-         class(state_${S}$), intent(in)                :: st
-         class(bound_${S}$), intent(in)            :: bd
+         class(state_${S}$), intent(in)            :: st
+         class(bound_${S}$), intent(in)            :: bd_i
+         class(bound_${S}$), intent(in)            :: bd_o
          class(diff_element_${S}$), intent(in)     :: de(:)
          type(ext_${S}$), intent(out)              :: det
 
@@ -473,7 +475,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(st, bd, de)
+         call this%build_and_factor_(st, bd_i, bd_o, de)
 
          ! Evaluate the determinant as the product of the diagonal
          ! elements
@@ -488,11 +490,12 @@ contains
 
       !****
 
-      subroutine solve_hom_${S}$_(this, st, bd, de, u)
+      subroutine solve_hom_${S}$_(this, st, bd_i, bd_o, de, u)
 
          class(sblock_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(bound_${S}$), intent(in)            :: bd
+         class(bound_${S}$), intent(in)            :: bd_i
+         class(bound_${S}$), intent(in)            :: bd_o
          class(diff_element_${S}$), intent(in)     :: de(:)
          ${T}$, intent(out)                        :: u(:)
 
@@ -512,7 +515,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(st, bd, de, full=.TRUE.)
+            call this%build_and_factor_(st, bd_i, bd_o, de, full=.TRUE.)
 
             ! Find the (most) singular element on the diagonal of the
             ! boundary matrix
@@ -557,11 +560,12 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, st, bd, de, v, u)
+      subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, v, u)
 
          class(sblock_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(bound_${S}$), intent(in)            :: bd
+         class(bound_${S}$), intent(in)            :: bd_i
+         class(bound_${S}$), intent(in)            :: bd_o
          class(diff_element_${S}$), intent(in)     :: de(:)
          ${T}$, intent(in)                         :: v(:)
          ${T}$, intent(out)                        :: u(:)
@@ -592,7 +596,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(st, bd, de, full=.TRUE., f=f)
+            call this%build_and_factor_(st, bd_i, bd_o, de, full=.TRUE., f=f)
 
             ! Use backsubstitution to solve for u_bound
 

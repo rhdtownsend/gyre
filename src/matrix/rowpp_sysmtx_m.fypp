@@ -60,7 +60,7 @@ module rowpp_sysmtx_m
       ! Interfaces
 
       abstract interface
-         subroutine build_and_factor_${S}$_(this, st, bd, de, full, f)
+         subroutine build_and_factor_${S}$_(this, st, bd_i, bd_o, de, full, f)
             use forum_m, only: RD
             use state_m
             use bound_m
@@ -70,7 +70,8 @@ module rowpp_sysmtx_m
             implicit none (type, external)
             class(rowpp_sysmtx_${S}$), intent(inout) :: this
             class(state_${S}$), intent(in)           :: st
-            class(bound_${S}$), intent(in)           :: bd
+            class(bound_${S}$), intent(in)           :: bd_i
+            class(bound_${S}$), intent(in)           :: bd_o
             class(diff_element_${S}$), intent(in)    :: de(:)
             logical, intent(in), optional            :: full
             ${T}$, intent(inout), optional           :: f(:)
@@ -143,11 +144,12 @@ contains
          ['6_3', 6, 3, 3], &
          ['gen', 'this%n_e', 'this%n_i', 'this%n_o']]
 
-         subroutine build_and_factor_${I}$_${S}$_(this, st, bd, de, full, f)
+         subroutine build_and_factor_${I}$_${S}$_(this, st, bd_i, bd_o, de, full, f)
 
             class(rowpp_sysmtx_${S}$), intent(inout) :: this
             class(state_${S}$), intent(in)           :: st
-            class(bound_${S}$), intent(in)           :: bd
+            class(bound_${S}$), intent(in)           :: bd_i
+            class(bound_${S}$), intent(in)           :: bd_o
             class(diff_element_${S}$), intent(in)    :: de(:)
             logical, intent(in), optional            :: full
             ${T}$, intent(inout), optional           :: f(:)
@@ -184,7 +186,7 @@ contains
 
             associate (n => this%n, n_e => ${N_E}$, n_i => ${N_I}$, n_o => ${N_O}$)
 
-               call bd%build_i(st, B_i)
+               call bd_i%build(st, B_i)
 
                ! First, build and factorize the first n blocks
 
@@ -312,7 +314,7 @@ contains
 
                ! Next, build and factorize the final block
 
-               call bd%build_o(st, B_o)
+               call bd_o%build(st, B_o)
 
                R(:n_i,:) = M(n_e+1:,n_e+1:)
                R(n_i+1:,:) = B_o
@@ -475,11 +477,12 @@ contains
 
       !****
 
-      subroutine eval_det_${S}$_(this, st, bd, de, det)
+      subroutine eval_det_${S}$_(this, st, bd_i, bd_o, de, det)
 
          class(rowpp_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)           :: st
-         class(bound_${S}$), intent(in)           :: bd
+         class(bound_${S}$), intent(in)           :: bd_i
+         class(bound_${S}$), intent(in)           :: bd_o
          class(diff_element_${S}$), intent(in)    :: de(:)
          type(ext_${S}$), intent(out)             :: det
 
@@ -487,7 +490,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor(st, bd, de)
+         call this%build_and_factor(st, bd_i, bd_o, de)
 
          ! Evaluate the determinant as the product of the diagonal
          ! elements and block scales
@@ -502,11 +505,12 @@ contains
 
       !****
 
-      subroutine solve_hom_${S}$_(this, st, bd, de, u)
+      subroutine solve_hom_${S}$_(this, st, bd_i, bd_o, de, u)
 
          class(rowpp_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)           :: st
-         class(bound_${S}$), intent(in)           :: bd
+         class(bound_${S}$), intent(in)           :: bd_i
+         class(bound_${S}$), intent(in)           :: bd_o
          class(diff_element_${S}$), intent(in)    :: de(:)
          ${T}$, intent(out)                       :: u(:)
 
@@ -526,7 +530,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor(st, bd, de, full=.TRUE.)
+            call this%build_and_factor(st, bd_i, bd_o, de, full=.TRUE.)
 
             ! Find the (most) singular element on the diagonal of the
             ! final U block
@@ -571,11 +575,12 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, st, bd, de, v, u)
+      subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, v, u)
 
          class(rowpp_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)           :: st
-         class(bound_${S}$), intent(in)           :: bd
+         class(bound_${S}$), intent(in)           :: bd_i
+         class(bound_${S}$), intent(in)           :: bd_o
          class(diff_element_${S}$), intent(in)    :: de(:)
          ${T}$, intent(in)                        :: v(:)
          ${T}$, intent(out)                       :: u(:)
@@ -605,7 +610,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor(st, bd, de, full=.TRUE., f=f)
+            call this%build_and_factor(st, bd_i, bd_o, de, full=.TRUE., f=f)
 
             ! Use backsubstitution to solve for u_bound
 

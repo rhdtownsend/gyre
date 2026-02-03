@@ -197,11 +197,12 @@ contains
 
       !****
 
-      subroutine build_and_factor_${S}$_(this, st, bd, de)
+      subroutine build_and_factor_${S}$_(this, st, bd_i, bd_o, de)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)          :: st
-         class(bound_${S}$), intent(in)          :: bd
+         class(bound_${S}$), intent(in)          :: bd_i
+         class(bound_${S}$), intent(in)          :: bd_o
          class(diff_element_${S}$), intent(in)   :: de(:)
 
          ${T}$   :: B_i(this%n_i,this%n_e)
@@ -220,13 +221,13 @@ contains
 
             ! Build the boundary blocks, and row-scale to unity
 
-            call bd%build_i(st, B_i)
+            call bd_i%build(st, B_i)
             do i = 1, n_i
                scl = MAXVAL(abs(B_i(i,:)))
                this%scl_i(i) = scl
                call this%set_row_(i, 1, B_i(i,:)/scl)
             end do
-            call bd%build_o(st, B_o)
+            call bd_o%build(st, B_o)
             do i = 1, n_o
                scl = MAXVAL(abs(B_o(i,:)))
                this%scl_o(i) = scl
@@ -267,11 +268,12 @@ contains
 
       !****
 
-      subroutine eval_det_${S}$_(this, st, bd, de, det)
+      subroutine eval_det_${S}$_(this, st, bd_i, bd_o, de, det)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)          :: st
-         class(bound_${S}$), intent(in)          :: bd
+         class(bound_${S}$), intent(in)          :: bd_i
+         class(bound_${S}$), intent(in)          :: bd_o
          class(diff_element_${S}$), intent(in)   :: de(:)
          type(ext_${S}$), intent(out)            :: det
 
@@ -279,7 +281,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(st, bd, de)
+         call this%build_and_factor_(st, bd_i, bd_o, de)
 
          ! Evaluate the determinant
 
@@ -298,11 +300,12 @@ contains
 
       !****
 
-      subroutine solve_hom_${S}$_(this, st, bd, de, u)
+      subroutine solve_hom_${S}$_(this, st, bd_i, bd_o, de, u)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)          :: st
-         class(bound_${S}$), intent(in)          :: bd
+         class(bound_${S}$), intent(in)          :: bd_i
+         class(bound_${S}$), intent(in)          :: bd_o
          class(diff_element_${S}$), intent(in)   :: de(:)
          ${T}$, intent(out)                      :: u(:)
 
@@ -320,7 +323,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(st, bd, de)
+         call this%build_and_factor_(st, bd_i, bd_o, de)
 
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) >= 1
@@ -381,11 +384,12 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, st, bd, de, v, u)
+      subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, v, u)
 
          class(band_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)          :: st
-         class(bound_${S}$), intent(in)          :: bd
+         class(bound_${S}$), intent(in)          :: bd_i
+         class(bound_${S}$), intent(in)          :: bd_o
          class(diff_element_${S}$), intent(in)   :: de(:)
          ${T}$, intent(in)                       :: v(:)
          ${T}$, intent(out)                      :: u(:)
@@ -399,7 +403,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(st, bd, de)
+         call this%build_and_factor_(st, bd_i, bd_o, de)
 
          ! Evaluate the solution vector u of the inhomogeneous linear
          ! system S u = v. It is assumed that the right-hand side vector v

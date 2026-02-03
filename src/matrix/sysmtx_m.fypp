@@ -43,7 +43,7 @@ module sysmtx_m
 
       abstract interface
 
-         subroutine eval_det_${S}$_(this, st, bd, de, det)
+         subroutine eval_det_${S}$_(this, st, bd_i, bd_o, de, det)
             use forum_m, only: RD
             use state_m
             use bound_m
@@ -53,12 +53,13 @@ module sysmtx_m
             implicit none (type, external)
             class(sysmtx_${S}$), intent(inout)    :: this
             class(state_${S}$), intent(in)        :: st
-            class(bound_${S}$), intent(in)        :: bd
+            class(bound_${S}$), intent(in)        :: bd_i
+            class(bound_${S}$), intent(in)        :: bd_o
             class(diff_element_${S}$), intent(in) :: de(:)
             type(ext_${S}$), intent(out)          :: det
          end subroutine eval_det_${S}$_
 
-         subroutine solve_hom_${S}$_(this, st, bd, de, u)
+         subroutine solve_hom_${S}$_(this, st, bd_i, bd_o, de, u)
             use forum_m, only: RD
             use state_m
             use bound_m
@@ -68,12 +69,13 @@ module sysmtx_m
             implicit none (type, external)
             class(sysmtx_${S}$), intent(inout)    :: this
             class(state_${S}$), intent(in)        :: st
-            class(bound_${S}$), intent(in)        :: bd
+            class(bound_${S}$), intent(in)        :: bd_i
+            class(bound_${S}$), intent(in)        :: bd_o
             class(diff_element_${S}$), intent(in) :: de(:)
             ${T}$, intent(out)                    :: u(:)
          end subroutine solve_hom_${S}$_
 
-         subroutine solve_inhom_${S}$_(this, st, bd, de, v, u)
+         subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, v, u)
             use forum_m, only: RD
             use state_m
             use bound_m
@@ -83,7 +85,8 @@ module sysmtx_m
             implicit none (type, external)
             class(sysmtx_${S}$), intent(inout)    :: this
             class(state_${S}$), intent(in)        :: st
-            class(bound_${S}$), intent(in)        :: bd
+            class(bound_${S}$), intent(in)        :: bd_i
+            class(bound_${S}$), intent(in)        :: bd_o
             class(diff_element_${S}$), intent(in) :: de(:)
             ${T}$, intent(in)                     :: v(:)
             ${T}$, intent(out)                    :: u(:)

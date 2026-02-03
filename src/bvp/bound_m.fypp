@@ -28,12 +28,10 @@ module bound_m
       ! Derived-type definitions
 
       type, abstract :: bound_${S}$
-         integer :: n_i
-         integer :: n_o
+         integer :: n_b
          integer :: n_e
       contains
-         procedure(build_${S}$_), deferred :: build_i
-         procedure(build_${S}$_), deferred :: build_o
+         procedure(build_${S}$_), deferred :: build
       end type bound_${S}$
 
       ! Interfaces

@@ -44,7 +44,8 @@ module bvp_m
       type :: bvp_${S}$
          private
          class(diff_element_${S}$), allocatable :: de(:)
-         class(bound_${S}$), allocatable        :: bd
+         class(bound_${S}$), allocatable        :: bd_i
+         class(bound_${S}$), allocatable        :: bd_o
          integer, public                        :: n
          integer, public                        :: n_e
          integer, public                        :: n_i
@@ -76,9 +77,10 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function bvp_${S}$_(bd, de, nm_p) result(bp)
+      function bvp_${S}$_(bd_i, bd_o, de, nm_p) result(bp)
 
-         class(bound_${S}$), intent(in)        :: bd
+         class(bound_${S}$), intent(in)        :: bd_i
+         class(bound_${S}$), intent(in)        :: bd_o
          class(diff_element_${S}$), intent(in) :: de(:)
          type(num_par_t), intent(in)           :: nm_p
          type(bvp_${S}$)                       :: bp
@@ -91,10 +93,13 @@ contains
          ! Perform basic validations
 
          n = SIZE(de) + 1
-         n_e = bd%n_e
 
-         n_i = bd%n_i
-         n_o = bd%n_o
+         @:CHECK_BOUNDS(bd_i%n_e, bd_o%n_e)
+
+         n_e = bd_i%n_e
+
+         n_i = bd_i%n_b
+         n_o = bd_o%n_b
 
          @:CHECK_BOUNDS(n_i+n_o, n_e)
 
@@ -104,7 +109,8 @@ contains
 
          allocate(bp%de, SOURCE=de)
 
-         bp%bd = bd
+         bp%bd_i = bd_i
+         bp%bd_o = bd_o
 
          bp%n = n
          bp%n_e = n_e
@@ -133,7 +139,7 @@ contains
 
          ! Evaluate the determinant of the sysmtx
 
-         call sm%eval_det(st, this%bd, this%de, det)
+         call sm%eval_det(st, this%bd_i, this%bd_o, this%de, det)
 
          ! Finish
 
@@ -162,7 +168,7 @@ contains
 
          ! Evaluate the solution vector y of the homogeneous system
 
-         call sm%solve_hom(st, this%bd, this%de, u)
+         call sm%solve_hom(st, this%bd_i, this%bd_o, this%de, u)
 
          y = RESHAPE(u, SHAPE(y))
 
@@ -198,7 +204,7 @@ contains
 
          ! Evaluate the solution vector y of the inhomogeneous system
 
-         call sm%solve_inhom(st, this%bd, this%de, [z_i,z_o], u)
+         call sm%solve_inhom(st, this%bd_i, this%bd_o, this%de, [z_i,z_o], u)
 
          y = RESHAPE(u, SHAPE(y))
 
