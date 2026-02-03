@@ -29,9 +29,7 @@ module sad_bvp_m
    use diff_element_m
    use diff_factory_m
    use eqns_m
-   use ext_m
    use grid_m
-   use interp_m
    use model_m
    use mode_par_m
    use num_par_m
@@ -40,7 +38,6 @@ module sad_bvp_m
    use state_m
    use sysmtx_m
    use trans_m
-!   use util_m
    use wave_m
 
    use ISO_FORTRAN_ENV
@@ -84,7 +81,9 @@ contains
 
    function sad_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
 
-      use gyre_sad_bound_m
+      use gyre_sad_ibound_m
+
+      use gyre_sad_obound_m
 
       use gyre_sad_trans_m
 
@@ -95,7 +94,8 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(sad_bvp_t)                      :: bp
 
-      class(bound_rt), allocatable       :: bd
+      class(bound_rt), allocatable       :: bd_i
+      class(bound_rt), allocatable       :: bd_o
       integer                            :: j
       type(diff_element_rt), allocatable :: de(:)
 
@@ -105,7 +105,8 @@ contains
 
       select case(os_p%variables_set)
       case('GYRE')
-         bd = gyre_sad_bound_t(cx, os_p)
+         bd_i = gyre_sad_ibound_t(cx, os_p)
+         bd_o = gyre_sad_obound_t(cx, os_p)
       case default
          @:ABORT('invalid variables_set')
       end select
@@ -121,7 +122,7 @@ contains
 
       ! Initialize the bvp_t
 
-      bp%bvp_rt = bvp_rt(bd, de, nm_p)
+      bp%bvp_rt = bvp_rt(bd_i, bd_o, de, nm_p)
 
       ! Other initializations
 

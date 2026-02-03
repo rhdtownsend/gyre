@@ -18,31 +18,10 @@
 import sympy as sp
 import sympy.printing.fortran as spf
 
-# Declare symbols & functions
+# Declare symbols
 
 x = sp.Symbol('x')
 invx = sp.Symbol('invx')
-
-class V_2(sp.Function):
-    @classmethod
-    def _fcode(self, printer):
-        return 'V_2'
-    def fdiff(self, argindex=1):
-        return V_2(x)*dV_2/self.args[0]
-
-class c_1(sp.Function):
-    @classmethod
-    def _fcode(self, printer):
-        return 'c_1'
-    def fdiff(self, argindex=1):
-        return c_1(self.args[0])*(3 - U(self.args[0]))/self.args[0]
-
-class U(sp.Function):
-    @classmethod
-    def _fcode(self, printer):
-        return 'U'
-    def fdiff(self, argindex=1):
-        return U(self.args[0])*(-V_g - As - U(self.args[0]) + 3)/self.args[0]
 
 V = sp.Symbol('V')
 V_g = sp.Symbol('V_g')
@@ -63,10 +42,10 @@ c_rad = sp.Symbol('c_rad')
 c_thk = sp.Symbol('c_thk')
 c_egv = sp.Symbol('c_egv')
 
+f_conv = sp.Symbol('f_conv')
+
 f_rht = sp.Symbol('f_rht')
 df_rht = sp.Symbol('df_rht')
-
-f_conv = sp.Symbol('f_conv')
 
 lamda = sp.Symbol('lambda')
 l_i = sp.Symbol('l_i')
@@ -78,6 +57,9 @@ F_trb = sp.Symbol('F_trb')
 
 eta = sp.Symbol('eta')
 om2 = sp.Symbol('om2')
+
+l = sp.Symbol('l')
+m = sp.Symbol('m')
 
 alpha_omg = sp.Symbol('alpha_omg')
 alpha_grv = sp.Symbol('alpha_grv')
@@ -95,9 +77,42 @@ b_12 = sp.Symbol('b_12')
 G_1 = sp.Symbol('G_1')
 G_2 = sp.Symbol('G_2')
 
+# Define functions w/ known derivatives
+
+class V_2(sp.Function):
+    def fdiff(self, argindex=1):
+        return V_2(x)*dV_2/self.args[0]
+
+class c_1(sp.Function):
+    def fdiff(self, argindex=1):
+        return c_1(self.args[0])*(3 - U(self.args[0]))/self.args[0]
+
+class U(sp.Function):
+    def fdiff(self, argindex=1):
+        return U(self.args[0])*(-V_g - As - U(self.args[0]) + 3)/self.args[0]
+
+# Define function substitutions (to replace functions with symbols
+# after differentiation)
+
+fn_subs = [
+        (V_2(x), sp.Symbol('V_2')),
+        (U(x), sp.Symbol('U')),
+        (c_1(x), sp.Symbol('c_1'))
+]
+
+# Declare fcode_symbol, for overriding Fortran output
+
+class fcode_symbol(sp.Symbol):
+    def __new__(cls, name, *args):
+        return super().__new__(cls, name)
+    def __init__(self, name, code=None):
+        self.code = code if code is not None else name
+    def _fcode(self, printer):
+        return self.code
+
 # Code generation routines
 
-def generate_A(A, T):
+def generate_A(A, T, subs=[]):
 
     # Transform the Jacobian matrix
 
@@ -105,57 +120,99 @@ def generate_A(A, T):
 
     # Apply substitutions
 
-    A = A.subs(((c_1(x)*alpha_omg*omega_c**2, om2), (lamda/om2, eta)))
+    A = A.subs(fn_subs)
+
+    subs += [
+        (sp.Symbol('c_1')*alpha_omg*omega_c**2, om2),
+        (lamda/om2, eta)
+    ]
+
+    A = A.subs(subs)
 
     # Convert to Fortran
 
-    return spf.fcode(invx*A, assign_to='A', standard=2008, source_format='free')
+    printer = spf.FCodePrinter({'standard': 2008, 'source_format': 'free'})
 
-def generate_B_i(B_i, T):
+    return printer.doprint(invx*A, assign_to='A')
+
+def generate_IB(IB, T, subs=[]):
 
     # Transform the inner boundary condition matrix
 
-    B_i = B_i*T.inv()
+    IB = IB*T.inv()
 
     # Apply substitutions
 
-    B_i = B_i.subs(((V, 0), (V_g, 0), (U(x), 3), (As, 0), (As_iso, 0)))
+    IB = IB.subs(fn_subs)
+
+    subs += [
+        (V, 0),
+        (As, 0),
+        (As_iso, 0),
+        (sp.Symbol('U'), 3)
+    ]
+
+    IB = IB.subs(subs)
 
     # Convert to Fortran
 
-    return spf.fcode(B_i, assign_to='B', standard=2008, source_format='free')
+    return spf.fcode(IB, assign_to='B', standard=2008, source_format='free')
 
-def generate_B_o(B_o, T):
+def generate_OB(OB, T, subs=[]):
 
     # Transform the outer boundary condition matrix
 
-    B_o = B_o*T.inv()
+    OB = OB*T.inv()
+
+    # Apply substitutions
+
+    OB = OB.subs(fn_subs)
+
+    OB = OB.subs(subs)
 
     # Convert to Fortran
 
-    return spf.fcode(B_o, assign_to='B', standard=2008, source_format='free')
+    return spf.fcode(OB, assign_to='B', standard=2008, source_format='free')
 
-def generate_C(C, T):
+def generate_C(C, T, subs=[]):
 
     # Transform the match condition matrix
 
     C = C*T.inv()
 
+    # Apply substitutions
+
+    C = C.subs(fn_subs)
+
+    C = C.subs(subs)
+
     # Convert to Fortran
 
     return spf.fcode(C, assign_to='C', standard=2008, source_format='free')
 
-def generate_R(T):
+def generate_R(T, subs=[]):
 
     # Invert the transformation matrix
 
     R = T.inv()
 
+    # Apply substitutions
+
+    R = R.subs(fn_subs)
+
+    R = R.subs(subs)
+
     # Convert to Fortran
 
     return spf.fcode(R, assign_to='R', standard=2008, source_format='free')
 
-def generate(expr, assign_to=None):
+def generate(expr, assign_to=None, subs=[]):
+
+    # Apply substitutions
+
+    expr = expr.subs(fn_subs)
+
+    expr = expr.subs(subs)
 
     # Convert a generic expression to Fortran
 

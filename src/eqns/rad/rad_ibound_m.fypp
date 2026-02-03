@@ -1,0 +1,205 @@
+! Module  : rad_ibound_m
+! Purpose : adiabatic radial inner boundary conditions
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_rad_ibound_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_m
+   use context_m
+   use model_m
+   use model_util_m
+   use osc_par_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(bound_rt) :: ${P}$_rad_ibound_t
+      private
+      type(context_t), pointer   :: cx => null()
+      real(RD)                   :: V_2
+      real(RD)                   :: c_1
+      procedure(build_), pointer :: build_
+   contains
+      private
+      procedure, public :: build
+   end type ${P}$_rad_ibound_t
+
+   ! Interfaces
+
+   interface
+      subroutine build_(this, st, B)
+         use forum_m, only: RD
+         use state_m
+         import ${P}$_rad_ibound_t
+         class(${P}$_rad_ibound_t), intent(in) :: this
+         class(state_rt), intent(in)           :: st
+         real(RD), intent(out)                 :: B(:,:)
+      end subroutine build_
+   end interface
+
+   interface ${P}$_rad_ibound_t
+      module procedure ${P}$_rad_ibound_t_
+   end interface ${P}$_rad_ibound_t
+
+   ! Access specifiers
+
+   public :: ${P}$_rad_ibound_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function ${P}$_rad_ibound_t_(cx, os_p) result(bd)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      type(${P}$_rad_ibound_t)             :: bd
+
+      class(model_t), pointer :: ml
+      type(point_t)           :: pt
+
+      ! Construct the ${P}$_rad_ibound_t
+
+      ml => cx%model()
+      pt = cx%point_i()
+
+      select case (os_p%inner_bound)
+      case ('REGULAR')
+         @:ASSERT(pt%x == 0._RD, 'boundary condition invalid for x /= 0')
+         bd%build_ => build_regular_
+      case ('ZERO_R')
+         @:ASSERT(pt%x /= 0._RD, 'boundary condition invalid for x == 0')
+         bd%build_ => build_zero_r_
+      case default
+         @:ABORT('invalid inner_bound')
+      end select
+
+      bd%cx => cx
+
+      ! Store structure coefficients
+
+      call check_model(ml, [I_V_2,I_C_1])
+
+      bd%V_2 = ml%coeff(I_V_2, pt)
+      bd%c_1 = ml%coeff(I_C_1, pt)
+
+      ! Other initializations
+
+      bd%n_b = 1
+
+      bd%n_e = 2
+
+      ! Finish
+
+      return
+
+   end function ${P}$_rad_ibound_t_
+
+   !****
+
+   subroutine build(this, st, B)
+
+      class(${P}$_rad_ibound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      ! Evaluate the inner boundary conditions
+
+      call this%build_(st, B)
+
+      ! Finish
+
+      return
+
+   end subroutine build
+
+   !****
+
+   subroutine build_regular_(this, st, B)
+
+      class(${P}$_rad_ibound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      real(RD) :: omega_c
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the inner boundary conditions (regular-enforcing)
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         c_1 => this%c_1, &
+         alpha_omg => this%cx%alpha_omg)
+
+         omega_c = omega
+
+         ! Set up the matrix
+
+         #:include 'IB_regular.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_regular_
+
+   !****
+
+   subroutine build_zero_r_(this, st, B)
+
+      class(${P}$_rad_ibound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the inner boundary conditions (zero radial
+      ! displacement)
+
+      ! Set up the matrix
+
+      #:include 'IB_zero_r.inc'
+
+      ! Finish
+
+      return
+
+   end subroutine build_zero_r_
+
+end module ${P}$_rad_ibound_m

@@ -1,0 +1,169 @@
+! Module  : sad_obound_m
+! Purpose : static adiabatic boundary conditions
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_sad_obound_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_m
+   use context_m
+   use model_m
+   use model_util_m
+   use osc_par_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(bound_rt) :: ${P}$_sad_obound_t
+      private
+      type(context_t), pointer   :: cx => null()
+      real(RD)                   :: U
+      procedure(build_), pointer :: build_
+   contains
+      private
+      procedure, public :: build
+   end type ${P}$_sad_obound_t
+
+   ! Interfaces
+
+   interface
+      subroutine build_(this, st, B)
+         use forum_m, only: RD
+         use state_m
+         import ${P}$_sad_obound_t
+         class(${P}$_sad_obound_t), intent(in) :: this
+         class(state_rt), intent(in)           :: st
+         real(RD), intent(out)                 :: B(:,:)
+      end subroutine build_
+   end interface
+
+   interface ${P}$_sad_obound_t
+      module procedure ${P}$_sad_obound_t_
+   end interface ${P}$_sad_obound_t
+
+   ! Access specifiers
+
+   public :: ${P}$_sad_obound_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function ${P}$_sad_obound_t_(cx, os_p) result(bd)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      type(${P}$_sad_obound_t)             :: bd
+
+      class(model_t), pointer :: ml
+      type(point_t)           :: pt
+
+      ! Construct the ${P}$_sad_obound_t
+
+      ml => cx%model()
+      pt = cx%point_o()
+
+      select case (os_p%outer_bound)
+      case ('VACUUM')
+         bd%build_ => build_vacuum_
+      case default
+         @:ABORT('invalid outer_bound')
+      end select
+
+      bd%cx => cx
+
+      ! Store structure coefficients
+
+      call check_model(ml, [I_U])
+
+      bd%U = ml%coeff(I_U, pt)
+
+      ! Other initializations
+
+      bd%n_b = 1
+
+      bd%n_e = 2
+
+      ! Finish
+
+      return
+
+   end function ${P}$_sad_obound_t_
+
+   !****
+
+   subroutine build(this, st, B)
+
+      class(${P}$_sad_obound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      ! Evaluate the outer boundary conditions
+
+      call this%build_(st, B)
+
+      ! Finish
+
+      return
+
+   end subroutine build
+
+   !****
+
+   subroutine build_vacuum_(this, st, B)
+
+      class(${P}$_sad_obound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions (vacuum)
+
+      associate ( &
+         U => this%U, &
+         l_e => this%cx%l)
+
+         ! Set up the matrix
+
+         #:include 'OB_vacuum.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_vacuum_
+
+end module ${P}$_sad_obound_m

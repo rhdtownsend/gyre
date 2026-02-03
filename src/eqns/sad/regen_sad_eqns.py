@@ -39,13 +39,13 @@ C = sp.Matrix([
 
 # Inner boundary condition matrices
 
-B_i_regular = sp.Matrix([
+IB_regular = sp.Matrix([
     [l_e, -1]
 ])
 
 # Outer boundary condition matrices
 
-B_o_vacuum = sp.Matrix([
+OB_vacuum = sp.Matrix([
     [l_e + 1 - U(x), 1]
 ])
 
@@ -64,11 +64,11 @@ if __name__ == '__main__':
         with open(f'{vars}/A.inc', 'w') as f:
             f.write(generate_A(A, T)+'\n')
 
-        with open(f'{vars}/B_i_regular.inc', 'w') as f:
-            f.write(generate_B_i(B_i_regular, T)+'\n')
+        with open(f'{vars}/IB_regular.inc', 'w') as f:
+            f.write(generate_IB(IB_regular, T)+'\n')
 
-        with open(f'{vars}/B_o_vacuum.inc', 'w') as f:
-            f.write(generate_B_o(B_o_vacuum, T)+'\n')
+        with open(f'{vars}/OB_vacuum.inc', 'w') as f:
+            f.write(generate_OB(OB_vacuum, T)+'\n')
 
         with open(f'{vars}/C.inc', 'w') as f:
             f.write(generate_C(C, T)+'\n')

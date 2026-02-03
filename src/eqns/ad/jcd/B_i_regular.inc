@@ -1,8 +1,0 @@
-B(1, 1) = alpha_omg*omega_c**2*c_1
-B(2, 1) = 0
-B(1, 2) = -alpha_omg*l_i*omega_c**2*c_1/lambda
-B(2, 2) = 0
-B(1, 3) = alpha_grv*l_i - l_i
-B(2, 3) = -alpha_grv*l_i + 4*alpha_grv - 2
-B(1, 4) = 0
-B(2, 4) = 2*alpha_grv - 1

@@ -1,4 +1,4 @@
 C(1, 1) = 1
-C(2, 1) = -U
+C(2, 1) = -this%U
 C(1, 2) = 0
-C(2, 2) = alpha_omg*omega_c**2*U*c_1
+C(2, 2) = omega_c**2*this%cx%alpha_omg*this%U*this%c_1

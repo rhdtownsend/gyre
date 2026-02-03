@@ -1,0 +1,606 @@
+! Module  : nad_obound_m
+! Purpose : nonadiabatic outer boundary conditions
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_nad_obound_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use atmos_m
+   use bound_m
+   use context_m
+   use math_m
+   use model_m
+   use model_util_m
+   use osc_par_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(bound_ct) :: ${P}$_nad_obound_t
+      private
+      type(context_t), pointer   :: cx => null()
+      real(RD)                   :: V_2
+      real(RD)                   :: V
+      real(RD)                   :: V_g
+      real(RD)                   :: As
+      real(RD)                   :: U
+      real(RD)                   :: c_1
+      real(RD)                   :: nabla_ad
+      real(RD)                   :: c_thn
+      real(RD)                   :: ups_T
+      real(RD)                   :: Omega_rot
+      character(:), allocatable  :: branch
+      procedure(build_), pointer :: build_
+   contains
+      private
+      procedure, public :: build
+   end type ${P}$_nad_obound_t
+
+   ! Interfaces
+
+   interface
+      subroutine build_(this, st, B)
+         use forum_m, only: RD
+         use state_m
+         import ${P}$_nad_obound_t
+         class(${P}$_nad_obound_t), intent(in) :: this
+         class(state_ct), intent(in)           :: st
+         complex(RD), intent(out)              :: B(:,:)
+      end subroutine build_
+   end interface
+
+   interface ${P}$_nad_obound_t
+      module procedure ${P}$_nad_obound_t_
+   end interface ${P}$_nad_obound_t
+
+   ! Access specifiers
+
+   public :: ${P}$_nad_obound_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function ${P}$_nad_obound_t_(cx, os_p) result(bd)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      type(${P}$_nad_obound_t)             :: bd
+
+      class(model_t), pointer :: ml
+      type(point_t)           :: pt
+
+      ! Construct the ${P}$_nad_obound_t
+
+      ml => cx%model()
+      pt = cx%point_o()
+
+      select case (os_p%outer_bound)
+      case ('VACUUM')
+         bd%build_ => build_vacuum_
+      case ('ZERO_R')
+         bd%build_ => build_zero_r_
+      case ('ZERO_H')
+         bd%build_ => build_zero_h_
+      case ('DZIEM')
+         if (ml%is_vacuum(pt)) then
+            bd%build_ => build_vacuum_
+         else
+            bd%build_ => build_dziem_
+         end if
+      case ('ISOTHERMAL')
+         if (ml%is_vacuum(pt)) then
+            bd%build_ => build_vacuum_
+         else
+            bd%build_ => build_decomp_
+         end if
+      case ('UNNO')
+         if (ml%is_vacuum(pt)) then
+            bd%build_ => build_vacuum_
+         else
+            bd%build_ => build_decomp_
+         end if
+      case ('JCD')
+         if (ml%is_vacuum(pt)) then
+            bd%build_ => build_vacuum_
+         else
+            bd%build_ => build_jcd_
+         end if
+      case default
+         @:ABORT('invalid outer_bound')
+      end select
+
+      bd%cx => cx
+
+      ! Store structure coefficients
+
+      call check_model(ml, [I_V_2,I_U,I_C_1,I_GAMMA_1,I_NABLA_AD,I_C_THN,I_OMEGA_ROT])
+
+      bd%V_2 = ml%coeff(I_V_2, pt)
+      bd%V = bd%V_2*pt%x**2
+      bd%U = ml%coeff(I_U, pt)
+
+      bd%nabla_ad = ml%coeff(I_NABLA_AD, pt)
+      bd%c_thn = ml%coeff(I_C_THN, pt)
+
+      bd%Omega_rot = cx%Omega_rot(pt)
+
+      select case (os_p%outer_bound)
+      case ('VACUUM', 'ZERO_R', 'ZERO_H', 'DZIEM')
+         bd%V_g = bd%V/ml%coeff(I_GAMMA_1, pt)
+         bd%As = ml%coeff(I_AS, pt)
+         bd%c_1 = ml%coeff(I_C_1, pt)
+      case ('ISOTHERMAL')
+         call eval_atmos_coeffs_isothrm(ml, pt, bd%V_g, &
+            bd%As, bd%c_1)
+      case ('UNNO')
+         call eval_atmos_coeffs_unno(ml, pt, bd%V_g, &
+            bd%As, bd%c_1)
+      case ('JCD')
+         call eval_atmos_coeffs_isothrm(ml, pt, bd%V_g, &
+            bd%As, bd%c_1)
+      case default
+         @:ABORT('invalid outer_bound')
+      end select
+
+      ! Other initializations
+
+      bd%branch = os_p%outer_bound_branch
+
+      bd%n_b = 3
+
+      bd%n_e = 6
+
+      ! Finish
+
+      return
+
+   end function ${P}$_nad_obound_t_
+
+   !****
+
+   subroutine build(this, st, B)
+
+      class(${P}$_nad_obound_t), intent(in) :: this
+      class(state_ct), intent(in)           :: st
+      complex(RD), intent(out)              :: B(:,:)
+
+      ! Evaluate the outer boundary conditions
+
+      call this%build_(st, B)
+
+      ! Finish
+
+      return
+
+   end subroutine build
+
+   !****
+
+   subroutine build_vacuum_(this, st, B)
+
+      class(${P}$_nad_obound_t), intent(in) :: this
+      class(state_ct), intent(in)           :: st
+      complex(RD), intent(out)              :: B(:,:)
+
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
+      complex(RD) :: f_rht
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions (vacuum)
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         V => this%V, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         nabla_ad => this%nabla_ad, &
+         c_thn => this%c_thn, &
+         Omega_rot => this%Omega_rot, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc, &
+         alpha_rht => this%cx%alpha_rht, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m)
+
+         omega_c = omega - m*Omega_rot
+
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
+
+         lambda = this%cx%lambda(Omega_rot, st)
+         l_e = this%cx%l_e(Omega_rot, st)
+
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
+
+         ! Set up the matrix
+
+         #:include 'OB_vacuum.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_vacuum_
+
+   !****
+
+   subroutine build_zero_r_(this, st, B)
+
+      class(${P}$_nad_obound_t), intent(in) :: this
+      class(state_ct), intent(in)           :: st
+      complex(RD), intent(out)              :: B(:,:)
+
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
+      complex(RD) :: f_rht
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions (zero radial
+      ! displacement)
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         V => this%V, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         nabla_ad => this%nabla_ad, &
+         c_thn => this%c_thn, &
+         Omega_rot => this%Omega_rot, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc, &
+         alpha_rht => this%cx%alpha_rht, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m)
+
+         omega_c = omega - m*Omega_rot
+
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
+
+         lambda = this%cx%lambda(Omega_rot, st)
+         l_e = this%cx%l_e(Omega_rot, st)
+
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
+
+         ! Set up the matrix
+
+         #:include 'OB_zero_r.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_zero_r_
+
+   !****
+
+   subroutine build_zero_h_(this, st, B)
+
+      class(${P}$_nad_obound_t), intent(in) :: this
+      class(state_ct), intent(in)           :: st
+      complex(RD), intent(out)              :: B(:,:)
+
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: l_e
+      complex(RD) :: lambda
+      complex(RD) :: f_rht
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions (zero horizontal
+      ! displacement)
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         V => this%V, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         nabla_ad => this%nabla_ad, &
+         c_thn => this%c_thn, &
+         Omega_rot => this%Omega_rot, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc, &
+         alpha_rht => this%cx%alpha_rht, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m)
+
+         omega_c = omega - m*Omega_rot
+
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
+
+         lambda = this%cx%lambda(Omega_rot, st)
+         l_e = this%cx%l_e(Omega_rot, st)
+
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
+
+         ! Set up the boundary conditions
+
+         #:include 'OB_zero_h.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_zero_h_
+
+   !****
+
+   subroutine build_dziem_(this, st, B)
+
+      class(${P}$_nad_obound_t), intent(in) :: this
+      class(state_ct), intent(in)           :: st
+      complex(RD), intent(out)              :: B(:,:)
+
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
+      complex(RD) :: f_rht
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         V => this%V, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         nabla_ad => this%nabla_ad, &
+         c_thn => this%c_thn, &
+         Omega_rot => this%Omega_rot, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc, &
+         alpha_rht => this%cx%alpha_rht, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m)
+
+         omega_c = omega - m*Omega_rot
+
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
+
+         lambda = this%cx%lambda(Omega_rot, st)
+         l_e = this%cx%l_e(Omega_rot, st)
+
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
+
+         ! Set up the boundary conditions
+
+         #:include 'OB_dziem.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_dziem_
+
+   !****
+
+   subroutine build_decomp_(this, st, B)
+
+      class(${P}$_nad_obound_t), intent(in) :: this
+      class(state_ct), intent(in)           :: st
+      complex(RD), intent(out)              :: B(:,:)
+
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
+      complex(RD) :: f_rht
+      complex(RD) :: a_11
+      complex(RD) :: a_12
+      complex(RD) :: a_13
+      complex(RD) :: a_14
+      complex(RD) :: a_21
+      complex(RD) :: a_22
+      complex(RD) :: a_23
+      complex(RD) :: a_24
+      complex(RD) :: chi
+      complex(RD) :: G_1
+      complex(RD) :: G_2
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions, based on a local
+      ! eigendecomposition
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         V => this%V, &
+         V_g => this%V_g, &
+         As => this%As, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         nabla_ad => this%nabla_ad, &
+         c_thn => this%c_thn, &
+         Omega_rot => this%Omega_rot, &
+         branch => this%branch, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc, &
+         alpha_rht => this%cx%alpha_rht, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m)
+
+         omega_c = omega - m*Omega_rot
+
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
+
+         lambda = this%cx%lambda(Omega_rot, st)
+         l_e = this%cx%l_e(Omega_rot, st)
+
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
+
+         ! Evaluate selected elements of the Jacobian matrix
+
+         a_11 = V_g - 3._RD
+         a_12 = lambda/(c_1*alpha_omg*omega_c**2) - V_g
+         a_13 = alpha_grv*(lambda/(c_1*alpha_omg*omega_c**2))
+         a_14 = alpha_grv*(0._RD)
+
+         a_21 = c_1*alpha_omg*omega_c**2 - As
+         a_22 = As + 1._RD
+         a_23 = alpha_grv*(0._RD)
+         a_24 = alpha_grv*(-1._RD)
+
+         ! Evaluate the eigenvalue for the wave we want to keep
+
+         chi = atmos_chi(V_g, As, c_1, alpha_omg, omega_c, lambda, branch)
+
+         ! Evaluate selected elements of the left eigenvectors
+
+         G_1 = (l_e*H_(-l_e, chi) + (l_e+1._RD)*H_(l_e+1._RD, chi))/(2._RD*l_e + 1._RD)
+         G_2 = (H_(-l_e, chi) - H_(l_e+1._RD, chi))/(2._RD*l_e + 1._RD)
+
+         ! Set up the matrix
+
+         #:include 'OB_decomp.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   contains
+
+      function H_(l, chi) result(H)
+
+         complex(RD), intent(in) :: l
+         complex(RD), intent(in) :: chi
+         complex(RD)             :: H
+
+         ! Evaluate the H function defined in leaky boundary condition
+         ! notes
+
+         H = ((a_11 - chi)*(a_13 - a_14*(1._RD-l)) + a_12*(a_23 - a_24*(1._RD-l))) / &
+            (chi + l - a_11 - a_12)
+
+         ! Finish
+
+         return
+
+      end function H_
+
+   end subroutine build_decomp_
+
+   !****
+
+   subroutine build_jcd_(this, st, B)
+
+      class(${P}$_nad_obound_t), intent(in) :: this
+      class(state_ct), intent(in)           :: st
+      complex(RD), intent(out)              :: B(:,:)
+
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_e
+      complex(RD) :: f_rht
+      complex(RD) :: chi
+      complex(RD) :: b_11
+      complex(RD) :: b_12
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions ([Chr2008] formulation)
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         V => this%V, &
+         V_g => this%V_g, &
+         As => this%As, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         nabla_ad => this%nabla_ad, &
+         c_thn => this%c_thn, &
+         Omega_rot => this%Omega_rot, &
+         branch => this%branch, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_gbc => this%cx%alpha_gbc, &
+         alpha_rht => this%cx%alpha_rht, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m)
+
+         omega_c = omega - m*Omega_rot
+
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
+
+         lambda = this%cx%lambda(Omega_rot, st)
+         l_e = this%cx%l_e(Omega_rot, st)
+
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
+
+         chi = atmos_chi(V_g, As, c_1, alpha_omg, omega_c, lambda, branch)
+
+         b_11 = V_g - 3._RD
+         b_12 = lambda/(c_1*alpha_omg*omega_c**2) - V_g
+
+         ! Set up the boundary conditions
+
+         #:include 'OB_jcd.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_jcd_
+
+end module ${P}$_nad_obound_m

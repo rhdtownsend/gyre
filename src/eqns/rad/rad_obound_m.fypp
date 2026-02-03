@@ -1,0 +1,390 @@
+! Module  : rad_obound_m
+! Purpose : adiabatic radial outer boundary conditions
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_rad_obound_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use atmos_m
+   use bound_m
+   use context_m
+   use model_m
+   use model_util_m
+   use osc_par_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(bound_rt) :: ${P}$_rad_obound_t
+      private
+      type(context_t), pointer   :: cx => null()
+      real(RD)                   :: V_2
+      real(RD)                   :: V
+      real(RD)                   :: V_g
+      real(RD)                   :: As
+      real(RD)                   :: U
+      real(RD)                   :: c_1
+      procedure(build_), pointer :: build_
+   contains
+      private
+      procedure, public :: build
+   end type ${P}$_rad_obound_t
+
+   ! Interfaces
+
+   interface
+      subroutine build_(this, st, B)
+         use forum_m, only: RD
+         use state_m
+         import ${P}$_rad_obound_t
+         class(${P}$_rad_obound_t), intent(in) :: this
+         class(state_rt), intent(in)           :: st
+         real(RD), intent(out)                 :: B(:,:)
+      end subroutine build_
+   end interface
+
+   interface ${P}$_rad_obound_t
+      module procedure ${P}$_rad_obound_t_
+   end interface ${P}$_rad_obound_t
+
+   ! Access specifiers
+
+   public :: ${P}$_rad_obound_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function ${P}$_rad_obound_t_(cx, os_p) result(bd)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      type(${P}$_rad_obound_t)             :: bd
+
+      class(model_t), pointer :: ml
+      type(point_t)           :: pt
+
+      ! Construct the ${P}$_rad_obound_t
+
+      ml => cx%model()
+      pt = cx%point_o()
+
+      select case (os_p%outer_bound)
+      case ('VACUUM')
+         bd%build_ => build_vacuum_
+      case ('ZERO_R')
+         bd%build_ => build_zero_r_
+      case ('DZIEM')
+         if (ml%is_vacuum(pt)) then
+            bd%build_ => build_vacuum_
+         else
+            bd%build_ => build_dziem_
+         end if
+      case ('ISOTHERMAL')
+         if (ml%is_vacuum(pt)) then
+            bd%build_ => build_vacuum_
+         else
+            bd%build_ => build_decomp_
+         end if
+      case ('UNNO')
+         if (ml%is_vacuum(pt)) then
+            bd%build_ => build_vacuum_
+         else
+            bd%build_ => build_decomp_
+         end if
+      case ('JCD')
+         if (ml%is_vacuum(pt)) then
+            bd%build_ => build_vacuum_
+         else
+            bd%build_ => build_jcd_
+         end if
+      case default
+         @:ABORT('invalid outer_bound')
+      end select
+
+      bd%cx => cx
+
+      ! Store structure coefficients
+
+      call check_model(ml, [I_V_2,I_U,I_C_1,I_GAMMA_1])
+
+      bd%V_2 = ml%coeff(I_V_2, pt)
+      bd%V = bd%V_2*pt%x**2
+      bd%U = ml%coeff(I_U, pt)
+
+      select case (os_p%outer_bound)
+      case ('VACUUM', 'ZERO_R', 'DZIEM')
+         bd%V_g = bd%V/ml%coeff(I_GAMMA_1, pt)
+         bd%As = ml%coeff(I_AS, pt)
+         bd%c_1 = ml%coeff(I_C_1, pt)
+      case ('ISOTHERMAL')
+          call eval_atmos_coeffs_isothrm(ml, pt, bd%V_g, &
+            bd%As, bd%c_1)
+      case ('UNNO')
+         call eval_atmos_coeffs_unno(ml, pt, bd%V_g, &
+            bd%As, bd%c_1)
+      case ('JCD')
+         call eval_atmos_coeffs_isothrm(ml, pt, bd%V_g, &
+            bd%As, bd%c_1)
+      case default
+         @:ABORT('invalid outer_bound')
+      end select
+
+      ! Other initializations
+
+      bd%n_b = 1
+
+      bd%n_e = 2
+
+      ! Finish
+
+      return
+
+   end function ${P}$_rad_obound_t_
+
+   !****
+
+   subroutine build(this, st, B)
+
+      class(${P}$_rad_obound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      ! Evaluate the outer boundary conditions
+
+      call this%build_(st, B)
+
+      ! Finish
+
+      return
+
+   end subroutine build
+
+   !****
+
+   subroutine build_vacuum_(this, st, B)
+
+      class(${P}$_rad_obound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      real(RD) :: omega_c
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions (vacuum)
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         alpha_omg => this%cx%alpha_omg)
+
+         omega_c = omega
+
+         ! Set up the matrix
+
+         #:include 'OB_vacuum.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_vacuum_
+
+   !****
+
+   subroutine build_zero_r_(this, st, B)
+
+      class(${P}$_rad_obound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions (zero radial
+      ! displacement)
+
+      associate( &
+         V_2 => this%V_2)
+
+         ! Set up the matrix
+
+         #:include 'OB_zero_r.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_zero_r_
+
+   !****
+
+   subroutine build_dziem_(this, st, B)
+
+      class(${P}$_rad_obound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      real(RD) :: omega_c
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         V => this%V, &
+         c_1 => this%c_1, &
+         alpha_omg => this%cx%alpha_omg)
+
+         omega_c = omega
+
+         ! Set up the matrix
+
+         #:include 'OB_dziem.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_dziem_
+
+   !****
+
+   subroutine build_decomp_(this, st, B)
+
+      class(${P}$_rad_obound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      real(RD) :: omega_c
+      real(RD) :: a_11
+      real(RD) :: a_12
+      real(RD) :: chi
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions, based on a local
+      ! eigendecomposition
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         V_g => this%V_g, &
+         As => this%As, &
+         c_1 => this%c_1, &
+         alpha_omg => this%cx%alpha_omg)
+
+         omega_c = omega
+
+         ! Evaluate selected elements of the Jacobian matrix
+
+         a_11 = V_g - 3._RD
+         a_12 = -V_g
+
+         ! Evaluate the eigenvalue for the wave we want to keep
+
+         chi = atmos_chi(V_g, As, c_1, alpha_omg, omega_c, 0._RD)
+
+         ! Set up the matrix
+
+         #:include 'OB_decomp.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_decomp_
+
+   !****
+
+   subroutine build_jcd_(this, st, B)
+
+      class(${P}$_rad_obound_t), intent(in) :: this
+      class(state_rt), intent(in)           :: st
+      real(RD), intent(out)                 :: B(:,:)
+
+      real(RD) :: omega_c
+      real(RD) :: chi
+      real(RD) :: b_11
+      real(RD) :: b_12
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      ! Evaluate the outer boundary conditions ([Chr2008] formulation)
+
+      ! Calculate coefficients
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         V_g => this%V_g, &
+         As => this%As, &
+         c_1 => this%c_1, &
+         alpha_omg => this%cx%alpha_omg)
+
+         omega_c = omega
+
+         chi = atmos_chi(V_g, As, c_1, alpha_omg, omega_c, 0._RD)
+
+         b_11 = V_g - 3._RD
+         b_12 = -V_g
+
+         ! Set up the boundary conditions
+
+         #:include 'OB_jcd.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_jcd_
+
+end module ${P}$_rad_obound_m

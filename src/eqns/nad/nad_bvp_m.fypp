@@ -27,7 +27,6 @@ module nad_bvp_m
    use bvp_m
    use context_m
    use diff_element_m
-   use ext_m
    use grid_m
    use model_m
    use mode_par_m
@@ -81,12 +80,19 @@ contains
 
    function nad_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
 
-      use gyre_nad_bound_m
-      use dziem_nad_bound_m
-      use jcd_nad_bound_m
-      use rjcd_nad_bound_m
-      use mix_nad_bound_m
-      use lagp_nad_bound_m
+      use gyre_nad_ibound_m
+      use dziem_nad_ibound_m
+      use jcd_nad_ibound_m
+      use rjcd_nad_ibound_m
+      use mix_nad_ibound_m
+      use lagp_nad_ibound_m
+
+      use gyre_nad_obound_m
+      use dziem_nad_obound_m
+      use jcd_nad_obound_m
+      use rjcd_nad_obound_m
+      use mix_nad_obound_m
+      use lagp_nad_obound_m
 
       use gyre_nad_trans_m
       use dziem_nad_trans_m
@@ -104,7 +110,8 @@ contains
       type(osc_par_t), intent(in)           :: os_p
       type(nad_bvp_t)                       :: bp
 
-      class(bound_ct), allocatable       :: bd
+      class(bound_ct), allocatable       :: bd_i
+      class(bound_ct), allocatable       :: bd_o
       integer                            :: j
       type(diff_element_ct), allocatable :: de(:)
 
@@ -114,19 +121,25 @@ contains
 
       select case(os_p%variables_set)
       case('GYRE')
-         bd = gyre_nad_bound_t(cx, os_p)
+         bd_i = gyre_nad_ibound_t(cx, os_p)
+         bd_o = gyre_nad_obound_t(cx, os_p)
       case('DZIEM')
-         bd = dziem_nad_bound_t(cx, os_p)
+         bd_i = dziem_nad_ibound_t(cx, os_p)
+         bd_o = dziem_nad_obound_t(cx, os_p)
       case('JCD')
          if (cx%l == 0) then
-            bd = rjcd_nad_bound_t(cx, os_p)
+            bd_i = rjcd_nad_ibound_t(cx, os_p)
+            bd_o = rjcd_nad_obound_t(cx, os_p)
          else
-            bd = jcd_nad_bound_t(cx, os_p)
+            bd_i = jcd_nad_ibound_t(cx, os_p)
+            bd_o = jcd_nad_obound_t(cx, os_p)
          end if
       case('MIX')
-         bd = mix_nad_bound_t(cx, os_p)
+         bd_i = mix_nad_ibound_t(cx, os_p)
+         bd_o = mix_nad_obound_t(cx, os_p)
       case('LAGP')
-         bd = lagp_nad_bound_t(cx, os_p)
+         bd_i = lagp_nad_ibound_t(cx, os_p)
+         bd_o = lagp_nad_obound_t(cx, os_p)
       case default
          @:ABORT('invalid variables_set')
       end select
@@ -142,7 +155,7 @@ contains
 
       ! Initialize the bvp_t
 
-      bp%bvp_ct = bvp_ct(bd, de, nm_p)
+      bp%bvp_ct = bvp_ct(bd_i, bd_o, de, nm_p)
 
       ! Other initializations
 

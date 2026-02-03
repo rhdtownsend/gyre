@@ -77,19 +77,19 @@ C = sp.Matrix([
 
 # Inner boundary condition matrices
 
-B_i_regular = sp.Matrix([
+IB_regular = sp.Matrix([
     [c_1(x)*alpha_omg*omega_c**2, -l_i, -alpha_grv*l_i, 0, 0, 0],
     [0, 0, alpha_grv*l_i, 1-2*alpha_grv, 0, 0],
     [0, 0, 0, 0, 1, 0]
 ])
 
-B_i_zero_r = sp.Matrix([
+IB_zero_r = sp.Matrix([
     [1, 0, 0, 0, 0, 0],
     [0, 0, 0, 1, 0, 0],
     [0, 0, 0, 0, 1, 0]
 ])
 
-B_i_zero_h = sp.Matrix([
+IB_zero_h = sp.Matrix([
     [0, 1, alpha_grv, 0, 0, 0],
     [0, 0, 0, 1, 0, 0],
     [0, 0, 0, 0, 1, 0]
@@ -97,25 +97,25 @@ B_i_zero_h = sp.Matrix([
 
 # Outer boundary condition matrices
 
-B_o_vacuum = sp.Matrix([
+OB_vacuum = sp.Matrix([
     [1, -1, 0, 0, 0, 0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-B_o_zero_r = sp.Matrix([
+OB_zero_r = sp.Matrix([
     [1, 0, 0, 0, 0, 0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-B_o_zero_h = sp.Matrix([
+OB_zero_h = sp.Matrix([
     [0, 1, alpha_grv, 0, 0, 0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-B_o_dziem = sp.Matrix([
+OB_dziem = sp.Matrix([
     [1 + (lamda/(c_1(x)*alpha_omg*omega_c**2) - 4 - c_1(x)*alpha_omg*omega_c**2)/V,
      -1,
      alpha_grv*(lamda/(c_1(x)*alpha_omg*omega_c**2) - l_e - 1)/V,
@@ -126,13 +126,13 @@ B_o_dziem = sp.Matrix([
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-B_o_decomp = sp.Matrix([
+OB_decomp = sp.Matrix([
     [-(chi-a_11), a_12, -alpha_grv*G_1, alpha_grv*G_2, 0, 0],
     [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-B_o_jcd = sp.Matrix([
+OB_jcd = sp.Matrix([
     [chi-b_11,
      -b_12,
      alpha_grv*((lamda/(c_1(x)*alpha_omg*omega_c**2) - l_e - 1)*b_12/(V_g + As)),
@@ -203,32 +203,32 @@ if __name__ == '__main__':
         with open(f'{vars}/A.inc', 'w') as f:
             f.write(generate_A(A, T)+'\n')
 
-        with open(f'{vars}/B_i_regular.inc', 'w') as f:
-            f.write(generate_B_i(B_i_regular, T)+'\n')
+        with open(f'{vars}/IB_regular.inc', 'w') as f:
+            f.write(generate_IB(IB_regular, T)+'\n')
 
-        with open(f'{vars}/B_i_zero_r.inc', 'w') as f:
-            f.write(generate_B_i(B_i_zero_r, T)+'\n')
+        with open(f'{vars}/IB_zero_r.inc', 'w') as f:
+            f.write(generate_IB(IB_zero_r, T)+'\n')
 
-        with open(f'{vars}/B_i_zero_h.inc', 'w') as f:
-            f.write(generate_B_i(B_i_zero_h, T)+'\n')
+        with open(f'{vars}/IB_zero_h.inc', 'w') as f:
+            f.write(generate_IB(IB_zero_h, T)+'\n')
 
-        with open(f'{vars}/B_o_vacuum.inc', 'w') as f:
-            f.write(generate_B_o(B_o_vacuum, T)+'\n')
+        with open(f'{vars}/OB_vacuum.inc', 'w') as f:
+            f.write(generate_OB(OB_vacuum, T)+'\n')
 
-        with open(f'{vars}/B_o_zero_r.inc', 'w') as f:
-            f.write(generate_B_o(B_o_zero_r, T)+'\n')
+        with open(f'{vars}/OB_zero_r.inc', 'w') as f:
+            f.write(generate_OB(OB_zero_r, T)+'\n')
 
-        with open(f'{vars}/B_o_zero_h.inc', 'w') as f:
-            f.write(generate_B_o(B_o_zero_h, T)+'\n')
+        with open(f'{vars}/OB_zero_h.inc', 'w') as f:
+            f.write(generate_OB(OB_zero_h, T)+'\n')
 
-        with open(f'{vars}/B_o_dziem.inc', 'w') as f:
-            f.write(generate_B_o(B_o_dziem, T)+'\n')
+        with open(f'{vars}/OB_dziem.inc', 'w') as f:
+            f.write(generate_OB(OB_dziem, T)+'\n')
 
-        with open(f'{vars}/B_o_decomp.inc', 'w') as f:
-            f.write(generate_B_o(B_o_decomp, T)+'\n')
+        with open(f'{vars}/OB_decomp.inc', 'w') as f:
+            f.write(generate_OB(OB_decomp, T)+'\n')
 
-        with open(f'{vars}/B_o_jcd.inc', 'w') as f:
-            f.write(generate_B_o(B_o_jcd, T)+'\n')
+        with open(f'{vars}/OB_jcd.inc', 'w') as f:
+            f.write(generate_OB(OB_jcd, T)+'\n')
 
         with open(f'{vars}/C.inc', 'w') as f:
             f.write(generate_C(C, T)+'\n')
