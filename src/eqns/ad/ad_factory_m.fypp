@@ -1,0 +1,240 @@
+! Module  : ad_factory_m
+! Purpose : factory methods for adiabatic routines
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module ad_factory_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_m
+   use context_m
+   use eqns_m
+   use osc_par_m
+   use point_m
+   use trans_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Interfaces
+
+   interface ad_eqns_t
+      module procedure ad_eqns_t_0_
+      module procedure ad_eqns_t_1_
+   end interface ad_eqns_t
+
+   interface ad_trans_t
+      module procedure ad_trans_t_0_
+      module procedure ad_trans_t_1_
+   end interface ad_trans_t
+
+   ! Access specifiers
+
+   public :: ad_eqns_t
+   public :: ad_eqns_t_0_
+   public :: ad_eqns_t_1_
+   public :: ad_trans_t
+   public :: ad_trans_t_0_
+   public :: ad_trans_t_1_
+   public :: ad_ibound_t
+   public :: ad_obound_t
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for R in (0, 1)
+
+      function ad_eqns_t_${R}$_(cx, pt, os_p) result(eq)
+
+         use gyre_ad_eqns_m
+         use dziem_ad_eqns_m
+         use jcd_ad_eqns_m
+         use rjcd_ad_eqns_m
+         use mix_ad_eqns_m
+         use lagp_ad_eqns_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         class(eqns_rt), allocatable          :: eq${ARRAY_SPEC(R)}$
+
+         ! Construct the ad_eqns type
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            eq = gyre_ad_eqns_t(cx, pt)
+         case('DZIEM')
+            eq = dziem_ad_eqns_t(cx, pt)
+         case('JCD')
+            if (cx%l == 0) then
+               eq = rjcd_ad_eqns_t(cx, pt)
+            else
+               eq = jcd_ad_eqns_t(cx, pt)
+            end if
+         case('MIX')
+            eq = mix_ad_eqns_t(cx, pt)
+         case('LAGP')
+            eq = lagp_ad_eqns_t(cx, pt)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function ad_eqns_t_${R}$_
+
+      !****
+
+      function ad_trans_t_${R}$_(cx, pt, os_p) result(tr)
+
+         use gyre_ad_trans_m
+         use dziem_ad_trans_m
+         use jcd_ad_trans_m
+         use rjcd_ad_trans_m
+         use mix_ad_trans_m
+         use lagp_ad_trans_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         class(trans_rt), allocatable         :: tr${ARRAY_SPEC(R)}$
+
+         ! Construct the ad_trans type
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            tr = gyre_ad_trans_t(cx, pt)
+         case('DZIEM')
+            tr = dziem_ad_trans_t(cx, pt)
+         case('JCD')
+            if (cx%l == 0) then
+               tr = rjcd_ad_trans_t(cx, pt)
+            else
+               tr = jcd_ad_trans_t(cx, pt)
+            end if
+         case('MIX')
+            tr = mix_ad_trans_t(cx, pt)
+         case('LAGP')
+            tr = lagp_ad_trans_t(cx, pt)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function ad_trans_t_${R}$_
+
+   #:endfor
+
+   !****
+
+   function ad_ibound_t(cx, os_p) result(bd)
+
+      use gyre_ad_ibound_m
+      use dziem_ad_ibound_m
+      use jcd_ad_ibound_m
+      use rjcd_ad_ibound_m
+      use mix_ad_ibound_m
+      use lagp_ad_ibound_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      class(bound_rt), allocatable         :: bd
+
+      ! Construct the ad_ibound type
+
+      select case(os_p%variables_set)
+      case('GYRE')
+         bd = gyre_ad_ibound_t(cx, os_p)
+      case('DZIEM')
+         bd = dziem_ad_ibound_t(cx, os_p)
+      case('JCD')
+         if (cx%l == 0) then
+            bd = rjcd_ad_ibound_t(cx, os_p)
+         else
+            bd = jcd_ad_ibound_t(cx, os_p)
+         end if
+      case('MIX')
+         bd = mix_ad_ibound_t(cx, os_p)
+      case('LAGP')
+         bd = lagp_ad_ibound_t(cx, os_p)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
+
+      ! Finish
+
+      return
+
+   end function ad_ibound_t
+
+   !****
+
+   function ad_obound_t(cx, os_p) result(bd)
+
+      use gyre_ad_obound_m
+      use dziem_ad_obound_m
+      use jcd_ad_obound_m
+      use rjcd_ad_obound_m
+      use mix_ad_obound_m
+      use lagp_ad_obound_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      class(bound_rt), allocatable         :: bd
+
+      ! Construct the ad_obound type
+
+      select case(os_p%variables_set)
+      case('GYRE')
+         bd = gyre_ad_obound_t(cx, os_p)
+      case('DZIEM')
+         bd = dziem_ad_obound_t(cx, os_p)
+      case('JCD')
+         if (cx%l == 0) then
+            bd = rjcd_ad_obound_t(cx, os_p)
+         else
+            bd = jcd_ad_obound_t(cx, os_p)
+         end if
+      case('MIX')
+         bd = mix_ad_obound_t(cx, os_p)
+      case('LAGP')
+         bd = lagp_ad_obound_t(cx, os_p)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
+
+      ! Finish
+
+      return
+
+   end function ad_obound_t
+
+end module ad_factory_m

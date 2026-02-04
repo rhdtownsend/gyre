@@ -74,12 +74,7 @@ contains
 
    function nad_diff_t_(cx, pt_a, pt_b, nm_p, os_p) result(df)
 
-      use gyre_nad_eqns_m
-     use dziem_nad_eqns_m
-     use jcd_nad_eqns_m
-     use rjcd_nad_eqns_m
-     use mix_nad_eqns_m
-     use lagp_nad_eqns_m
+      use nad_factory_m
 
       type(context_t), pointer, intent(in) :: cx
       type(point_t), intent(in)            :: pt_a
@@ -110,24 +105,7 @@ contains
       pt_m%s = pt_a%s
       pt_m%x = pt_a%x + 0.5_RD*df%dx
 
-      select case(os_p%variables_set)
-      case('GYRE')
-         df%eq = gyre_nad_eqns_t(cx, pt_m, os_p)
-      case('DZIEM')
-         df%eq = dziem_nad_eqns_t(cx, pt_m, os_p)
-      case('JCD')
-         if (cx%l == 0) then
-            df%eq = rjcd_nad_eqns_t(cx, pt_m, os_p)
-         else
-            df%eq = jcd_nad_eqns_t(cx, pt_m, os_p)
-         end if
-      case('MIX')
-         df%eq = mix_nad_eqns_t(cx, pt_m, os_p)
-      case('LAGP')
-         df%eq = lagp_nad_eqns_t(cx, pt_m, os_p)
-      case default
-         @:ABORT('invalid variables_set')
-      end select
+      df%eq = nad_eqns_t(cx, pt_m, os_p)
 
       ! Set up midpoint Omega_rot (used for regularization of colloc
       ! schemes)
@@ -147,24 +125,12 @@ contains
          type(point_t), intent(in)                :: pt(:)
          class(eqns_ct), allocatable, intent(out) :: eq(:)
 
-         select case(os_p%variables_set)
-         case('GYRE')
-            eq = gyre_nad_eqns_t(cx, pt, os_p)
-         case('DZIEM')
-            eq = dziem_nad_eqns_t(cx, pt, os_p)
-         case('JCD')
-            if (cx%l == 0) then
-               eq = rjcd_nad_eqns_t(cx, pt, os_p)
-            else
-               eq = jcd_nad_eqns_t(cx, pt, os_p)
-            end if
-         case('MIX')
-            eq = mix_nad_eqns_t(cx, pt, os_p)
-         case('LAGP')
-            eq = lagp_nad_eqns_t(cx, pt, os_p)
-         case default
-            @:ABORT('invalid variables_set')
-         end select
+         ! Initialize the equations
+
+         ! Workaround: call nad_eqns_t_1_ instead of nad_eqns_t due to
+         ! gfortran 13 bug
+
+         eq = nad_eqns_t_1_(cx, pt, os_p)
 
          ! Finish
 

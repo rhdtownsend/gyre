@@ -1,0 +1,172 @@
+! Module  : tnad_factory_m
+! Purpose : factory methods for nonadiabatic (+turbulent convection) routines
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module tnad_factory_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_m
+   use context_m
+   use eqns_m
+   use osc_par_m
+   use point_m
+   use trans_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Interfaces
+
+   interface tnad_eqns_t
+      module procedure tnad_eqns_t_0_
+      module procedure tnad_eqns_t_1_
+   end interface tnad_eqns_t
+
+   interface tnad_trans_t
+      module procedure tnad_trans_t_0_
+      module procedure tnad_trans_t_1_
+   end interface tnad_trans_t
+
+   ! Access specifiers
+
+   public :: tnad_eqns_t
+   public :: tnad_eqns_t_0_
+   public :: tnad_eqns_t_1_
+   public :: tnad_trans_t
+   public :: tnad_trans_t_0_
+   public :: tnad_trans_t_1_
+   public :: tnad_ibound_t
+   public :: tnad_obound_t
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for R in (0, 1)
+
+      function tnad_eqns_t_${R}$_(cx, pt, os_p) result(eq)
+
+         use gyre_tnad_eqns_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         class(eqns_ct), allocatable          :: eq${ARRAY_SPEC(R)}$
+
+         ! Construct the tnad_eqns type
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            eq = gyre_tnad_eqns_t(cx, pt, os_p)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function tnad_eqns_t_${R}$_
+
+      !****
+
+      function tnad_trans_t_${R}$_(cx, pt, os_p) result(tr)
+
+         use gyre_nad_trans_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         class(trans_ct), allocatable         :: tr${ARRAY_SPEC(R)}$
+
+         ! Construct the tnad_trans type
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            tr = gyre_nad_trans_t(cx, pt)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function tnad_trans_t_${R}$_
+
+   #:endfor
+
+   !****
+
+   function tnad_ibound_t(cx, os_p) result(bd)
+
+      use gyre_nad_ibound_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      class(bound_ct), allocatable         :: bd
+
+      ! Construct the tnad_ibound type
+
+      select case(os_p%variables_set)
+      case('GYRE')
+         bd = gyre_nad_ibound_t(cx, os_p)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
+
+      ! Finish
+
+      return
+
+   end function tnad_ibound_t
+
+   !****
+
+   function tnad_obound_t(cx, os_p) result(bd)
+
+      use gyre_nad_obound_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      class(bound_ct), allocatable         :: bd
+
+      ! Construct the tnad_obound type
+
+      select case(os_p%variables_set)
+      case('GYRE')
+         bd = gyre_nad_obound_t(cx, os_p)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
+
+      ! Finish
+
+      return
+
+   end function tnad_obound_t
+
+end module tnad_factory_m

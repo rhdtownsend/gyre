@@ -90,12 +90,7 @@ contains
 
    function tnad_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
 
-      use gyre_nad_ibound_m
-
-      use gyre_nad_obound_m
-
-      use gyre_nad_trans_m
-
+      use tnad_factory_m
       use tnad_diff_m
 
       class(context_t), pointer, intent(in) :: cx
@@ -117,13 +112,8 @@ contains
 
       ! Initialize the boundary conditions
 
-      select case(os_p%variables_set)
-      case('GYRE')
-         bd_i = gyre_nad_ibound_t(cx, os_p)
-         bd_o = gyre_nad_obound_t(cx, os_p)
-      case default
-         @:ABORT('invalid variables_set')
-      end select
+      bd_i = tnad_ibound_t(cx, os_p)
+      bd_o = tnad_obound_t(cx, os_p)
 
       ! Initialize the difference equations
 
@@ -183,12 +173,10 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      select case(os_p%variables_set)
-      case('GYRE')
-         bp%tr = gyre_nad_trans_t(cx, gr%pt)
-      case default
-         @:ABORT('invalid variables_set')
-      end select
+      ! Workaround: call tnad_trans_t_1_ instead of tnad_trans_t due
+      ! to gfortran 13 bug
+
+      bp%tr = tnad_trans_t_1_(cx, gr%pt, os_p)
 
       bp%md_p = md_p
       bp%nm_p = nm_p

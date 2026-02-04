@@ -1,0 +1,220 @@
+! Module  : rad_factory_m
+! Purpose : factory methods for radial adiabatic routines
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module rad_factory_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_m
+   use context_m
+   use eqns_m
+   use osc_par_m
+   use point_m
+   use trans_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Interfaces
+
+   interface rad_eqns_t
+      module procedure rad_eqns_t_0_
+      module procedure rad_eqns_t_1_
+   end interface rad_eqns_t
+
+   interface rad_trans_t
+      module procedure rad_trans_t_0_
+      module procedure rad_trans_t_1_
+   end interface rad_trans_t
+
+   ! Access specifiers
+
+   public :: rad_eqns_t
+   public :: rad_eqns_t_0_
+   public :: rad_eqns_t_1_
+   public :: rad_trans_t
+   public :: rad_trans_t_0_
+   public :: rad_trans_t_1_
+   public :: rad_ibound_t
+   public :: rad_obound_t
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for R in (0, 1)
+
+      function rad_eqns_t_${R}$_(cx, pt, os_p) result(eq)
+
+         use gyre_rad_eqns_m
+         use dziem_rad_eqns_m
+         use jcd_rad_eqns_m
+         use mix_rad_eqns_m
+         use lagp_rad_eqns_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         class(eqns_rt), allocatable          :: eq${ARRAY_SPEC(R)}$
+
+         ! Construct the rad_eqns type
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            eq = gyre_rad_eqns_t(cx, pt)
+         case('DZIEM')
+            eq = dziem_rad_eqns_t(cx, pt)
+         case('JCD')
+            eq = jcd_rad_eqns_t(cx, pt)
+         case('MIX')
+            eq = mix_rad_eqns_t(cx, pt)
+         case('LAGP')
+            eq = lagp_rad_eqns_t(cx, pt)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function rad_eqns_t_${R}$_
+
+      !****
+
+      function rad_trans_t_${R}$_(cx, pt, os_p) result(tr)
+
+         use gyre_rad_trans_m
+         use dziem_rad_trans_m
+         use jcd_rad_trans_m
+         use mix_rad_trans_m
+         use lagp_rad_trans_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         class(trans_rt), allocatable         :: tr${ARRAY_SPEC(R)}$
+
+         ! Construct the rad_trans type
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            tr = gyre_rad_trans_t(cx, pt)
+         case('DZIEM')
+            tr = dziem_rad_trans_t(cx, pt)
+         case('JCD')
+            tr = jcd_rad_trans_t(cx, pt)
+         case('MIX')
+            tr = mix_rad_trans_t(cx, pt)
+         case('LAGP')
+            tr = lagp_rad_trans_t(cx, pt)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function rad_trans_t_${R}$_
+
+   #:endfor
+
+   !****
+
+   function rad_ibound_t(cx, os_p) result(bd)
+
+      use gyre_rad_ibound_m
+      use dziem_rad_ibound_m
+      use jcd_rad_ibound_m
+      use mix_rad_ibound_m
+      use lagp_rad_ibound_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      class(bound_rt), allocatable         :: bd
+
+      ! Construct the rad_ibound type
+
+      select case(os_p%variables_set)
+      case('GYRE')
+         bd = gyre_rad_ibound_t(cx, os_p)
+      case('DZIEM')
+         bd = dziem_rad_ibound_t(cx, os_p)
+      case('JCD')
+         bd = jcd_rad_ibound_t(cx, os_p)
+      case('MIX')
+         bd = mix_rad_ibound_t(cx, os_p)
+      case('LAGP')
+         bd = lagp_rad_ibound_t(cx, os_p)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
+
+      ! Finish
+
+      return
+
+   end function rad_ibound_t
+
+   !****
+
+   function rad_obound_t(cx, os_p) result(bd)
+
+      use gyre_rad_obound_m
+      use dziem_rad_obound_m
+      use jcd_rad_obound_m
+      use mix_rad_obound_m
+      use lagp_rad_obound_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      class(bound_rt), allocatable         :: bd
+
+      ! Construct the rad_obound type
+
+      select case(os_p%variables_set)
+      case('GYRE')
+         bd = gyre_rad_obound_t(cx, os_p)
+      case('DZIEM')
+         bd = dziem_rad_obound_t(cx, os_p)
+      case('JCD')
+         bd = jcd_rad_obound_t(cx, os_p)
+      case('MIX')
+         bd = mix_rad_obound_t(cx, os_p)
+      case('LAGP')
+         bd = lagp_rad_obound_t(cx, os_p)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
+
+      ! Finish
+
+      return
+
+   end function rad_obound_t
+
+end module rad_factory_m
