@@ -12,7 +12,7 @@ EXEC=./gyre_tides
 IN_FILE=gyre_tides.in
 OUT_FILE=summary.h5
 
-LABEL="MESA model for slowly pulsating B-type star (tides)"
+LABEL="MESA model for Sun (tides)"
 
 # Do the tests
 
