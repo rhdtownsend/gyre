@@ -80,35 +80,42 @@ test_ext_SRCS = test_ext.fypp
 test_ext_USES = $(libgyre_SRCS)
 test_ext_LIBS = libgyre
 
-ad_SRCS = ad_bvp_m.fypp \
-   gyre_ad_bound_m.fypp dziem_ad_bound_m.fypp jcd_ad_bound_m.fypp \
-   rjcd_ad_bound_m.fypp mix_ad_bound_m.fypp lagp_ad_bound_m.fypp \
+ad_SRCS = ad_bvp_m.fypp ad_factory_m.fypp \
+   gyre_ad_ibound_m.fypp dziem_ad_ibound_m.fypp jcd_ad_ibound_m.fypp \
+   rjcd_ad_ibound_m.fypp mix_ad_ibound_m.fypp lagp_ad_ibound_m.fypp \
+   gyre_ad_obound_m.fypp dziem_ad_obound_m.fypp jcd_ad_obound_m.fypp \
+   rjcd_ad_obound_m.fypp mix_ad_obound_m.fypp lagp_ad_obound_m.fypp \
    gyre_ad_eqns_m.fypp dziem_ad_eqns_m.fypp jcd_ad_eqns_m.fypp \
    rjcd_ad_eqns_m.fypp mix_ad_eqns_m.fypp lagp_ad_eqns_m.fypp \
    gyre_ad_trans_m.fypp dziem_ad_trans_m.fypp jcd_ad_trans_m.fypp \
    rjcd_ad_trans_m.fypp mix_ad_trans_m.fypp lagp_ad_trans_m.fypp
 
-rad_SRCS = rad_bvp_m.fypp \
-   gyre_rad_bound_m.fypp dziem_rad_bound_m.fypp jcd_rad_bound_m.fypp \
-   mix_rad_bound_m.fypp lagp_rad_bound_m.fypp \
+rad_SRCS = rad_bvp_m.fypp rad_factory_m.fypp \
+   gyre_rad_ibound_m.fypp dziem_rad_ibound_m.fypp jcd_rad_ibound_m.fypp \
+   mix_rad_ibound_m.fypp lagp_rad_ibound_m.fypp \
+   gyre_rad_obound_m.fypp dziem_rad_obound_m.fypp jcd_rad_obound_m.fypp \
+   mix_rad_obound_m.fypp lagp_rad_obound_m.fypp \
    gyre_rad_eqns_m.fypp dziem_rad_eqns_m.fypp jcd_rad_eqns_m.fypp \
    mix_rad_eqns_m.fypp lagp_rad_eqns_m.fypp \
    gyre_rad_trans_m.fypp dziem_rad_trans_m.fypp jcd_rad_trans_m.fypp \
    mix_rad_trans_m.fypp lagp_rad_trans_m.fypp
 
-nad_SRCS = nad_bvp_m.fypp nad_diff_m.fypp \
-   gyre_nad_bound_m.fypp dziem_nad_bound_m.fypp jcd_nad_bound_m.fypp \
-   rjcd_nad_bound_m.fypp mix_nad_bound_m.fypp lagp_nad_bound_m.fypp \
+nad_SRCS = nad_bvp_m.fypp nad_factory_m.fypp nad_diff_m.fypp \
+   gyre_nad_ibound_m.fypp dziem_nad_ibound_m.fypp jcd_nad_ibound_m.fypp \
+   rjcd_nad_ibound_m.fypp mix_nad_ibound_m.fypp lagp_nad_ibound_m.fypp \
+   gyre_nad_obound_m.fypp dziem_nad_obound_m.fypp jcd_nad_obound_m.fypp \
+   rjcd_nad_obound_m.fypp mix_nad_obound_m.fypp lagp_nad_obound_m.fypp \
    gyre_nad_eqns_m.fypp dziem_nad_eqns_m.fypp jcd_nad_eqns_m.fypp \
    rjcd_nad_eqns_m.fypp mix_nad_eqns_m.fypp lagp_nad_eqns_m.fypp \
    gyre_nad_trans_m.fypp dziem_nad_trans_m.fypp jcd_nad_trans_m.fypp \
    rjcd_nad_trans_m.fypp mix_nad_trans_m.fypp lagp_nad_trans_m.fypp
 
-tnad_SRCS = tnad_bvp_m.fypp tnad_diff_m.fypp \
+tnad_SRCS = tnad_bvp_m.fypp tnad_factory_m.fypp tnad_diff_m.fypp \
    gyre_tnad_eqns_m.fypp
 
-sad_SRCS = sad_bvp_m.fypp \
-  gyre_sad_bound_m.fypp \
+sad_SRCS = sad_bvp_m.fypp sad_factory_m.fypp \
+  gyre_sad_ibound_m.fypp \
+  gyre_sad_obound_m.fypp \
   gyre_sad_eqns_m.fypp \
   gyre_sad_trans_m.fypp
 
