@@ -80,8 +80,6 @@
 &ad_output
   summary_file = 'summary.h5'
   summary_item_list = 'id,l,n_pg,n_p,n_g,omega,E_norm'
-  detail_template = 'detail.l%l.n%n.h5'
-  detail_item_list = 'x,lag_P,y_1,y_2,dE_dx'
 /
 
 &nad_output
