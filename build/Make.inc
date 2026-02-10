@@ -203,14 +203,6 @@ else
    ARFLAGS := cr
 endif
 
-ifeq ($(CRMATH),yes)
-   export MESASDK_MATH_SLOT=crmath
-   LDFLAGS += `crmath_link` `crlibm_link`
-else
-   export MESASDK_MATH_SLOT=default
-   LDFLAGS += `crmath_link`
-endif
-
 ifeq ($(shell uname -s),Linux)
   LDFLAGS += -Wl,--no-warn-execstack
 endif
