@@ -191,7 +191,3 @@ check_src:
 check_src : SRC_DIRS ?= ../src
 
 .PHONY: all linter check_src
-
-# Source-file specific flags
-
-ad_eqns_m.f90: FPPFLAGS += -m ad_eqns
