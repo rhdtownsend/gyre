@@ -157,40 +157,6 @@ contains
 
    !****
 
-   function wave_t_hom_(bp, sm, st, id) result(wv)
-
-      class(sad_bvp_t), intent(in)    :: bp
-      class(sysmtx_rt), intent(inout) :: sm
-      type(state_rt), intent(in)      :: st
-      integer, intent(in)             :: id
-      type(wave_t)                    :: wv
-
-      real(RD) :: y(2,bp%n)
-      integer  :: j
-
-      ! Calculate the homogeneous solution vector
-
-      call bp%solve_hom(sm, st, y)
-
-      ! Convert to canonical form
-
-      !$OMP PARALLEL DO
-      do j = 1, bp%n
-         call bp%tr(j)%transform(st, y(:,j))
-      end do
-
-      ! Construct the wave type
-
-      wv = wave_t_y_(bp, st, y, id)
-
-      ! Finish
-
-      return
-
-   end function wave_t_hom_
-
-   !****
-
    function wave_t_inhom_(bp, sm, st, z_i, z_o, id) result(wv)
 
       class(sad_bvp_t), intent(in)    :: bp

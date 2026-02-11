@@ -123,7 +123,6 @@ contains
       class(state_rt), intent(in)          :: st
       real(RD), intent(inout)              :: y(:)
 
-      real(RD) :: omega_c
       real(RD) :: R(this%n_e,this%n_e)
 
       @:CHECK_BOUNDS(SIZE(y), this%n_e)

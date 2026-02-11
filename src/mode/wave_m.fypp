@@ -137,7 +137,7 @@ module wave_m
       procedure, public :: tau_tr
       procedure, public :: zeta
       procedure, public :: beta
-      procedure, public :: dOmega_rot
+      procedure, public :: domega_rot
       procedure, public :: eta
    end type wave_t
 
@@ -358,7 +358,7 @@ contains
       associate( &
          ml => this%cx%model() )
 
-         dfreq_rot = this%dOmega_rot()*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
+         dfreq_rot = this%domega_rot()*freq_scale(freq_units, this%cx, this%md_p, this%os_p)
 
       end associate
 
@@ -2469,7 +2469,7 @@ contains
    function domega_rot(this)
 
       class(wave_t), intent(in) :: this
-      complex(RD)               :: domega_rot
+      real(RD)                  :: domega_rot
 
       integer  :: j
       real(RD) :: dbeta_dx(this%n)

@@ -176,7 +176,7 @@ contains
 
       !$OMP SINGLE
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
+         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/REAL(c_rate, RD), 's'
 120      format(2X,A,F10.3,1X,A/)
       endif
       !$OMP END SINGLE
@@ -300,7 +300,7 @@ contains
 
       !$OMP SINGLE
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
+         write(OUTPUT_UNIT, 130) 'Time elapsed :', REAL(c_end-c_beg, RD)/REAL(c_rate, RD), 's'
 130      format(2X,A,1X,F10.3,1X,A/)
       endif
       !$OMP END SINGLE

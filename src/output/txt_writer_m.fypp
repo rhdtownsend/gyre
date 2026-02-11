@@ -60,7 +60,7 @@ module txt_writer_m
    contains
       private
       procedure, public :: final
-      procedure, public :: count
+      procedure, public :: count => count_
       #:for S in NUM_SUFFIXES+CHAR_SUFFIXES
          #:for R in (0, 1)
             procedure, public :: write_${S}$_${R}$
@@ -153,7 +153,7 @@ contains
 
    !****
 
-   function count(this)
+   function count_(this) result(count)
 
       class(txt_writer_t), intent(in) :: this
       integer                         :: count
@@ -166,7 +166,7 @@ contains
 
       return
 
-   end function count
+   end function count_
 
    !****
 

@@ -266,8 +266,6 @@ contains
          class(state_${S}$), intent(in)       :: st
          ${T}$, intent(out)                   :: dOmega(:,:)
 
-         ${T}$ :: A(this%n_e,this%n_e)
-
          @:CHECK_BOUNDS(SIZE(dOmega, 1), this%n_e)
          @:CHECK_BOUNDS(SIZE(dOmega, 2), this%n_e)
 

@@ -235,9 +235,9 @@ contains
       ! Report timing
 
       if (check_log_level('DEBUG')) then
-         write(OUTPUT_UNIT, *) 'Time for bpv:', REAL(c_bvp)/c_rate
-         write(OUTPUT_UNIT, *) 'Time for solve:', REAL(c_solve)/c_rate
-         write(OUTPUT_UNIT, *) 'Time for proc:', REAL(c_proc)/c_rate
+         write(OUTPUT_UNIT, *) 'Time for bpv:', REAL(c_bvp)/REAL(c_rate, RD)
+         write(OUTPUT_UNIT, *) 'Time for solve:', REAL(c_solve)/REAL(c_rate, RD)
+         write(OUTPUT_UNIT, *) 'Time for proc:', REAL(c_proc)/REAL(c_rate, RD)
       end if
 
       ! Clean up

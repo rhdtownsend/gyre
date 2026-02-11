@@ -136,7 +136,6 @@ contains
       class(state_rt), intent(in)         :: st
       real(RD), intent(out)               :: A(:,:)
 
-      real(RD) :: l
       real(RD) :: lambda
       real(RD) :: invx
 

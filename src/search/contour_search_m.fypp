@@ -136,7 +136,6 @@ contains
       integer     :: c_rate
       integer     :: n_re
       integer     :: n_im
-      integer     :: k
       integer     :: i
       integer     :: j
       complex(RD) :: omega
@@ -174,7 +173,7 @@ contains
 
       !$OMP SINGLE
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 110) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
+         write(OUTPUT_UNIT, 110) 'Time elapsed :', REAL(c_end-c_beg, RD)/REAL(c_rate, RD), 's'
 110      format(2X,A,F10.3,1X,A/)
       endif
       !$OMP END SINGLE
@@ -228,7 +227,7 @@ contains
       call SYSTEM_CLOCK(c_end)
 
       if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/c_rate, 's'
+         write(OUTPUT_UNIT, 120) 'Time elapsed :', REAL(c_end-c_beg, RD)/REAL(c_rate, RD), 's'
 120      format(2X,A,F10.3,1X,A/)
       endif
 

@@ -134,7 +134,7 @@ program eval_love
 
    ! Evaluate the Love number
 
-   B = wv%eul_Phi(wv%n) - A
+   B = REAL(wv%eul_Phi(wv%n), RD) - A
 
    k_l = B/A
 

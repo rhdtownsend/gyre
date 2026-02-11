@@ -31,8 +31,8 @@ module writer_m
 
    type, abstract :: writer_t
    contains
-      procedure(final), deferred :: final
-      procedure(count), deferred :: count
+      procedure(final), deferred  :: final
+      procedure(count_), deferred :: count
       #:for R in (0, 1)
          #:for S in NUM_SUFFIXES+CHAR_SUFFIXES
             procedure(write_${S}$_${R}$_), deferred :: write_${S}$_${R}$
@@ -51,12 +51,12 @@ module writer_m
          class(writer_t), intent(inout) :: this
       end subroutine final
 
-      function count (this)
+      function count_ (this) result(count)
          import writer_t
          implicit none (type, external)
          class(writer_t), intent(in) :: this
          integer                     :: count
-      end function count
+      end function count_
 
       #:for R in (0, 1)
          #:for T, S in zip(NUM_TYPES+CHAR_TYPES, NUM_SUFFIXES+CHAR_SUFFIXES)

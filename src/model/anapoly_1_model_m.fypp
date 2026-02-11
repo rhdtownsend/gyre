@@ -657,6 +657,8 @@ contains
       real(RD), intent(in)                 :: x_o
       real(RD)                             :: Delta_p
 
+      Delta_p = 0._RD
+
       @:ABORT('not yet implemented')
 
    end function Delta_p
@@ -670,6 +672,8 @@ contains
       real(RD), intent(in)                 :: x_o
       real(RD), intent(in)                 :: lambda
       real(RD)                             :: Delta_g
+
+      Delta_g = 0._RD
 
       @:ABORT('not yet implemented')
 

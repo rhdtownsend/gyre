@@ -156,7 +156,6 @@ contains
 
       complex(RD) :: A(this%n_e,this%n_e)
       complex(RD) :: lambda(3)
-      complex(RD) :: omega_c
 
       @:CHECK_BOUNDS(SIZE(E_l, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(E_l, 2), this%n_e)
@@ -184,12 +183,6 @@ contains
          lambda(3) = sqrt(A(6,5)*A(5,6))
 
          scl = scl*exp(ext_ct(-SUM(lambda, MASK=MAGNUS_EIGVAL_MASK)*this%dx))
-
-      ! class is (colloc_diff_ct)
-
-      !    omega_c = st%omega - this%cx%m*this%Omega_rot
-
-      !    scl = scl/sqrt(omega_c)
 
       end select
 

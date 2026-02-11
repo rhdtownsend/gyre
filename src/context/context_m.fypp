@@ -440,7 +440,14 @@ contains
                #:endif
 
                call this%ci_${N}$%eval_f(omega, f)
-               ${N}$ = f
+
+               #:if T == 'real(RD)'
+                  ${N}$ = REAL(f, RD)
+               #:elif T == 'complex(RD)'
+                  ${N}$ = f
+               #:else
+                  #:stop f'invalid type {T}'
+               #:endif
 
             case default
 

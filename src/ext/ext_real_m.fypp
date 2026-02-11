@@ -26,7 +26,7 @@
 #:def SPLIT(X, F, E)
    if (${X}$ /= 0._RD) then
       bits = TRANSFER(${X}$, bits)
-      ${E}$ = IBITS(bits, 52, 11) - 1023
+      ${E}$ = INT(IBITS(bits, 52, 11) - 1023)
       call MVBITS(1023_ID, 0, 11, bits, 52)
       ${F}$ = TRANSFER(bits, ${F}$)
    else

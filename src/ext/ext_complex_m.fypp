@@ -266,9 +266,6 @@ contains
       class(ext_ct), intent(in) :: that
       type(ext_ct)              :: cx
 
-      complex(RD) :: f
-      integer     :: e
-
       ! Evaluate the minus operator
 
       cx%re = this%re - that%re
@@ -511,8 +508,6 @@ contains
       type(ext_ct), intent(in) :: cx
       complex(RD)              :: c
 
-      integer :: e_min
-
       ! Convert cx to complex
 
       c = CMPLX(real(cx%re), real(cx%im), KIND=RD)
@@ -648,10 +643,6 @@ contains
 
       type(ext_ct), intent(in) :: cx
       type(ext_ct)             :: exp_cx
-
-      real(RD)    :: f
-      integer     :: e
-      complex(RD) :: c
 
       ! Calculate the exponential of cx
 
