@@ -26,9 +26,9 @@
 #:def SPLIT(X, F, E)
    if (${X}$ /= 0._RD) then
       bits = TRANSFER(${X}$, bits)
-      ${E}$ = INT(IBITS(bits, 52, 11) - 1023)
+      ${E}$ = INT(IBITS(bits, 52, 11) - 1022)
       call MVBITS(1023_ID, 0, 11, bits, 52)
-      ${F}$ = TRANSFER(bits, ${F}$)
+      ${F}$ = TRANSFER(bits, ${F}$)/2._RD
    else
       ${F}$ = 0._RD
       ${E}$ = 0
@@ -727,7 +727,7 @@ contains
    pure elemental function fraction_(rx) result(fraction_rx)
 
       type(ext_rt), intent(in) :: rx
-      real(RD)                  :: fraction_rx
+      real(RD)                 :: fraction_rx
 
       ! Return the fraction part of rx
 
@@ -744,7 +744,7 @@ contains
    pure elemental function exponent_(rx) result(exponent_rx)
 
       type(ext_rt), intent(in) :: rx
-      integer                   :: exponent_rx
+      integer                  :: exponent_rx
 
       ! Return the exponent part of rx
 
