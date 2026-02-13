@@ -23,7 +23,6 @@ module magnus_diff_m
 
    use forum_m, only: RD
 
-   use blas_lapack_m
    use diff_m
    use eqns_m
    use ext_m
@@ -169,8 +168,6 @@ contains
          complex(RD) :: V_l(this%n_e,this%n_e)
          complex(RD) :: V_r(this%n_e,this%n_e)
          integer     :: i
-         complex(RD) :: V_pos(this%n_e,this%n_e)
-         complex(RD) :: V_neg(this%n_e,this%n_e)
          complex(RD) :: E_l_(this%n_e,this%n_e)
          complex(RD) :: E_r_(this%n_e,this%n_e)
 
@@ -197,26 +194,17 @@ contains
             ! Use 'upwinding' for stability
 
             do i = 1, this%n_e
-               call XCOPY_inplace(this%n_e, V_r(1,i), 1, V_pos(1,i), 1)
                if (REAL(lambda(i)) >= 0._RD) then
-                  call XSCAL_inplace(this%n_e, exp(-lambda(i)*this%dx), V_pos(1,i), 1)
+                  E_r_(:,i) = V_r(:,i)*exp(-lambda(i)*this%dx)
+                  E_l_(:,i) = -V_r(:,i)
+               else
+                  E_r_(:,i) = V_r(:,i)
+                  E_l_(:,i) = -V_r(:,i)*exp(lambda(i)*this%dx)
                endif
             end do
 
-            do i = 1, this%n_e
-               call XCOPY_inplace(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
-               if (REAL(lambda(i)) < 0._RD) then
-                  call XSCAL_inplace(this%n_e, exp(lambda(i)*this%dx), V_neg(1,i), 1)
-               endif
-            end do
-
-            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(-1._RD, KIND=RD), &
-               V_neg(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._RD, KIND=RD), &
-               E_l_(1,1), this%n_e)
-
-            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._RD, KIND=RD), &
-               V_pos(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._RD, KIND=RD), &
-               E_r_(1,1), this%n_e)
+            E_l_ = MATMUL(E_l_, V_l)
+            E_r_ = MATMUL(E_r_, V_l)
 
             scl = exp(ext_${S}$(SUM(lambda, MASK=REAL(lambda) >= 0._RD)*this%dx))
 
@@ -225,18 +213,12 @@ contains
             ! Use the [TowTei2013] expression (their eqns. 4, 16, 18)
 
             do i = 1, this%n_e
-               call XCOPY_inplace(this%n_e, V_r(1,i), 1, V_neg(1,i), 1)
-               call XSCAL_inplace(this%n_e, exp(lambda(i)*this%dx), V_neg(1,i), 1)
-            end do
-
-            call XGEMM_inplace('N', 'N', this%n_e, this%n_e, this%n_e, CMPLX(1._RD, KIND=RD), &
-               V_neg(1,1), this%n_e, V_l(1,1), this%n_e, CMPLX(0._RD, KIND=RD), &
-               E_l_(1,1), this%n_e)
-
-            do i = 1, this%n_e
                E_r_(:,i) = 0._RD
-               E_r_(i,i) = -1._RD
+               E_r_(i,i) = 1._RD
+               E_l_(:,i) = -V_r(:,i)*exp(lambda(i)*this%dx)
             end do
+
+            E_l_ = MATMUL(E_l_, V_l)
 
             scl = ONE_${S}$
 
