@@ -343,19 +343,19 @@ contains
             allocate(id_ad(d_ad))
 
             if (md_p_m(i)%l == 0 .AND. os_p_sel%reduce_order) then
-               bp_ad = rad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
+               bp_ad = rad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel)
             else
-               bp_ad = ad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel))
+               bp_ad = ad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel)
             endif
 
-            sm_ad = sysmtx_rt(bp_ad, nm_p_sel)
+            allocate(sm_ad, SOURCE=sysmtx_rt(bp_ad, nm_p_sel))
 
             select case (nm_p_sel%ad_search)
 
             case ('BRACKET')
 
                if (SIZE(omega_re) > 2) then
-                  call bracket_search(bp_ad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_ad)
+                  call bracket_search(bp_ad, sm_ad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_ad)
                endif
 
             case default
@@ -374,25 +374,25 @@ contains
 
             bp_nad = nad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel)
 
-            sm_nad = sysmtx_ct(bp_nad, nm_p_sel)
+            allocate(sm_nad, SOURCE=sysmtx_ct(bp_nad, nm_p_sel))
 
             select case (nm_p_sel%nad_search)
 
             case ('AD')
 
                @:ASSERT(os_p_sel%adiabatic, 'No adiabatic modes to start from')
-               call prox_search(bp_nad, omega_ad(:n_ad), id_ad(:n_ad), omega_min, omega_max, nm_p_sel, process_mode_nad)
+               call prox_search(bp_nad, sm_nad, omega_ad(:n_ad), id_ad(:n_ad), omega_min, omega_max, nm_p_sel, process_mode_nad)
 
             case ('MINMOD')
 
                if (SIZE(omega_re) > 2) then
-                  call minmod_search(bp_nad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_nad)
+                  call minmod_search(bp_nad, sm_nad, omega_re, omega_min, omega_max, nm_p_sel, process_mode_nad)
                endif
 
             case ('CONTOUR')
 
                if (SIZE(omega_re) > 2 .AND. SIZE(omega_im) > 2) then
-                  call contour_search(bp_nad, omega_re, omega_im, omega_min, omega_max, i, nm_p_sel, process_mode_nad)
+                  call contour_search(bp_nad, sm_nad, omega_re, omega_im, omega_min, omega_max, i, nm_p_sel, process_mode_nad)
                endif
 
             case default
@@ -410,6 +410,11 @@ contains
          if (os_p_sel%adiabatic) then
             deallocate(omega_ad)
             deallocate(id_ad)
+            deallocate(sm_ad)
+         endif
+
+         if (os_p_sel%nonadiabatic) then
+            deallocate(sm_nad)
          endif
 
          ! Loop around
@@ -424,17 +429,18 @@ contains
 
    contains
 
-      subroutine process_mode_ad(md, n_iter, chi)
+      subroutine process_mode_ad(md, culled)
 
          type(mode_t), intent(in) :: md
-         integer, intent(in)      :: n_iter
-         type(ext_rt), intent(in) :: chi
+         logical, intent(out)     :: culled
 
          integer :: retcode
 
-         if (md%n_pg < md_p_m(i)%n_pg_min .OR. md%n_pg > md_p_m(i)%n_pg_max) return
-
          ! Store or process the adiabatic mode
+
+         culled = md%n_pg < md_p_m(i)%n_pg_min .OR. md%n_pg > md_p_m(i)%n_pg_max
+
+         if (culled) return
 
          if (os_p_sel%nonadiabatic) then
 
@@ -465,15 +471,18 @@ contains
 
       !****
 
-      subroutine process_mode_nad(md, n_iter, chi)
+      subroutine process_mode_nad(md, culled)
 
          type(mode_t), intent(in) :: md
-         integer, intent(in)      :: n_iter
-         type(ext_rt), intent(in) :: chi
+         logical, intent(out)     :: culled
 
          integer :: retcode
 
          ! Process the non-adiabatic mode
+
+         culled = md%n_pg < md_p_m(i)%n_pg_min .OR. md%n_pg > md_p_m(i)%n_pg_max
+
+         if (culled) return
 
          retcode = 0
 
