@@ -114,17 +114,21 @@ tnad_SRCS = tnad_bvp_m.fypp tnad_factory_m.fypp tnad_diff_m.fypp \
    gyre_tnad_eqns_m.fypp
 
 sad_SRCS = sad_bvp_m.fypp sad_factory_m.fypp \
-  gyre_sad_ibound_m.fypp \
-  gyre_sad_obound_m.fypp \
-  gyre_sad_eqns_m.fypp \
-  gyre_sad_trans_m.fypp
+   gyre_sad_ibound_m.fypp \
+   gyre_sad_obound_m.fypp \
+   gyre_sad_eqns_m.fypp \
+   gyre_sad_trans_m.fypp
+
+sysmtx_SRCS = sysmtx_m.fypp sysmtx_factory_m.fypp \
+   block_sysmtx_m.fypp band_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp
 
 libgyre_SRCS = $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS) $(sad_SRCS)		\
+   $(sysmtx_SRCS) 									\
    adhoc_angular_m.fypp amdl_file_m.fypp						\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp anapoly_5_model_m.fypp			\
    anapoly_5_1_model_m.fypp angular_m.fypp angular_factory_m.fypp atmos_m.fypp		\
-   b3_file_m.fypp band_sysmtx_m.fypp blas_lapack_m.fypp					\
-   block_sysmtx_m.fypp bound_m.fypp bracket_search_m.fypp bvp_m.fypp cheb_fit_m.fypp	\
+   b3_file_m.fypp blas_lapack_m.fypp							\
+   bound_m.fypp bracket_search_m.fypp bvp_m.fypp cheb_fit_m.fypp			\
    colloc_gl2_diff_m.fypp colloc_gl4_diff_m.fypp colloc_gl6_diff_m.fypp			\
    constants_m.fypp context_m.fypp							\
    contour_map_m.fypp contour_path_m.fypp contour_search_m.fypp				\
@@ -143,12 +147,12 @@ libgyre_SRCS = $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS) $(sad_SRCS)		\
    model_util_m.fypp num_par_m.fypp orbit_par_m.fypp osc_file_m.fypp osc_par_m.fypp	\
    out_par_m.fypp out_util_m.fypp parfait_file_m.fypp					\
    parfait_model_m.fypp parfaitd_file_m.fypp parfaitd_model_m.fypp			\
-   pblock_sysmtx_m.fypp   point_m.fypp poly_file_m.fypp poly_model_m.fypp		\
+   point_m.fypp poly_file_m.fypp poly_model_m.fypp					\
    prox_search_m.fypp qad_eval_m.fypp 							\
-   resp_m.fypp root_m.fypp rot_par_m.fypp rowpp_sysmtx_m.fypp 				\
-   sblock_sysmtx_m.fypp scan_m.fypp scan_par_m.fypp search_m.fypp special_m.fypp	\
+   resp_m.fypp root_m.fypp rot_par_m.fypp 		 				\
+   scan_m.fypp scan_par_m.fypp search_m.fypp special_m.fypp				\
    sph_angular_m.fypp state_m.fypp status_m.fypp					\
-   string_m.fypp summary_m.fypp sysmtx_factory_m.fypp sysmtx_m.fypp			\
+   string_m.fypp summary_m.fypp 							\
    tar_eigen_m.fypp tar_fit_m.fypp tar_angular_m.fypp tidal_coeff_m.fypp		\
    tidal_resp_m.fypp tidal_context_m.fypp tide_par_m.fypp trans_m.fypp			\
    trapz_diff_m.fypp turb_m.fypp txt_writer_m.fypp util_m.fypp version_m.fypp		\
