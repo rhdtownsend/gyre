@@ -32,7 +32,7 @@
 
 &num
   diff_scheme = 'COLLOC_GL6'
-  matrix_type = 'BAND'
+  ad_matrix_type = 'BAND'
 /
 
 &scan
