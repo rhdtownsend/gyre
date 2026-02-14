@@ -3,7 +3,8 @@
 
 # Variables
 
-SUBDIRS=omp band delta cowling vars-dziem vars-jcd vars-mix vars-lagp \
+SUBDIRS=omp sysmtx_band sysmtx_block sysmtx_cyclic sysmtx_rowpp \
+        delta cowling vars-dziem vars-jcd vars-mix vars-lagp \
         diff-colloc diff-magnus diff-mirk diff-trapz \
         lambda-sph lambda-tar-gravity lambda-tar-rossby lambda-adhoc
 

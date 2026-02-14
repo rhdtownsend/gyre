@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.h5
 
-LABEL="numerics (band matrix)"
+LABEL="numerics (BAND matrix solver)"
 
 # Do the tests
 
