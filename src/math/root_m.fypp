@@ -232,11 +232,11 @@ contains
 
          ! Narrow the bracket [x_a,x_b] on a root of the function
 
-         select case (nm_p%r_root_solver)
+         select case (nm_p%real_root_solver)
          case ('BRENT')
             call narrow_brent_${S}$_(eval_func, x_a, x_b, x_tol, stat, n_iter, n_iter_max, relative_tol, f_x_a, f_x_b)
          case default
-            @:ABORT('invalid r_root_solver')
+            @:ABORT('invalid real_root_solver')
          end select
 
          ! Finish
@@ -595,7 +595,7 @@ contains
 
          ! Narrow the bracket [z_a,z_b] toward a root of the function
 
-         select case (nm_p%c_root_solver)
+         select case (nm_p%cmplx_root_solver)
          case ('SECANT')
             call narrow_secant_${S}$_(eval_func, z_a, z_b, z_tol, stat, &
                n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
@@ -603,7 +603,7 @@ contains
             call narrow_ridders_${S}$_(eval_func, z_a, z_b, z_tol, stat, &
                n_iter, n_iter_max, relative_tol, f_z_a, f_z_b)
          case default
-            @:ABORT('invalid c_root_solver')
+            @:ABORT('invalid cmplx_root_solver')
          end select
 
          ! Finish

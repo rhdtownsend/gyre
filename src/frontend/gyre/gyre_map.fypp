@@ -183,7 +183,7 @@ program gyre_map
    ! Set up the bvp
 
    bp = nad_bvp_t(cx, gr, md_p(1), nm_p_sel, os_p_sel)
-   allocate(sm, SOURCE=sysmtx_ct(bp, nm_p(1)%nad_matrix_type))
+   allocate(sm, SOURCE=sysmtx_ct(bp, nm_p(1)%nad_matrix_solver))
 
    ! Map the discriminant
 
