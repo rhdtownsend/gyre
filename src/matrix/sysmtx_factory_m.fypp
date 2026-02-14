@@ -26,9 +26,8 @@ module sysmtx_factory_m
    use bvp_m
    use band_sysmtx_m
    use block_sysmtx_m
-   use pblock_sysmtx_m
+   use cyclic_sysmtx_m
    use rowpp_sysmtx_m
-   use sblock_sysmtx_m
    use sysmtx_m
 
    use ISO_FORTRAN_ENV
@@ -60,30 +59,28 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function sysmtx_dims_${S}$_(n, n_e, n_i, n_o, matrix_type) result(sm)
+      function sysmtx_dims_${S}$_(n, n_e, n_i, n_o, matrix_solver) result(sm)
 
          integer, intent(in)              :: n
          integer, intent(in)              :: n_e
          integer, intent(in)              :: n_i
          integer, intent(in)              :: n_o
-         character(*), intent(in)         :: matrix_type
+         character(*), intent(in)         :: matrix_solver
          class(sysmtx_${S}$), allocatable :: sm
 
          ! Construct the sysmtx type from the supplied dimensions
 
-         select case (matrix_type)
+         select case (matrix_solver)
          case ('BAND')
             sm = band_sysmtx_${S}$(n, n_e, n_i, n_o)
          case ('BLOCK')
             sm = block_sysmtx_${S}$(n, n_e, n_i, n_o)
-         case ('PARALLEL_BLOCK')
-            sm = pblock_sysmtx_${S}$(n, n_e, n_i, n_o)
-         case ('SERIAL_BLOCK')
-            sm = sblock_sysmtx_${S}$(n, n_e, n_i, n_o)
+         case ('CYCLIC')
+            sm = cyclic_sysmtx_${S}$(n, n_e, n_i, n_o)
          case ('ROWPP')
             sm = rowpp_sysmtx_${S}$(n, n_e, n_i, n_o)
          case default
-            @:ABORT('invalid matrix_type')
+            @:ABORT('invalid matrix_solver')
          end select
 
          ! Finish
@@ -94,15 +91,15 @@ contains
 
       !****
 
-      function sysmtx_bvp_${S}$_(bp, matrix_type) result(sm)
+      function sysmtx_bvp_${S}$_(bp, matrix_solver) result(sm)
 
          class(bvp_${S}$), intent(in)     :: bp
-         character(*), intent(in)         :: matrix_type
+         character(*), intent(in)         :: matrix_solver
          class(sysmtx_${S}$), allocatable :: sm
 
          ! Construct the sysmtx type from the supplied bvp
 
-         allocate(sm, SOURCE=sysmtx_${S}$(bp%n-1, bp%n_e, bp%n_i, bp%n_o, matrix_type))
+         allocate(sm, SOURCE=sysmtx_${S}$(bp%n-1, bp%n_e, bp%n_i, bp%n_o, matrix_solver))
 
          ! Finish
 

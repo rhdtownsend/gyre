@@ -1,5 +1,5 @@
-! Module  : pblock_sysmtx_m
-! Purpose : system matrix (block storage, parallel implementation)
+! Module  : cyclic_sysmtx_m
+! Purpose : system matrix (cyclic structured SLU)
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -17,7 +17,7 @@
 
 #:include 'gyre.inc'
 
-module pblock_sysmtx_m
+module cyclic_sysmtx_m
 
    ! Uses
 
@@ -41,7 +41,7 @@ module pblock_sysmtx_m
 
       ! Derived-type definitions
 
-      type, extends(sysmtx_${S}$) :: pblock_sysmtx_${S}$
+      type, extends(sysmtx_${S}$) :: cyclic_sysmtx_${S}$
          private
          ${T}$, allocatable                          :: G(:,:,:)  ! Left factor blocks
          ${T}$, allocatable                          :: U(:,:,:)  ! Middle factor blocks
@@ -58,7 +58,7 @@ module pblock_sysmtx_m
          procedure, public :: solve_hom => solve_hom_${S}$_
          procedure, public :: solve_inhom => solve_inhom_${S}$_
          procedure, public :: dump => dump_${S}$_
-      end type pblock_sysmtx_${S}$
+      end type cyclic_sysmtx_${S}$
 
       ! Interfaces
 
@@ -69,9 +69,9 @@ module pblock_sysmtx_m
             use bound_m
             use diff_element_m
             use ext_m
-            import pblock_sysmtx_${S}$
+            import cyclic_sysmtx_${S}$
             implicit none (type, external)
-            class(pblock_sysmtx_${S}$), intent(inout) :: this
+            class(cyclic_sysmtx_${S}$), intent(inout) :: this
             class(state_${S}$), intent(in)            :: st
             class(bound_${S}$), intent(in)            :: bd_i
             class(bound_${S}$), intent(in)            :: bd_o
@@ -81,13 +81,13 @@ module pblock_sysmtx_m
          end subroutine build_and_factor_${S}$_
       end interface
 
-      interface pblock_sysmtx_${S}$
-         module procedure pblock_sysmtx_${S}$_
-      end interface pblock_sysmtx_${S}$
+      interface cyclic_sysmtx_${S}$
+         module procedure cyclic_sysmtx_${S}$_
+      end interface cyclic_sysmtx_${S}$
 
       ! Access specifiers
 
-      public :: pblock_sysmtx_${S}$
+      public :: cyclic_sysmtx_${S}$
 
    #:endfor
 
@@ -99,17 +99,17 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function pblock_sysmtx_${S}$_(n, n_e, n_i, n_o) result(sm)
+      function cyclic_sysmtx_${S}$_(n, n_e, n_i, n_o) result(sm)
 
          integer, intent(in)       :: n
          integer, intent(in)       :: n_e
          integer, intent(in)       :: n_i
          integer, intent(in)       :: n_o
-         type(pblock_sysmtx_${S}$) :: sm
+         type(cyclic_sysmtx_${S}$) :: sm
 
          @:CHECK_BOUNDS(n_i+n_o, n_e)
 
-         ! Construct the pblock_sysmtx_t
+         ! Construct the cyclic_sysmtx_t
 
          allocate(sm%G(n_e,n_e,n))
          allocate(sm%U(n_e,n_e,n))
@@ -140,7 +140,7 @@ contains
 
          return
 
-      end function pblock_sysmtx_${S}$_
+      end function cyclic_sysmtx_${S}$_
 
       !****
 
@@ -152,7 +152,7 @@ contains
 
          subroutine build_and_factor_${I}$_${S}$_(this, st, bd_i, bd_o, de, full, f)
 
-            class(pblock_sysmtx_${S}$), intent(inout) :: this
+            class(cyclic_sysmtx_${S}$), intent(inout) :: this
             class(state_${S}$), intent(in)            :: st
             class(bound_${S}$), intent(in)            :: bd_i
             class(bound_${S}$), intent(in)            :: bd_o
@@ -187,9 +187,8 @@ contains
                @:CHECK_BOUNDS(SIZE(f), 2*this%n_e)
             end if
 
-            ! Build and factorize the sysmtx using a cyclic version of
-            ! the structured LU algorithm by Wright (1994,
-            ! Numer. Math., 67, 521)
+            ! Build and factorize the sysmtx using a cyclic structured
+            ! LU algorithm by Wright (1994, Numer. Math., 67, 521)
 
             associate (n => this%n, n_e => ${N_E}$, n_i => ${N_I}$, n_o => ${N_O}$)
 
@@ -482,7 +481,7 @@ contains
 
       subroutine backsub_${S}$_(this, u_bound, u)
 
-         class(pblock_sysmtx_${S}$), intent(in) :: this
+         class(cyclic_sysmtx_${S}$), intent(in) :: this
          ${T}$, intent(in)                      :: u_bound(:)
          ${T}$, intent(out)                     :: u(:)
 
@@ -565,7 +564,7 @@ contains
 
       subroutine eval_det_${S}$_(this, st, bd_i, bd_o, de, det)
 
-         class(pblock_sysmtx_${S}$), intent(inout) :: this
+         class(cyclic_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
          class(bound_${S}$), intent(in)            :: bd_i
          class(bound_${S}$), intent(in)            :: bd_o
@@ -593,7 +592,7 @@ contains
 
       subroutine solve_hom_${S}$_(this, st, bd_i, bd_o, de, u)
 
-         class(pblock_sysmtx_${S}$), intent(inout) :: this
+         class(cyclic_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
          class(bound_${S}$), intent(in)            :: bd_i
          class(bound_${S}$), intent(in)            :: bd_o
@@ -663,7 +662,7 @@ contains
 
       subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, v, u)
 
-         class(pblock_sysmtx_${S}$), intent(inout) :: this
+         class(cyclic_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
          class(bound_${S}$), intent(in)            :: bd_i
          class(bound_${S}$), intent(in)            :: bd_o
@@ -731,10 +730,10 @@ contains
 
       subroutine dump_${S}$_(this, hi)
 
-         class(pblock_sysmtx_${S}$), intent(in) :: this
+         class(cyclic_sysmtx_${S}$), intent(in) :: this
          type(hdf5io_t), intent(inout)          :: hi
 
-         ! Dump the pblock_sysmtx_t to the hgroup
+         ! Dump the cyclic_sysmtx_t to the hgroup
 
          call hi%write_attr('n', this%n)
          call hi%write_attr('n_e', this%n_e)
@@ -770,4 +769,4 @@ contains
 
    #:endfor
 
-end module pblock_sysmtx_m
+end module cyclic_sysmtx_m

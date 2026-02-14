@@ -1,5 +1,5 @@
 ! Module  : rowpp_sysmtx_m
-! Purpose : system matrix (structured LU, serial implementation)
+! Purpose : system matrix (row partial pivoting)
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -182,7 +182,7 @@ contains
             end if
 
             ! Build and factorize the sysmtx using simple Guassian elimination
-            ! with row partial piviting
+            ! with row partial pivoting
 
             associate (n => this%n, n_e => ${N_E}$, n_i => ${N_I}$, n_o => ${N_O}$)
 
