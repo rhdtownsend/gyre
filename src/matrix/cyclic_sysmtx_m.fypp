@@ -205,7 +205,7 @@ contains
 
                   if (l >= n) exit level_loop
 
-                  !$OMP DO PRIVATE(i, s, scl, piv, i_piv, alpha)
+                  !$OMP DO PRIVATE(i, s, scl, piv, i_piv, alpha, beta, gamma) SCHEDULE(static)
                   block_loop : do k = 1, n-l, 2*l
 
                      ! Prepare submatrices
