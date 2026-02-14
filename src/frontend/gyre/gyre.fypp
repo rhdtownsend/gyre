@@ -220,7 +220,7 @@ program gyre
             bp_ad = ad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel)
          endif
 
-         allocate(sm_ad, SOURCE=sysmtx_rt(bp_ad, nm_p_sel))
+         allocate(sm_ad, SOURCE=sysmtx_rt(bp_ad, nm_p_sel%ad_matrix_type))
 
          if (check_log_level('INFO')) then
             write(OUTPUT_UNIT, 100) 'Starting search (adiabatic)'
@@ -259,7 +259,7 @@ program gyre
             bp_nad = nad_bvp_t(cx, gr, md_p(i), nm_p_sel, os_p_sel)
          endif
 
-         allocate(sm_nad, SOURCE=sysmtx_ct(bp_nad, nm_p_sel))
+         allocate(sm_nad, SOURCE=sysmtx_ct(bp_nad, nm_p_sel%nad_matrix_type))
 
          if (check_log_level('INFO')) then
             write(OUTPUT_UNIT, 100) 'Starting search (non-adiabatic)'

@@ -158,8 +158,8 @@ contains
 
             bp_sad = sad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
 
-            allocate(sm_nad, SOURCE=sysmtx_ct(bp_nad%n-1, bp_nad%n_e, bp_nad%n_i, bp_nad%n_o, nm_p))
-            allocate(sm_sad, SOURCE=sysmtx_rt(bp_sad%n-1, bp_sad%n_e, bp_sad%n_i, bp_sad%n_o, nm_p))
+            allocate(sm_nad, SOURCE=sysmtx_ct(bp_nad%n-1, bp_nad%n_e, bp_nad%n_i, bp_nad%n_o, nm_p%nad_matrix_type))
+            allocate(sm_sad, SOURCE=sysmtx_rt(bp_sad%n-1, bp_sad%n_e, bp_sad%n_i, bp_sad%n_o, nm_p%nad_matrix_type))
 
             call system_clock(c_end)
             c_bvp = c_bvp + (c_end - c_beg)

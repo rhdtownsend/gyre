@@ -26,7 +26,6 @@ module sysmtx_factory_m
    use bvp_m
    use band_sysmtx_m
    use block_sysmtx_m
-   use num_par_m
    use pblock_sysmtx_m
    use rowpp_sysmtx_m
    use sblock_sysmtx_m
@@ -61,18 +60,18 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function sysmtx_dims_${S}$_(n, n_e, n_i, n_o, nm_p) result(sm)
+      function sysmtx_dims_${S}$_(n, n_e, n_i, n_o, matrix_type) result(sm)
 
          integer, intent(in)              :: n
          integer, intent(in)              :: n_e
          integer, intent(in)              :: n_i
          integer, intent(in)              :: n_o
-         type(num_par_t), intent(in)      :: nm_p
+         character(*), intent(in)         :: matrix_type
          class(sysmtx_${S}$), allocatable :: sm
 
          ! Construct the sysmtx type from the supplied dimensions
 
-         select case (nm_p%matrix_type)
+         select case (matrix_type)
          case ('BAND')
             sm = band_sysmtx_${S}$(n, n_e, n_i, n_o)
          case ('BLOCK')
@@ -95,15 +94,15 @@ contains
 
       !****
 
-      function sysmtx_bvp_${S}$_(bp, nm_p) result(sm)
+      function sysmtx_bvp_${S}$_(bp, matrix_type) result(sm)
 
          class(bvp_${S}$), intent(in)     :: bp
-         type(num_par_t), intent(in)      :: nm_p
+         character(*), intent(in)         :: matrix_type
          class(sysmtx_${S}$), allocatable :: sm
 
          ! Construct the sysmtx type from the supplied bvp
 
-         allocate(sm, SOURCE=sysmtx_${S}$(bp%n-1, bp%n_e, bp%n_i, bp%n_o, nm_p))
+         allocate(sm, SOURCE=sysmtx_${S}$(bp%n-1, bp%n_e, bp%n_i, bp%n_o, matrix_type))
 
          ! Finish
 

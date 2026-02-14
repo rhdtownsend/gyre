@@ -41,7 +41,8 @@ module num_par_m
       character(64)           :: c_root_solver = 'RIDDERS'
       character(64)           :: ad_search = 'BRACKET'
       character(64)           :: nad_search = 'AD'
-      character(64)           :: matrix_type = 'PARALLEL_BLOCK'
+      character(64)           :: ad_matrix_type = 'ROWPP'
+      character(64)           :: nad_matrix_type = 'PARALLEL_BLOCK'
       character(FILENAME_LEN) :: dump_contour_template = ''
       character(2048)         :: tag_list = ''
    end type num_par_t
@@ -62,25 +63,25 @@ contains
       integer, intent(in)                       :: unit
       type(num_par_t), allocatable, intent(out) :: nm_p(:)
 
-      integer                            :: n_nm_p
-      integer                            :: i
-      integer                            :: n_iter_max
-      logical                            :: deflate_roots
-      logical                            :: restrict_roots
-      logical                            :: parallel_scan
-      character(LEN(nm_p%diff_scheme))   :: diff_scheme
-      character(LEN(nm_p%r_root_solver)) :: r_root_solver
-      character(LEN(nm_p%c_root_solver)) :: c_root_solver
-      character(LEN(nm_p%ad_search))     :: ad_search
-      character(LEN(nm_p%nad_search))    :: nad_search
-      character(LEN(nm_p%matrix_type))   :: matrix_type
-      character(FILENAME_LEN)            :: dump_contour_template
-      character(LEN(nm_p%tag_list))      :: tag_list
+      integer                              :: n_nm_p
+      integer                              :: i
+      integer                              :: n_iter_max
+      logical                              :: deflate_roots
+      logical                              :: restrict_roots
+      logical                              :: parallel_scan
+      character(LEN(nm_p%diff_scheme))     :: diff_scheme
+      character(LEN(nm_p%r_root_solver))   :: r_root_solver
+      character(LEN(nm_p%c_root_solver))   :: c_root_solver
+      character(LEN(nm_p%ad_search))       :: ad_search
+      character(LEN(nm_p%nad_search))      :: nad_search
+      character(LEN(nm_p%ad_matrix_type))  :: ad_matrix_type
+      character(LEN(nm_p%nad_matrix_type)) :: nad_matrix_type
+      character(FILENAME_LEN)              :: dump_contour_template
+      character(LEN(nm_p%tag_list))        :: tag_list
 
       namelist /num/ n_iter_max, deflate_roots, restrict_roots, parallel_scan, &
          diff_scheme, r_root_solver, c_root_solver, ad_search, nad_search, &
-         dump_contour_template, &
-         matrix_type, tag_list
+         ad_matrix_type, nad_matrix_type, dump_contour_template, tag_list
 
       ! Count the number of num namelists
 
@@ -116,7 +117,8 @@ contains
          c_root_solver = nm_p(i)%c_root_solver
          ad_search = nm_p(i)%ad_search
          nad_search = nm_p(i)%nad_search
-         matrix_type = nm_p(i)%matrix_type
+         ad_matrix_type = nm_p(i)%ad_matrix_type
+         nad_matrix_type = nm_p(i)%nad_matrix_type
          dump_contour_template = nm_p(i)%dump_contour_template
          tag_list = nm_p(i)%tag_list
 
@@ -135,7 +137,8 @@ contains
          nm_p(i)%c_root_solver = c_root_solver
          nm_p(i)%ad_search = ad_search
          nm_p(i)%nad_search = nad_search
-         nm_p(i)%matrix_type = matrix_type
+         nm_p(i)%ad_matrix_type = ad_matrix_type
+         nm_p(i)%nad_matrix_type = nad_matrix_type
          nm_p(i)%dump_contour_template = dump_contour_template
          nm_p(i)%tag_list = tag_list
 
