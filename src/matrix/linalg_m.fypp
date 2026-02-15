@@ -44,18 +44,9 @@ module linalg_m
          module procedure sing_decompose_${S}$_
       end interface sing_decompose
 
-      interface linear_solve
-         module procedure linear_solve_vec_${S}$_
-         module procedure linear_solve_mat_${S}$_
-      end interface linear_solve
-
       interface commutator
          module procedure commutator_${S}$_
       end interface commutator
-
-      interface measure_bandwidth
-         module procedure measure_bandwidth_full_${S}$_
-      end interface measure_bandwidth
 
       interface diagonal
          module procedure diagonal_${S}$_
@@ -65,42 +56,16 @@ module linalg_m
          module procedure diagonal_matrix_${S}$_
       end interface diagonal_matrix
 
-      interface matrix_exp
-         module procedure matrix_exp_${S}$_
-      end interface matrix_exp
-
-      interface outer_product
-         module procedure outer_product_${S}$_
-      end interface outer_product
-
-      interface partition
-         module procedure partition_${S}$_
-      end interface partition
-
    #:endfor
-
-   interface outer_product
-      module procedure outer_product_l_
-   end interface outer_product
-
-   interface matrix_exp
-      module procedure matrix_exp_eigen_
-   end interface matrix_exp
 
    ! Access specifiers
 
    public :: eigen_decompose
    public :: sing_decompose
-   public :: linear_solve
    public :: commutator
-   public :: measure_bandwidth
    public :: diagonal
    public :: diagonal_matrix
    public :: identity_matrix
-   public :: permutation_matrix
-   public :: matrix_exp
-   public :: outer_product
-   public :: partition
 
    ! Default access
 
@@ -417,83 +382,6 @@ contains
 
       !****
 
-      function linear_solve_vec_${S}$_(A, b) result(x)
-
-         ${T}$, intent(in) :: A(:,:)
-         ${T}$, intent(in) :: b(:)
-         ${T}$             :: x(SIZE(A, 2))
-
-         ${T}$ :: Mx(SIZE(x), 1)
-         ${T}$ :: Mb(SIZE(b), 1)
-
-         @:CHECK_BOUNDS(SIZE(A, 1), SIZE(A, 2))
-         @:CHECK_BOUNDS(SIZE(b), SIZE(A, 1))
-
-         ! Solve the linear system A x = b
-
-         Mb(:,1) = b
-
-         Mx = linear_solve(A, Mb)
-
-         x = Mx(:,1)
-
-         ! Finish
-
-         return
-
-      end function linear_solve_vec_${S}$_
-
-      !*****
-
-      function linear_solve_mat_${S}$_(A, B) result(X)
-
-         ${T}$, intent(in) :: A(:,:)
-         ${T}$, intent(in) :: B(:,:)
-         ${T}$             :: X(SIZE(A, 2), SIZE(B, 2))
-
-         ${T}$        :: A_(SIZE(A, 1),SIZE(A, 2))
-         ${T}$        :: B_(SIZE(B, 1),SIZE(B, 2))
-         integer      :: ipiv(SIZE(A, 1))
-         integer      :: info
-         ${T}$        :: Af(SIZE(A, 1),SIZE(A, 2))
-         real(RD)     :: R(SIZE(A, 1))
-         real(RD)     :: C(SIZE(A, 1))
-         real(RD)     :: rcond
-         real(RD)     :: ferr(SIZE(B, 2))
-         real(RD)     :: berr(SIZE(B, 2))
-         character(1) :: equed
-
-         #:if T == 'real(RD)'
-            real(RD)    :: work(4*SIZE(A, 1))
-            integer     :: xwork(SIZE(A, 1))
-         #:elif T == 'complex(RD)'
-            complex(RD) :: work(2*SIZE(A, 1))
-            real(RD)    :: xwork(2*SIZE(A, 1))
-         #:else
-            #:stop f'invalid type {T}'
-         #:endif
-
-         @:CHECK_BOUNDS(SIZE(A, 1), SIZE(A, 2))
-         @:CHECK_BOUNDS(SIZE(B, 1), SIZE(A, 1))
-
-         ! Solve the linear system A X = B
-
-         A_ = A
-         B_ = B
-
-         call XGESVX('E', 'N', SIZE(A_, 1), SIZE(B_, 2), A_, SIZE(A_, 1), AF, SIZE(AF, 1), ipiv, &
-            equed, R, C, B_, SIZE(B_, 1), X, SIZE(X, 1), rcond, ferr, berr, work, &
-            xwork, info)
-         @:ASSERT(info == 0, 'non-zero return from XGESVX')
-
-         ! Finish
-
-         return
-
-      end function linear_solve_mat_${S}$_
-
-      !****
-
       function commutator_${S}$_(A, B) result(C)
 
          ${T}$, intent(in) :: A(:,:)
@@ -514,63 +402,6 @@ contains
          return
 
       end function commutator_${S}$_
-
-      !****
-
-      subroutine measure_bandwidth_full_${S}$_(A, n_l, n_u)
-
-         ${T}$, intent(in) :: A(:,:)
-         integer, intent(out)  :: n_l
-         integer, intent(out)  :: n_u
-
-         integer :: n
-         integer :: i
-         integer :: j
-         integer :: i_min
-         integer :: i_max
-         integer :: k
-
-         @:CHECK_BOUNDS(SIZE(A, 1), SIZE(A, 2))
-
-         ! Measure the lower bandwidth
-
-         n = SIZE(A, 1)
-
-         lower_loop : do k = -(n-1), -1
-
-            i_min = MAX(1, 1-k)
-            i_max = MIN(SIZE(A, 1), SIZE(A, 1)-k)
-
-            do i = i_min, i_max
-               j = i + k
-               if(A(i,j) /= 0) exit lower_loop
-            end do
-
-         end do lower_loop
-
-         n_l = -k
-
-         ! Measure the upper bandwidth
-
-         upper_loop : do k = n-1, 1, -1
-
-            i_min = MAX(1, 1-k)
-            i_max = MIN(SIZE(A, 1), SIZE(A, 1)-k)
-
-            do i = i_min, i_max
-               j = i + k
-               if(A(i,j) /= 0) exit upper_loop
-            end do
-
-         end do upper_loop
-
-         n_u = k
-
-         ! Finish
-
-         return
-
-      end subroutine measure_bandwidth_full_${S}$_
 
       !****
 
@@ -615,86 +446,6 @@ contains
          return
 
       end function diagonal_matrix_${S}$_
-
-      !****
-
-      function matrix_exp_${S}$_(A, t) result(exp_At)
-
-         ${T}$, intent(in)    :: A(:,:)
-         real(RD), intent(in) :: t
-         ${T}$                :: exp_At(SIZE(A, 1),SIZE(A, 2))
-
-         integer, parameter :: IDEG = 6
-
-         ${T}$       :: A_(SIZE(A, 1),SIZE(A, 2))
-         complex(RD) :: lambda(SIZE(A, 1))
-         complex(RD) :: V_l(SIZE(A, 1),SIZE(A, 2))
-         complex(RD) :: V_r(SIZE(A, 1),SIZE(A, 2))
-
-         @:CHECK_BOUNDS(SIZE(A, 1),SIZE(A, 2))
-
-         ! Calculate the matrix exponential exp(A*t)
-
-         A_ = A
-
-         call eigen_decompose_${S}$_(A_, lambda, V_l=V_l, V_r=V_r)
-
-         #:if T == 'real(RD)'
-            exp_At = REAL(matrix_exp_eigen_(lambda, V_l, V_r, t))
-         #:elif T == 'complex(RD)'
-            exp_At = matrix_exp_eigen_(lambda, V_l, V_r, t)
-         #:else
-            #:stop f'invalid type {T}'
-         #:endif
-
-         ! Finish
-
-         return
-
-      end function matrix_exp_${S}$_
-
-      !****
-
-      function outer_product_${S}$_(v, w) result(A)
-
-         ${T}$, intent(in) :: v(:)
-         ${T}$, intent(in) :: w(:)
-         ${T}$             :: A(SIZE(v), SIZE(w))
-
-         ! Calculate the outer product v w^T
-
-         A = SPREAD(v, 2, SIZE(w))*SPREAD(w, 1, SIZE(v))
-
-         ! Finish
-
-         return
-
-      end function outer_product_${S}$_
-
-      !****
-
-      subroutine partition_${S}$_(A, mask_r, mask_c, A_part)
-
-         ${T}$, intent(in)   :: A(:,:)
-         logical, intent(in) :: mask_r(:)
-         logical, intent(in) :: mask_c(:)
-         ${T}$, intent(out)  :: A_part(:,:)
-
-         @:CHECK_BOUNDS(SIZE(mask_r), SIZE(A, 1))
-         @:CHECK_BOUNDS(SIZE(mask_c), SIZE(A, 2))
-
-         @:CHECK_BOUNDS(COUNT(mask_r), SIZE(A_part, 1))
-         @:CHECK_BOUNDS(COUNT(mask_c), SIZE(A_part, 2))
-
-         ! Partition A according to the row and column masks
-
-         A_part = RESHAPE(PACK(A, outer_product(mask_r, mask_c)), SHAPE(A_part))
-
-         ! Finish
-
-         return
-
-      end subroutine partition_${S}$_
 
    #:endfor
 
@@ -789,84 +540,5 @@ contains
       return
 
    end function identity_matrix
-
-   !****
-
-   pure function permutation_matrix(ipiv) result(P)
-
-      integer, intent(in) :: ipiv(:)
-      real(RD)            :: P(SIZE(ipiv),SIZE(ipiv))
-
-      real(RD) :: tmp(SIZE(ipiv))
-      integer  :: i
-
-      ! Set up a permutation matrix from the row-exchange vector ipiv
-
-      P = identity_matrix(SIZE(ipiv))
-
-      do i = 1,SIZE(ipiv)
-         if(ipiv(i) /= i) then
-            tmp = P(i,:)
-            P(i,:) = P(ipiv(i),:)
-            P(ipiv(i),:) = tmp
-         end if
-      end do
-
-      ! Finish
-
-      return
-
-   end function permutation_matrix
-
-   !****
-
-   function matrix_exp_eigen_(lambda, V_l, V_r, t) result(exp_At)
-
-      complex(RD), intent(in) :: lambda(:)
-      complex(RD), intent(in) :: V_l(:,:)
-      complex(RD), intent(in) :: V_r(:,:)
-      real(RD), intent(in)    :: t
-      complex(RD)             :: exp_At(SIZE(lambda),SIZE(lambda))
-
-      integer :: i
-
-      @:CHECK_BOUNDS(SIZE(V_l, 2),SIZE(V_l, 1))
-      @:CHECK_BOUNDS(SIZE(V_r, 2),SIZE(V_r, 1))
-
-      @:CHECK_BOUNDS(SIZE(V_l, 1), SIZE(lambda))
-      @:CHECK_BOUNDS(SIZE(V_r, 1), SIZE(lambda))
-
-      ! Calculate the matrix exponential exp(At) from the
-      ! eigendecomposition of A
-
-      do i = 1,SIZE(lambda)
-         exp_At(i,:) = exp(lambda(i)*t)*V_l(i,:)
-      end do
-
-      exp_At = MATMUL(V_r, exp_At)
-
-      ! Finish
-
-      return
-
-   end function matrix_exp_eigen_
-
-   !****
-
-   function outer_product_l_(v, w) result(A)
-
-      logical, intent(in) :: v(:)
-      logical, intent(in) :: w(:)
-      logical             :: A(SIZE(v), SIZE(w))
-
-      ! Calculate the outer product v w^T
-
-      A = SPREAD(v, 2, SIZE(w)) .AND. SPREAD(w, 1, SIZE(v))
-
-      ! Finish
-
-      return
-
-   end function outer_product_l_
 
 end module linalg_m
