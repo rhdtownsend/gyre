@@ -403,7 +403,7 @@ contains
          write(OUTPUT_UNIT, 100) 'Processing modes'
 100      format(A)
          write(OUTPUT_UNIT, 110) 'id', 'l', 'm', 'n_pg', 'n_p', 'n_g', 'Re(omega)', 'Im(omega)', 'chi', 'n_iter'
-110      format(1X,A3,1X,A3,1X,A4,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
+110      format(1X,A4,1X,A4,1X,A5,1X,A7,1X,A6,1X,A6,1X,A15,1X,A15,1X,A10,1X,A6)
       end if
       !$OMP END SINGLE
 
@@ -437,7 +437,7 @@ contains
          if (check_log_level('INFO') .AND. .NOT. culled) then
             write(OUTPUT_UNIT, 120) md%id, md%l, md%m, md%n_pg, md%n_p, md%n_g, &
                md%omega, md%chi, md%n_iter
-120         format(1X,I3,1X,I3,1X,I4,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
+120         format(1X,I4,1X,I4,1X,I5,1X,I7,1X,I6,1X,I6,1X,E15.8,1X,E15.8,1X,E10.4,1X,I6)
          endif
          !$OMP END ORDERED
 
