@@ -90,32 +90,21 @@ contains
          end subroutine process_mode
       end interface
 
-      type(ext_rt)    :: discrim(SIZE(omega))
-      type(bracket_t) :: br(SIZE(omega)-1)
+      type(ext_rt)                 :: discrim(SIZE(omega))
+      type(bracket_t), allocatable :: br(:)
 
       ! Search for roots via bracketing, and then solve for modes
 
-      ! The code below could be simplified using OMP IF clauses, but
-      ! they seem to mess up inner parallel regions (all the code ends
-      ! up running on one core)
+      !$OMP PARALLEL FIRSTPRIVATE(sm)
+      call scan_omega_(bp, sm, omega, discrim)
+      !$OMP END PARALLEL
 
-      if (nm_p%parallel_scan) then
+      call setup_brackets_(omega, discrim, br)
 
-         !$OMP PARALLEL FIRSTPRIVATE(sm)
-         call scan_omega_(bp, sm, omega, discrim)
-         call setup_brackets_(omega, discrim, br)
-         call find_roots_(bp, sm, omega_min, omega_max, nm_p, br)
-         call process_modes_(bp, sm, br, process_mode)
-         !$OMP END PARALLEL
-
-      else
-
-         call scan_omega_(bp, sm, omega, discrim)
-         call setup_brackets_(omega, discrim, br)
-         call find_roots_(bp, sm, omega_min, omega_max, nm_p, br)
-         call process_modes_(bp, sm, br, process_mode)
-
-      end if
+      !$OMP PARALLEL FIRSTPRIVATE(sm)
+      call find_roots_(bp, sm, omega_min, omega_max, nm_p, br)
+      call process_modes_(bp, sm, br, process_mode)
+      !$OMP END PARALLEL
 
       ! Finish
 
@@ -189,18 +178,18 @@ contains
 
    subroutine setup_brackets_(omega, discrim, br)
 
-      real(RD), intent(in)           :: omega(:)
-      type(ext_rt), intent(in)       :: discrim(:)
-      type(bracket_t), intent(inout) :: br(:)
+      real(RD), intent(in)                      :: omega(:)
+      type(ext_rt), intent(in)                  :: discrim(:)
+      type(bracket_t), allocatable, intent(out) :: br(:)
 
       integer :: i
 
       @:CHECK_BOUNDS(SIZE(discrim), SIZE(omega))
-      @:CHECK_BOUNDS(SIZE(br), SIZE(omega)-1)
 
       ! Set up the bracket array
 
-      !$OMP DO ORDERED SCHEDULE(STATIC, 1)
+      allocate(br(SIZE(omega)-1))
+
       bracket_loop : do i = 1, SIZE(br)
 
          br(i)%omega_a = omega(i)
@@ -211,15 +200,14 @@ contains
 
          br(i)%active = discrim(i)*discrim(i+1) <= ext_rt(0._RD)
 
-         !$OMP ORDERED
          if (br(i)%active) then
             id_m = id_m + 1
             br(i)%id = id_m
          end if
-         !$OMP END ORDERED
 
       end do bracket_loop
-      !$OMP END DO
+
+      br = PACK(br, MASK=br%active)
 
       ! Finish
 

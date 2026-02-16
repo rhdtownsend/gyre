@@ -35,7 +35,6 @@ module num_par_m
       integer                 :: n_iter_max = 50
       logical                 :: deflate_roots = .TRUE.
       logical                 :: restrict_roots = .TRUE.
-      logical                 :: parallel_scan = .TRUE.
       character(64)           :: diff_scheme = 'COLLOC_GL2'
       character(64)           :: real_root_solver = 'BRENT'
       character(64)           :: cmplx_root_solver = 'RIDDERS'
@@ -68,7 +67,6 @@ contains
       integer                                :: n_iter_max
       logical                                :: deflate_roots
       logical                                :: restrict_roots
-      logical                                :: parallel_scan
       character(LEN(nm_p%diff_scheme))       :: diff_scheme
       character(LEN(nm_p%real_root_solver))  :: real_root_solver
       character(LEN(nm_p%cmplx_root_solver)) :: cmplx_root_solver
@@ -79,7 +77,7 @@ contains
       character(FILENAME_LEN)                :: dump_contour_template
       character(LEN(nm_p%tag_list))          :: tag_list
 
-      namelist /num/ n_iter_max, deflate_roots, restrict_roots, parallel_scan, &
+      namelist /num/ n_iter_max, deflate_roots, restrict_roots, &
          diff_scheme, real_root_solver, cmplx_root_solver, ad_search, nad_search, &
          ad_matrix_solver, nad_matrix_solver, dump_contour_template, tag_list
 
@@ -111,7 +109,6 @@ contains
          n_iter_max = nm_p(i)%n_iter_max
          deflate_roots = nm_p(i)%deflate_roots
          restrict_roots = nm_p(i)%restrict_roots
-         parallel_scan = nm_p(i)%parallel_scan
          diff_scheme = nm_p(i)%diff_scheme
          real_root_solver = nm_p(i)%real_root_solver
          cmplx_root_solver = nm_p(i)%cmplx_root_solver
@@ -131,7 +128,6 @@ contains
          nm_p(i)%n_iter_max = n_iter_max
          nm_p(i)%deflate_roots = deflate_roots
          nm_p(i)%restrict_roots = restrict_roots
-         nm_p(i)%parallel_scan = parallel_scan
          nm_p(i)%diff_scheme = diff_scheme
          nm_p(i)%real_root_solver = real_root_solver
          nm_p(i)%cmplx_root_solver = cmplx_root_solver

@@ -91,21 +91,9 @@ contains
       ! Search for roots by finding zero-contour intersections as
       ! initial guesses, and then solve for modes
 
-      ! The code below could be simplified using OMP IF clauses, but
-      ! they seem to mess up inner parallel regions (all the code ends
-      ! up running on one core)
-
-      if (nm_p%parallel_scan) then
-
-         !$OMP PARALLEL FIRSTPRIVATE(sm)
-         call scan_discrim_(bp, sm, omega_re, omega_im, discrim)
-         !$OMP END PARALLEL
-
-      else
-
-         call scan_discrim_(bp, sm, omega_re, omega_im, discrim)
-
-      end if
+      !$OMP PARALLEL FIRSTPRIVATE(sm)
+      call scan_discrim_(bp, sm, omega_re, omega_im, discrim)
+      !$OMP END PARALLEL
 
       ! Find contour intersections
 

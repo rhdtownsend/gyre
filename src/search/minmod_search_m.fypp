@@ -85,35 +85,25 @@ contains
          end subroutine process_mode
       end interface
 
-      type(ext_rt)    :: mod_discrim(SIZE(omega))
-      type(bracket_t) :: br(SIZE(omega)-2)
+      type(ext_rt)                 :: mod_discrim(SIZE(omega))
+      type(bracket_t), allocatable :: br(:)
 
       ! Search for roots via minimum-modulus bracketing, and then
       ! solve for modes
 
-      ! The code below could be simplified using OMP IF clauses, but
-      ! they seem to mess up inner parallel regions (all the code ends
-      ! up running on one core)
+      !$OMP PARALLEL FIRSTPRIVATE(sm)
+      call scan_omega_(bp, sm, omega, mod_discrim)
+      !$OMP END PARALLEL
 
-      if (nm_p%parallel_scan) then
+      call setup_brackets_(omega, mod_discrim, br)
 
-         !$OMP PARALLEL FIRSTPRIVATE(sm)
-         call scan_omega_(bp, sm, omega, mod_discrim)
-         call setup_brackets_(omega, mod_discrim, br)
-         call find_minima_(bp, sm, omega_min, omega_max, nm_p, br)
-         !$OMP END PARALLEL
-
-      else
-
-         call scan_omega_(bp, sm, omega, mod_discrim)
-         call setup_brackets_(omega, mod_discrim, br)
-         call find_minima_(bp, sm, omega_min, omega_max, nm_p, br)
-
-      end if
+      !$OMP PARALLEL FIRSTPRIVATE(sm)
+      call find_minima_(bp, sm, omega_min, omega_max, nm_p, br)
+      !$OMP END PARALLEL
 
       ! Search for modes
 
-      call prox_search(bp, sm, CMPLX(PACK(br%omega_minim, MASK=br%active), KIND=RD), PACK(br%id, MASK=br%active), &
+      call prox_search(bp, sm, CMPLX(br%omega_minim, KIND=RD), br%id, &
          omega_min, omega_max, nm_p, process_mode)
 
       ! Finish
@@ -191,9 +181,9 @@ contains
 
    subroutine setup_brackets_(omega, mod_discrim, br)
 
-      real(RD), intent(in)           :: omega(:)
-      type(ext_rt), intent(in)       :: mod_discrim(:)
-      type(bracket_t), intent(inout) :: br(:)
+      real(RD), intent(in)                      :: omega(:)
+      type(ext_rt), intent(in)                  :: mod_discrim(:)
+      type(bracket_t), allocatable, intent(out) :: br(:)
 
       integer :: i
 
@@ -202,7 +192,8 @@ contains
 
       ! Set up the bracket array
 
-      !$OMP DO ORDERED SCHEDULE(STATIC, 1)
+      allocate(br(SIZE(omega)-2))
+
       bracket_loop : do i = 1, SIZE(br)
 
          br(i)%omega_a = omega(i)
@@ -215,15 +206,14 @@ contains
 
          br(i)%active = mod_discrim(i) > mod_discrim(i+1) .AND. mod_discrim(i+2) > mod_discrim(i+1)
 
-         !$OMP ORDERED
          if (br(i)%active) then
             id_m = id_m + 1
             br(i)%id = id_m
          end if
-         !$OMP END ORDERED
 
       end do bracket_loop
-      !$OMP END DO
+
+      br = PACK(br, MASK=br%active)
 
       ! Finish
 
