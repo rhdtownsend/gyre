@@ -32,7 +32,6 @@ module fgong_file_m
    use util_m
 
    use ISO_FORTRAN_ENV
-   use IEEE_ARITHMETIC
 
    ! No implicit typing
 
@@ -49,6 +48,8 @@ module fgong_file_m
 contains
 
    subroutine read_fgong_model(ml_p, ml)
+
+      use IEEE_ARITHMETIC
 
       type(model_par_t), intent(in)        :: ml_p
       class(model_t), pointer, intent(out) :: ml

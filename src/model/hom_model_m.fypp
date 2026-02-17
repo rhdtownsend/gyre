@@ -32,7 +32,6 @@ module hom_model_m
    use util_m
 
    use ISO_FORTRAN_ENV
-   use IEEE_ARITHMETIC
 
    ! No implicit typing
 
@@ -173,6 +172,8 @@ contains
 
    function coeff_V_2_(this, pt) result(coeff)
 
+      use IEEE_ARITHMETIC
+
       class(hom_model_t), intent(in) :: this
       type(point_t), intent(in)      :: pt
       real(RD)                       :: coeff
@@ -271,6 +272,8 @@ contains
    !****
 
    function dcoeff_V_2_(this, pt) result(dcoeff)
+
+      use IEEE_ARITHMETIC
 
       class(hom_model_t), intent(in) :: this
       type(point_t), intent(in)      :: pt

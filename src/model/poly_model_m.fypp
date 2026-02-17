@@ -33,7 +33,6 @@ module poly_model_m
    use point_m
 
    use ISO_FORTRAN_ENV
-   use IEEE_ARITHMETIC
 
    ! No implicit typing
 
@@ -441,6 +440,8 @@ contains
 
    function coeff_V_2_(this, pt) result(coeff)
 
+      use IEEE_ARITHMETIC
+
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
       real(RD)                        :: coeff
@@ -479,6 +480,8 @@ contains
    !****
 
    function coeff_As_(this, pt) result(coeff)
+
+      use IEEE_ARITHMETIC
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
@@ -665,6 +668,8 @@ contains
 
    function dcoeff_V_2_(this, pt) result(dcoeff)
 
+      use IEEE_ARITHMETIC
+
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
       real(RD)                        :: dcoeff
@@ -750,6 +755,8 @@ contains
    !****
 
    function dcoeff_U_(this, pt) result(dcoeff)
+
+      use IEEE_ARITHMETIC
 
       class(poly_model_t), intent(in) :: this
       type(point_t), intent(in)       :: pt
