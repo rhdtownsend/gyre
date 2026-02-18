@@ -1,0 +1,11 @@
+prefix=${pcfiledir}/../..
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: gyre_mesa
+Description: GYRE stellar oscillation code (MESA interface library)
+URL: https://github.com/rhdtownsend/gyre
+Version: 8.1
+Requires.private: gyre = 8.1 forum
+Cflags: -I${includedir}
+Libs: -L${libdir} -lgyre_mesa
