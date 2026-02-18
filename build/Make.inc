@@ -195,7 +195,7 @@ else
 endif
 
 ifeq ($(OMP),yes)
-   FFLAGS += -fopenmp
+   LDFLAGS += -fopenmp
 endif
 
 ifeq ($(shell uname -s),Linux)
