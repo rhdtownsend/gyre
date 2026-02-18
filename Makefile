@@ -12,9 +12,9 @@ TOOLS ?= yes
 IFACES ?= no
 
 # Build ForUM internally. If not set to "yes", then
-# you must set FORUM_LIB_DIR and FORUM_INC_DIR to
-# point to where the ForUM library and module files,
-# respectively, are located
+# you must ensure that the ForUM library can be found
+# by the pkgconf tool (e.g., by setting the PKG_CONFIG_PATH
+# environment variable)
 FORUM ?= yes
 
 # Enable debugging (with a performance penalty)
@@ -66,6 +66,7 @@ MAKEFLAGS += --no-print-directory
 
 export BIN_DIR ?= $(CURDIR)/bin
 export LIB_DIR ?= $(CURDIR)/lib
+export PKG_DIR ?= $(LIB_DIR)/pkgconfig
 export INC_DIR ?= $(CURDIR)/include
 
 export SRC_DIR := $(CURDIR)/src
@@ -92,7 +93,7 @@ endif
 
 # Rules
 
-install : build | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
+install : build | $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
 	@$(MAKE) -C build $@
 
 build : install-forum
@@ -110,7 +111,7 @@ check_src :
 
 ifeq ($(FORUM),yes)
 
-   install-forum : | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
+   install-forum : | $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
 	@$(MAKE) -C $(SRC_DIR)/forum
 
    clean-forum :
@@ -127,5 +128,5 @@ endif
 
 .PHONY: install build clean test check_src build_ref build_ref_arch install-forum clean-forum
 
-$(BIN_DIR) $(LIB_DIR) $(INC_DIR) :
+$(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR) :
 	@mkdir -p $@

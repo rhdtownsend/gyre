@@ -37,7 +37,7 @@ endif
 
 DEPEND_DIR = .depend
 
-BIN_FILES = $(BIN_TARGETS)
+BIN_FILES := $(BIN_TARGETS)
 
 STATIC_LIB_FILES := $(addsuffix $(STATIC_LIB_SUFFIX),$(LIB_TARGETS))
 SHARED_LIB_FILES := $(addsuffix $(SHARED_LIB_SUFFIX),$(LIB_TARGETS))
@@ -61,6 +61,7 @@ ALL_DEPS := $(addprefix $(DEPEND_DIR)/,$(BIN_TARGETS:%=%.dep) $(LIB_TARGETS:%=%.
 
 install : $(addprefix $(BIN_DIR)/,$(BIN_FILES)) \
           $(addprefix $(LIB_DIR)/,$(LIB_FILES)) \
+	  $(addprefix $(PKG_DIR)/,$(PKG_FILES)) \
           $(addprefix $(INC_DIR)/,$(INC_FILES))
 	@:
 
@@ -68,18 +69,10 @@ build : $(BIN_FILES) $(LIB_FILES)
 	@:
 
 clean :
-	@rm -rf $(BIN_FILES) $(STATIC_LIB_FILES) $(SHARED_LIB_FILES) \
+	@rm -rf $(BIN_FILES) $(LIB_FILES) $(PKG_FILES) \
                 $(INC_FILES) $(DEPEND_DIR) *.f90 *.mod *.smod *.o
 
-$(BIN_DIR)/% : %
-	@echo CP $* $@
-	@cp $< $@
-
-$(LIB_DIR)/% : %
-	@echo CP $* $@
-	@cp $< $@
-
-$(INC_DIR)/% : %
+$(BIN_DIR)/% $(LIB_DIR)/% $(PKG_DIR)/% $(INC_DIR)/%: %
 	@echo CP $* $@
 	@cp $< $@
 
@@ -95,7 +88,8 @@ $(DEPEND_DIR) :
 ########
 
 vpath %.fypp $(SRC_DIRS)
-vpath %.inc $(SRC_DIRS)
+vpath %.pc $(SRC_DIR)/pkgconfig
+vpath %.inc $(SRC_DIR)/include
 
 #################
 # Preproccessing
@@ -116,8 +110,6 @@ else
    FPPFLAGS += -DLOG_LEVEL=\'INFO\'
 endif
 
-FPPFLAGS += -DGFORTRAN_PR121204=1 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=121204
-
 # Rules
 
 %.f90 : %.fypp | $(DEPEND_DIR)
@@ -135,7 +127,7 @@ endif
 # Compiling
 ############
 
-# Fortran flags
+# Flags
 
 FC := gfortran
 
@@ -187,20 +179,23 @@ endif
 # Linking
 ##########
 
+# Flags
+
 AR := ar
 
 ifeq ($(shell uname -s),Darwin)
-   SHARED_LIB_LDFLAGS = -shared -install_name $(LIB_DIR)/$@
-   BIN_LDFLAGS =
+   SHARED_LIB_LDFLAGS +=  -Wl,-dead_strip_dylibs -shared -install_name $(LIB_DIR)/$@
    ARFLAGS := -cr
 else			   
-   SHARED_LIB_LDFLAGS = -shared -Wl,-rpath -Wl,$(LIB_DIR)
+   SHARED_LIB_LDFLAGS += -Wl,--as-needed -shared -Wl,-rpath -Wl,$(LIB_DIR)
    ifeq ($(SHARED),yes)
-      BIN_LDFLAGS = -Wl,-rpath -Wl,$(LIB_DIR)
-   else
-      BIN_LDFLAGS =
+      BIN_LDFLAGS += -Wl,-rpath -Wl,$(LIB_DIR)
    endif
    ARFLAGS := cr
+endif
+
+ifeq ($(OMP),yes)
+   FFLAGS += -fopenmp
 endif
 
 ifeq ($(shell uname -s),Linux)
@@ -211,7 +206,7 @@ endif
 
 $(BIN_FILES) :
 	@echo LD $@
-	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(BIN_LDFLAGS)
+	@$(FC) $(LDFLAGS) -o $@ $^ $(BIN_LDFLAGS)
 
 $(STATIC_LIB_FILES) :
 	@echo AR-LIB $@
@@ -219,7 +214,7 @@ $(STATIC_LIB_FILES) :
 
 $(SHARED_LIB_FILES) :
 	@echo LD-LIB $@
-	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(SHARED_LIB_LDFLAGS)
+	@$(FC) $(LDFLAGS) -o $@ $^ $(SHARED_LIB_LDFLAGS)
 
 #######################
 # Secondary Expansions

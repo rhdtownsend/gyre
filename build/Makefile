@@ -10,6 +10,7 @@ all:
 
 LIB_TARGETS = libgyre
 
+PKG_FILES = gyre.pc
 INC_FILES = gyre_m.mod gyre.inc
 
 ifeq ($(FRONTENDS),yes)
@@ -164,17 +165,22 @@ libgyre_mesa_LIBS = libgyre
 
 # Build flags
 
+PKGS = lapack lapack95 hdf5_fortran odepack blas forum
+
 ifeq ($(CRMATH),yes)
-   PKGCONF = pkgconf --with-path $(MESASDK_ROOT)/math-slots/crmath/lib/pkgconfig
+   PKGS += crmath
+   export PKG_CONFIG_PATH := $(MESASDK_ROOT)/math-slots/crmath/lib/pkgconfig:$(PKG_CONFIG_PATH)
 else
-   PKGCONF = pkgconf --with-path $(MESASDK_ROOT)/math-slots/default/lib/pkgconfig
+   export PKG_CONFIG_PATH := $(MESASDK_ROOT)/math-slots/default/lib/pkgconfig:$(PKG_CONFIG_PATH)
 endif
 
-PKGS = lapack lapack95 hdf5_fortran odepack blas crmath
+ifeq ($(FORUM),yes)
+   export PKG_CONFIG_PATH := $(PKG_DIR):$(PKG_CONFIG_PATH)
+endif
 
-FFLAGS = -g -I$(FORUM_INC_DIR) `$(PKGCONF) --cflags $(PKGS)`
-FPPFLAGS = -I$(FORUM_INC_DIR) -m os
-LDFLAGS = -g -L$(FORUM_LIB_DIR) -lforum `$(PKGCONF) --libs $(PKGS)`
+FFLAGS := `pkgconf --cflags $(PKGS)`
+FPPFLAGS := `pkgconf --cflags $(PKGS)` -m os
+LDFLAGS := `pkgconf --libs $(PKGS)`
 
 # Include standard rules
 
