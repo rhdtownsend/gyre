@@ -24,6 +24,7 @@ endif
 ifeq ($(IFACES),yes)
    BIN_TARGETS += test_gyre_mesa
    LIB_TARGETS += libgyre_mesa
+   PKG_FILES += gyre_mesa.pc
    INC_FILES += gyre_mesa_m.mod
 endif
 
@@ -179,7 +180,7 @@ ifeq ($(FORUM),yes)
 endif
 
 FFLAGS := `pkgconf --cflags $(PKGS)`
-FPPFLAGS := `pkgconf --cflags $(PKGS)` -m os
+FPPFLAGS := `pkgconf --cflags-only-I $(PKGS)` -m os
 LDFLAGS := `pkgconf --libs $(PKGS)`
 
 # Include standard rules
