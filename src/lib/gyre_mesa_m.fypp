@@ -348,7 +348,7 @@ contains
                bp_ad = ad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel)
             endif
 
-            allocate(sm_ad, SOURCE=sysmtx_rt(bp_ad, nm_p_sel%ad_matrix_type))
+            allocate(sm_ad, SOURCE=sysmtx_rt(bp_ad, nm_p_sel%ad_matrix_solver))
 
             select case (nm_p_sel%ad_search)
 
@@ -374,7 +374,7 @@ contains
 
             bp_nad = nad_bvp_t(cx, gr, md_p_m(i), nm_p_sel, os_p_sel)
 
-            allocate(sm_nad, SOURCE=sysmtx_ct(bp_nad, nm_p_sel%nad_matrix_type))
+            allocate(sm_nad, SOURCE=sysmtx_ct(bp_nad, nm_p_sel%nad_matrix_solver))
 
             select case (nm_p_sel%nad_search)
 
