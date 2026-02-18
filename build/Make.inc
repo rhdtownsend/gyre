@@ -206,7 +206,7 @@ endif
 
 $(BIN_FILES) :
 	@echo LD $@
-	@$(FC) $(LDFLAGS) -o $@ $^ $(BIN_LDFLAGS)
+	@$(FC) -o $@ $^ $(LDFLAGS) $(BIN_LDFLAGS)
 
 $(STATIC_LIB_FILES) :
 	@echo AR-LIB $@
@@ -214,7 +214,7 @@ $(STATIC_LIB_FILES) :
 
 $(SHARED_LIB_FILES) :
 	@echo LD-LIB $@
-	@$(FC) $(LDFLAGS) -o $@ $^ $(SHARED_LIB_LDFLAGS)
+	@$(FC) -o $@ $^ $(LDFLAGS) $(SHARED_LIB_LDFLAGS)
 
 #######################
 # Secondary Expansions
