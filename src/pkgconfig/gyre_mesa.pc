@@ -8,4 +8,4 @@ URL: https://github.com/rhdtownsend/gyre
 Version: 8.1
 Requires.private: gyre = 8.1 forum
 Cflags: -I${includedir}
-Libs: -L${libdir} -lgyre_mesa
+Libs: -Wl,-rpath,{$libdir} -L${libdir} -lgyre_mesa
