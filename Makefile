@@ -11,11 +11,13 @@ TOOLS ?= yes
 # the gyre_mesa library)
 IFACES ?= no
 
-# Build ForUM internally. If not set to "yes", then
-# you must ensure that the ForUM library can be found
-# by the pkgconf tool (e.g., by setting the PKG_CONFIG_PATH
-# environment variable)
-FORUM ?= yes
+# Link against an external ForUM library
+#
+# If set to "yes", then the build system will use pkgconf to search
+# for library, with a package name speficied by EXTERNAL_FORUM_PKG.
+# Otherwise, the ForUM library will be built and linked internally
+EXTERNAL_FORUM ?= no
+EXTERNAL_FORUM_PKG ?= forum
 
 # Enable debugging (with a performance penalty)
 DEBUG ?= no
@@ -48,7 +50,8 @@ IEEE ?= yes
 export FRONTENDS
 export TOOLS
 export IFACES
-export FORUM
+export EXTERNAL_FORUM
+export EXTERNAL_FORUM_PKG
 export DEBUG
 export SHARED
 export OMP
@@ -80,11 +83,6 @@ export SRC_DIRS := $(addprefix $(SRC_DIR)/, eqns \
    frontend/gyre frontend/tools grid include interp lib math matrix mode model  \
    output par poly search tar tide)
 
-ifeq ($(FORUM),yes)
-   export FORUM_LIB_DIR = $(LIB_DIR)
-   export FORUM_INC_DIR = $(INC_DIR)
-endif
-
 ifeq ($(CRMATH),yes)
    SRC_DIRS += $(SRC_DIR)/math/crmath
 else
@@ -109,7 +107,7 @@ test build_ref build_ref_arch :
 check_src :
 	@$(MAKE) -C build $@
 
-ifeq ($(FORUM),yes)
+ifneq ($(EXTERNAL_FORUM),yes)
 
    install-forum : | $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
 	@$(MAKE) -C $(SRC_DIR)/forum

@@ -166,17 +166,20 @@ libgyre_mesa_LIBS = libgyre
 
 # Build flags
 
-PKGS = lapack lapack95 hdf5_fortran odepack blas forum
+PKGS = lapack lapack95 hdf5_fortran odepack blas
+
+ifeq ($(EXTERNAL_FORUM),yes)
+   PKGS += $(EXTERNAL_FORUM_PKG)
+else
+   PKGS += forum
+   export PKG_CONFIG_PATH := $(PKG_DIR):$(PKG_CONFIG_PATH)
+endif
 
 ifeq ($(CRMATH),yes)
    PKGS += crmath
    export PKG_CONFIG_PATH := $(MESASDK_ROOT)/math-slots/crmath/lib/pkgconfig:$(PKG_CONFIG_PATH)
 else
    export PKG_CONFIG_PATH := $(MESASDK_ROOT)/math-slots/default/lib/pkgconfig:$(PKG_CONFIG_PATH)
-endif
-
-ifeq ($(FORUM),yes)
-   export PKG_CONFIG_PATH := $(PKG_DIR):$(PKG_CONFIG_PATH)
 endif
 
 FFLAGS := `pkgconf --cflags $(PKGS)`
