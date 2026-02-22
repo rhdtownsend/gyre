@@ -70,6 +70,9 @@ if __name__ == '__main__':
         with open(f'{vars}/A.inc', 'w') as f:
             f.write(generate_A(A, T)+'\n')
 
+        with open(f'{vars}/A_T.inc', 'w') as f:
+            f.write(generate_A(A, T, transpose=True)+'\n')
+
         with open(f'{vars}/C.inc', 'w') as f:
             f.write(generate_C(C, T)+'\n')
 

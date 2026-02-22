@@ -51,6 +51,7 @@ module colloc_gl2_diff_m
       contains
          private
          procedure, public :: build => build_${S}$_
+         procedure, public :: build_T => build_T_${S}$_
       end type colloc_gl2_diff_${S}$
 
       ! Interfaces
@@ -150,6 +151,46 @@ contains
          ! Finish
 
       end subroutine build_${S}$_
+
+      !****
+
+      subroutine build_T_${S}$_(this, st, E_l_T, E_r_T, scl)
+
+         class(colloc_gl2_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)           :: st
+         ${T}$, intent(out)                       :: E_l_T(:,:)
+         ${T}$, intent(out)                       :: E_r_T(:,:)
+         type(ext_${S}$), intent(out)             :: scl
+
+         real(RD), parameter :: B_1 = 1._RD/2._RD
+
+         integer :: i
+         integer :: j
+
+         ! Build the difference equations
+
+         ! Algorithm note: this is equivalent to the modified midpoint
+         ! method
+
+         call this%eq(1)%eval_A_T(st, E_l_T)
+
+         do j = 1, this%n_e
+
+            do i = 1, this%n_e
+               E_l_T(i,j) = (this%dx*B_1)*E_l_T(i,j)
+               E_r_T(i,j) = E_l_T(i,j)
+            end do
+
+            E_l_T(j,j) = E_l_T(j,j) + 1._RD
+            E_r_T(j,j) = E_r_T(j,j) - 1._RD
+
+         end do
+
+         scl = ONE_${S}$
+
+         ! Finish
+
+      end subroutine build_T_${S}$_
 
    #:endfor
 

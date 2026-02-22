@@ -112,7 +112,7 @@ class fcode_symbol(sp.Symbol):
 
 # Code generation routines
 
-def generate_A(A, T, subs=[]):
+def generate_A(A, T, transpose=False, subs=[]):
 
     # Transform the Jacobian matrix
 
@@ -133,7 +133,10 @@ def generate_A(A, T, subs=[]):
 
     printer = spf.FCodePrinter({'standard': 2008, 'source_format': 'free'})
 
-    return printer.doprint(invx*A, assign_to='A')
+    if transpose:
+        return printer.doprint(invx*A.T, assign_to='A_T')
+    else:
+        return printer.doprint(invx*A, assign_to='A')
 
 def generate_IB(IB, T, subs=[]):
 

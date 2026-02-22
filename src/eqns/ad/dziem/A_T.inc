@@ -1,0 +1,16 @@
+A_T(1, 1) = invx*(V_g - l_i - 1)
+A_T(2, 1) = invx*(-V_g*alpha_gam + eta)
+A_T(3, 1) = invx*(V_g*alpha_gam + alpha_grv*eta - eta)
+A_T(4, 1) = 0
+A_T(1, 2) = invx*(-As_iso + om2)
+A_T(2, 2) = invx*(As - U - l_i + 3)
+A_T(3, 2) = invx*(-As + U + alpha_grv*(-U - l_i + 3) + l_i - 3)
+A_T(4, 2) = 0
+A_T(1, 3) = 0
+A_T(2, 3) = 0
+A_T(3, 3) = alpha_grv*invx*(-U - l_i + 3)
+A_T(4, 3) = alpha_grv*invx
+A_T(1, 4) = As*U*alpha_grv*invx
+A_T(2, 4) = U*V_g*alpha_grv*invx
+A_T(3, 4) = invx*(-U*V_g*alpha_grv + alpha_grv*lambda)
+A_T(4, 4) = alpha_grv*invx*(-U - l_i + 2)

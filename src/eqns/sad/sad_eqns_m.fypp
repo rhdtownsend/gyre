@@ -50,6 +50,7 @@ module ${P}$_sad_eqns_m
    contains
       private
       procedure, public :: eval_A
+      procedure, public :: eval_A_T
       procedure, public :: eval_C
    end type ${P}$_sad_eqns_t
 
@@ -130,42 +131,52 @@ contains
 
    !****
 
-   subroutine eval_A(this, st, A)
+   #:for A in ('A', 'A_T')
 
-      class(${P}$_sad_eqns_t), intent(in) :: this
-      class(state_rt), intent(in)         :: st
-      real(RD), intent(out)               :: A(:,:)
+      subroutine eval_${A}$(this, st, ${A}$)
 
-      real(RD) :: lambda
-      real(RD) :: invx
+         class(${P}$_sad_eqns_t), intent(in) :: this
+         class(state_rt), intent(in)         :: st
+         real(RD), intent(out)               :: ${A}$(:,:)
 
-      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
-      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
+         real(RD) :: lambda
+         real(RD) :: invx
 
-      ! Evaluate the Jacobian matrix
+         @:CHECK_BOUNDS(SIZE(${A}$, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(${A}$, 2), this%n_e)
 
-      associate ( &
-         V_g => this%V_g, &
-         As => this%As, &
-         U => this%U, &
-         x => this%x, &
-         l_e => this%cx%l)
+         ! Evaluate the Jacobian matrix
 
-         lambda = l_e*(l_e+1._RD)
+         associate ( &
+            V_g => this%V_g, &
+            As => this%As, &
+            U => this%U, &
+            x => this%x, &
+            l_e => this%cx%l)
 
-         invx = 1._RD/x
+            lambda = l_e*(l_e+1._RD)
 
-         ! Set up the matrix
+            invx = 1._RD/x
 
-         #:include 'A.inc'
+            ! Set up the matrix
 
-      end associate
+            #:if A == 'A'
+               #:include 'A.inc'
+            #:elif A == 'A_T'
+               #:include 'A_T.inc'
+            #:else
+               #:stop 'invalid A'
+            #:endif
 
-      ! Finish
+         end associate
 
-      return
+         ! Finish
 
-   end subroutine eval_A
+         return
+
+      end subroutine eval_${A}$
+
+   #:endfor
 
    !****
 

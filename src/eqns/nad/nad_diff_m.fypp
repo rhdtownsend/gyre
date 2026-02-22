@@ -54,6 +54,7 @@ module nad_diff_m
    contains
       private
       procedure, public :: build
+      procedure, public :: build_T
    end type nad_diff_t
 
    ! Interfaces
@@ -191,5 +192,28 @@ contains
       return
 
    end subroutine build
+
+   !****
+
+   subroutine build_T(this, st, E_l_T, E_r_T, scl)
+
+      class(nad_diff_t), intent(in) :: this
+      class(state_ct), intent(in)   :: st
+      complex(RD), intent(out)      :: E_l_T(:,:)
+      complex(RD), intent(out)      :: E_r_T(:,:)
+      type(ext_ct), intent(out)     :: scl
+
+      ! Build the difference equations
+
+      call this%build(st, E_l_T, E_r_T, scl)
+
+      E_l_T = TRANSPOSE(E_l_T)
+      E_r_T = TRANSPOSE(E_r_T)
+
+      ! Finish
+
+      return
+
+   end subroutine build_T
 
 end module nad_diff_m

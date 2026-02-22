@@ -53,6 +53,7 @@ module ${P}$_rad_eqns_m
    contains
       private
       procedure, public :: eval_A
+      procedure, public :: eval_A_T
       procedure, public :: eval_C
    end type ${P}$_rad_eqns_t
 
@@ -136,49 +137,59 @@ contains
 
    !****
 
-   subroutine eval_A(this, st, A)
+   #:for A in ('A', 'A_T')
 
-      class(${P}$_rad_eqns_t), intent(in) :: this
-      class(state_rt), intent(in)         :: st
-      real(RD), intent(out)               :: A(:,:)
+      subroutine eval_${A}$(this, st, ${A}$)
 
-      real(RD) :: omega_c
-      real(RD) :: om2
-      real(RD) :: invx
+         class(${P}$_rad_eqns_t), intent(in) :: this
+         class(state_rt), intent(in)         :: st
+         real(RD), intent(out)               :: ${A}$(:,:)
 
-      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
-      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
+         real(RD) :: omega_c
+         real(RD) :: om2
+         real(RD) :: invx
 
-      ! Evaluate the Jacobian matrix
+         @:CHECK_BOUNDS(SIZE(${A}$, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(${A}$, 2), this%n_e)
 
-      associate ( &
-         omega => st%omega, &
-         V_2 => this%V_2, &
-         dV_2 => this%dV_2, &
-         V_g => this%V_g, &
-         As => this%As, &
-         U => this%U, &
-         c_1 => this%c_1, &
-         x => this%x, &
-         alpha_omg => this%cx%alpha_omg)
+         ! Evaluate the Jacobian matrix
 
-         omega_c = omega
+         associate ( &
+            omega => st%omega, &
+            V_2 => this%V_2, &
+            dV_2 => this%dV_2, &
+            V_g => this%V_g, &
+            As => this%As, &
+            U => this%U, &
+            c_1 => this%c_1, &
+            x => this%x, &
+            alpha_omg => this%cx%alpha_omg)
 
-         om2 = c_1*alpha_omg*omega_c**2
+            omega_c = omega
 
-         invx = 1._RD/x
+            om2 = c_1*alpha_omg*omega_c**2
 
-         ! Set up the matrix
+            invx = 1._RD/x
 
-         #:include 'A.inc'
+            ! Set up the matrix
 
-      end associate
+            #:if A == 'A'
+               #:include 'A.inc'
+            #:elif A == 'A_T'
+               #:include 'A_T.inc'
+            #:else
+               #:stop 'invalid A'
+            #:endif
 
-      ! Finish
+         end associate
 
-      return
+         ! Finish
 
-   end subroutine eval_A
+         return
+
+      end subroutine eval_${A}$
+
+   #:endfor
 
    !****
 
