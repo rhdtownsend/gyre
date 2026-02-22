@@ -180,7 +180,7 @@ program gyre_tides
 
 contains
 
-   subroutine process_resp (rs)
+   subroutine process_resp(rs)
 
       type(resp_t), intent(in) :: rs
 
