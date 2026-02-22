@@ -91,12 +91,12 @@ contains
             type(resp_t), intent(in) :: rs
          end subroutine process_resp
       end interface
-      type(grid_par_t), intent(in)        :: gr_p
-      type(num_par_t), intent(in)         :: nm_p
-      type(orbit_par_t), intent(in)       :: or_p
-      type(osc_par_t), intent(in)         :: os_p
-      type(rot_par_t), intent(in)         :: rt_p
-      type(tide_par_t), intent(in)        :: td_p
+      type(grid_par_t), intent(in)  :: gr_p
+      type(num_par_t), intent(in)   :: nm_p
+      type(orbit_par_t), intent(in) :: or_p
+      type(osc_par_t), intent(in)   :: os_p
+      type(rot_par_t), intent(in)   :: rt_p
+      type(tide_par_t), intent(in)  :: td_p
 
       real(RD), allocatable         :: omega(:)
       type(grid_t)                  :: gr
@@ -104,6 +104,9 @@ contains
       type(context_t), pointer      :: cx(:,:)
       real(RD), allocatable         :: y_T(:,:,:)
       integer, allocatable          :: tide_type(:,:,:)
+      integer                       :: c_beg
+      integer                       :: c_end
+      integer                       :: c_rate
       integer                       :: l
       integer                       :: m
       integer                       :: k
@@ -120,16 +123,7 @@ contains
       type(wave_t)                  :: wv
       type(resp_t)                  :: rs
 
-      integer(ID) :: c_beg, c_end, c_rate
-      integer(ID) :: c_bvp, c_solve, c_proc
-
-      c_bvp = 0
-      c_solve = 0
-      c_proc = 0
-
-      call system_clock(count_rate=c_rate)
-
-      ! Check that the SPHARM lambda method is being used
+      ! Check that the SPH lambda method is being used
 
       if (os_p%lambda_method /= 'SPH') then
          @:ABORT('only the SPH lambda method can be used')
@@ -139,16 +133,21 @@ contains
 
       call setup_tides_(ml, gr_p, or_p, os_p, rt_p, td_p, omega, gr, cx, md_p, y_T, tide_type)
 
-      ! Loop over l, m and k, solving for the tidal response
+      ! Evaluate tidal response
 
-      id_m = id_m + 1
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Evaluating response'
+100      format(A)
+      end if
+
+      call SYSTEM_CLOCK(c_beg, c_rate)
+
+      ! Loop over l, m and k, solving for the tidal response
 
       l_loop : do l = td_p%l_min, td_p%l_max
          m_loop : do m = MAX(-l, td_p%m_min), MIN(l, td_p%m_max)
 
             ! Create the bvp_t's
-
-            call system_clock(c_beg)
 
             if (os_p%alpha_trb > 0._RD) then
                bp_nad = tnad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
@@ -161,19 +160,20 @@ contains
             allocate(sm_nad, SOURCE=sysmtx_ct(bp_nad%n-1, bp_nad%n_e, bp_nad%n_i, bp_nad%n_o, nm_p%nad_matrix_solver))
             allocate(sm_sad, SOURCE=sysmtx_rt(bp_sad%n-1, bp_sad%n_e, bp_sad%n_i, bp_sad%n_o, nm_p%nad_matrix_solver))
 
-            call system_clock(c_end)
-            c_bvp = c_bvp + (c_end - c_beg)
-
+            !$OMP PARALLEL DO ORDERED FIRSTPRIVATE(sm_nad, sm_sad) &
+            !$OMP PRIVATE(w_i_nad, w_o_nad, w_i_sad, w_o_sad, st_nad, st_sad, wv, rs) SCHEDULE(STATIC, 1)
             k_loop : do k = td_p%k_min, td_p%k_max
+
+               !$OMP ATOMIC
+               id_m = id_m + 1
+               !$OMP END ATOMIC
 
                ! Evaluate the response
 
                if (ABS(y_T(l,m,k)) > 0._RD) then
 
-                  call system_clock(c_beg)
-
                   select case(tide_type(l,m,k))
-                  case (DYNAMIC_TIDE,MIXED_TIDE)
+                  case (DYNAMIC_TIDE, MIXED_TIDE)
 
                      w_i_nad = 0._RD
 
@@ -208,17 +208,11 @@ contains
 
                   rs = resp_t(wv, or_p, td_p, k)
 
-                  call system_clock(c_end)
-                  c_solve = c_solve + (c_end - c_beg)
-
                   ! Process the response
 
-                  call system_clock(c_beg)
-
+                  !$OMP ORDERED
                   call process_resp(rs)
-
-                  call system_clock(c_end)
-                  c_proc = c_proc + (c_end - c_beg)
+                  !$OMP END ORDERED
 
                end if
 
@@ -232,12 +226,11 @@ contains
          end do m_loop
       end do l_loop
 
-      ! Report timing
+      call SYSTEM_CLOCK(c_end)
 
-      if (check_log_level('DEBUG')) then
-         write(OUTPUT_UNIT, *) 'Time for bpv:', REAL(c_bvp)/REAL(c_rate, RD)
-         write(OUTPUT_UNIT, *) 'Time for solve:', REAL(c_solve)/REAL(c_rate, RD)
-         write(OUTPUT_UNIT, *) 'Time for proc:', REAL(c_proc)/REAL(c_rate, RD)
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 110) 'Time elapsed :', REAL(c_end-c_beg, RD)/REAL(c_rate, RD), 's'
+110      format(2X,A,1X,F10.3,1X,A/)
       end if
 
       ! Clean up
