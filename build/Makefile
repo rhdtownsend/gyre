@@ -126,7 +126,8 @@ sad_SRCS = sad_bvp_m.fypp sad_factory_m.fypp \
    gyre_sad_trans_m.fypp
 
 sysmtx_SRCS = sysmtx_m.fypp sysmtx_factory_m.fypp \
-   block_sysmtx_m.fypp band_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp
+   block_sysmtx_m.fypp band_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp \
+   rowppt_sysmtx_m.fypp
 
 libgyre_SRCS = $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS) $(sad_SRCS)		\
    $(sysmtx_SRCS) 									\

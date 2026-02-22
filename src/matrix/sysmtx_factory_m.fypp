@@ -28,6 +28,7 @@ module sysmtx_factory_m
    use block_sysmtx_m
    use cyclic_sysmtx_m
    use rowpp_sysmtx_m
+   use rowppt_sysmtx_m
    use sysmtx_m
 
    use ISO_FORTRAN_ENV
@@ -79,6 +80,8 @@ contains
             sm = cyclic_sysmtx_${S}$(n, n_e, n_i, n_o)
          case ('ROWPP')
             sm = rowpp_sysmtx_${S}$(n, n_e, n_i, n_o)
+         case ('ROWPPT')
+            sm = rowppt_sysmtx_${S}$(n, n_e, n_i, n_o)
          case default
             @:ABORT('invalid matrix_solver')
          end select
