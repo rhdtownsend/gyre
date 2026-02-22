@@ -1,0 +1,37 @@
+&constants
+/
+
+&model
+  model_type = 'EVOL'
+  file = 'spb.mesa'
+  file_format = 'MESA'
+/
+
+&osc
+/
+
+&rot
+/
+
+&num
+  diff_scheme = 'COLLOC_GL2'
+/
+
+&grid
+  w_osc = 10
+  w_exp = 2
+  w_ctr = 10
+/
+
+&tide
+  l_max = 2
+  k_min = -20
+  k_max = 20
+/
+
+&orbit
+  q = 0.4
+  e = 0.5
+  Omega_orb = 0.01
+/
+

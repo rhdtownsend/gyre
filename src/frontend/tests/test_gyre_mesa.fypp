@@ -1,5 +1,5 @@
 ! Program  : test_gyre_mesa
-! Purpose  : test libgyre_mesa for memory leaks and other issues
+! Purpose  : test gyre_mesa interface
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -37,7 +37,6 @@ program test_gyre_mesa
    integer                       :: ipar(1)
    integer                       :: i
    type(scan_par_t), allocatable :: sc_p(:)
-   integer                       :: rss
 
    ! Initialize
 
@@ -51,7 +50,7 @@ program test_gyre_mesa
 
    ! Repeatedy find modes
 
-   do i = 1,10
+   do i = 1, 10
 
       ! Adjust the frequency range
 
@@ -70,7 +69,7 @@ program test_gyre_mesa
 
       ! Get  print out memory usage
 
-      call EXECUTE_COMMAND_LINE('ps -o comm,rss | grep test_gyre_lib')
+      call EXECUTE_COMMAND_LINE('ps -o comm,rss | grep test_gyre_mesa')
 
       print *,'Iteration:',i
 

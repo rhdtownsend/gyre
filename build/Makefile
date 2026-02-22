@@ -22,7 +22,7 @@ ifeq ($(TOOLS),yes)
 endif
 
 ifeq ($(IFACES),yes)
-   BIN_TARGETS += test_gyre_mesa
+   BIN_TARGETS += test_gyre_mesa test_gyre_mesa_tides
    LIB_TARGETS += libgyre_mesa
    PKG_FILES += gyre_mesa.pc
    INC_FILES += gyre_mesa_m.mod
@@ -77,6 +77,10 @@ eval_love_LIBS = libgyre
 test_gyre_mesa_SRCS = test_gyre_mesa.fypp
 test_gyre_mesa_USES = $(libgyre_mesa_SRCS) $(libgyre_SRCS)
 test_gyre_mesa_LIBS = libgyre_mesa libgyre
+
+test_gyre_mesa_tides_SRCS = test_gyre_mesa_tides.fypp
+test_gyre_mesa_tides_USES = $(libgyre_mesa_SRCS) $(libgyre_SRCS)
+test_gyre_mesa_tides_LIBS = libgyre_mesa libgyre
 
 test_ext_SRCS = test_ext.fypp
 test_ext_USES = $(libgyre_SRCS)

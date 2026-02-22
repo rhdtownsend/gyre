@@ -1,0 +1,98 @@
+! Program  : test_gyre_mesa_tides
+! Purpose  : test gyre_mesa interface (tides)
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+program test_gyre_mesa_tides
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use gyre_mesa_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Variables
+
+   real(RD)                       :: rpar(1)
+   integer                        :: ipar(1)
+   integer                        :: i
+   type(orbit_par_t), allocatable :: or_p(:)
+
+   ! Initialize
+
+   call init_tides('gyre_tides.in')
+
+   call set_constant('GYRE_DIR', '../../..')
+
+   ! Read the model
+
+   call read_model('spb.mesa')
+
+   ! Repeatedy evaluate responses
+
+   do i = 1, 10
+
+      ! Adjust the orbital frequency
+
+      call get_par(orbit_par=or_p)
+
+      or_p(1)%Omega_orb = or_p(1)%Omega_orb + 0.01_RD
+
+      call set_par(orbit_par=or_p)
+
+      ! Run
+
+      call get_responses(user_sub, ipar, rpar)
+
+      ! Get  print out memory usage
+
+      call EXECUTE_COMMAND_LINE('ps -o rss,comm | grep test_gyre_mesa_tides')
+
+      print *,'Iteration:',i
+
+   end do
+
+   ! Finish
+
+contains
+
+   subroutine user_sub (rs, ipar, rpar, retcode)
+
+      type(resp_t), intent(in) :: rs
+      integer, intent(inout)   :: ipar(:)
+      real(RD), intent(inout)  :: rpar(:)
+      integer, intent(out)     :: retcode
+
+      ! Print out response data
+
+      print *, rs%l, rs%m, rs%k, rs%eul_Phi(rs%j_ref)
+
+      ! Finish
+
+      retcode = 0
+
+      return
+
+   end subroutine user_sub
+
+end program test_gyre_mesa_tides

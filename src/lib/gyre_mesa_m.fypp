@@ -1,7 +1,7 @@
 ! Module  : gyre_mesa_m
 ! Purpose : library interface for GYRE in MESA
 !
-! Copyright 2013-2025 Rich Townsend & The GYRE Team
+! Copyright 2013-2025 Rich Townsend, Ritvik Narayan & The GYRE Team
 !
 ! This file is part of GYRE. GYRE is free software: you can
 ! redistribute it and/or modify it under the terms of the GNU General
@@ -33,13 +33,15 @@ module gyre_mesa_m
 
    ! Module variables
 
-   type(model_par_t), save             :: ml_p_m
-   type(mode_par_t), allocatable, save :: md_p_m(:)
-   type(osc_par_t), allocatable, save  :: os_p_m(:)
-   type(rot_par_t), allocatable, save  :: rt_p_m(:)
-   type(num_par_t), allocatable, save  :: nm_p_m(:)
-   type(grid_par_t), allocatable, save :: gr_p_m(:)
-   type(scan_par_t), allocatable, save :: sc_p_m(:)
+   type(model_par_t), save              :: ml_p_m
+   type(mode_par_t), allocatable, save  :: md_p_m(:)
+   type(osc_par_t), allocatable, save   :: os_p_m(:)
+   type(rot_par_t), allocatable, save   :: rt_p_m(:)
+   type(num_par_t), allocatable, save   :: nm_p_m(:)
+   type(grid_par_t), allocatable, save  :: gr_p_m(:)
+   type(scan_par_t), allocatable, save  :: sc_p_m(:)
+   type(orbit_par_t), allocatable, save :: or_p_m(:)
+   type(tide_par_t), allocatable, save  :: td_p_m(:)
 
    class(evol_model_t), pointer, save :: ml_m => null()
 
@@ -58,15 +60,18 @@ module gyre_mesa_m
    public :: L_SUN
 
    public :: mode_t
+   public :: resp_t
    public :: grid_t
+   public :: grid_par_t
    public :: model_par_t
    public :: mode_par_t
-   public :: osc_par_t
-   public :: rot_par_t
    public :: num_par_t
-   public :: grid_par_t
+   public :: osc_par_t
+   public :: orbit_par_t
+   public :: rot_par_t
    public :: scan_par_t
    public :: init
+   public :: init_tides
    public :: final
    public :: get_par
    public :: set_par
@@ -74,6 +79,7 @@ module gyre_mesa_m
    public :: read_model
    public :: set_model
    public :: get_modes
+   public :: get_responses
 
    ! Procedures
 
@@ -113,6 +119,40 @@ contains
 
    !****
 
+   subroutine init_tides(file)
+
+      character(*), intent(in) :: file
+
+      integer :: unit
+
+      ! Initialize
+
+      call init_math()
+
+      call set_log_level('WARN')
+
+      ! Read the namelist file
+
+      open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+
+      call read_model_par(unit, ml_p_m)
+      call read_osc_par(unit, os_p_m)
+      call read_rot_par(unit, rt_p_m)
+      call read_num_par(unit, nm_p_m)
+      call read_grid_par(unit, gr_p_m)
+      call read_orbit_par(unit, or_p_m)
+      call read_tide_par(unit, td_p_m)
+
+      close(unit)
+
+      ! Finish
+
+      return
+
+   end subroutine init_tides
+
+   !****
+
    subroutine final()
 
       ! Finalize
@@ -125,6 +165,8 @@ contains
       if (ALLOCATED(nm_p_m)) deallocate(nm_p_m)
       if (ALLOCATED(gr_p_m)) deallocate(gr_p_m)
       if (ALLOCATED(sc_p_m)) deallocate(sc_p_m)
+      if (ALLOCATED(or_p_m)) deallocate(or_p_m)
+      if (ALLOCATED(td_p_m)) deallocate(td_p_m)
 
       ! Finish
 
@@ -135,15 +177,17 @@ contains
    !****
 
    subroutine get_par(model_par, mode_par, osc_par, rot_par, &
-                      num_par, grid_par, scan_par)
+                      num_par, grid_par, scan_par, orbit_par, tide_par)
 
-      type(model_par_t), intent(out), optional             :: model_par
-      type(mode_par_t), allocatable, intent(out), optional :: mode_par(:)
-      type(osc_par_t), allocatable, intent(out), optional  :: osc_par(:)
-      type(rot_par_t), allocatable, intent(out), optional  :: rot_par(:)
-      type(num_par_t), allocatable, intent(out), optional  :: num_par(:)
-      type(grid_par_t), allocatable, intent(out), optional :: grid_par(:)
-      type(scan_par_t), allocatable, intent(out), optional :: scan_par(:)
+      type(model_par_t), intent(out), optional              :: model_par
+      type(mode_par_t), allocatable, intent(out), optional  :: mode_par(:)
+      type(osc_par_t), allocatable, intent(out), optional   :: osc_par(:)
+      type(rot_par_t), allocatable, intent(out), optional   :: rot_par(:)
+      type(num_par_t), allocatable, intent(out), optional   :: num_par(:)
+      type(grid_par_t), allocatable, intent(out), optional  :: grid_par(:)
+      type(scan_par_t), allocatable, intent(out), optional  :: scan_par(:)
+      type(orbit_par_t), allocatable, intent(out), optional :: orbit_par(:)
+      type(tide_par_t), allocatable, intent(out), optional  :: tide_par(:)
 
       ! Get parameter set(s)
 
@@ -154,6 +198,8 @@ contains
       if (PRESENT(num_par)) num_par = nm_p_m
       if (PRESENT(grid_par)) grid_par = gr_p_m
       if (PRESENT(scan_par)) scan_par = sc_p_m
+      if (PRESENT(orbit_par)) orbit_par = or_p_m
+      if (PRESENT(tide_par)) tide_par = td_p_m
 
       ! Finish
 
@@ -164,7 +210,7 @@ contains
    !****
 
    subroutine set_par(model_par, mode_par, osc_par, rot_par, &
-                      num_par, grid_par, scan_par)
+                      num_par, grid_par, scan_par, orbit_par, tide_par)
 
       type(model_par_t), intent(in), optional :: model_par
       type(mode_par_t), intent(in), optional  :: mode_par(:)
@@ -173,6 +219,8 @@ contains
       type(num_par_t), intent(in), optional   :: num_par(:)
       type(grid_par_t), intent(in), optional  :: grid_par(:)
       type(scan_par_t), intent(in), optional  :: scan_par(:)
+      type(orbit_par_t), intent(in), optional :: orbit_par(:)
+      type(tide_par_t), intent(in), optional  :: tide_par(:)
 
       ! Get parameter set(s)
 
@@ -183,6 +231,8 @@ contains
       if (PRESENT(num_par)) nm_p_m = num_par
       if (PRESENT(grid_par)) gr_p_m = grid_par
       if (PRESENT(scan_par)) sc_p_m = scan_par
+      if (PRESENT(orbit_par)) or_p_m = orbit_par
+      if (PRESENT(tide_par)) td_p_m = tide_par
 
       ! Finish
 
@@ -289,7 +339,7 @@ contains
 
       allocate(cx)
 
-      ! Loop through modepars
+      ! Loop through mode_par_t's
 
       md_p_loop : do i = 1, SIZE(md_p_m)
 
@@ -397,7 +447,7 @@ contains
 
             case default
 
-               @:ABORT('Invalid nad_start')
+               @:ABORT('Invalid nad_search')
 
             end select
 
@@ -495,5 +545,82 @@ contains
       end subroutine process_mode_nad
 
    end subroutine get_modes
+
+   !****
+
+   subroutine get_responses(user_sub, ipar, rpar)
+
+      interface
+         subroutine user_sub (rs, ipar, rpar, retcode)
+            import resp_t
+            import RD
+            implicit none (type, external)
+            type(resp_t), intent(in) :: rs
+            integer, intent(inout)   :: ipar(:)
+            real(RD), intent(inout)  :: rpar(:)
+            integer, intent(out)     :: retcode
+         end subroutine user_sub
+      end interface
+      integer, intent(inout)  :: ipar(:)
+      real(RD), intent(inout) :: rpar(:)
+
+      integer           :: i
+      type(osc_par_t)   :: os_p_sel
+      type(rot_par_t)   :: rt_p_sel
+      type(num_par_t)   :: nm_p_sel
+      type(grid_par_t)  :: gr_p_sel
+      type(orbit_par_t) :: or_p_sel
+
+      @:ASSERT(ASSOCIATED(ml_m), 'No model provided')
+
+      ! Check that GYRE_DIR is set
+
+      @:ASSERT(GYRE_DIR /= '', 'The GYRE_DIR environment variable is not set')
+
+      ! Loop through tide_par_t's
+
+      td_p_loop : do i = 1, SIZE(td_p_m)
+
+         ! Select parameters according to tags
+
+         call select_par(os_p_m, td_p_m(i)%tag, os_p_sel)
+         call select_par(rt_p_m, td_p_m(i)%tag, rt_p_sel)
+         call select_par(nm_p_m, td_p_m(i)%tag, nm_p_sel)
+         call select_par(gr_p_m, td_p_m(i)%tag, gr_p_sel)
+         call select_par(or_p_m, td_p_m(i)%tag, or_p_sel)
+
+         ! Solve for the partial tidal responses
+
+         call eval_resp(ml_m, process_resp, gr_p_sel, nm_p_sel, or_p_sel, os_p_sel, rt_p_sel, td_p_m(i))
+
+         ! Loop around
+
+      end do td_p_loop
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine process_resp(rs)
+
+         type(resp_t), intent(in) :: rs
+
+         integer :: retcode
+
+         ! Process the response
+
+         retcode = 0
+
+         call user_sub(rs, ipar, rpar, retcode)
+
+         ! Finish
+
+         return
+
+      end subroutine process_resp
+
+   end subroutine get_responses
 
 end module gyre_mesa_m
