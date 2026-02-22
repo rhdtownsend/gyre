@@ -37,8 +37,6 @@ module bracket_search_m
    use util_m
    use wave_m
 
-   use omp_lib
-
    use ISO_FORTRAN_ENV
 
    ! No implicit typing
