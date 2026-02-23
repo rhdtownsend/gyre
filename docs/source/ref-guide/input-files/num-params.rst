@@ -35,13 +35,16 @@ used. Allowable fields are:
 :nml_n:`n_iter_max` (default :nml_v:`50`)
   Maximum number of iterations in root-finding algorithm
 
-:nml_n:`matrix_type` (default :nml_v:`'PARALLEL_BLOCK`')
-  Storage type of system matrix; one of
+:nml_n:`ad_matrix_solver` (default :nml_v:`'ROWPP'`)
+  Matrix solver for discretized adiabatic equations; one of
 
-  - :nml_v:`'BAND'` : Band-structured
-  - :nml_v:`'BLOCK'` : Block-structured (legacy)
-  - :nml_v:`'PARALLEL_BLOCK'` : Block-structured (parallel)
-  - :nml_v:`'SERIAL_BLOCK'` : Block-structured (serial)
+  - :nml_v:`'BANDED'` : Banded factorization (LAPACK xGBTRF routines)
+  - :nml_v:`'CYCLIC'` : Cyclic structured factorization (`Wright 1994 <https://link.springer.com/article/10.1007/s002110050043>`__)
+  - :nml_v:`'ROWPP'`  : Gaussian elimination with row partial pivoting
+
+:nml_n:`nad_matrix_solver` (default :nml_v:`'CYCLIC'`)
+  Matrix solver for discretized non-adiabatic equations; same choices
+  as :nml_n:`ad_matrix_solver`
 
 :nml_n:`deflate_roots` (default :nml_v:`.TRUE.`)
   Flag to use root deflation, which can avoid the same eigenfrequency
@@ -49,9 +52,6 @@ used. Allowable fields are:
 
 :nml_n:`restrict_roots` (default :nml_v:`.TRUE.`)
   Flag to discard roots that fall outside the bounds of the frequency scan
-
-:nml_n:`parallel_scan` (default :nml_v:`.TRUE.`)
-   Parallelize the frequency scan
 
 :nml_n:`ad_search` (default :nml_v:`'BRACKET'`)
   Initial search method for adiabatic calculations; one of
