@@ -1,5 +1,5 @@
-! Module  : band_sysmtx_m
-! Purpose : system matrix (band storage)
+! Module  : banded_sysmtx_m
+! Purpose : system matrix (banded factorization)
 !
 ! Copyright 2013-2025 Rich Townsend & The GYRE Team
 !
@@ -17,7 +17,7 @@
 
 #:include 'gyre.inc'
 
-module band_sysmtx_m
+module banded_sysmtx_m
 
    ! Uses
 
@@ -42,7 +42,7 @@ module band_sysmtx_m
 
       ! Derived-type definitions
 
-      type, extends(sysmtx_${S}$) :: band_sysmtx_${S}$
+      type, extends(sysmtx_${S}$) :: banded_sysmtx_${S}$
          private
          ${T}$, allocatable           :: A_b(:,:)  ! Banded matrix
          integer, allocatable         :: ipiv(:)   ! Pivot indices
@@ -60,17 +60,17 @@ module band_sysmtx_m
          procedure, public :: solve_hom => solve_hom_${S}$_
          procedure, public :: solve_inhom => solve_inhom_${S}$_
          procedure, public :: dump => dump_${S}$_
-      end type band_sysmtx_${S}$
+      end type banded_sysmtx_${S}$
 
       ! Interfaces
 
-      interface band_sysmtx_${S}$
-         module procedure band_sysmtx_${S}$_
-      end interface band_sysmtx_${S}$
+      interface banded_sysmtx_${S}$
+         module procedure banded_sysmtx_${S}$_
+      end interface banded_sysmtx_${S}$
 
       ! Access specifiers
 
-      public :: band_sysmtx_${S}$
+      public :: banded_sysmtx_${S}$
 
    #:endfor
 
@@ -82,15 +82,15 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function band_sysmtx_${S}$_(n, n_e, n_i, n_o) result(sm)
+      function banded_sysmtx_${S}$_(n, n_e, n_i, n_o) result(sm)
 
-         integer, intent(in)     :: n
-         integer, intent(in)     :: n_e
-         integer, intent(in)     :: n_i
-         integer, intent(in)     :: n_o
-         type(band_sysmtx_${S}$) :: sm
+         integer, intent(in)       :: n
+         integer, intent(in)       :: n_e
+         integer, intent(in)       :: n_i
+         integer, intent(in)       :: n_o
+         type(banded_sysmtx_${S}$) :: sm
 
-         ! Construct the sysmtx type
+         ! Construct the sysmtx_t
 
          ! Note that an additional n_l rows are added to A_b to
          ! provide space for fill-in during factorization. See e.g.
@@ -116,16 +116,16 @@ contains
 
          return
 
-      end function band_sysmtx_${S}$_
+      end function banded_sysmtx_${S}$_
 
       !****
 
       subroutine set_row_${S}$_(this, i_0, j_0, R)
 
-         class(band_sysmtx_${S}$), intent(inout) :: this
-         integer, intent(in)                     :: i_0
-         integer, intent(in)                     :: j_0
-         ${T}$, intent(in)                       :: R(:)
+         class(banded_sysmtx_${S}$), intent(inout) :: this
+         integer, intent(in)                       :: i_0
+         integer, intent(in)                       :: j_0
+         ${T}$, intent(in)                         :: R(:)
 
          integer :: j
          integer :: i_b
@@ -166,10 +166,10 @@ contains
 
       subroutine get_row_${S}$_(this, i_0, j_0, R)
 
-         class(band_sysmtx_${S}$), intent(in) :: this
-         integer, intent(in)                  :: i_0
-         integer, intent(in)                  :: j_0
-         ${T}$, intent(out)                   :: R(:)
+         class(banded_sysmtx_${S}$), intent(in) :: this
+         integer, intent(in)                    :: i_0
+         integer, intent(in)                    :: j_0
+         ${T}$, intent(out)                     :: R(:)
 
          integer :: j
          integer :: i_b
@@ -199,11 +199,11 @@ contains
 
       subroutine build_and_factor_${S}$_(this, st, bd_i, bd_o, de)
 
-         class(band_sysmtx_${S}$), intent(inout) :: this
-         class(state_${S}$), intent(in)          :: st
-         class(bound_${S}$), intent(in)          :: bd_i
-         class(bound_${S}$), intent(in)          :: bd_o
-         class(diff_element_${S}$), intent(in)   :: de(:)
+         class(banded_sysmtx_${S}$), intent(inout) :: this
+         class(state_${S}$), intent(in)            :: st
+         class(bound_${S}$), intent(in)            :: bd_i
+         class(bound_${S}$), intent(in)            :: bd_o
+         class(diff_element_${S}$), intent(in)     :: de(:)
 
          ${T}$   :: B_i(this%n_i,this%n_e)
          ${T}$   :: B_o(this%n_i,this%n_e)
@@ -215,7 +215,7 @@ contains
          integer :: k
          integer :: info
 
-         ! Build and factorize the sysmtx
+         ! Build and factorize the sysmtx_t
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_o => this%n_o)
 
@@ -270,16 +270,16 @@ contains
 
       subroutine eval_det_${S}$_(this, st, bd_i, bd_o, de, det)
 
-         class(band_sysmtx_${S}$), intent(inout) :: this
-         class(state_${S}$), intent(in)          :: st
-         class(bound_${S}$), intent(in)          :: bd_i
-         class(bound_${S}$), intent(in)          :: bd_o
-         class(diff_element_${S}$), intent(in)   :: de(:)
-         type(ext_${S}$), intent(out)            :: det
+         class(banded_sysmtx_${S}$), intent(inout) :: this
+         class(state_${S}$), intent(in)            :: st
+         class(bound_${S}$), intent(in)            :: bd_i
+         class(bound_${S}$), intent(in)            :: bd_o
+         class(diff_element_${S}$), intent(in)     :: de(:)
+         type(ext_${S}$), intent(out)              :: det
 
          integer :: j
 
-         ! Build and factorize the sysmtx
+         ! Build and factorize the sysmtx_t
 
          call this%build_and_factor_(st, bd_i, bd_o, de)
 
@@ -302,12 +302,12 @@ contains
 
       subroutine solve_hom_${S}$_(this, st, bd_i, bd_o, de, u)
 
-         class(band_sysmtx_${S}$), intent(inout) :: this
-         class(state_${S}$), intent(in)          :: st
-         class(bound_${S}$), intent(in)          :: bd_i
-         class(bound_${S}$), intent(in)          :: bd_o
-         class(diff_element_${S}$), intent(in)   :: de(:)
-         ${T}$, intent(out)                      :: u(:)
+         class(banded_sysmtx_${S}$), intent(inout) :: this
+         class(state_${S}$), intent(in)            :: st
+         class(bound_${S}$), intent(in)            :: bd_i
+         class(bound_${S}$), intent(in)            :: bd_o
+         class(diff_element_${S}$), intent(in)     :: de(:)
+         ${T}$, intent(out)                        :: u(:)
 
          integer              :: i_s
          real(RD)             :: A_s
@@ -386,13 +386,13 @@ contains
 
       subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, v, u)
 
-         class(band_sysmtx_${S}$), intent(inout) :: this
-         class(state_${S}$), intent(in)          :: st
-         class(bound_${S}$), intent(in)          :: bd_i
-         class(bound_${S}$), intent(in)          :: bd_o
-         class(diff_element_${S}$), intent(in)   :: de(:)
-         ${T}$, intent(in)                       :: v(:)
-         ${T}$, intent(out)                      :: u(:)
+         class(banded_sysmtx_${S}$), intent(inout) :: this
+         class(state_${S}$), intent(in)            :: st
+         class(bound_${S}$), intent(in)            :: bd_i
+         class(bound_${S}$), intent(in)            :: bd_o
+         class(diff_element_${S}$), intent(in)     :: de(:)
+         ${T}$, intent(in)                         :: v(:)
+         ${T}$, intent(out)                        :: u(:)
 
          ${T}$   :: B(this%n_e*(this%n+1),1)
          integer :: info
@@ -401,7 +401,7 @@ contains
 
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
 
-         ! Build and factorize the sysmtx
+         ! Build and factorize the sysmtx_t
 
          call this%build_and_factor_(st, bd_i, bd_o, de)
 
@@ -440,8 +440,8 @@ contains
 
       subroutine dump_${S}$_(this, hi)
 
-         class(band_sysmtx_${S}$), intent(in) :: this
-         type(hdf5io_t), intent(inout)        :: hi
+         class(banded_sysmtx_${S}$), intent(in) :: this
+         type(hdf5io_t), intent(inout)          :: hi
 
          ${T}$, allocatable :: E_l(:,:,:)
          ${T}$, allocatable :: E_r(:,:,:)
@@ -450,7 +450,7 @@ contains
          integer            :: i
          integer            :: k
 
-         ! Dump the band_sysmtx_t to the hgroup
+         ! Dump the sysmtx_t
 
          call hi%write_attr('n', this%n)
          call hi%write_attr('n_e', this%n_e)
@@ -517,4 +517,4 @@ contains
 
    #:endfor
 
-end module band_sysmtx_m
+end module banded_sysmtx_m
