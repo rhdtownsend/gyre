@@ -60,6 +60,7 @@ GYRE remains under active development by the following team:
 * Zhao Guo (Cambridge University)
 * Rianna Kuenzi (University of Wisconsin-Madison)
 * Mathias Michielsen (KU-Leuven)
+* `Ritvik Narayan <https://ritviksainarayan.com/>`__ (UW-Madison)
 * Joel Ong (University of Hawaii-Manoa)
 * `Jarret Rosenberg <https://www.physics.wisc.edu/directory/rosenberg-jarrett/>`__ (University of Wisconsin-Madison)
 * Meng Sun (Northwestern University)
