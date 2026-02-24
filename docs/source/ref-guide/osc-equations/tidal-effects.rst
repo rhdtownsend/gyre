@@ -82,15 +82,18 @@ just a couple changes:
   is set by :math:`\sigma = k \Oorb`, representing the forcing
   frequency of the partial tidal potential in an inertial frame.
 
-The latter change means that the dimensionless frequency (:eq:`e:omega`) becomes
+The latter change, together with the :ref:`Doppler shift due to
+rotation <osc-rot-doppler>`, means that the dimensionless co-rotating
+frequency (:eq:`e:omegac`) becomes
 
 .. math::
+   :label: e:omegac-force
 
-   \omega = \alphafrq \, k \Oorb \sqrt{\frac{\Rstar^{3}}{G\Mstar}},
+   \omegac = \alphafrq \left[ k \Oorb - m \Orot \right] \sqrt{\frac{\Rstar^{3}}{G\Mstar}},
 
 where :math:`\alphafrq` is an additional term introduced to allow
-tuning of the tidal forcing frequency (see the :nml_n:`alpha_frq` parameter
-in the :ref:`tidal-params` section).
+tuning of the tidal forcing frequency (see the :nml:option:`alpha_frq
+<tide.alpha_frq>` option).
 
 Boundary Conditions
 -------------------

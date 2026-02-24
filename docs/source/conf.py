@@ -31,6 +31,9 @@ copyright = '2024, Rich Townsend & The GYRE Team'
 
 # -- General configuration ---------------------------------------------------
 
+# Be picky
+nitpicky = True
+
 # Numbered figures
 numfig = True
 
@@ -47,7 +50,8 @@ extensions = [
     'sphinx_copybutton',
     'sphinx_substitution_extensions',
     'ads_cite',
-    'nml_roles'
+    'nml_roles',
+    'nml_domain'
 ]
 
 

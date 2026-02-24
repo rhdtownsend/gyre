@@ -11,6 +11,9 @@ occur for a number of reasons.
 Insufficient Frequency Resolution
 ---------------------------------
 
+.. nml:group:: scan
+   :no-target:
+
 If the :ref:`frequency grid <freq-grids>` has insufficient resolution,
 then :program:`gyre` can skip modes during the bracketing phase, as
 discussed in the :ref:`numerical-limits` section. The signature of
@@ -24,33 +27,33 @@ mode eigenfrequencies:
 * In the asymptotic limit of large radial order, p modes are uniformly
   distributed in frequency (see, e.g.,
   :ads_citealp:`aerts:2010`). Hence, to search for these modes set
-  :nml_n:`grid_type`\ =\ :nml_v:`'LINEAR'` in the :nml_g:`scan`
-  namelist group(s).
+  :nml:option:`grid_type` = :nml:value:`'LINEAR'` in
+  the :nml:group:`scan` namelist group(s).
 
 * Likewise, in the asymptotic limit of large radial order, g modes are
   uniformly distributed in period. Hence, to search for these modes
-  set :nml_n:`grid_type`\ =\ :nml_v:`'INVERSE'` in the :nml_g:`scan`
-  namelist group(s).
+  set :nml:option:`grid_type` = :nml:value:`'INVERSE'`.
 
 * For rotating stars, the asymptotic behaviors mentioned apply in the
   co-rotating reference frame, not in the inertial reference
-  frame. So, be sure to also set :nml_n:`grid_frame` \ =\
-  :nml_n:`'COROT_I'`\ \|\ :nml_n:`'COROT_O'` in the :nml_g:`scan`
-  namelist group.
+  frame. So, be sure to also set :nml:option:`grid_frame` =
+  :nml:value:`'COROT_I'` or :nml:value:`'COROT_O'`.
 
 Next, try increasing the number of points in the frequency grids,
-simply by increasing the :nml_n:`n_freq` parameter in the
-:nml_g:`scan` namelist group(s).
+simply by increasing the :nml:option:`n_freq`.
 
 .. tip::
 
-   A good rule of thumb is that :nml_n:`n_freq` should be around 5
-   times larger than the number of modes expected to be found.
+   A good rule of thumb is that :nml:option:`n_freq` should be around
+   5 times larger than the number of modes expected to be found.
 
 Insufficient Spatial Resolution
 -------------------------------
 
-If the :ref:`spatial grid <freq-grids>` has insufficient resolution,
+.. nml:group:: grid
+   :no-target:
+
+If the :ref:`spatial grid <spatial-grids>` has insufficient resolution,
 then certain modes can simply be absent from the (finite) set of
 distinct numerical solutions, as discussed in the
 :ref:`numerical-limits` section. The signature of insufficient spatial
@@ -59,11 +62,11 @@ comparable to the number of grid points :math:`N` in the grid; and
 that the eigenfunctions of these modes are barely resolved
 (cf. :numref:`fig-eigenfuncs-N7`).
 
-To fix this problem, first check that the :nml_n:`w_osc`,
-:nml_n:`w_exp` and :nml_n:`w_ctr` weighting parameters in the
-:nml_g:`grid` namelist group are set to reasonable values (see the
-:ref:`spatial-grids-rec` section). If that doesn't improve things, try
-gradually increasing both :nml_n:`w_osc` and :nml_n:`w_ctr`.
+To fix this problem, first check that the :nml:option:`w_osc`,
+:nml:option:`w_exp`, and :nml:option:`w_ctr` weights are set to
+reasonable values (see the :ref:`spatial-grids-rec` section). If that
+doesn't improve things, try gradually increasing both :nml:option:`w_osc`
+and :nml:option:`w_ctr`.
 
 Non-adiabatic Effects
 ---------------------

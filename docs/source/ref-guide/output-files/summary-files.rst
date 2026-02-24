@@ -1,20 +1,23 @@
 .. _summary-files:
 
+.. nml:group:: output
+   :no-target:
+
 Summary Files
 =============
 
 *Summary* files collect together global properties, such as
 eigenfrequencies and radial orders, of all solutions (modes, tidal
 responses, etc.) found during a run. The specific data written to a
-summary file are controlled by the :nml_n:`summary_item_list`
-parameters of the :nml_g:`ad_output` and :nml_g:`nad_output` namelist
+summary file are controlled by the :nml:option:`summary_item_list`
+options of the :nml:group:`ad_output` and :nml:group:`nad_output` namelist
 groups (:program:`gyre` adiabatic and non-adiabatic calculations,
-respectively) and the :nml_g:`tides_output` namelist group
-(:program:`gyre_tides` calculations). These parameters specify the
+respectively) and the :nml:group:`tide_output` namelist group
+(:program:`gyre_tides` calculations). These options specify the
 items to be written, via a comma-separated list.
 
 The following subsections describe the items that may appear in
-:nml_n:`summary_item_list`, grouped together by functional area. For
+:nml:option:`summary_item_list`, grouped together by functional area. For
 each item, the corresponding math symbol is given (if there is one),
 together with the datatype, and a brief description. Units (where
 applicable) are indicated in brackets [].
@@ -67,15 +70,15 @@ Observables
      - ---
      - complex(:nml_v:`n_row`)
      - dimensioned frequency; units and reference frame controlled by
-       :nml_n:`freq_units` and :nml_n:`freq_frame` parameters
+       :nml:option:`freq_units` and :nml:option:`freq_frame` options
    * - :nml_v:`freq_units`
      - ---
      - string
-     - :nml_n:`freq_units` parameter
+     - :nml:option:`freq_units` option
    * - :nml_v:`freq_frame`
      - ---
      - string
-     - :nml_n:`freq_frame` parameter
+     - :nml:option:`freq_frame` option
    * - :nml_v:`f_T`
      - :math:`f_{T}`
      - real(:nml_v:`n_row`)
@@ -222,8 +225,8 @@ Energetics & Transport
    * - :nml_v:`E_norm`
      - :math:`E_{\rm norm}`
      - real(:nml_v:`n_row`)
-     - normalized inertia; evaluation controlled by :nml_n:`inertia_norm`
-       parameter
+     - normalized inertia; evaluation controlled by :nml:option:`inertia_norm <osc.inertia_norm>`
+       option
    * - :nml_v:`E_ratio`
      - ---
      - real(:nml_v:`n_row`)
@@ -277,7 +280,7 @@ Rotation
      - ---
      - real(:nml_v:`n_row`)
      - dimensioned first-order rotational splitting; units and reference frame controlled by
-       :nml_n:`freq_units` and :nml_n:`freq_frame` parameters
+       :nml:option:`freq_units` and :nml:option:`freq_frame` options
    * - :nml_v:`beta`
      - :math:`\beta`
      - real(:nml_v:`n_row`)
@@ -345,7 +348,7 @@ Note that these items are available only when using :program:`gyre_tides`.
      - :math:`\Oorb`
      - real(:nml_v:`n_row`)
      - orbital angular frequency; units and reference frame controlled by
-       :nml_n:`freq_units` and :nml_n:`freq_frame` parameters
+       :nml:option:`freq_units` and :nml:option:`freq_frame` options
    * - :nml_v:`q`
      - :math:`q`
      - real(:nml_v:`n_row`)

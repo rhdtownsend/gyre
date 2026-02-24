@@ -53,8 +53,8 @@ What Does...
 ...'Failed during deflate narrow : out-of-domain frequency' mean?
   This is an indication that GYRE's root solver wandered out of bounds
   when trying to find a complex root of the discriminant function. Try running
-  with a different choice of :nml_n:`diff_scheme` parameter
-  (:nml_v:`MAGNUS_GL2` seems to be the most robust), and/or using
+  with a different choice of :nml:option:`diff_scheme <num.diff_scheme>` option
+  (:nml:value:`MAGNUS_GL2` seems to be the most robust), and/or using
   contour method instead (see the :ref:`non-ad-osc` chapter).
 
 Why Does...

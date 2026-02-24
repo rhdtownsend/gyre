@@ -43,7 +43,7 @@ Assembling a Namelist File
 ==========================
 
 Now comes the fun part: assembling an input file containing the
-various parameters which control a :program:`gyre` run. Using a text
+various settings that control a :program:`gyre` run. Using a text
 editor, create the file :file:`gyre.in` in your work directory with
 the following content copy-and-pasted in (use the copy button that
 appears when you hover over the top-right corner of the box):
@@ -55,26 +55,26 @@ groups. Detailed information on the groups can be found in the
 :ref:`namelist-input-files` chapter; for now, let's just focus on some
 of the more-important aspects of the file above:
 
-* the :nml_g:`constants` namelist group is empty, telling :program:`gyre` to use default
+* the :nml:group:`constants` namelist group is empty, telling :program:`gyre` to use default
   values for fundamental constants;
-* the :nml_g:`model` namelist group tells :program:`gyre` to read an evolutionary
+* the :nml:group:`model` namelist group tells :program:`gyre` to read an evolutionary
   model, in :ref:`MESA format <mesa-file-format>`, from the file
   :file:`spb.mesa`;
-* the two :nml_g:`mode` namelist groups tells :program:`gyre` to search first for dipole (:math:`\ell=1`) and then
+* the two :nml:group:`mode` namelist groups tells :program:`gyre` to search first for dipole (:math:`\ell=1`) and then
   quadrupole (:math:`\ell=2`) modes;
-* the :nml_g:`osc` namelist group tells :program:`gyre` to assume,
+* the :nml:group:`osc` namelist group tells :program:`gyre` to assume,
   when setting up the outer boundary conditions in the oscillation
   equations, that the density vanishes at the stellar surface;
-* the :nml_g:`scan` namelist group tells :program:`gyre` to scan a region of
+* the :nml:group:`scan` namelist group tells :program:`gyre` to scan a region of
   dimensionless angular frequency space typically occupied by gravity
   modes;
-* the :nml_g:`grid` namelist group tells :program:`gyre` how to refine the model
+* the :nml:group:`grid` namelist group tells :program:`gyre` how to refine the model
   spatial grid;
-* the :nml_g:`ad_output` namelist group tells :program:`gyre` what adiabatic data
+* the :nml:group:`ad_output` namelist group tells :program:`gyre` what adiabatic data
   to write to which output files; summary data to the file
   :file:`summary.h5`, and individual mode data to files having the
   prefix ``mode.``;
-* the :nml_g:`nad_output` namelist group is empty, telling :program:`gyre` not to
+* the :nml:group:`nad_output` namelist group is empty, telling :program:`gyre` not to
   write any non-adiabatic data.
 
 Running gyre
@@ -92,7 +92,7 @@ to the screen. Let's break down this output, chunk by chunk.
 
 First, :program:`gyre` prints out its version number, tells us (in
 OpenMP threads) how many cores it is running on, and indicates which
-file it is reading parameters from (here, :file:`gyre.in`):
+file it is reading settings from (here, :file:`gyre.in`):
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console

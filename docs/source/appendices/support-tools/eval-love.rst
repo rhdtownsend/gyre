@@ -29,11 +29,11 @@ Options
 
 .. option:: --model-type=TYPE
 
-   Type of input stellar model (see the :nml_n:`model_type` parameter in the :ref:`model-params` section).
+   Type of input stellar model (see the :nml:option:`model_type <model.model_type>` option)
 
 .. option:: --file-format=FORMAT
 
-   Format of input stellar model file (see the :nml_n:`file_format` parameter in the :ref:`model-params` section)
+   Format of input stellar model file (see the :nml:option:`file_format <model.file_format>` option)
 
 .. option:: -l, --l=L
 

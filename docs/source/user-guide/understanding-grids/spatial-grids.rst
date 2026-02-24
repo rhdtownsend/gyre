@@ -1,5 +1,8 @@
 .. _spatial-grids:
 
+.. nml:group:: grid
+   :no-target:
+
 Spatial Grids
 =============
 
@@ -19,10 +22,10 @@ Scaffold Grid
 
 A fresh spatial grid is constructed for each iteration of the main
 computation loop (see the flow-charts in the :ref:`frontends`
-chapter). This is done under the control of the :nml_g:`grid` namelist
+chapter). This is done under the control of the :nml:group:`grid` namelist
 groups; there must be at least one of these, subject to the tag
 matching rules (see the :ref:`working-with-tags` chapter). If there is
-more than one matching :nml_g:`grid` namelist group, then the final
+more than one matching :nml:group:`grid` namelist group, then the final
 one is used.
 
 Each grid begins as a *scaffold grid*, comprising the following points:
@@ -33,12 +36,11 @@ Each grid begins as a *scaffold grid*, comprising the following points:
   \xout`
 
 The source grid can be either the input model grid, or a grid read
-from file; this choice is determined by the :nml_n:`scaffold_src`
-parameter of the :nml_g:`grid` namelist group. By default,
-:math:`\xin` and :math:`\xout` are obtained from the source grid as
-well (as its inner-most and outer-most point). However, either or
-both can be overridden using the :nml_n:`x_i` and :nml_n:`x_o`
-parameters.
+from file; this choice is determined by the :nml:option:`scaffold_src`
+option. By default, :math:`\xin` and :math:`\xout` are obtained from
+the source grid as well (as its inner-most and outer-most
+point). However, either or both can be overridden using the
+:nml:option:`x_i` and :nml:option:`x_o` options.
 
 .. _spatial-grids-iter:
 
@@ -57,8 +59,7 @@ inserting an additional point at the midpoint
 
 The sequence terminates if no refinements occur during a given
 iteration, or if the number of completed iterations equals the value
-specified by the :nml_n:`n_iter_max` parameter of the :nml_g:`grid`
-namelist group.
+specified by the :nml:option:`n_iter_max` option.
 
 .. _spatial-grids-mech:
 
@@ -94,11 +95,10 @@ subinterval is
 
    ( \ln x_{j+1} - \ln x_{j} ) \, \max (\wosc |\chi_{\rm i}|, \wexp |\chi_{\rm r}|) > 2 \pi,
 
-where :math:`\wosc` and :math:`\wexp` are user-definable weighting
-parameters. This causes refinement if the subinterval width (in
-:math:`\ln x` space) exceeds :math:`\wosc^{-1}` times the local
-wavelength, or :math:`2\pi \wexp^{-1}` times the local e-folding
-length.
+where :math:`\wosc` and :math:`\wexp` are user-definable weights. This
+causes refinement if the subinterval width (in :math:`\ln x` space)
+exceeds :math:`\wosc^{-1}` times the local wavelength, or :math:`2\pi
+\wexp^{-1}` times the local e-folding length.
 
 Because there are two possible values for :math:`\chi`, the above
 refinement criterion is applied twice (once for each). Moreover,
@@ -135,7 +135,7 @@ subinterval is
 
    ( \ln x_{j+1} - \ln x_{j} ) \, \wthm |\tau| > 1,
 
-where :math:`\wthm` is a user-definable weighting parameter.
+where :math:`\wthm` is a user-definable weight.
 
 Because :math:`\tau` depends implicitly on the oscillation frequency,
 this criterion is applied for each frequency in the grid
@@ -155,10 +155,10 @@ coefficient :math:`C`, the criterion for refinement of the subinterval
 
    ( \ln x_{j+1} - \ln x_{j} ) \, \wstr \left| \pderiv{\ln C}{\ln x} \right| > 1,
 
-where :math:`\wstr` is a user-definable weighting parameter. This
-criterion is applied separately to the :math:`V_2 \equiv V/x^{2}`,
-:math:`U`, :math:`A^{*}`, :math:`c_{1}` and :math:`\Gamma_{1}`
-coefficients (see the :ref:`osc-struct-coeffs` section).
+where :math:`\wstr` is a user-definable weight. This criterion is
+applied separately to the :math:`V_2 \equiv V/x^{2}`, :math:`U`,
+:math:`A^{*}`, :math:`c_{1}` and :math:`\Gamma_{1}` coefficients (see
+the :ref:`osc-struct-coeffs` section).
 
 .. _spatial-grids-cent:
 
@@ -168,10 +168,10 @@ Central Criteria
 All of the above criteria depend on the logarithmic subinterval width
 :math:`(\ln x_{j+1} - \ln x_{j})`, and cannot be applied to the first
 subinterval :math:`[x_{1},x_{2}]` if it extends to the center of the
-star, :math:`x = 0`. In such cases, the :nml_n:`resolve_ctr` parameter
-of the :nml_g:`grid` namelist group determines whether the subinterval
-is refined. If set to :nml_v:`.FALSE.`, then no refinement occurs;
-while if set to :nml_v:`.TRUE.`, then the refinement criteria are
+star, :math:`x = 0`. In such cases, the :nml:option:`resolve_ctr`
+option determines whether the subinterval is refined. If set to
+:nml:value:`.FALSE.`, then no refinement occurs; while if set to
+:nml:value:`.TRUE.`, then the refinement criteria are
 
 .. math::
 
@@ -186,10 +186,10 @@ or
 where :math:`\chi` is the eigenvalue from the local analysis (see the
 :ref:`spatial-grids-mech` section) corresponding to the solution that
 remains well-behaved at the origin, and :math:`w_{\rm ctr}` is a
-user-definable weighting parameter. The first criterion causes
-refinement if the subinterval is in a propagation zone, and the second
-if the solution slope :math:`|\sderiv{y}{\ln x}| \sim |\chi_{\rm
-r}|` exceeds :math:`w_{\rm ctr}^{-1}`.
+user-definable weight. The first criterion causes refinement if the
+subinterval is in a propagation zone, and the second if the solution
+slope :math:`|\sderiv{y}{\ln x}| \sim |\chi_{\rm r}|` exceeds
+:math:`w_{\rm ctr}^{-1}`.
 
 Because :math:`\chi` depends implicitly on the oscillation frequency,
 these criteria are applied for each frequency in the grid
@@ -215,43 +215,44 @@ and *never* occurs if
 where both :math:`\Delta x_{\rm max}` and :math:`\Delta x_{\rm min}`
 are user-definable.
 
-Namelist Parameters
--------------------
+Namelist Options
+----------------
 
-The full set of parameters supported by the :nml_g:`grid` namelist
-group is listed in the :ref:`grid-params` section. However, the table
+The full set of options supported by the :nml:group:`grid` namelist
+group is listed in the :ref:`grid-group` section. However, the table
 below summarizes the mapping between the user-definable controls
 appearing in the expressions above, and the corresponding namelist
-parameters.
+options.
 
 .. list-table::
    :widths: 30 30
    :header-rows: 1
 
    * - Symbol
-     - Parameter
+     - Options
    * - :math:`\wosc`
-     - :nml_n:`w_osc`
+     - :nml:option:`w_osc`
    * - :math:`\wexp`
-     - :nml_n:`w_exp`
+     - :nml:option:`w_exp`
    * - :math:`\wthm`
-     - :nml_n:`w_thm`
+     - :nml:option:`w_thm`
    * - :math:`\wstr`
-     - :nml_n:`w_str`
+     - :nml:option:`w_str`
    * - :math:`\wctr`
-     - :nml_n:`w_ctr`
+     - :nml:option:`w_ctr`
    * - :math:`\Delta x_{\rm max}`
-     - :nml_n:`dx_max`
+     - :nml:option:`dx_max`
    * - :math:`\Delta x_{\rm min}`
-     - :nml_n:`dx_min`
+     - :nml:option:`dx_min`
 
 .. _spatial-grids-rec:
 
 Recommended Values
 ------------------
 
-While :nml_n:`w_exp`, :nml_n:`w_osc` and :nml_n:`w_ctr`
+While :nml:option:`w_exp`, :nml:option:`w_osc` and :nml:option:`w_ctr`
 all default to zero, it is highly recommended to use non-zero values
-for these parameters, to ensure adequate resolution of solutions
-throughout the star. Reasonable starting choices are :nml_n:`w_osc
-= 10`, :nml_nv:`w_exp = 2` and :nml_n:`w_ctr = 10`.
+for these options, to ensure adequate resolution of solutions
+throughout the star. Reasonable starting choices are
+:nml:option:`w_osc` = :nml:value:`10`, :nml:option:`w_exp` =
+:nml:value:`2` and :nml:option:`w_ctr` = :nml:value:`10`.

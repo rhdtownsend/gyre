@@ -36,6 +36,7 @@ corresponding modifications to the :ref:`dimensionless formulation
 frequency :math:`\omega` with the dimensionless co-rotating frequency
 
 .. math::
+   :label: e:omegac
 
    \omegac \equiv \omega - m \Orot \sqrt{\frac{\Rstar^{3}}{G\Mstar}}.
 
@@ -169,10 +170,10 @@ Implementing the TAR
 ^^^^^^^^^^^^^^^^^^^^
 
 To implement the TAR in the :ref:`separated equations <osc-sep-eqns>`
-and :ref:`boundary conditions <osc-bound-conds>`, the angular
-eigenvalue :math:`\lambda` is evaluated from the TE rather than using
-equation (:eq:`e:lambda-norot`). Then, all instances of the harmonic
-degree :math:`\ell` are replaced by :math:`\elle`, an effective
+the angular eigenvalue :math:`\lambda` is evaluated from the TE rather
+than using equation (:eq:`e:lambda-norot`). Moreover, all instances of
+the harmonic degree :math:`\ell` in the :ref:`boundary conditions
+<osc-bound-conds>` are replaced by :math:`\elle`, an effective
 harmonic degree found as the positive root of the equation
 
 .. math::

@@ -54,9 +54,8 @@ simple finite-difference approximation to the left-hand side,
 :program:`gyre` offers more-sophisticated approaches with higher
 orders of accuracy. These include the Magnus schemes described in
 :ads_citet:`townsend:2013`, and implicit Runge-Kutta schemes mentioned
-in :ads_citet:`townsend:2018`. The choice of scheme is set by the
-:nml_n:`diff_scheme` parameter of the :nml_g:`num` namelist group. The
-discretization leads to difference equations of the form
+in :ads_citet:`townsend:2018`. The discretization leads to difference
+equations of the form
 
 .. math::
 

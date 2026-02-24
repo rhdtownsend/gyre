@@ -15,28 +15,30 @@ Overview
 As discussed in the :ref:`osc-tidal` section, the tidal gravitational
 potential (:eq:`e:tidal-pot`) of an orbiting companion can be
 expressed as a superposition of partial potentials
-:math:`\PhiTlmk`. For a given :nml_g:`tide` namelist group appearing
-in the namelist input file, :program:`gyre_tides` solves for the
-response of the star to each term in the superposition.
+:math:`\PhiTlmk`. For a given :nml:group:`tide` namelist group
+appearing in the namelist input file, :program:`gyre_tides` solves for
+the response of the star to each term in the superposition.
 
 Truncating the Sums
 -------------------
 
-Although the sums appearing in equation (:eq:`e:tidal-pot`) are formally
-infinite, the terms with large harmonic degree :math:`\ell` and/or
-orbital harmonic :math:`k` typically produce a negligible
+.. nml:group:: tide
+   :no-target:
+
+Although the sums appearing in equation (:eq:`e:tidal-pot`) are
+formally infinite, the terms with large harmonic degree :math:`\ell`
+and/or orbital harmonic :math:`k` typically produce a negligible
 response. :program:`gyre_tides` offers a couple of approaches for
 truncating the sums by dropping these terms. The simplest is to set
 limits on the maximum values of the indices, through the
-:nml_n:`l_max`, :nml_n:`k_min` and :nml_n:`k_max` parameters of the
-:nml_g:`tide` namelist group (if desired, minimum values can also be
-set using the corresponding :nml_n:`l_min` and :nml_n:`k_min`
-parameters).
+:nml:option:`l_max`, :nml:option:`k_min` and :nml:option:`k_max`
+options of the :nml:group:`tide` namelist group.
 
-A slightly more sophisticated approach is to set these parameters to
-large-ish values (say, a few hundred), and then also set one or both
-of the :nml_n:`y_T_thresh_abs` and :nml_n:`y_T_thresh_rel`
-parameters. These establish a threshold on the magnitude of
+A slightly more sophisticated approach is to set these options to
+large-ish values (say, :nml:option:`k_min` = :nml:value:`-100`,
+:nml:option:`k_max` = :nml:value:`100`), and then also set one or both
+of the :nml:option:`y_T_thresh_abs` and :nml:option:`y_T_thresh_rel`
+options. These establish a threshold on the magnitude of
 
 .. math::
 
@@ -67,8 +69,8 @@ the response of a star to low-frequency forcing is the long-wavelength
 equilibrium tide.
 
 One way of preventing over-refinement due to low-frequency partial
-potentials is to set the :nml_n:`omega_c_thresh` parameter in the
-:nml_g:`tide` namelist group. This establishes a threshold on the
+potentials is to set the :nml:option:`omega_c_thresh` option in the
+:nml:group:`tide` namelist group. This establishes a threshold on the
 dimensionless frequency :math:`\omegac \equiv \sigmac \,
 \sqrt{R^{3}/GM}`; partial potentials with :math:`|\omegac|` below this
 threshold are treated as static tides (:math:`\omegac=0`), and are not
@@ -76,8 +78,8 @@ considered during the iterative refinement process.
 
 An alternative approach is to avoid iterative refinement altogether,
 instead obtaining the spatial grid from an external file (see the
-:nml_v:`'FILE'` option of the :nml_n:`scaffold_src` parameter, in the
-:ref:`grid-params` section). This is the most flexible approach, but
+:nml:value:`'FILE'` choice for the :nml:option:`scaffold_src
+<grid.scaffold_src>` option). This is the most flexible approach, but
 creating a grid that will adequately resolve the response to each
 partial potential requires some care.
 
@@ -87,7 +89,7 @@ Output Files
 :program:`gyre_tides` writes response data to summary and detail
 files. One detail file is created for each partial potential
 evaluated, and the summary file collects together global data for all
-partial potentials across all :nml_g:`tide` namelist groups. The
+partial potentials across all :nml:group:`tide` namelist groups. The
 :nml_v:`id` output item can be used to determine which group a given
 response belongs to.
 

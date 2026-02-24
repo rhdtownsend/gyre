@@ -1,5 +1,8 @@
 .. _osc-dimless-form:
 
+.. nml:group:: osc
+   :no-target:
+
 Dimensionless Formulation
 =========================
 
@@ -103,9 +106,8 @@ details.
 For non-radial adiabatic calculations, the last two equations above
 are set aside and the :math:`y_{5}` terms dropped from the first four
 equations. For radial adiabatic calculations with
-:nml_n:`reduce_order`\ =\ :nml_v:`.TRUE.` (see the :ref:`osc-params`
-section), the last four equations are set aside and the first two
-replaced by
+:nml:option:`reduce_order <osc.reduce_order>` = :nml:value:`.TRUE.`,
+the last four equations are set aside and the first two replaced by
 
 .. math::
 
@@ -122,10 +124,14 @@ replaced by
 Boundary Conditions
 -------------------
 
+The dimensionless boundary conditions applied by GYRE are selected
+based on the :nml:option:`inner_bound` and :nml:option:`outer_bound`
+options of the :nml:group:`osc` namelist group.
+
 Inner Boundary
 ^^^^^^^^^^^^^^
 
-When :nml_n:`inner_bound`\ =\ :nml_v:`'REGULAR'`, GYRE applies
+When :nml:option:`inner_bound` = :nml:value:`'REGULAR'`, GYRE applies
 regularity-enforcing conditions at the inner boundary:
 
 .. math::
@@ -139,7 +145,7 @@ regularity-enforcing conditions at the inner boundary:
 (these are the dimensionless equivalents to the expressions appearing
 in the :ref:`osc-bound-conds` section).
 
-When :nml_n:`inner_bound`\ =\ :nml_v:`'ZERO_R'`, the first and second
+When :nml:option:`inner_bound` = :nml:value:`'ZERO_R'`, the first and second
 conditions above are replaced with zero radial displacement
 conditions,
 
@@ -150,7 +156,7 @@ conditions,
    y_{4} &= 0.
    \end{aligned}
 
-Likewise, when :nml_n:`inner_bound`\ =\ :nml_v:`'ZERO_H'`, the first and
+Likewise, when :nml:option:`inner_bound` = :nml:value:`'ZERO_H'`, the first and
 second conditions are replaced with zero horizontal displacement
 conditions,
 
@@ -164,7 +170,7 @@ conditions,
 Outer Boundary
 ^^^^^^^^^^^^^^
 
-When :nml_n:`outer_bound`\ =\ :nml_v:`'VACUUM'`, GYRE applies the
+When :nml:option:`outer_bound` = :nml:value:`'VACUUM'`, GYRE applies the
 outer boundary conditions
 
 .. math::
@@ -179,7 +185,7 @@ outer boundary conditions
 (these are the dimensionless equivalents to the expressions appearing
 in the :ref:`osc-bound-conds` section).
 
-When :nml_n:`outer_bound`\ =\ :nml_v:`'DZIEM'`, the first condition
+When :nml:option:`outer_bound` = :nml:value:`'DZIEM'`, the first condition
 above is replaced by the :ads_citet:`dziembowski:1971` outer boundary condition,
 
 .. math::
@@ -189,17 +195,18 @@ above is replaced by the :ads_citet:`dziembowski:1971` outer boundary condition,
    V^{-1} \left[ \frac{\lambda}{c_{1} \omega^{2}} - \ell - 1 \right] y_{3}
    = 0.
 
-When :nml_n:`outer_bound`\ =\ :nml_v:`'UNNO'` or :nml_v:`'JCD'`, the
+When :nml:option:`outer_bound` = :nml:value:`'UNNO'` or :nml:value:`'JCD'`, the
 first condition is replaced by the (possibly-leaky) outer boundary
 conditions described by :ads_citet:`unno:1989` and
 :ads_citet:`christensen-dalsgaard:2008`, respectively. When
-:nml_n:`outer_bound`\ =\ :nml_v:`'ISOTHERMAL'`, the first condition is
+:nml:option:`outer_bound` = :nml:value:`'ISOTHERMAL'`, the first condition is
 replaced by a (possibly-leaky) outer boundary condition derived from a
 local dispersion analysis of waves in an isothermal atmosphere.
 
-Finally, when :nml_n:`outer_bound`\ =\ :nml_v:`'GAMMA'`, the first
+Finally, when :nml:option:`outer_bound` = :nml:value:`'GAMMA1'`, the first
 condition is replaced by the outer momentum boundary condition
-described by :ads_citet:`ong:2020`.
+described by :ads_citet:`ong:2020`. A variant of this boundary
+condition is provided by the :nml:value:`'GAMMA2'` choice.
 
 Internal Boundaries
 ^^^^^^^^^^^^^^^^^^^
@@ -277,64 +284,64 @@ Physics Switches
 ----------------
 
 GYRE offers the capability to adjust the oscillation equations through
-a number of physics switches, controlled by parameters in the
-:nml_g:`osc` namelist group (see the :ref:`osc-params` section). The
-table below summarizes the mapping between the switches appearing in
-the expressions above, and the corresponding namelist parameters.
+a number of physics switches, controlled by options in the
+:nml:group:`osc` namelist group. The table below summarizes the
+mapping between the switches appearing in the expressions above, and
+the corresponding namelist options.
 
 .. list-table::
    :widths: 20 20 60
    :header-rows: 1
 
    * - Symbol
-     - Parameter
+     - Option
      - Description
    * - :math:`\alphagrv`
-     - :nml_n:`alpha_grv`
+     - :nml:option:`alpha_grv`
      - Scaling factor for gravitational potential perturbations. Set to 1
        for normal behavior, and to 0 for the :ads_citet:`cowling:1941`
        approximation
    * - :math:`\alphagbc`
-     - :nml_n:`alpha_gbc`
+     - :nml:option:`alpha_gbc`
      - Scaling factor for the :math:`y_1` term in the outer
        gravitational potential boundary condition (the second line of
        eqn. :eq:`e:outer-bc`). Set to 1 for normal behavior,
        and to 0 to suppress this term
    * - :math:`\alphathm`
-     - :nml_n:`alpha_thm`
+     - :nml:option:`alpha_thm`
      - Scaling factor for local thermal timescale. Set to 1 for normal
        behavior, to 0 for the non-adiabatic reversible (NAR) approximation
        (see :ads_citealp:`glatzel:1990`), and to a large value to approach
        the adiabatic limit
    * - :math:`\alphahfl`
-     - :nml_n:`alpha_hfl`
+     - :nml:option:`alpha_hfl`
      - Scaling factor for horizontal flux perturbations. Set to 1 for
        normal behavior, and to 0 for the non-adiabatic radial flux (NARF)
        approximation (see :ads_citealp:`townsend:2003b`)
    * - :math:`\alphagam`
-     - :nml_n:`alpha_gam`
+     - :nml:option:`alpha_gam`
      - Scaling factor for g-mode isolation. Set to 1 for normal behavior,
        and to 0 to isolate g modes as described by :ads_citet:`ong:2020`
    * - :math:`\alphapi`
-     - :nml_n:`alpha_pi`
+     - :nml:option:`alpha_pi`
      - Scaling factor for p-mode isolation. Set to 1 for normal behavior,
        and to 0 to isolate p modes as described by :ads_citet:`ong:2020`
    * - :math:`\alphakar`
-     - :nml_n:`alpha_kar`
+     - :nml:option:`alpha_kar`
      - Scaling factor for opacity density partial derivative. Set to 1 for normal
        behavior, and to 0 to suppress the density part of the :math:`\kappa` mechanism
    * - :math:`\alphakat`
-     - :nml_n:`alpha_kat`
+     - :nml:option:`alpha_kat`
      - Scaling factor for opacity temperature partial derivative. Set to 1 for normal
        behavior, and to 0 to suppress the temperature part of the :math:`\kappa` mechanism
    * - :math:`\alpharht`
-     - :nml_n:`alpha_rht`
+     - :nml:option:`alpha_rht`
      - Scaling factor for time-dependent term in the radiative heat
        equation (see :ads_citealp:`unno:1966`). Set to 1 to include this
        term (Unno calls this the Eddington approximation), and to 0 to
        ignore the term
    * - :math:`\alphatrb`
-     - :nml_n:`alpha_trb`
+     - :nml:option:`alpha_trb`
      - Scaling factor for the turbulent mixing length. Set to the
        convective mixing length to include the turbulent damping term
        (see the :ref:`osc-conv` section), and to 0 to ignore the term

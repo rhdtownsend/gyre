@@ -1,5 +1,8 @@
 .. _freq-grids:
 
+.. nml:group:: scan
+   :no-target:
+
 Frequency Grids
 ===============
 
@@ -17,27 +20,27 @@ section for a discussion of these behaviors).
 A fresh frequency grid is constructed for each iteration of the main
 computation loop (see the flow-chart in the :ref:`gyre
 <frontends-gyre>` section). This is done under the control of the
-:nml_g:`scan` namelist groups; there must be at least one of these,
+:nml:group:`scan` namelist groups; there must be at least one of these,
 subject to the tag matching rules (see the :ref:`working-with-tags`
-chapter). Each :nml_g:`scan` group creates a separate frequency grid;
+chapter). Each :nml:group:`scan` group creates a separate frequency grid;
 these are then combined and the discriminant function is evaluated on
 the merged grid.
 
 Grid Types
 ----------
 
-The :nml_n:`grid_type` parameter of the :nml_g:`scan` namelist group
-controls the overall distribution of points in a frequency grid. There
-are currently three options:
+The :nml:option:`grid_type <scan.grid_type>` option within the
+:nml:group:`scan` namelist group controls the overall distribution of
+points in a frequency grid. There are currently three options.
 
 .. _linear-freq-grid:
 
 Linear Grid
 ~~~~~~~~~~~
 
-When :nml_nv:`grid_type = 'LINEAR'`, :program:`gyre` first evaluates a
-sequence of dimensionless angular frequencies in the grid reference
-frame according to the formula
+When :nml:option:`grid_type` = :nml:value:`'LINEAR'`,
+:program:`gyre` first evaluates a sequence of dimensionless angular
+frequencies in the grid reference frame according to the formula
 
 .. math::
 
@@ -54,22 +57,25 @@ inertial reference frame via
 
 where :math:`\Delta\omega` is the frequency shift that transforms from
 the grid frame to the inertial frame. The actual value of this shift
-depends on the :nml_n:`grid_frame` parameter:
+depends on the :nml:option:`grid_frame` option:
 
-* When :nml_n:`grid_frame = 'INERTIAL'`, the shift is :math:`\Delta
-  \omega = 0`; the grid frame and the inertial frame coincide.
+* When :nml:option:`grid_frame` =
+  :nml:value:`'INERTIAL'`, the shift is :math:`\Delta \omega = 0`; the
+  grid frame and the inertial frame coincide.
 
-* When :nml_n:`grid_frame = 'COROT_I'`, the shift is :math:`\Delta
-  \omega = m \, \Orot^{\rm i} \sqrt{R^{3}/GM}`, where
-  :math:`\Orot^{\rm i}` is the rotation angular frequency at the
-  inner boundary of the spatial grid; the grid frame coincides with
-  the local co-rotating frame at that boundary.
+* When :nml:option:`grid_frame` =
+  :nml:value:`'COROT_I'`, the shift is :math:`\Delta \omega = m \,
+  \Orot^{\rm i} \sqrt{R^{3}/GM}`, where :math:`\Orot^{\rm i}` is the
+  rotation angular frequency at the inner boundary of the spatial
+  grid; the grid frame coincides with the local co-rotating frame at
+  that boundary.
 
-* When :nml_n:`grid_frame = 'COROT_O'`, the shift is :math:`\Delta
-  \omega = m \, \Orot^{\rm o} \sqrt{R^{3}/GM}`, where
-  :math:`\Orot^{\rm o}` is the rotation angular frequency at the outer
-  boundary of the spatial grid; the grid frame coincides with the
-  local co-rotating frame at that boundary.
+* When :nml:option:`grid_frame` =
+  :nml:value:`'COROT_O'`, the shift is :math:`\Delta \omega = m \,
+  \Orot^{\rm o} \sqrt{R^{3}/GM}`, where :math:`\Orot^{\rm o}` is the
+  rotation angular frequency at the outer boundary of the spatial
+  grid; the grid frame coincides with the local co-rotating frame at
+  that boundary.
 
 The range spanned by the frequency grid, in the grid frame, is set by
 :math:`\omega^{\rm g}_{\rm min}` and :math:`\omega^{\rm g}_{\rm max}`. These are
@@ -86,17 +92,17 @@ where :math:`f_{\rm min,max}` are user-definable,
 :ref:`freq-units` section, and :math:`\delta\omega` is the frequency
 shift that transforms from the frame in which :math:`f_{\rm min,max}`
 are defined to the inertial frame. The actual value of this shift depends
-on the :nml_n:`freq_frame` parameter, which behaves analogously to the
-:nml_n:`grid_frame` parameter discussed above.
+on the :nml:option:`freq_frame` option, which behaves analogously to the
+:nml:option:`grid_frame` option discussed above.
 
 .. _inverse-freq-grid:
 
 Inverse Grid
 ~~~~~~~~~~~~
 
-When :nml_nv:`grid_type = 'INVERSE'`, :program:`gyre` first evaluates a sequence
-of dimensionless angular frequencies in the grid reference frame
-according to the formula
+When :nml:option:`grid_type` = :nml:value:`'INVERSE'`, :program:`gyre`
+first evaluates a sequence of dimensionless angular frequencies in the
+grid reference frame according to the formula
 
 .. math::
 
@@ -108,13 +114,13 @@ The grid creation then proceeds as described above in the :ref:`linear-freq-grid
 File Grid
 ~~~~~~~~~
 
-When :nml_nv:`grid_type = 'FILE'`, :program:`gyre` first reads a
-sequence of dimensioned frequencies
+Finally, when :nml:option:`grid_type` = :nml:value:`'FILE'`,
+:program:`gyre` first reads a sequence of dimensioned frequencies
 :math:`\{f_{1},f_{2},\ldots,f_{M}\}` from an external file named by
-the :nml_n:`grid_file` parameter. This file is a single-column ASCII
-text table; the number of points :math:`M` is determined implicitly
-from the number of lines in the file. Then, it transforms these
-frequencies via
+the :nml:option:`file` option. This file is a single-column ASCII text
+table; the number of points :math:`M` is determined implicitly from
+the number of lines in the file. Then, it transforms these frequencies
+via
 
 .. math::
 
@@ -124,8 +130,8 @@ where :math:`\widehat{f}` will be discussed below in the
 :ref:`freq-units` section, and :math:`\delta\omega` is the frequency
 shift that transforms from the frame in which :math:`f` is defined to
 the inertial frame. The actual value of this shift depends on the
-:nml_n:`freq_frame` parameter, which behaves analogously to the
-:nml_n:`grid_frame` parameter discussed above.
+:nml:option:`freq_frame` option, which behaves analogously to the
+:nml:option:`grid_frame` option discussed above.
 
 .. _freq-units:
 
@@ -135,8 +141,8 @@ Frequency Units
 In the expressions above, terms of the form :math:`f/\widehat{f}` are used
 to transform a dimensioned frequency :math:`f` into a dimensionless
 one :math:`\omega`. The scale factor :math:`\widehat{f}` depends on the
-:nml_n:`freq_units` parameter. Thus, for example, if
-:nml_nv:`freq_units = 'UHZ'`, then :math:`f` is treated as a linear
+:nml:option:`freq_units` option. Thus, for example, if
+:nml:option:`freq_units` = :nml:value:`'UHZ'`, then :math:`f` is treated as a linear
 frequency expressed in :math:`{\rm \mu Hz}`, and the scale factor is set by
 
 .. math::
@@ -146,39 +152,35 @@ frequency expressed in :math:`{\rm \mu Hz}`, and the scale factor is set by
 (the factor of :math:`2\pi` comes from the transformation between linear
 and angular frequency).
 
-The full set of values supported by the :nml_n:`freq_units` parameter
-is listed in the :ref:`scan-params` section.
+Namelist Options
+----------------
 
-Namelist Parameters
--------------------
-
-The full set of parameters supported by the :nml_g:`scan` namelist
-group is listed in the :ref:`scan-params` section. However, the table
+The full set of options supported by the :nml:group:`scan` namelist
+group is listed in the :ref:`scan-group` section. However, the table
 below summarizes the mapping between the user-definable controls
 appearing in the expressions above, and the corresponding namelist
-parameters:
+options:
 
 .. list-table::
    :widths: 30 30
    :header-rows: 1
 
    * - Symbol
-     - Parameter
+     - Option
    * - :math:`f_{\rm min}`
-     - :nml_n:`freq_min`
+     - :nml:option:`freq_min`
    * - :math:`f_{\rm max}`
-     - :nml_n:`freq_max`
+     - :nml:option:`freq_max`
    * - :math:`M`
-     - :nml_n:`n_freq`
+     - :nml:option:`n_freq`
 
 Recommended Values
 ------------------
 
-The default values :nml_nv:`freq_min=1`, :nml_nv:`freq_max=10`,
-:nml_nv:`n_freq=10`, together with :nml_nv:`grid_type='LINEAR'` are
-sufficient to find *some* modes --- although unlikely the modes that
-you want. Choosing good values for these parameters requires some
-degree of judgment, but here are some suggestions:
+The default values of the :nml:group:`scan` options are sufficient to
+find *some* modes --- although unlikely the modes that you
+want. Choosing good values for these options requires some degree
+of judgment, but here are some suggestions:
 
 * The number of points in the frequency grid should be a factor of
   2--3 larger than the number of modes you expect :program:`gyre` will
@@ -191,12 +193,13 @@ degree of judgment, but here are some suggestions:
   anticipated distribution of mode frequencies; this again is to
   ensure adequate frequency resolution. For p modes, which tend toward
   a uniform frequency spacing in the asymptotic limit of large radial
-  order, you should chose :nml_nv:`grid_type = 'LINEAR'`;
-  likewise, for g modes, which tend toward a uniform period spacing in
-  the asymptotic limit, you should choose :nml_nv:`grid_type = 'INVERSE'`.
+  order, you should chose :nml:option:`grid_type` =
+  :nml:value:`'LINEAR'`; likewise, for g modes, which tend toward a
+  uniform period spacing in the asymptotic limit, you should choose
+  :nml:option:`grid_type` = :nml:value:`'INVERSE'`.
 
-* When modeling rotating stars, you should choose :nml_nv:`grid_frame
-  = 'COROT_I'` or :nml_nv:`grid_frame = 'COROT_O'`, because the
+* When modeling rotating stars, you should choose :nml:option:`grid_frame` =
+  :nml:value:`'COROT_I'` or :nml:value:`'COROT_O'`, because the
   asymptotic behaviors mentioned above apply in the co-rotating
   reference frame rather than the inertial one.
 

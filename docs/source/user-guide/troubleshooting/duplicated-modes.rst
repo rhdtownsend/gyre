@@ -37,8 +37,8 @@ integrals should vanish everywhere (as shown by
 non-zero values at the location of unmarked discontinuities. The fix
 is to re-create the model with double points inserted as necessary; in
 the case of MESA models, this can be achieved using the
-:nml_n:`add_double_points_to_pulse_data` parameter of the
-:nml_g:`controls` namelist group.
+:nml:literal:`add_double_points_to_pulse_data` option of the
+:nml:literal:`&controls` namelist group.
 
 Non-adiabatic Effects
 ---------------------

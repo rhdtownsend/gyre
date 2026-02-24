@@ -3,57 +3,60 @@
 Evolutionary Models
 ===================
 
-Setting the :nml_n:`model_type` parameter of the :nml_g:`model`
-namelist group to :nml_v:`'EVOL'` tells the frontend to read the
+.. nml:group:: model
+   :no-target:
+
+Setting the :nml:option:`model_type` option of the :nml:group:`model`
+namelist group to :nml:value:`'EVOL'` tells the frontend to read the
 equilibrium stellar model from a file created by a stellar evolution
 code (e.g., `MESA <mesa_>`__).
 
 Supported Formats
 -----------------
 
-The format of the model file is specified by the :nml_n:`file_format`
-parameter of the :nml_g:`model` namelist group (see the
-:ref:`model-params` section). Possible choices are summarized in the
-table below.
+The format of the model file is specified by the
+:nml:option:`file_format` option of the :nml:group:`model` namelist
+group (see the :ref:`model-group` section). Possible choices are
+summarized in the table below.
 
 .. list-table::
    :widths: 20 80
    :header-rows: 1
    :align: center
 
-   * - :nml_n:`file_format`
+   * - :nml:option:`file_format`
      - Description
-   * - :nml_v:`'AMDL'`
+   * - :nml:value:`'AMDL'`
      - Binary file describing an evolutionary model in AMDL format,
        as reverse engineered from the ADIPLS stellar oscillation code
        :ads_citep:`christensen-dalsgaard:2008`
-   * - :nml_v:`'B3'`
+   * - :nml:value:`'B3'`
      - HDF5 file describing an evolutionary model in B3 format. This
        format is for testing purposes only, and will eventually be
        superseded and/or removed
-   * - :nml_v:`'FAMDL'`
+   * - :nml:value:`'FAMDL'`
      - Text file describing an evolutionary model in FAMDL format, as
        specified in the :download:`CoRoT/ESTA File Formats
        <corot-esta-file-formats.pdf>` document
-   * - :nml_v:`'FGONG'`
+   * - :nml:value:`'FGONG'`
      - Text file describing an evolutionary model in FGONG format, as
        specified in the updated :download:`FGONG Format
        <fgong-file-format.pdf>` document
-   * - :nml_v:`'GSM'`
+   * - :nml:value:`'GSM'`
      - HDF5 file describing an evolutionary model in GYRE Stellar
        Model (GSM) format, as specified in the :ref:`gsm-file-format`
        section
-   * - :nml_v:`'MESA'`
+   * - :nml:value:`'MESA'`
      - Text file describing an evolutionary model in MESA format, as
        specified in the :ref:`mesa-file-format` section
-   * - :nml_v:`'LOSC'`
+   * - :nml:value:`'LOSC'`
      - Text file describing an evolutionary model in the revised LOSC
        format
-   * - :nml_v:`'OSC'`
+   * - :nml:value:`'OSC'`
      - Text file describing an evolutionary model in OSC format, as
        specified in the :download:`CoRoT/ESTA File Formats
        <corot-esta-file-formats.pdf>` document)
-   * - :nml_v:`'WDEC'`
+   * - :nml:value:`'WDEC'`
      - Text file describing an evolutionary model in WDEC format, as
        specified in :ads_citet:`bischoff-kim:2018`
 
@@ -61,8 +64,8 @@ Interpolation
 -------------
 
 Cubic spline interpolation is used to evaluate data between model grid
-points. The :nml_n:`deriv_type` parameter in the :nml_g:`model`
-namelist group controls how the spline derivatives are set up.
+points. The :nml:option:`deriv_type` option controls how the spline
+derivatives are set up.
 
 .. _evol-models-double:
 

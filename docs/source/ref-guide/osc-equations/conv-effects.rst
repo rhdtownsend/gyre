@@ -27,8 +27,8 @@ approaches. GYRE currently implements a subset of these:
   perturbation to the convective luminosity) in the perturbed heat
   equation.
 
-For further details, see the :nml_n:`conv_scheme` parameter in the
-:ref:`osc-params` section.
+For further details, see the :nml:option:`conv_scheme
+<osc.conv_scheme>` option of the :nml:group:`osc` namelist group.
 
 .. _osc-conv-turb:
 
@@ -64,5 +64,5 @@ exponent :math:`s=1`.
 
 In GYRE :math:`\alphatrb` is implemented as a switch (see the
 :ref:`osc-physics-switches` section). A reasonable choice is to set
-this parameter equal to the MLT mixing length parameter
+this option equal to the MLT mixing length parameter
 :math:`\alpha_{\rm MLT}` of the stellar model.

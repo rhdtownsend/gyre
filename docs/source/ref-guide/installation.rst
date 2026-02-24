@@ -91,41 +91,53 @@ Custom builds of GYRE can be created by setting certain environment
 variables to the value ``yes``. The following variables are currently
 supported:
 
-:envvar:`FRONTENDS`
-  Build main frontends such as :program:`gyre` and :program:`gyre_tides` (default ``yes``)
+.. envvar:: FRONTENDS
 
-:envvar:`TOOLS`
-  Build the support tools listed in the :ref:`support-tools` appendix (default ``yes``)
+   Build main frontends such as :program:`gyre` and :program:`gyre_tides` (default ``yes``)
 
-:envvar:`IFACES`
-  Build additional libraries for interfacing with other codes (default ``no``)
+.. envvar:: TOOLS
 
-:envvar:`FORUM`
-  Build the :git:`ForUM <rhdtownsend/forum>` library internally (default ``yes``).  If not set
-  to ``yes``, then you must set the :envvar:`FORUM_LIB_DIR` and :envvar:`FORUM_INC_DIR`
-  environment variables to point to where the ForUM library and module files, respectively,
-  are located
+   Build the support tools listed in the :ref:`support-tools` appendix (default ``yes``)
 
-:envvar:`DEBUG`
-  Enable debugging mode (default ``no``)
+.. envvar:: IFACES
 
-:envvar:`SHARED`
-  Build shared libraries in addition to static ones (default ``yes``)
+   Build additional libraries for interfacing with other codes (default ``no``)
 
-:envvar:`OMP`
-  Enable OpenMP parallelization (default ``yes``)
+.. envvar:: EXTERNAL_FORUM
 
-:envvar:`FPE`
-  Enable floating point exception checks (default ``yes``)
+   Link against an external :git:`ForUM <rhdtownsend/forum>` library
+   (default ``no``).  If set to ``yes``, then you must ensure that the
+   :file:`forum.pc` package file can be found by the
+   :command:`pkgconf` utility (for instance, by setting the
+   :envvar:`PKG_CONFIG_PATH` environment variable)
 
-:envvar:`CRMATH`
-  Enable correctly rounded math functions (default ``yes``)
+.. envvar:: DEBUG
 
-:envvar:`PORTABLE`
-  Enable portable math (default ``yes``)
+   Enable debugging mode (default ``no``)
 
-:envvar:`IEEE`
-  Use Fortran IEEE floating point features (default ``yes``)
+.. envvar:: SHARED
+
+   Build shared libraries in addition to static ones (default ``yes``)
+
+.. envvar:: OMP
+
+   Enable OpenMP parallelization (default ``yes``)
+
+.. envvar:: FPE
+
+   Enable floating point exception checks (default ``yes``)
+
+.. envvar:: CRMATH
+
+   Enable correctly rounded math functions (default ``yes``)
+
+.. envvar:: PORTABLE
+
+   Enable portable math (default ``yes``)
+
+.. envvar:: IEEE
+
+   Use Fortran IEEE floating point features (default ``yes``)
 
 If an environment variable is not set, then its default value is
 assumed. The default values can be altered by editing the file

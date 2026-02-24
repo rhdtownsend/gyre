@@ -3,15 +3,17 @@
 File Formats
 ============
 
-The format of summary and detail files depends on the value of the
-:nml_n:`summary_file_format` and :nml_n:`detail_file_format` parameters
-in the :nml_g:`ad_output` and :nml_g:`nad_output` namelist groups (see
-the :ref:`output-params` section). Possible choices are:
+.. nml:group:: output
+   :no-target:
 
-* :nml_v:`'HDF'` : A binary format based on the `HDF5
+The format of summary and detail files depends on the value of the
+:nml:option:`summary_file_format` and :nml:option:`detail_file_format`
+options. Possible choices are:
+
+* :nml:value:`'HDF'` : A binary format based on the `HDF5
   <https://support.hdfgroup.org/HDF5/whatishdf5.html>`__ format
 
-* :nml_v:`'TXT'` : A text format modeled after
+* :nml:value:`'TXT'` : A text format modeled after
   MESA's `profile file format <http://mesa.sourceforge.net/output.html>`__
 
 For both formats, the data stored in the files come in two flavors ---

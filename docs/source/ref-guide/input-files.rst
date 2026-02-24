@@ -9,21 +9,21 @@ files read by the :ref:`GYRE frontends <frontends>`. These files are
 in Fortran's `namelist format
 <https://cyber.dabamos.de/programming/modernfortran/namelists.html>`__,
 a simple text-based format containing one or more namelist
-groups. Each group begins with the line :nml_g:`name` (where ``name``
-is the name of the group); a list of parameter-value pairs then
-follows, and the group ends with a slash ``/``.
+groups. Each group begins with the line :nml:literal:`&name` (where
+:nml:literal:`name` is the name of the group); a list of option-value
+pairs then follows, and the group ends with a slash :nml:literal:`/`.
 
 .. toctree::
    :maxdepth: 2
 
-   input-files/constants
-   input-files/grid-params
-   input-files/model-params
-   input-files/mode-params
-   input-files/num-params
-   input-files/orbit-params
-   input-files/osc-params
-   input-files/output-params
-   input-files/rot-params
-   input-files/scan-params
-   input-files/tidal-params
+   input-files/constants-group
+   input-files/grid-group
+   input-files/model-group
+   input-files/mode-group
+   input-files/num-group
+   input-files/orbit-group
+   input-files/osc-group
+   input-files/output-groups
+   input-files/rot-group
+   input-files/scan-group
+   input-files/tide-group

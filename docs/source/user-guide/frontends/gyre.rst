@@ -11,7 +11,7 @@ The :program:`gyre` frontend calculates the free-oscillation
 modes of a stellar model. The general flow of execution is outlined in
 the chart to the right. After reading the :ref:`namelist input file
 <namelist-input-files>` and the :ref:`model <stellar-models>`,
-:program:`gyre` loops over :nml_g:`mode` namelist groups,
+:program:`gyre` loops over :nml:group:`mode` namelist groups,
 processing each in turn.
 
 For a given group, :program:`gyre` searches over a range of
@@ -19,7 +19,7 @@ oscillation frequencies for modes with a specific harmonic degree
 :math:`\ell` and azimuthal order :math:`m`. With each mode found, the
 eigenfrequency, eigenfunctions and other data are optionally written
 to a :ref:`detail file <detail-files>`.  At the end of the run,
-response data from all modes found (across all :nml_g:`mode` groups)
+response data from all modes found (across all :nml:group:`mode` groups)
 are optionally written to a :ref:`summary file <summary-files>`.
 
 The table below lists which namelist groups, and in what number,
@@ -32,35 +32,35 @@ should appear in namelist input files for :program:`gyre`.
    * - Description
      - Namelist group name
      - Count
-   * - :ref:`constants`
-     - :nml_g:`constants`
+   * - :ref:`constants-group`
+     - :nml:group:`constants`
      - 1
-   * - :ref:`grid-params`
-     - :nml_g:`grid`
+   * - :ref:`grid-group`
+     - :nml:group:`grid`
      - :math:`\geq 1`\ [#last]_
-   * - :ref:`mode-params`
-     - :nml_g:`mode`
+   * - :ref:`mode-group`
+     - :nml:group:`mode`
      - :math:`\geq 1`
-   * - :ref:`model-params`
-     - :nml_g:`model`
+   * - :ref:`model-group`
+     - :nml:group:`model`
      - 1
-   * - :ref:`num-params`
-     - :nml_g:`num`
+   * - :ref:`num-group`
+     - :nml:group:`num`
      - :math:`\geq 1`\ [#last]_
-   * - :ref:`osc-params`
-     - :nml_g:`osc`
+   * - :ref:`osc-group`
+     - :nml:group:`osc`
      - :math:`\geq 1`\ [#last]_
-   * - :ref:`output-params`
-     - :nml_g:`ad_output`
+   * - :ref:`output-groups`
+     - :nml:group:`ad_output`
      - 1
    * -
-     - :nml_g:`nad_output`
+     - :nml:group:`nad_output`
      - 1
-   * - :ref:`rot-params`
-     - :nml_g:`rot`
+   * - :ref:`rot-group`
+     - :nml:group:`rot`
      - :math:`\geq 1`\ [#last]_
-   * - :ref:`scan-params`
-     - :nml_g:`scan`
+   * - :ref:`scan-group`
+     - :nml:group:`scan`
      - :math:`\geq 1`
 
 .. rubric:: Footnotes

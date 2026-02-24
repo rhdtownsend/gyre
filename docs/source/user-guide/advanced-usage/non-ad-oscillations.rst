@@ -57,20 +57,20 @@ typically, when the oscillation modes are only weakly non-adiabatic,
 with :math:`|\sigmai/\sigmar| \ll 1`.
 
 To perform non-adiabatic calculations with the adiabatic method, set
-the following parameters in the :nml_g:`osc` namelist group:
+the following options in the :nml:group:`osc` namelist group:
 
-* :nml_n:`nonadiabatic`\ =\ :nml_v:`.TRUE.`
-* :nml_n:`adiabatic`\ =\ :nml_v:`.TRUE.`\ [#default]_
+* :nml:option:`adiabatic <osc.adiabatic>` = :nml:value:`.TRUE.`\ [#default]_
+* :nml:option:`nonadiabatic <osc.nonadiabatic>` = :nml:value:`.TRUE.`
 
-and the following parameters in the :nml_g:`num` namelist group:
+and the following options in the :nml:group:`num` namelist group:
 
-* :nml_n:`ad_search`\ =\ :nml_v:`'BRACKET'`\ [#default]_
-* :nml_n:`nad_search`\ =\ :nml_v:`'AD'`\ [#default]_
+* :nml:option:`ad_search <num.ad_search>` = :nml:value:`'BRACKET'`\ [#default]_
+* :nml:option:`nad_search <num.nad_search>` = :nml:value:`'AD'`\ [#default]_
 
-You may also wish to use the following setting in the :nml_g:`num`
+You may also wish to use the following setting in the :nml:group:`num`
 namelist group:
 
-* :nml_n:`diff_scheme`\ =\ :nml_v:`'MAGNUS_GL2'`
+* :nml:option:`diff_scheme <num.diff_scheme>` = :nml:value:`'MAGNUS_GL2'`
 
 This tells :program:`gyre` to evaluate the finite-difference equations
 using the 2nd order Magnus scheme; experience suggests that this gives
@@ -87,14 +87,15 @@ method. The important parts are as follows:
    :start-at: &osc
    :end-before: &grid
 
-Note the :nml_n:`nonadiabatic` parameter in the :nml_g:`osc` namelist
-group, and the :nml_n:`diff_scheme` parameter in the :nml_g:`num`
-namelist group. The :nml_n:`restrict_roots`\ =\ :nml_v:`.FALSE.`
-setting, also in the :nml_g:`num` namelist group, tells
-:program:`gyre` not to reject any modes that have :math:`\sigmar`
-outside the frequency range specified by the :nml_g:`scan` namelist
-group; this ensures that modes whose non-adiabatic frequencies fall
-just outside the frequency grid are still found.
+Note the :nml:option:`nonadiabatic <osc.nonadiabatic>` option in the
+:nml:group:`osc` namelist group, and the :nml:option:`diff_scheme
+<num.diff_scheme>` option in the :nml:group:`num` namelist group. The
+:nml:option:`restrict_roots <num.restrict_roots>` =
+:nml:value:`.FALSE.` option tells :program:`gyre` not to reject any
+modes that have :math:`\sigmar` outside the frequency range specified
+by the :nml:group:`scan` namelist group; this ensures that modes whose
+non-adiabatic frequencies fall just outside the frequency grid are
+still found.
 
 .. _non-ad-minmod:
 
@@ -110,19 +111,19 @@ significantly better than the adiabatic method, and is included in
 :program:`gyre` for the sake of completeness.
 
 To perform non-adiabatic calculations with the minmod method, set
-the following parameters in the :nml_g:`osc` namelist group:
+the following options in the :nml:group:`osc` namelist group:
 
-* :nml_n:`nonadiabatic`\ =\ :nml_v:`.TRUE.`
-* :nml_n:`adiabatic`\ =\ :nml_v:`.FALSE.`\ [#optional]_
+* :nml:option:`adiabatic <osc.adiabatic>` = :nml:value:`.FALSE.`\ [#optional]_
+* :nml:option:`nonadiabatic <osc.nonadiabatic>` = :nml:value:`.TRUE.`
 
-and the following parameters in the :nml_g:`num` namelist group:
+and the following options in the :nml:group:`num` namelist group:
 
-* :nml_n:`nad_search`\ =\ :nml_v:`'MINMOD'`
+* :nml:option:`nad_search <num.nad_search>` = :nml:value:`'MINMOD'`
 
 As with the adiabatic method, you may also wish to use the following
-setting in the :nml_g:`num` namelist group:
+setting in the :nml:group:`num` namelist group:
 
-* :nml_n:`diff_scheme`\ =\ :nml_v:`'MAGNUS_GL2'`
+* :nml:option:`diff_scheme <num.diff_scheme>` = :nml:value:`'MAGNUS_GL2'`
 
 An example of the minmod method in action can be found in the
 :file:`{$GYRE_DIR}/test/nad/mesa/bcep-minmod/gyre.in` namelist input
@@ -135,9 +136,9 @@ minmod method. The important parts are as follows:
    :start-at: &osc
    :end-before: &grid
 
-Note the additional :nml_n:`nad_search`\ =\ :nml_v:`'MINMOD'` parameter
-in the :nml_g:`num` namelist group, which stipulates that the minmod
-method should be used.
+Note the additional :nml:option:`nad_search <num.nad_search>` =
+:nml:value:`'MINMOD'` option in the :nml:group:`num` namelist group,
+stipulating that the minmod method should be used.
 
 .. _non-ad-contour:
 
@@ -154,40 +155,41 @@ strongly non-adiabatic modes with :math:`|\sigmai/\sigmar| \sim 1`,
 although there is an increased computational cost.
 
 To perform non-adiabatic calculations with the contour method, set
-the following parameters in the :nml_g:`osc` namelist group:
+the following options in the :nml:group:`osc` namelist group:
 
-* :nml_n:`nonadiabatic`\ =\ :nml_v:`.TRUE.`
-* :nml_n:`adiabatic`\ =\ :nml_v:`.FALSE.`\ [#optional]_
+* :nml:option:`adiabatic <osc.adiabatic>` = :nml:value:`.FALSE.`\ [#optional]_
+* :nml:option:`nonadiabatic <osc.nonadiabatic>` = :nml:value:`.TRUE.`
 
-and the following parameters in the :nml_g:`num` namelist group:
+and the following options in the :nml:group:`num` namelist group:
 
-* :nml_n:`nad_search`\ =\ :nml_v:`'CONTOUR'`
+* :nml:option:`nad_search <num.nad_search>` = :nml:value:`'CONTOUR'`
 
-You must also ensure that at least one :nml_g:`scan` namelist
-group with :nml_n:`axis`\ =\ :nml_v:`'REAL'` is present, and likewise
-at least one with :nml_n:`axis`\ =\ :nml_v:`'IMAG'`. Together, these
-groups define the real and imaginary axes of the discriminant grid in
-the complex-:math:`\omega` plane. As a rule of thumb, the resolution
-along the imaginary axis should be comparable to that along the real
-axis; this ensures that the contour-tracing algorithm behaves well.
+You must also ensure that at least one :nml:group:`scan` namelist
+group with :nml:option:`axis <scan.axis>` = :nml:value:`'REAL'` is
+present, and likewise at least one with :nml:option:`axis <scan.axis>`
+= :nml:value:`'IMAG'`. Together, these groups define the real and
+imaginary axes of the discriminant grid in the complex-:math:`\omega`
+plane. As a rule of thumb, the resolution along the imaginary axis
+should be comparable to that along the real axis; this ensures that
+the contour-tracing algorithm behaves well.
 
 Finally, as with the adiabatic method, you may also wish to use the
-following setting in the :nml_g:`num` namelist group:
+following setting in the :nml:group:`num` namelist group:
 
-* :nml_n:`diff_scheme`\ =\ :nml_v:`'MAGNUS_GL2'`
+* :nml:option:`diff_scheme <num.diff_scheme>` = :nml:value:`'MAGNUS_GL2'`
 
 .. note::
 
    Because g modes are spaced uniformly in period (in the asymptotic
    limit of large radial order), it would seem sensible to set
-   :nml_n:`grid_type`\ =\ :nml_v:`'INVERSE'` in the :nml_g:`scan`
-   namelist group(s) that correspond to the real axis (i.e.,
-   :nml_n:`axis`\ =\ :nml_v:`'REAL'`). However, this typically results
-   in a mismatch between the resolution of the real and imaginary
-   axes, and the contour method doesn't perform well. A fix for this
-   issue will be forthcoming in a future release of GYRE,
-   but in the meantime it's probably best to avoid the contour method
-   for g modes.
+   :nml:option:`grid_type <scan.grid_type>` = :nml:value:`'INVERSE'`
+   in the :nml:group:`scan` namelist group(s) that correspond to the
+   real axis (i.e., with :nml:option:`axis <scan.axis>` =
+   :nml:value:`'REAL'`). However, this typically results in a mismatch
+   between the resolution of the real and imaginary axes, and the
+   contour method doesn't perform well. A fix for this issue will be
+   forthcoming in a future release of GYRE, but in the meantime it's
+   probably best to avoid the contour method for g modes.
 
 An example of the minmod method in action can be found in the
 :file:`{$GYRE_DIR}/test/nad/mesa/bcep-contour/gyre.in` namelist input
@@ -200,11 +202,12 @@ minmod method. The important parts are as follows:
    :start-at: &osc
    :end-before: &grid
 
-Note the additional :nml_n:`nad_search`\ =\ :nml_v:`'CONTOUR'`
-parameter in the :nml_g:`num` namelist group, which stipulates that
-the contour method should be used; and, the fact that there are now
-two :nml_g:`scan` namelist groups, one with :nml_n:`axis`\ =\
-:nml_v:`'REAL'` and the other with :nml_n:`axis`\ =\ :nml_v:`'IMAG'`.
+Note the additional :nml:option:`nad_search <num.nad_search>` =
+:nml:value:`'CONTOUR'` option in the :nml:group:`num` namelist group,
+stipulating that the contour method should be used; and, the fact that
+there are now two :nml:group:`scan` namelist groups, one with
+:nml:option:`axis <scan.axis>` = :nml:value:`'REAL'` and the other with
+:nml:option:`axis <scan.axis>` = :nml:value:`'IMAG'`.
 
 .. rubric:: Footnotes
 

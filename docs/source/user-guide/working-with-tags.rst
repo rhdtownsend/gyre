@@ -1,5 +1,8 @@
 .. _working-with-tags:
 
+.. nml:group:: mode
+   :no-target:
+
 *****************
 Working With Tags
 *****************
@@ -25,26 +28,27 @@ goal using tags:
 
 .. literalinclude:: working-with-tags/gyre.in
 
-Observe that each :nml_g:`mode` namelist groups has a :nml_n:`tag`
-parameter. When processing a given :nml_g:`mode`, :program:`gyre`
-pairs it up with other namelist groups that match one of the following
-criteria:
+Observe that each :nml:group:`mode` namelist group has a
+:nml:option:`tag` option. When processing a given group,
+:program:`gyre` pairs it up with other namelist groups that match
+either of the following criteria:
 
-* The namelist group doesn't have a :nml_n:`tag_list` parameter;
-* The namelist does have a :nml_n:`tag_list` parameter, *and* the
-  parameter value (a comma-separated list) contains the tag value
-  defined in the :nml_g:`mode` group.
+* The :nml:literal:`tag_list` option is not set;
+* The :nml:literal:`tag_list` option is set to a comma-separated list,
+  and at least one element of this list matches the :nml:option:`tag`
+  option.
 
-In the example given above, the :nml_g:`osc` namelist group doesn't
-have a :nml_n:`tag_list` parameter; therefore, it is paired with all
-three :nml_g:`mode` namelist groups, irrespective of their
-:nml_n:`tag` values. However, the two :nml_g:`scan` namelist groups
-each have :nml_n:`tag_list` parameters. In the first group the
-:nml_v:`radial` tag appears, and so this group is paired with the
-first :nml_g:`mode` namelist group (i.e., the :math:`\ell=0`
-mode). Likewise, in the second group the :nml_v:`non-radial` tag
+In the example given above, the :nml:option:`tag_list <osc.tag_list>`
+option of the :nml:group:`osc` namelist group is unset; therefore,
+this group is paired with all three :nml:group:`mode` namelist groups,
+irrespective of their :nml:option:`tag` options. However, the two
+:nml:group:`scan` namelist groups each set their :nml:option:`tag_list
+<scan.tag_list>` options. In the first group the :nml:value:`radial`
+tag appears, and so this group is paired with the first
+:nml:group:`mode` namelist group (i.e., the :math:`\ell=0`
+mode). Likewise, in the second group the :nml:value:`non-radial` tag
 appears, and so this group is paired with the second and third
-:nml_g:`mode` namelist groups (i.e., the :math:`\ell=1` and
+:nml:group:`mode` namelist groups (i.e., the :math:`\ell=1` and
 :math:`\ell=2` modes).
 
 Tag Rules
@@ -54,8 +58,9 @@ In addition to the matching criteria given above, there are a couple
 of rules that must be obeyed by tags:
 
 * Tag names can't contain commas (however, they can be otherwise arbitrary);
-* If a :nml_g:`mode` namelist group doesn't have a :nml_n:`tag`
-  parameter, then only namelists without a :nml_n:`tag_list` parameter
-  will be paired with it;
-* The :nml_g:`constants`, :nml_g:`model`, :nml_g:`ad_output` and
-  :nml_g:`nad_output` namelist groups don't support tags.
+* If a :nml:group:`mode` namelist group doesn't have a
+  :nml:option:`tag` option, then only namelists without a
+  :nml:literal:`tag_list` option will be paired with it;
+* The :nml:group:`constants`, :nml:group:`model`,
+  :nml:group:`ad_output`, :nml:group:`nad_output`, and
+  :nml:group:`tide_output` namelist groups don't support tags.
