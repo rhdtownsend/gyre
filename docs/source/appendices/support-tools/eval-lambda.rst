@@ -19,13 +19,13 @@ The :program:`eval_lambda` tool evaluates the angular eigenvalue
 :math:`\lambda` appearing in Laplace's tidal equations (see the
 :ref:`osc-rot` section), over a grid :math:`\{q\}` of spin parameter
 values. These data are written to an output file in GYRE's
-:ref:`hdf-format`, with the following data items in the root group:
+:ref:`hdf-format`, with the following data objects in the root group:
 
 .. list-table::
    :widths: 10 10 10 15 55
    :header-rows: 1
 
-   * - Item
+   * - Object name
      - Symbol
      - Object type
      - Data type

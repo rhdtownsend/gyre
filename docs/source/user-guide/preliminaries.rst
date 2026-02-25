@@ -55,21 +55,21 @@ Development Team
 GYRE remains under active development by the following team:
 
 * `Rich Townsend <http://www.astro.wisc.edu/~townsend>`__ (University of Wisconsin-Madison); project leader
-* `Warrick Ball <https://www.birmingham.ac.uk/staff/profiles/physics/ball-warrick.aspx>`__ (University of Birmingham)
-* `Earl Bellinger <https://earlbellinger.com/>`__ (MPIA Garching)
-* Zhao Guo (Cambridge University)
-* Rianna Kuenzi (University of Wisconsin-Madison)
-* Mathias Michielsen (KU-Leuven)
 * `Ritvik Narayan <https://ritviksainarayan.com/>`__ (UW-Madison)
-* Joel Ong (University of Hawaii-Manoa)
 * `Jarret Rosenberg <https://www.physics.wisc.edu/directory/rosenberg-jarrett/>`__ (University of Wisconsin-Madison)
 * Meng Sun (Northwestern University)
-* Vincent Vanlaer (KU-Leuven)
 
 Former developers include:
 
+* `Warrick Ball <https://www.birmingham.ac.uk/staff/profiles/physics/ball-warrick.aspx>`__ (University of Birmingham)
+* `Earl Bellinger <https://earlbellinger.com/>`__ (MPIA Garching)
 * Jacqueline Goldstein (MIT)
+* Zhao Guo (Cambridge University)
+* Rianna Kuenzi (University of Wisconsin-Madison)
 * Aaron Lopez
+* Mathias Michielsen (KU-Leuven)
+* Joel Ong (University of Hawaii-Manoa)
+* Vincent Vanlaer (KU-Leuven)
 
 Also, the following people have made valuable contributions toward testing GYRE:
 

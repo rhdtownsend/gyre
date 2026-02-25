@@ -7,18 +7,16 @@ Files in POLY format store HDF5 data describing a :ref:`composite polytrope
 model <comp-ptrope>`. This format adheres to the following conventions:
 
 * All data objects are attached to the root HDF5 group (`/`)
-* Real values are written with type `H5T_IEEE_F64LE` when GYRE is
-  compiled in double precision (the default), and type
-  `H5T_IEEE_F32LE` otherwise
+* Real values are written with type `H5T_IEEE_F64LE`
 * Integer values are written with type `H5T_STD_I32LE`
 
-Data items in the root HDF5 group are as follows:
+The data objects appearing in the root group are as follows:
 
 .. list-table::
    :widths: 10 10 15 20 45
    :header-rows: 1
 
-   * - Data Item
+   * - Object name
      - Variable
      - Object type
      - Data type

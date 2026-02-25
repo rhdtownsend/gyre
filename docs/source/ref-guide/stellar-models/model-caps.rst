@@ -3,11 +3,10 @@
 Model Capabilities
 ==================
 
-Which data items are included in a given stellar model dictates what
-sorts of calculation can be performed on that model by the
-frontends. To this end, the different model types and file formats can
-be classified according to their `capabilities` (labeled using a
-single letter):
+Which data are included in a given stellar model dictates what sorts
+of calculation can be performed on that model by the frontends. To
+this end, the different model types and file formats can be classified
+according to their `capabilities` (labeled using a single letter):
 
 N
   The model supports non-adiabatic calculations.

@@ -90,8 +90,8 @@ Output Files
 files. One detail file is created for each partial potential
 evaluated, and the summary file collects together global data for all
 partial potentials across all :nml:group:`tide` namelist groups. The
-:nml_v:`id` output item can be used to determine which group a given
-response belongs to.
+:ofile:field:`summary.id` and :ofile:field:`detail.id` output fields
+can be used to determine which group a given response belongs to.
 
 The following Python code demonstrates how the summary data might be
 used to evaluate the secular rates-of-change of orbital semi-major

@@ -50,8 +50,8 @@ extensions = [
     'sphinx_copybutton',
     'sphinx_substitution_extensions',
     'ads_cite',
-    'nml_roles',
-    'nml_domain'
+    'nml_domain',
+    'ofile_domain'
 ]
 
 

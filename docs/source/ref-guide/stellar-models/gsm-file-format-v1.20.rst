@@ -1,13 +1,14 @@
 Version 1.20
 ------------
 
-Data items in the root HDF5 group of version-1.20 GSM-format files are as follows:
+The data objects appearing in the root HDF5 group of version-1.20
+GSM-format files are as follows:
 
 .. list-table::
    :widths: 15 10 10 10 55
    :header-rows: 1
 
-   * - Item
+   * - Object name
      - Symbol
      - Object type
      - Data type

@@ -88,6 +88,7 @@ nout	\subout{n}
 neqn	n_{\rm e}
 xin	\subin{x}
 xout	\subout{x}
+xref	x_{\rm ref}
 alphathm	\alpha_{\rm thm}
 alphagrv	\alpha_{\rm grv}
 alphagbc	\alpha_{\rm gbc}

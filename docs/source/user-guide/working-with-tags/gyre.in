@@ -59,8 +59,8 @@
 
 &ad_output
   summary_file = 'summary.h5'                  ! File name for summary file
-  summary_item_list = 'l,n_pg,freq,freq_units' ! Items to appear in summary file
-  freq_units = 'UHZ'                           ! Units of freq output items
+  summary_item_list = 'l,n_pg,freq,freq_units' ! Fields to appear in summary file
+  freq_units = 'UHZ'                           ! Units of frequency-like output fields
 /
 
 &nad_output

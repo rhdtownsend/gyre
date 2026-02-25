@@ -35,27 +35,27 @@ details). The following options are available:
    :type: real
    :default: 1
 
-   Minimum frequency. Used only when :nml:option:`grid_type`\ \= :nml:valuelist:`'LINEAR' 'INVERSE'`
+   Minimum frequency. Used only when :nml:option:`grid_type` = :nml:valuelist:`'LINEAR' 'INVERSE'`
 
 .. nml:option:: freq_max
    :type: real
    :default: 10
 
-   Maximum frequency. Used only when :nml:option:`grid_type`\ \= :nml:valuelist:`'LINEAR' 'INVERSE'`
+   Maximum frequency. Used only when :nml:option:`grid_type` = :nml:valuelist:`'LINEAR' 'INVERSE'`
 
 .. nml:option:: n_freq
    :type: integer
    :default: 10
 
-   Number of frequency points. Used only when :nml:option:`grid_type`\ \= :nml:valuelist:`'LINEAR' 'INVERSE'`
+   Number of frequency points. Used only when :nml:option:`grid_type` = :nml:valuelist:`'LINEAR' 'INVERSE'`
 
 .. nml:option:: freq_units
    :type: string
    :default: 'NONE'
 
    Units of :nml:option:`freq_min` and :nml:option:`freq_max`, when
-   :nml:option:`grid_type`\ \= :nml:value:`'LINEAR' 'INVERSE'`; or
-   units of read frequencies when :nml:option:`grid_type`\ \=
+   :nml:option:`grid_type` = :nml:value:`'LINEAR' 'INVERSE'`; or units
+   of read frequencies when :nml:option:`grid_type` =
    :nml:value:`'FILE'`
 
    - :nml:value:`'NONE'` : Dimensionless angular frequency
@@ -97,14 +97,14 @@ details). The following options are available:
    - :nml:value:`'COROT_I'` : Co-rotating frame at inner boundary
    - :nml:value:`'COROT_O'` : Co-rotating frame at outer boundary
 
-   Used only when :nml:option:`grid_type`\ \= :nml:value:`'LINEAR' | 'INVERSE'`
+   Used only when :nml:option:`grid_type` = :nml:value:`'LINEAR' | 'INVERSE'`
 
 .. nml:option:: file
    :type: string
    :default: ''
 
    File to read frequencies from. Used only when
-   :nml:option:`grid_type`\ \= :nml:value:`'FILE'`
+   :nml:option:`grid_type` = :nml:value:`'FILE'`
 
 .. nml:option:: axis
    :type: string

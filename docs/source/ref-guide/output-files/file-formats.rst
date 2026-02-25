@@ -33,9 +33,7 @@ HDF-format output files adhere to the following conventions:
 * All data objects are attached to the root HDF5 group (`/`)
 * Attributes are used to store scalar data
 * Datasets are used to store array data
-* Real values are written with type `H5T_IEEE_F64LE` when GYRE is
-  compiled in double precision (the default), and type
-  `H5T_IEEE_F32LE` otherwise
+* Real values are written with type `H5T_IEEE_F64LE`
 * Integer values are written with type `H5T_STD_I32LE`
 * Complex values are written as a compound type, composed of a real
   component `re` and an imaginary component `im`; the types of

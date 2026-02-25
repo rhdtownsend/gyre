@@ -33,8 +33,8 @@ non-adiabatic calculation stages of :program:`gyre`; the third for
    :type: string
    :default: 'l,n_pg,omega,freq'
 
-   Comma-separated list of output items to write to summary file; see the
-   :ref:`summary-files` section for possible choices
+   Comma-separated list of fields to write to summary file; see
+   the :ref:`summary-files` section for possible choices
 
 .. nml:option:: summary_filter_list
    :type: string
@@ -77,7 +77,7 @@ non-adiabatic calculation stages of :program:`gyre`; the third for
    :type: string
    :default: 'l,n_pg,omega,freq,x,xi_r,xi_h'
 
-   Comma-separated list of output items to write to detail files; see the
+   Comma-separated list of fields to write to detail files; see the
    :ref:`detail-files` section for possible choices
 
 .. nml:option:: detail_filter_list
@@ -91,7 +91,7 @@ non-adiabatic calculation stages of :program:`gyre`; the third for
    :type: string
    :default: 'NONE'
 
-   Units of :nml_v:`freq` output item; one of
+   Units of frequency-like output fields; one of
 
    - :nml:value:`'NONE'` : Dimensionless angular frequency
    - :nml:value:`'HZ'` : Linear frequency in Hz\ [#only-D]_
@@ -111,7 +111,7 @@ non-adiabatic calculation stages of :program:`gyre`; the third for
    :type: string
    :default: 'INERTIAL'`
 
-   Frame of :nml:value:`freq` output item; one of
+   Frame of frequency-like output fields; one of
 
    - :nml:value:`'INERTIAL'` : Inertial frame
    - :nml:value:`'COROT_I'` : Co-rotating frame at inner boundary

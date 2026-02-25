@@ -1,5 +1,7 @@
 .. _detail-files:
 
+.. ofile:filetype:: detail
+
 .. nml:group:: output
    :no-target:
 
@@ -14,85 +16,95 @@ options of the :nml:group:`ad_output` and :nml:group:`nad_output` namelist
 groups (:program:`gyre` adiabatic and non-adiabatic calculations,
 respectively) and the :nml:group:`tide_output` namelist group
 (:program:`gyre_tides` calculations). These options specify the
-items to be written, via a comma-separated list.
+data to be written via a comma-separated list of fields.
 
-The following subsections describe the items that may appear in
-:nml:option:`detail_item_list`, grouped together by functional area. For
-each item, the corresponding math symbol is given (if there is one),
-together with the datatype, and a brief description. Units (where
-applicable) are indicated in brackets [].
+The following subsections describe the fields that may appear in
+:nml:option:`detail_item_list`, grouped together by functional area.
 
 Solution Data
 -------------
 
-.. list-table::
-   :header-rows: 1
-   :widths: 15 10 10 65
+.. ofile:field:: n
+   :type: integer
 
-   * - Item
-     - Symbol
-     - Datatype
-     - Description
-   * - :nml_v:`n`
-     - :math:`N`
-     - integer
-     - number of spatial grid points
-   * - :nml_v:`omega`
-     - :math:`\omega`
-     - complex
-     - dimensionless eigenfrequency (:program:`gyre`) or forcing frequency (:program:`gyre_tides`)
-   * - :nml_v:`x`
-     - :math:`x`
-     - real(:nml_n:`n`)
-     - independent variable :math:`x = r/\Rstar`
-   * - :nml_v:`dx_min`
-     - :math:`\Delta x_{\rm min}`
-     - real
-     - minimum spacing of spatial grid
-   * - :nml_v:`dx_max`
-     - :math:`\Delta x_{\rm max}`
-     - real
-     - maximum spacing of spatial grid
-   * - :nml_v:`dx_rms`
-     - :math:`\Delta x_{\rm rms}`
-     - real
-     - root-mean-square spacing of spatial grid
-   * - :nml_v:`x_ref`
-     - :math:`x_{\rm ref}`
-     - real
-     - fractional radius of reference location
-   * - :nml_v:`y_1`
-     - :math:`y_{1}`
-     - complex(:nml_n:`n`)
-     - dependent variable
-   * - :nml_v:`y_2`
-     - :math:`y_{2}`
-     - complex(:nml_n:`n`)
-     - dependent variable
-   * - :nml_v:`y_3`
-     - :math:`y_{3}`
-     - complex(:nml_n:`n`)
-     - dependent variable
-   * - :nml_v:`y_4`
-     - :math:`y_{4}`
-     - complex(:nml_n:`n`)
-     - dependent variable
-   * - :nml_v:`y_5`
-     - :math:`y_{5}`
-     - complex(:nml_n:`n`)
-     - dependent variable
-   * - :nml_v:`y_6`
-     - :math:`y_{6}`
-     - complex(:nml_n:`n`)
-     - dependent variable
-   * - :nml_v:`chi`
-     - :math:`\chi`
-     - real
-     - root-finding converge parameter
-   * - :nml_v:`n_iter`
-     - :math:`n_{\rm iter}`
-     - integer
-     - root-finding number of iterations
+   Number of spatial grid points :math:`N`
+
+.. ofile:field:: omega
+   :type: complex
+
+   Dimensionless angular frequency :math:`\omega`
+
+.. ofile:field:: x
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Dimensionless radial coordinate :math:`x \equiv r/\Rstar`
+
+.. ofile:field:: x_ref
+   :type: real
+
+   Dimensionless radial coordinate :math:`\xref` of reference location
+
+.. ofile:field:: dx_min
+   :type: real
+
+   Minimum radial spacing :math:`\Delta x_{\rm min}` in spatial grid
+
+.. ofile:field:: dx_max
+   :type: real
+
+   Maximum radial spacing :math:`\Delta x_{\rm max}` in spatial grid
+
+.. ofile:field:: dx_rms
+   :type: real
+
+   Root-mean-square spacing :math:`\Delta x_{\rm rms}` of spatial grid
+
+.. ofile:field:: y_1
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   Dependent variable :math:`y_{1}`
+
+.. ofile:field:: y_2
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   Dependent variable :math:`y_{2}`
+
+.. ofile:field:: y_3
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   Dependent variable :math:`y_{3}`
+
+.. ofile:field:: y_4
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   Dependent variable :math:`y_{4}`
+
+.. ofile:field:: y_5
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   Dependent variable :math:`y_{5}`
+
+.. ofile:field:: y_6
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   Dependent variable :math:`y_{6}`
+
+.. ofile:field:: chi
+   :type: real
+
+   Root-finding convergence parameter :math:`\chi`
+
+.. ofile:field:: n_iter
+   :type: integer
+
+   Root-finding number of iterations
 
 The definitions of the dependent variables
 :math:`\{y_{1},\ldots,y_{6}\}` are provided in the :ref:`osc-eqns`
@@ -101,582 +113,764 @@ chapter.
 Observables
 -----------
 
-.. list-table::
-   :header-rows: 1
-   :widths: 15 10 10 65
+.. ofile:field:: freq
+   :type: complex
+   :units: controlled by :nml:option:`freq_units` and :nml:option:`freq_frame` options
 
-   * - Item
-     - Symbol
-     - Datatype
-     - Description
-   * - :nml_v:`freq`
-     - ---
-     - complex
-     - dimensioned frequency; units and reference frame controlled by
-       :nml:option:`freq_units` and :nml:option:`freq_frame` options
-   * - :nml_v:`freq_units`
-     - ---
-     - string
-     - :nml:option:`freq_units` option
-   * - :nml_v:`freq_frame`
-     - ---
-     - string
-     - :nml:option:`freq_frame` option
-   * - :nml_v:`f_T`
-     - :math:`f_{T}`
-     - real
-     - Effective temperature perturbation amplitude; evaluated using
-       eqn. (5) of :ads_citet:`dupret:2003`
-   * - :nml_v:`f_g`
-     - :math:`f_{\rm g}`
-     - real
-     - Effective gravity perturbation amplitude; evaluated using
-       eqn. (6) of :ads_citet:`dupret:2003`
-   * - :nml_v:`\psi_T`
-     - :math:`\psi_{T}`
-     - real
-     - Effective temperature perturbation phase; evaluated using
-       eqn. (5) of :ads_citet:`dupret:2003`
-   * - :nml_v:`f_g`
-     - :math:`\psi_{\rm g}`
-     - real
-     - Effective gravity perturbation phase; evaluated using
-       eqn. (6) of :ads_citet:`dupret:2003`
+   Dimensioned frequency
+
+.. ofile:field:: freq_units
+   :type: string
+
+   Value of :nml:option:`freq_units` option
+
+.. ofile:field:: freq_frame
+   :type: string
+
+   Value of :nml:option:`freq_frame` option
+
+.. ofile:field:: f_T
+   :type: real
+
+   Effective temperature perturbation amplitude :math:`f_{T}`;
+   evaluated at reference location using eqn. (5) of
+   :ads_citet:`dupret:2003`
+
+.. ofile:field:: f_g
+   :type: real
+
+   Effective gravity perturbation amplitude :math:`f_{g}`; evaluated
+   at reference location using eqn. (6) of :ads_citet:`dupret:2003`
+
+.. ofile:field:: psi_T
+   :type: real
+
+   Effective temperature perturbation phase :math:`\psi_{T}`;
+   evaluated at reference location using eqn. (5) of
+   :ads_citet:`dupret:2003`
+
+.. ofile:field:: psi_g
+   :type: real
+
+   Effective gravity perturbation phase :math:`\psi_{g}`; evaluated at
+   reference location using eqn. (6) of :ads_citet:`dupret:2003`
 
 Classification & Validation
 ---------------------------
 
-.. list-table::
-   :header-rows: 1
-   :widths: 15 10 10 65
+.. ofile:field:: id
+   :type: integer
 
-   * - Item
-     - Symbol
-     - Datatype
-     - Description
-   * - :nml_v:`id`
-     - ---
-     - integer
-     - unique mode index
-   * - :nml_v:`l`
-     - :math:`\ell`
-     - integer
-     - harmonic degree
-   * - :nml_v:`l_i`
-     - :math:`\ell_{\rm i}`
-     - complex
-     - effective harmonic degree at inner boundary
-   * - :nml_v:`m`
-     - :math:`m`
-     - integer
-     - azimuthal order
-   * - :nml_v:`n_p`
-     - :math:`\nump`
-     - integer
-     - acoustic-wave winding number
-   * - :nml_v:`n_g`
-     - :math:`\numg`
-     - integer
-     - gravity-wave winding number
-   * - :nml_v:`n_pg`
-     - :math:`\numpg`
-     - integer
-     - radial order within the Eckart-Scuflaire-Osaki-Takata
-       scheme (see :ads_citealp:`takata:2006b`)
-   * - :nml_v:`omega_int`
-     - :math:`\omega_{\rm int}`
-     - complex
-     - dimensionless eigenfrequency based on integral expression; evaluated using eqn. (A8) of :ads_citet:`townsend:2025`
-   * - :nml_v:`dzeta_dx`
-     - :math:`\sderiv{\zeta}{x}`
-     - complex(:nml_v:`n`)
-     - frequency weight function :math:`[G\Mstar^{2}/\Rstar]`;
-       evaluated from the integrand in eqn. (A5) of
-       :ads_citet:`townsend:2025` with :math:`n'=n`
+   Unique mode index
 
-   * - :nml_v:`zeta`
-     - :math:`\zeta`
-     - complex
-     - integral of :math:`\sderiv{\zeta}{x}` with respect to :math:`x`
-   * - :nml_v:`Yt_1`
-     - :math:`\mathcal{Y}_{1}`
-     - complex(:nml_v:`n`)
-     - primary eigenfunction for Takata classification; evaluated
-       using a rescaled eqn. (69) of :ads_citet:`takata:2006b`
-   * - :nml_v:`Yt_2`
-     - :math:`\mathcal{Y}_{2}`
-     - complex(:nml_v:`n`)
-     - secondary eigenfunction for Takata classification; evaluated
-       using a rescaled eqn. (70) of :ads_citet:`takata:2006b`
-   * - :nml_v:`I_0`
-     - :math:`I_{0}`
-     - complex(:nml_v:`n`)
-     - first integral for radial modes; evaluated using
-       eqn. (42) of :ads_citet:`takata:2006a`
-   * - :nml_v:`I_1`
-     - :math:`I_{1}`
-     - complex(:nml_v:`n`)
-     - first integral for dipole modes; evaluated using
-       eqn. (43) of :ads_citet:`takata:2006a`
-   * - :nml_v:`prop_type`
-     - :math:`\varpi`
-     - integer(:nml_v:`n`)
-     - propagation type; :math:`\varpi = 1` in acoustic-wave regions,
-       :math:`\varpi=-1` in gravity-wave regions, and :math:`\varpi=0` in
-       evanescent regions
+.. ofile:field:: l
+   :type: integer
+
+   Harmonic degree :math:`\ell`
+
+.. ofile:field:: l_i
+   :type: complex
+
+   Effective harmonic degree at inner boundary :math:`\ell_{\rm i}`
+
+.. ofile:field:: m
+   :type: integer
+
+   Azimuthal order :math:`m`
+
+.. ofile:field:: n_p
+   :type: integer
+
+   Acoustic-wave winding number :math:`\nump`
+
+.. ofile:field:: n_g
+   :type: integer
+
+   Gravity-wave winding number :math:`\numg`
+
+.. ofile:field:: n_pg
+   :type: integer
+
+   Radial order :math:`\numpg` within the
+   Eckart-Scuflaire-Osaki-Takata scheme (see
+   :ads_citealp:`takata:2006b`)
+
+.. ofile:field:: omega_int
+   :type: complex
+
+   Dimensionless eigenfrequency :math:`\omega_{\rm int}` based on
+   integral expression; evaluated using eqn. (A8) of
+   :ads_citet:`townsend:2025`
+
+.. ofile:field:: dzeta_dx
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`G\Mstar^{2}/\Rstar`
+
+   Frequency weight function :math:`\sderiv{\zeta}{x}`; evaluated from
+   the integrand in eqn. (A5) of :ads_citet:`townsend:2025` with
+   :math:`n'=n`
+
+.. ofile:field:: zeta
+   :type: complex
+
+   Integrated frequency weight :math:`\zeta \equiv \int \sderiv{\zeta}{x} \, \diff{x}`
+
+.. ofile:field:: Yt_1
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   Primary eigenfunction :math:`\mathcal{Y}_{1}` for Takata
+   classification; evaluated using a rescaled eqn. (69) of
+   :ads_citet:`takata:2006b`
+
+.. ofile:field:: Yt_2
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   Secondary eigenfunction :math:`\mathcal{Y}_{2}` for Takata
+   classification; evaluated using a rescaled eqn. (70) of
+   :ads_citet:`takata:2006b`
+
+.. ofile:field:: I_0
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   First integral :math:`I_{0}` for radial modes; evaluated using
+   eqn. (42) of :ads_citet:`takata:2006a`
+
+.. ofile:field:: I_1
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   First integral :math:`I_{1}` for dipole modes; evaluated using
+   eqn. (43) of :ads_citet:`takata:2006a`
+
+.. ofile:field:: prop_type
+   :type: integer
+   :dim: :ofile:field:`n`
+
+   Wave propagation type: :math:`\varpi = 1` in acoustic-wave regions,
+   :math:`\varpi=-1` in gravity-wave regions, and :math:`\varpi=0` in
+   evanescent regions
 
 Perturbations
 -------------
 
-.. list-table::
-   :header-rows: 1
-   :widths: 15 10 10 65
+.. ofile:field:: xi_r_ref
+   :type: complex
+   :units: :math:`\Rstar`
 
-   * - Item
-     - Symbol
-     - Datatype
-     - Description
-   * - :nml_v:`xi_r_ref`
-     - :math:`\txi_{r,{\rm ref}}`
-     - complex
-     - radial displacement perturbation at reference location :math:`[\Rstar]`
-   * - :nml_v:`xi_h_ref`
-     - :math:`\txi_{\rm h,ref}`
-     - complex
-     - horizontal displacement perturbation at reference location :math:`[\Rstar]`
-   * - :nml_v:`eul_Phi_ref`
-     - :math:`\tPhi'_{\rm ref}`
-     - complex
-     - Eulerian potential perturbation at reference location :math:`[G\Mstar/\Rstar]`
-   * - :nml_v:`deul_Phi_ref`
-     - :math:`(\sderiv{\tPhi'}{x})_{\rm ref}`
-     - complex
-     - Eulerian potential gradient perturbation at reference location :math:`[G\Mstar/\Rstar^{2}]`
-   * - :nml_v:`lag_S_ref`
-     - :math:`\delta\tS_{\rm ref}`
-     - complex
-     - Lagrangian specific entropy perturbation at reference location :math:`[\cP]`
-   * - :nml_v:`lag_L_ref`
-     - :math:`\delta\tL_{\rm R,ref}`
-     - complex
-     - Lagrangian radiative luminosity perturbation at reference location :math:`[\Lstar]`
-   * - :nml_v:`xi_r`
-     - :math:`\txir`
-     - complex(:nml_v:`n`)
-     - radial displacement perturbation :math:`[\Rstar]`
-   * - :nml_v:`xi_h`
-     - :math:`\txih`
-     - complex(:nml_v:`n`)
-     - horizontal displacement perturbation :math:`[\Rstar]`
-   * - :nml_v:`eul_Phi`
-     - :math:`\tPhi'`
-     - complex(:nml_v:`n`)
-     - Eulerian potential perturbation :math:`[G\Mstar/\Rstar]`
-   * - :nml_v:`deul_Phi`
-     - :math:`\sderiv{\tPhi'}{x}`
-     - complex(:nml_v:`n`)
-     - Eulerian potential gradient perturbation :math:`[G\Mstar/\Rstar^{2}]`
-   * - :nml_v:`lag_S`
-     - :math:`\delta\tS`
-     - complex(:nml_v:`n`)
-     - Lagrangian specific entropy perturbation :math:`[\cP]`
-   * - :nml_v:`lag_L`
-     - :math:`\delta\tLrad`
-     - complex(:nml_v:`n`)
-     - Lagrangian radiative luminosity perturbation :math:`[\Lstar]`
-   * - :nml_v:`eul_P`
-     - :math:`\tP'`
-     - complex(:nml_v:`n`)
-     - Eulerian total pressure perturbation :math:`[P]`
-   * - :nml_v:`eul_rho`
-     - :math:`\trho'`
-     - complex(:nml_v:`n`)
-     - Eulerian density perturbation :math:`[\rho]`
-   * - :nml_v:`eul_T`
-     - :math:`\tT'`
-     - complex(:nml_v:`n`)
-     - Eulerian temperature perturbation :math:`[T]`
-   * - :nml_v:`lag_P`
-     - :math:`\delta\tP`
-     - complex(:nml_v:`n`)
-     - Lagrangian total pressure perturbation :math:`[P]`
-   * - :nml_v:`lag_rho`
-     - :math:`\delta\trho`
-     - complex(:nml_v:`n`)
-     - Lagrangian density perturbation :math:`[\rho]`
-   * - :nml_v:`lag_T`
-     - :math:`\delta\tT`
-     - complex(:nml_v:`n`)
-     - Lagrangian temperature perturbation :math:`[T]`
+   Radial displacement perturbation :math:`\txi_{r,{\rm ref}}` at
+   reference location
+
+.. ofile:field:: xi_h_ref
+   :type: complex
+   :units: :math:`\Rstar`
+
+   Horizontal displacement perturbation :math:`\txi_{\rm h,ref}` at
+   reference location
+
+.. ofile:field:: eul_Phi_ref
+   :type: complex
+   :units:  :math:`G\Mstar/\Rstar`
+
+   Eulerian potential perturbation :math:`\tPhi'_{\rm ref}` at
+   reference location
+
+.. ofile:field:: deul_Phi_ref
+   :type: complex
+   :units: :math:`G\Mstar/\Rstar^{2}`
+
+   Eulerian potential gradient perturbation
+   :math:`(\sderiv{\tPhi'}{x})_{\rm ref}` at reference location
+
+.. ofile:field:: lag_S_ref
+   :type: complex
+   :units: :math:`\cP`
+
+   Lagrangian specific entropy perturbation :math:`\delta\tS_{\rm
+   ref}` at reference location
+
+.. ofile:field:: lag_L_ref
+   :type: complex
+   :units: :math:`\Lstar`
+
+   Lagrangian radiative luminosity perturbation :math:`\delta\tL_{\rm
+   R,ref}` at reference location
+
+.. ofile:field:: xi_r
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`\Rstar`
+
+   Radial displacement perturbation :math:`\txir`
+
+.. ofile:field:: xi_h
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`\Rstar`
+
+   Horizontal displacement perturbation :math:`\txih`
+
+.. ofile:field:: eul_Phi
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`G\Mstar/\Rstar`
+
+   Eulerian potential perturbation :math:`\tPhi'`
+
+.. ofile:field:: deul_Phi
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`G\Mstar/\Rstar^{2}`
+
+   Eulerian potential gradient perturbation :math:`\sderiv{\tPhi'}{x}`
+
+.. ofile:field:: lag_S
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`\cP`
+
+   Lagrangian specific entropy perturbation :math:`\delta\tS`
+
+.. ofile:field:: lag_L
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`\Lstar`
+
+   Lagrangian radiative luminosity perturbation :math:`\delta\tLrad`
+
+.. ofile:field:: eul_P
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`P`
+
+   Eulerian total pressure perturbation :math:`\tP'`
+
+.. ofile:field:: eul_rho
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`\rho`
+
+   Eulerian density perturbation :math:`\trho'`
+
+.. ofile:field:: eul_T
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`T`
+
+   Eulerian temperature perturbation :math:`\tT'`
+
+.. ofile:field:: lag_P
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`P`
+
+   Lagrangian total pressure perturbation :math:`\delta\tP`
+
+.. ofile:field:: lag_rho
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`\rho`
+
+   Lagrangian density perturbation :math:`\delta\trho`
+
+.. ofile:field:: lag_T
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`T`
+
+   Lagrangian temperature perturbation :math:`\delta\tT`
 
 Energetics & Transport
 ----------------------
 
-.. list-table::
-   :header-rows: 1
-   :widths: 15 10 10 65
+.. ofile:field:: eta
+   :type: real
 
-   * - Item
-     - Symbol
-     - Datatype
-     - Description
-   * - :nml_v:`eta`
-     - :math:`\eta`
-     - real
-     - normalized growth rate :math:`\eta`; evaluated using expression
-       in text of page 1186 of :ads_citet:`stellingwerf:1978`
-   * - :nml_v:`E`
-     - :math:`E`
-     - real
-     - mode inertia :math:`[\Mstar\Rstar^{2}]`; evaluated by integrating
-       :math:`\sderiv{E}{x}`
-   * - :nml_v:`E_p`
-     - :math:`E_{\rm p}`
-     - real
-     - acoustic mode inertia :math:`[\Mstar\Rstar^{2}]`; evaluated by
-       integrating :math:`\sderiv{E}{x}` where
-       :math:`\varpi=1`
-   * - :nml_v:`E_g`
-     - :math:`E_{\rm g}`
-     - real
-     - gravity mode inertia :math:`[\Mstar\Rstar^{2}]`; evaluated by
-       integrating :math:`\sderiv{E}{x}` in regions where
-       :math:`\varpi=-1`
-   * - :nml_v:`E_norm`
-     - :math:`E_{\rm norm}`
-     - real
-     - normalized inertia; evaluation controlled by :nml:option:`inertia_norm <osc.inertia_norm>`
-       option
-   * - :nml_v:`E_ratio`
-     -
-     - real
-     - ratio of mode inertia outside reference location, to total inertia
-   * - :nml_v:`H`
-     - :math:`H`
-     - real
-     - mode energy :math:`[G\Mstar^{2}/\Rstar]`; evaluated as
-       :math:`\frac{1}{2} \omega^{2} E`
-   * - :nml_v:`W`
-     - :math:`W`
-     - real
-     - mode work :math:`[G\Mstar^{2}/\Rstar]`; evaluated by
-       integrating :math:`\sderiv{W}{x}`
-   * - :nml_v:`W_eps`
-     - :math:`W_{\epsilon}`
-     - real
-     - mode work :math:`[G\Mstar^{2}/\Rstar]`; evaluated by
-       integrating :math:`\sderiv{W_{\epsilon}}{x}`
-   * - :nml_v:`tau_ss`
-     - :math:`\tau_{\rm ss}`
-     - real
-     - steady-state torque :math:`[G\Mstar^{2}/\Rstar]`; evaluated by
-       integrating :math:`\sderiv{\tau_{\rm ss}}{x}`
-   * - :nml_v:`tau_tr`
-     - :math:`\tau_{\rm tr}`
-     - real
-     - steady-state torque :math:`[G\Mstar^{2}/\Rstar]`; evaluated by
-       integrating :math:`\sderiv{\tau_{\rm tr}}{x}`
-   * - :nml_v:`dE_dx`
-     - :math:`\sderiv{E}{x}`
-     - real(:nml_v:`n`)
-     - differential inertia :math:`[\Mstar \Rstar^{2}]`; evaluated using eqn. (3.139) of
-       :ads_citet:`aerts:2010`
-   * - :nml_v:`dW_dx`\ [#only-N]_
-     - :math:`\sderiv{W}{x}`
-     - real(:nml_v:`n`)
-     - differential work :math:`[G\Mstar^{2}/\Rstar]`; evaluated using eqn. (25.9)
-       of :ads_citet:`unno:1989`
-   * - :nml_v:`dW_eps_dx`\ [#only-N]_
-     - :math:`\sderiv{W_{\epsilon}}{x}`
-     - real(:nml_v:`n`)
-     - differential nuclear work :math:`[G\Mstar^{2}/\Rstar]`; evaluated using
-       eqn. (25.9) of :ads_citet:`unno:1989`
-   * - :nml_v:`dtau_ss_dx`
-     - :math:`\sderiv{\tau_{\rm ss}}{x}`
-     - real(:nml_v:`n`)
-     - steady-state differential torque :math:`[G\Mstar^{2}/\Rstar]`
-   * - :nml_v:`dtau_tr_dx`
-     - :math:`\sderiv{\tau_{\rm tr}}{x}`
-     - real(:nml_v:`n`)
-     - transient differential torque :math:`[G\Mstar^{2}/\Rstar]`
-   * - :nml_v:`alpha_0`
-     - :math:`\alpha_{0}`
-     - real(:nml_v:`n`)
-     - excitation coefficient; evaluated using eqn. (26.10) of
-       :ads_citet:`unno:1989`
-   * - :nml_v:`alpha_1`
-     - :math:`\alpha_{1}`
-     - real(:nml_v:`n`)
-     - excitation coefficient; evaluated using eqn. (26.12) of
-       :ads_citet:`unno:1989`
+   Normalized growth rate :math:`\eta`; evaluated using expression in
+   text of page 1186 of :ads_citet:`stellingwerf:1978`\ [#only-N]_
+
+.. ofile:field:: E
+   :type: real
+   :units: :math:`\Mstar\Rstar^{2}`
+
+   Mode inertia :math:`E \equiv \int \sderiv{E}{x} \, \diff{x}`
+
+.. ofile:field:: E_p
+   :type: real
+   :units: :math:`\Mstar\Rstar^{2}`
+
+   Acoustic mode inertia :math:`E_{\rm p}`; evaluated by integrating
+   :math:`\sderiv{E}{x}` with respect to :math:`x` across regions
+   where :math:`\varpi=1`
+
+.. ofile:field:: E_g
+   :type: real
+   :units: :math:`\Mstar\Rstar^{2}`
+
+   Gravity mode inertia :math:`E_{\rm g}`; evaluated by integrating
+   :math:`\sderiv{E}{x}` with respect to :math:`x` across regions
+   where :math:`\varpi=-1`
+
+.. ofile:field:: E_norm
+   :type: real
+
+   Normalized inertia :math:`E_{\rm norm}`; evaluation controlled by
+   :nml:option:`inertia_norm <osc.inertia_norm>` option
+
+.. ofile:field:: E_ratio
+   :type: real
+
+   Ratio of mode inertia outside reference location, to total inertia
+
+.. ofile:field:: H
+   :type: real
+   :units: :math:`G\Mstar^{2}/\Rstar`
+
+   Mode energy :math:`H \equiv \frac{1}{2} \omega^{2} E`
+
+.. ofile:field:: W
+   :type: real
+   :units: :math:`G\Mstar^{2}/\Rstar`
+
+   Mode work :math:`W \equiv \int \sderiv{W}{x} \, \diff{x}`\ [#only-N]_
+
+.. ofile:field:: W_eps
+   :type: real
+   :units: :math:`G\Mstar^{2}/\Rstar`
+
+   Mode nuclear work :math:`W_{\epsilon} \equiv \int
+   \sderiv{W_{\epsilon}}{x} \, \diff{x}`\ [#only-N]_
+
+.. ofile:field:: tau_ss
+   :type: real
+   :units: :math:`G\Mstar^{2}/\Rstar`
+
+   Steady-state torque :math:`\tau_{\rm ss} \equiv \int
+   \sderiv{\tau_{\rm ss}}{x} \, \diff{x}`\ [#only-N]_
+
+.. ofile:field:: tau_tr
+   :type: real
+   :units: :math:`G\Mstar^{2}/\Rstar`
+
+   Transient torque :math:`\tau_{\rm tr} \equiv \int
+   \sderiv{\tau_{\rm tr}}{x} \, \diff{x}`\ [#only-N]_
+
+.. ofile:field:: dE_dx
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`\Mstar \Rstar^{2}`
+
+   Differential inertia :math:`\sderiv{E}{x}`; evaluated using eqn. (3.139) of
+   :ads_citet:`aerts:2010`
+
+.. ofile:field:: dW_dx
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`G\Mstar^{2}/\Rstar`
+
+   Differential work :math:`\sderiv{W}{x}`; evaluated using
+   eqn. (25.9) of :ads_citet:`unno:1989`\ [#only-N]_
+
+.. ofile:field:: dW_eps_dx
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`G\Mstar^{2}/\Rstar`
+
+   Differential nuclear work :math:`\sderiv{W_{\epsilon}}{x}`;
+   evaluated using eqn. (25.9) of :ads_citet:`unno:1989`\ [#only-N]_
+
+.. ofile:field:: dtau_ss_dx
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`G\Mstar^{2}/\Rstar`
+
+   Steady-state differential torque :math:`\sderiv{\tau_{\rm ss}}{x}`;
+   evaluated using eqn. (13) of :ads_citet:`townsend:2018`\ [#only-N]_
+
+.. ofile:field:: dtau_tr_dx
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`G\Mstar^{2}/\Rstar`
+
+   Transient differential torque :math:`\sderiv{\tau_{\rm tr}}{x}`;
+   evaluated using eqn. (14) of :ads_citet:`townsend:2018`\ [#only-N]_
+
+.. ofile:field:: alpha_0
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Excitation coefficient :math:`\alpha_{0}`; evaluated using
+   eqn. (26.10) of :ads_citet:`unno:1989`\ [#only-N]_
+
+.. ofile:field:: alpha_1
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Excitation coefficient :math:`\alpha_{1}`; evaluated using eqn. (26.12) of
+   :ads_citet:`unno:1989`\ [#only-N]_
 
 Rotation
 --------
 
-.. list-table::
-   :header-rows: 1
-   :widths: 15 10 10 65
+.. ofile:field:: Omega_rot_ref
+   :type: real
+   :units: :math:`\sqrt{G\Mstar/\Rstar^{3}}`
 
-   * - Item
-     - Symbol
-     - Datatype
-     - Description
-   * - :nml_v:`Omega_rot_ref`
-     - :math:`\Omega_{\rm rot,ref}`
-     - real
-     - rotation angular frequency at reference location :math:`[\sqrt{G\Mstar/\Rstar^{3}}]`
-   * - :nml_v:`Omega_rot`
-     - :math:`\Orot`
-     - real(:nml_v:`n`)
-     - rotation angular frequency :math:`[\sqrt{G\Mstar/\Rstar^{3}}]`
-   * - :nml_v:`domega_rot`
-     - :math:`\Delta \omega`
-     - real
-     - dimensionless first-order rotational splitting; evaluated using eqn. (3.355) of :ads_citet:`aerts:2010`
-   * - :nml_v:`dfreq_rot`
-     - ---
-     - real
-     - dimensioned first-order rotational splitting; units and reference frame controlled by
-       :nml:option:`freq_units` and :nml:option:`freq_frame` options
-   * - :nml_v:`beta`
-     - :math:`\beta`
-     - real
-     - rotation splitting coefficient; evaluated by
-       integrating :math:`\sderiv{\beta}{x}`
-   * - :nml_v:`dbeta_dx`
-     - :math:`\sderiv{\beta}{x}`
-     - complex(:nml_v:`n`)
-     - unnormalized rotation splitting kernel; evaluated using
-       eqn. (3.357) of :ads_citet:`aerts:2010`
-   * - :nml_v:`lambda`
-     - :math:`\lambda`
-     - complex(:nml_v:`n`)
-     - angular eigenvalue
+   Rotation angular frequency :math:`\Omega_{\rm rot,ref}` at
+   reference location
+
+.. ofile:field:: Omega_rot
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`\sqrt{G\Mstar/\Rstar^{3}}`
+
+   Rotation angular frequency :math:`\Orot`
+
+.. ofile:field:: domega_rot
+   :type: real
+
+   Dimensionless first-order rotational splitting :math:`\Delta
+   \omega`; evaluated using eqn. (3.355) of :ads_citet:`aerts:2010`
+
+.. ofile:field:: dfreq_rot
+   :type: real
+   :units: controlled by :nml:option:`freq_units` and :nml:option:`freq_frame` options
+
+   Dimensioned first-order rotational splitting
+
+.. ofile:field:: beta
+   :type: real
+
+   Rotation splitting coefficient :math:`\beta \equiv \int \sderiv{\beta}{x} \, \diff{x}`
+
+.. ofile:field:: dbeta_dx
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Un-normalized rotation splitting kernel :math:`\sderiv{\beta}{x}`;
+   evaluated using eqn. (3.357) of :ads_citet:`aerts:2010`
+
+.. ofile:field:: lambda
+   :type: complex
+   :dim: :ofile:field:`n`
+
+   Angular eigenvalue :math:`\lambda`
 
 Stellar Structure
 -----------------
 
-.. list-table::
-   :header-rows: 1
-   :widths: 20 10 10 60
+.. ofile:field:: M_star
+   :type: real
+   :units: :math:`\gram`
 
-   * - Item
-     - Symbol
-     - Datatype
-     - Description
-   * - :nml_v:`M_star`\ [#only-D]_
-     - :math:`\Mstar`
-     - real
-     - stellar mass :math:`[\gram]`
-   * - :nml_v:`R_star`\ [#only-D]_
-     - :math:`\Rstar`
-     - real
-     - stellar radius :math:`[\cm]`
-   * - :nml_v:`L_star`\ [#only-D]_
-     - :math:`\Lstar`
-     - real
-     - stellar luminosity :math:`[\erg\,\second^{-1}]`
-   * - :nml_v:`Delta_p`
-     - :math:`\Delta \nu`
-     - real
-     - asymptotic p-mode large frequency separation :math:`[\sqrt{G\Mstar/\Rstar^{3}}]`
-   * - :nml_v:`Delta_g`
-     - :math:`(\Delta P)^{-1}`
-     - real
-     - asymptotic g-mode inverse period separation :math:`[\sqrt{G\Mstar/\Rstar^{3}}]`
-   * - :nml_v:`V_2`
-     - :math:`V_2`
-     - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`osc-struct-coeffs` section
-   * - :nml_v:`As`
-     - :math:`A^{*}`
-     - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`osc-struct-coeffs` section
-   * - :nml_v:`U`
-     - :math:`U`
-     - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`osc-struct-coeffs` section
-   * - :nml_v:`c_1`
-     - :math:`c_{1}`
-     - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`osc-struct-coeffs` section
-   * - :nml_v:`U_D` [#only-P]_
-     - :math:`UD`
-     - real(:nml_v:`n`)
-     - structure coefficient; :math:`UD = U \sderiv{\ln\rho}{\ln r}`
-   * - :nml_v:`Gamma_1`
-     - :math:`\Gammi`
-     - real(:nml_v:`n`)
-     - adiabatic exponent; defined in :ref:`osc-linear-eqns` section
-   * - :nml_v:`upsilon_T`\ [#only-N]_
-     - :math:`\upsT`
-     - real(:nml_v:`n`)
-     - thermodynamic coefficient; defined in :ref:`osc-linear-eqns`
-       section
-   * - :nml_v:`nabla_ad`\ [#only-N]_
-     - :math:`\nabad`
-     - real(:nml_v:`n`)
-     - adiabatic temperature gradient; defined in
-       :ref:`osc-linear-eqns` section
-   * - :nml_v:`dnabla_ad`\ [#only-N]_
-     - :math:`\dnabad`
-     - real(:nml_v:`n`)
-     - logarithmic derivative of adiabatic temperature gradient
-   * - :nml_v:`beta_rad`\ [#only-D]_
-     - :math:`\beta`
-     - real(:nml_v:`n`)
-     - ratio of radiation pressure to gas pressure
-   * - :nml_v:`nabla`\ [#only-N]_
-     - :math:`\nabla`
-     - real(:nml_v:`n`)
-     - temperature gradient; defined in :ref:`osc-struct-coeffs` section
-       :ref:`osc-dimless-form` section
-   * - :nml_v:`c_lum`\ [#only-N]_
-     - :math:`\clum`
-     - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`osc-struct-coeffs`
-       section
-   * - :nml_v:`c_rad`\ [#only-N]_
-     - :math:`\crad`
-     - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`osc-struct-coeffs`
-       section
-   * - :nml_v:`c_thn`\ [#only-N]_
-     - :math:`\cthn`
-     - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`osc-struct-coeffs`
-       section
-   * - :nml_v:`c_thk`\ [#only-N]_
-     - :math:`\cthk`
-     - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`osc-struct-coeffs`
-       section
-   * - :nml_v:`c_eps`\ [#only-N]_
-     - :math:`\ceps`
-     - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`osc-struct-coeffs`
-       section
-   * - :nml_v:`c_egv`\ [#only-N]_
-     - :math:`\cegv`
-     - real(:nml_v:`n`)
-     - structure coefficient; defined in :ref:`osc-struct-coeffs`
-       section
-   * - :nml_v:`eps_rho`\ [#only-N]_
-     - :math:`\epsnucrho`
-     - real(:nml_v:`n`)
-     - nuclear energy generation partial; defined in :ref:`osc-linear-eqns`
-       section
-   * - :nml_v:`eps_T`\ [#only-N]_
-     - :math:`\epsnucT`
-     - real(:nml_v:`n`)
-     - nuclear energy generation partial; defined in :ref:`osc-linear-eqns`
-       section
-   * - :nml_v:`kap_rho`\ [#only-N]_
-     - :math:`\kaprho`
-     - real(:nml_v:`n`)
-     - opacity partial; defined in :ref:`osc-linear-eqns`
-       section
-   * - :nml_v:`kap_T`\ [#only-N]_
-     - :math:`\kapT`
-     - real(:nml_v:`n`)
-     - opacity partial; defined in :ref:`osc-linear-eqns`
-       section
-   * - :nml_v:`M_r`\ [#only-D]_
-     - :math:`M_r`
-     - real(:nml_v:`n`)
-     - interior mass :math:`[\gram]`
-   * - :nml_v:`P`\ [#only-D]_
-     - :math:`P`
-     - real(:nml_v:`n`)
-     - total pressure :math:`[\barye]`
-   * - :nml_v:`rho`\ [#only-D]_
-     - :math:`\rho`
-     - real(:nml_v:`n`)
-     - density :math:`[\gram\,\cm^{-3}]`
-   * - :nml_v:`T`\ [#only-D]_
-     - :math:`T`
-     - real(:nml_v:`n`)
-     - temperature :math:`[\kelvin]`
+   Stellar mass :math:`\Mstar`\ [#only-D]_
+
+.. ofile:field:: R_star
+   :type: real
+   :units: :math:`\cm`
+
+   Stellar radius :math:`\Rstar`\ [#only-D]_
+
+.. ofile:field:: L_star
+   :type: real
+   :units: :math:`\erg\,\second^{-1}`
+
+   Stellar luminosity :math:`\Lstar`\ [#only-D]_
+
+.. ofile:field:: Delta_p
+   :type: real
+   :units: :math:`\sqrt{G\Mstar/\Rstar^{3}}`
+
+   Asymptotic p-mode large frequency separation :math:`\Delta \nu`
+
+.. ofile:field:: Delta_g
+   :type: real
+   :units: :math:`\sqrt{G\Mstar/\Rstar^{3}}`
+
+   Asymptotic g-mode inverse period separation :math:`(\Delta P)^{-1}`
+
+.. ofile:field:: V_2
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Rescaled homology invariant :math:`V_2 \equiv x^{-2} V`; defined in
+   :ref:`osc-struct-coeffs` section
+
+.. ofile:field:: As
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Schwarzschild discriminant :math:`A^{*}`; defined in
+   :ref:`osc-struct-coeffs` section
+
+.. ofile:field:: U
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Homology invariant :math:`U`; defined in :ref:`osc-struct-coeffs`
+   section
+
+.. ofile:field:: c_1
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Structure coefficient :math:`c_{1}`; defined in
+   :ref:`osc-struct-coeffs` section
+
+.. ofile:field:: U_D
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Structure coefficient :math:`UD \equiv U \sderiv{\ln\rho}{\ln x}`\ [#only-P]_
+
+.. ofile:field:: Gamma_1
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Adiabatic exponent :math:`\Gammi`; defined in
+   :ref:`osc-linear-eqns` section
+
+.. ofile:field:: upsilon_T
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Thermodynamic coefficient :math:`\upsT`; defined in
+   :ref:`osc-linear-eqns` section\ [#only-N]_
+
+.. ofile:field:: nabla_ad
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Adiabatic temperature gradient :math:`\nabad`; defined in
+   :ref:`osc-linear-eqns` section\ [#only-N]_
+
+.. ofile:field:: dnabla_ad
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Logarithmic gradient :math:`\dnabad \equiv \sderiv{\ln\nabad}{\ln
+   x}` of adiabatic temperature gradient\ [#only-N]_
+
+.. ofile:field:: beta_rad
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Ratio of radiation pressure to gas pressure [#only-D]_
+
+.. ofile:field:: nabla
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Temperature gradient :math:`\nabla`; defined in
+   :ref:`osc-struct-coeffs` section\ [#only-N]_
+
+.. ofile:field:: c_lum
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Structure coefficient :math:`\clum`; defined in
+   :ref:`osc-struct-coeffs` section\ [#only-N]_
+
+.. ofile:field:: c_rad
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Structure coefficient :math:`\crad`; defined in
+   :ref:`osc-struct-coeffs` section\ [#only-N]_
+
+.. ofile:field:: c_thn
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Structure coefficient :math:`\cthn`; defined in
+   :ref:`osc-struct-coeffs` section\ [#only-N]_
+
+.. ofile:field:: c_thk
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Structure coefficient :math:`\cthk`; defined in
+   :ref:`osc-struct-coeffs` section\ [#only-N]_
+
+.. ofile:field:: c_eps
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Structure coefficient :math:`\ceps`; defined in
+   :ref:`osc-struct-coeffs` section\ [#only-N]_
+
+.. ofile:field:: c_egv
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Structure coefficient :math:`\cegv`; defined in
+   :ref:`osc-struct-coeffs` section\ [#only-N]_
+
+.. ofile:field:: eps_rho
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Nuclear energy generation partial :math:`\epsnucrho`; defined in
+   :ref:`osc-linear-eqns` section\ [#only-N]_
+
+.. ofile:field:: eps_T
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Nuclear energy generation partial :math:`\epsnucT`; defined in
+   :ref:`osc-linear-eqns` section\ [#only-N]_
+
+.. ofile:field:: kap_rho
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Opacity partial :math:`\kaprho`; defined in :ref:`osc-linear-eqns`
+   section\ [#only-N]_
+
+.. ofile:field:: kap_T
+   :type: real
+   :dim: :ofile:field:`n`
+
+   Opacity partial :math:`\kapT`; defined in :ref:`osc-linear-eqns`
+   section\ [#only-N]_
+
+.. ofile:field:: M_r
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`\gram`
+
+   Interior mass :math:`M_r`\ [#only-D]_
+
+.. ofile:field:: P
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`\barye`
+
+   Total pressure :math:`P`\ [#only-D]_
+
+.. ofile:field:: rho
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`\gram\,\cm^{-3}`
+
+   Density :math:`\rho`\ [#only-D]_
+
+.. ofile:field:: T
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`\kelvin`
+
+   Temperature :math:`T`\ [#only-D]_
 
 Tidal Response
 --------------
 
-Note that these items are available only when using :program:`gyre_tides`.
+Note that these fields are available only when using :program:`gyre_tides`.
 
-.. list-table::
-   :header-rows: 1
-   :widths: 15 10 10 65
+.. ofile:field:: k
+   :type: integer
 
-   * - Item
-     - Symbol
-     - Datatype
-     - Description
-   * - :nml_v:`k`
-     - :math:`k`
-     - integer
-     - Fourier harmonic
-   * - :nml_v:`eul_Psi_ref`
-     - :math:`\tPsi'_{\rm ref}`
-     - complex
-     - Eulerian total potential perturbation at reference location :math:`[G\Mstar/\Rstar]`
-   * - :nml_v:`Phi_T_ref`
-     - :math:`\tPhi_{\rm T, ref}`
-     - real
-     - tidal potential at reference location :math:`[G\Mstar/\Rstar]`
-   * - :nml_v:`eul_Psi`
-     - :math:`\tPsi'`
-     - complex(:nml_v:`n`)
-     - Eulerian total potential perturbation :math:`[G\Mstar/\Rstar]`
-   * - :nml_v:`Phi_T`
-     - :math:`\tPhi_{{\rm T}}`
-     - real(:nml_v:`n`)
-     - tidal potential :math:`[G\Mstar/\Rstar]`
-   * - :nml_v:`Omega_orb`
-     - :math:`\Oorb`
-     - real
-     - orbital angular frequency; units and reference frame controlled by
-       :nml:option:`freq_units` and :nml:option:`freq_frame` options
-   * - :nml_v:`q`
-     - :math:`q`
-     - real
-     - ratio of secondary mass to primary mass
-   * - :nml_v:`e`
-     - :math:`e`
-     - real
-     - orbital eccentricity
-   * - :nml_v:`R_a`
-     - :math:`R/a`
-     - real
-     - ratio of primary radius to orbital semi-major axis
-   * - :nml_v:`cbar`
-     - :math:`\cbar_{\ell,m,k}`
-     - real
-     - tidal expansion coefficient; see eqn. (A1) of :ads_citet:`sun:2023`
-   * - :nml_v:`Gbar_1`
-     - :math:`\Gbar^{(1)}_{\ell,m,k}`
-     - real
-     - secular orbital evolution coefficient; equivalent to :math:`G^{(1)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
-   * - :nml_v:`Gbar_2`
-     - :math:`\Gbar^{(2)}_{\ell,m,k}`
-     - real
-     - secular orbital evolution coefficient; equivalent to :math:`G^{(2)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
-   * - :nml_v:`Gbar_3`
-     - :math:`\Gbar^{(3)}_{\ell,m,k}`
-     - real
-     - secular orbital evolution coefficient; equivalent to :math:`G^{(3)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
-   * - :nml_v:`Gbar_4`
-     - :math:`\Gbar^{(4)}_{\ell,m,k}`
-     - real
-     - secular orbital evolution coefficient; equivalent to :math:`G^{(4)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
-   * - :nml_v:`Gbar_E`
-     - :math:`\Gbar^{(E)}_{\ell,m,k}`
-     - real
-     - secular energy transfer coefficient; derived from :math:`\Gbar^{(4)}_{\ell,m,k}` by dropping the leading :math:`m` term
+   Fourier harmonic :math:`k`
+
+.. ofile:field:: eul_Psi_ref
+   :type: complex
+   :units: :math:`G\Mstar/\Rstar`
+
+   Eulerian total potential perturbation :math:`\tPsi'_{\rm ref}` at
+   reference location
+
+.. ofile:field:: Phi_T_ref
+   :type: real
+   :units: :math:`G\Mstar/\Rstar`
+
+   Tidal potential :math:`\tPhi_{\rm T, ref}` at reference location
+
+.. ofile:field:: eul_Psi
+   :type: complex
+   :dim: :ofile:field:`n`
+   :units: :math:`G\Mstar/\Rstar`
+
+   Eulerian total potential perturbation :math:`\tPsi'`
+
+.. ofile:field:: Phi_T
+   :type: real
+   :dim: :ofile:field:`n`
+   :units: :math:`G\Mstar/\Rstar`
+
+   Tidal potential :math:`\tPhi_{{\rm T}}`
+
+.. ofile:field:: Omega_orb
+   :type: real
+   :units: controlled by :nml:option:`freq_units` and :nml:option:`freq_frame` options
+
+   Orbital angular frequency :math:`\Oorb`
+
+.. ofile:field:: q
+   :type: real
+
+   Ratio :math:`q` of secondary mass to primary mass
+
+.. ofile:field:: e
+   :type: real
+
+   Orbital eccentricity :math:`e`
+
+.. ofile:field:: R_a
+   :type: real
+
+   Ratio :math:`R/a` of primary radius to orbital semi-major axis
+
+.. ofile:field:: cbar
+   :type: real
+
+   Tidal expansion coefficient :math:`\cbar_{\ell,m,k}`; see eqn. (A1) of :ads_citet:`sun:2023`
+
+.. ofile:field:: Gbar_1
+   :type: real
+
+   Secular orbital evolution coefficient
+   :math:`\Gbar^{(1)}_{\ell,m,k}`; equivalent to
+   :math:`G^{(1)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+
+.. ofile:field:: Gbar_2
+   :type: real
+
+   Secular orbital evolution coefficient
+   :math:`\Gbar^{(2)}_{\ell,m,k}`; equivalent to
+   :math:`G^{(2)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+
+.. ofile:field:: Gbar_3
+   :type: real
+
+   Secular orbital evolution coefficient
+   :math:`\Gbar^{(3)}_{\ell,m,k}`; equivalent to
+   :math:`G^{(3)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+
+.. ofile:field:: Gbar_4
+   :type: real
+
+   Secular orbital evolution coefficient
+   :math:`\Gbar^{(4)}_{\ell,m,k}`; equivalent to
+   :math:`G^{(4)}_{\ell,m,-k}` (see :ads_citealp:`willems:2003`)
+
+.. ofile:field:: Gbar_E
+   :type: real
+
+   Secular energy transfer coefficient :math:`\Gbar^{(E)}_{\ell,m,k}`;
+   derived from :math:`\Gbar^{(4)}_{\ell,m,k}` by dropping the leading
+   :math:`m` term
 
 .. rubric:: Footnotes
 
-.. [#only-N] This option is available only for stellar models with :ref:`N capability <model-caps>`
+.. [#only-N] This field is available only for stellar models with
+             :ref:`N capability <model-caps>`
 
-.. [#only-D] This option is available only for stellar models with :ref:`D capability <model-caps>`
+.. [#only-D] This field is available only for stellar models with
+             :ref:`D capability <model-caps>`
 
-.. [#only-P] This option is available only for polytrope models (`'HOM'`, `'POLY'`, `'ANAPOLY_*'`)
+.. [#only-P] This field is available only for :ref:`homogeneous
+             <hom-models>`, :ref:`polytropic <poly-models>` and
+             :ref:`analytic polytropic <anapoly-models>` models

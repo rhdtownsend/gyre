@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-#from docutils import nodes
 from docutils.parsers.rst import roles, nodes
 from docutils.parsers.rst import directives
 from sphinx.domains import Domain
@@ -94,7 +93,7 @@ class NmlGroupRole(XRefRole):
 
 class NmlGroupDirective(SphinxDirective):
     """
-    .. nml:group:: <groupname>
+    .. nml:group:: <group_name>
        :no-target:
 
     Sets the default group (namespace) for subsequent content.
@@ -136,7 +135,7 @@ class NmlGroupDirective(SphinxDirective):
 
 class NmlOptionDirective(SphinxDirective):
     """
-    .. nml:option:: <optionname>
+    .. nml:option:: <option_name>
        :type:
        :default:
 

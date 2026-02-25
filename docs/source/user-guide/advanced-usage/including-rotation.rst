@@ -42,9 +42,10 @@ Incorporating the effects of the Coriolis force can be done using a
 :ref:`perturbative treatment <osc-rot-coriolis-p>` or a
 :ref:`non-perturbative treatment <osc-rot-coriolis-np>`. In the former
 case the effects are be applied as a post-calculation correction to
-non-rotating eigenfrequencies (see the :nml_v:`domega_rot` output item
-in the :ref:`summary-files` and :ref:`detail-files` sections). In the
-latter case, the traditional approximation of rotation (TAR) can be
-enabled by setting the :nml:option:`lambda_method <osc.lambda_method>` option to
+non-rotating eigenfrequencies (see the
+:ofile:field:`summary.domega_rot` and :ofile:field:`detail.domega_rot`
+output fields). In the latter case, the traditional approximation of
+rotation (TAR) can be enabled by setting the
+:nml:option:`lambda_method <osc.lambda_method>` option to
 :nml:value:`'TAR-GRAVITY'` (for gravito-acoustic modes) or to
 :nml:value:`'TAR-ROSSBY'` (for Rossby modes).

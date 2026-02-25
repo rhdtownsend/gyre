@@ -34,7 +34,7 @@ quantities. The following options are available:
    :type: real
    :default: 1
 
-   Scaling factor for the dimensionless co-rotating frequerncy
+   Scaling factor for the dimensionless co-rotating frequency
    :math:`\omegac` (see eqn. :eq:`e:omegac-force`)
 
 .. nml:option:: l_min
