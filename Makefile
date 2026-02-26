@@ -95,7 +95,7 @@ build : install-forum
 
 clean : clean-forum
 	@$(MAKE) -C build $@
-	@rm -rf $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
+	@rm -rf $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
 
 test build_ref build_ref_arch :
 	@$(MAKE) --no-print-directory -C test $@
