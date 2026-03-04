@@ -1,0 +1,41 @@
+&constants
+/
+
+&model
+  model_type = 'EVOL'
+  file = 'spb.mesa'
+  file_format = 'MESA'
+/
+
+&mode
+  l = 2
+/
+
+&osc
+/
+
+&num
+  diff_scheme = '{diff_scheme}'
+/
+
+&scan
+  grid_type = 'INVERSE'
+  freq_min = 0.05
+  freq_max = 1.0
+  n_freq = 1000
+/
+
+&rot
+/
+
+&grid
+  w_osc = 10
+  w_exp = 2
+  w_ctr = 10
+/
+
+&ad_output
+/
+
+&nad_output
+/

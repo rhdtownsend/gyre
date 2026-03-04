@@ -1,0 +1,43 @@
+&constants
+/
+
+&model
+  model_type = 'EVOL'
+  file = 'spb.mesa'
+  file_format = 'MESA'
+/
+
+&mode
+  l = 2
+/
+
+&osc
+/
+
+&num
+  diff_scheme = 'COLLOC_GL4'
+/
+
+&scan
+  grid_type = 'INVERSE'
+  freq_min = 0.205
+  freq_max = 1.0
+  n_freq = 100
+/
+
+&rot
+/
+
+&grid
+  w_osc = 150
+  w_exp = 30
+  w_ctr = 150
+/
+
+&ad_output
+  summary_file = 'summary.h5'
+  summary_item_list = 'omega'
+/
+
+&nad_output
+/
