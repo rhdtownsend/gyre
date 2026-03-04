@@ -21,7 +21,7 @@ module util_m
 
    ! Uses
 
-   use forum_m, only: RD, reallocate
+   use forum_m, only: RD, reallocate, get
 
    use constants_m
    use grid_par_m
@@ -55,6 +55,11 @@ module util_m
 
    #:endfor
 
+   interface read_text_file
+      module procedure read_text_file_1_
+      module procedure read_text_file_v_
+   end interface read_text_file
+
    ! Access specifiers
 
    public :: form_header
@@ -62,6 +67,7 @@ module util_m
    public :: check_log_level
    public :: select_par
    public :: elem_group_name
+   public :: read_text_file
 
    ! Default access
 
@@ -260,5 +266,111 @@ contains
       return
 
    end function elem_group_name
+
+   !****
+
+   subroutine read_text_file_1_(file, data, skip_rows)
+
+      character(*), intent(in)           :: file
+      real(RD), allocatable, intent(out) :: data(:)
+      integer, intent(in), optional      :: skip_rows
+
+      real(RD), allocatable :: data_(:,:)
+
+      ! Read single-column data from a simple text file
+
+      call read_text_file_v_(file, data_, skip_rows)
+
+      data = data_(1,:)
+
+      ! Finish
+
+      return
+
+   end subroutine read_text_file_1_
+
+   !****
+
+   subroutine read_text_file_v_(file, data, skip_rows)
+
+      character(*), intent(in)           :: file
+      real(RD), allocatable, intent(out) :: data(:,:)
+      integer, intent(in), optional      :: skip_rows
+
+      integer                   :: unit
+      integer                   :: i
+      character(:), allocatable :: line
+      integer                   :: n_col
+      integer                   :: n_row
+      real(RD), allocatable     :: line_data(:)
+
+      ! Read multi-column data from a simple text file
+
+      ! Open the file
+
+      open(NEWUNIT=unit, FILE=file, STATUS='OLD')
+
+      ! Count columns
+
+      if (PRESENT(skip_rows)) then
+         do i = 1, skip_rows
+            read(unit, *)
+         end do
+      end if
+
+      call get(unit, line)
+
+      n_col = 0
+
+      count_col_loop: do
+
+         allocate(line_data(n_col))
+         read(line, *, END=100) line_data
+         deallocate(line_data)
+
+         n_col = n_col + 1
+
+      end do count_col_loop
+
+100   continue
+
+      deallocate(line_data)
+
+      n_col = n_col - 1
+
+      @:ASSERT(n_col >= 1, 'no columns in file')
+
+      n_row = 1
+
+      count_row_loop : do
+         read(unit, *, END=200)
+         n_row = n_row + 1
+      end do count_row_loop
+
+200   continue
+
+      rewind(unit)
+
+      ! Read the data
+
+      if (PRESENT(skip_rows)) then
+         do i = 1, skip_rows
+            read(unit, *)
+         end do
+      end if
+
+      allocate(data(n_col,n_row))
+
+      read_loop: do i = 1, n_row
+         read(unit, *) data(:,i)
+      end do read_loop
+
+      close(unit)
+
+      ! Finish
+
+      return
+
+   end subroutine read_text_file_v_
 
 end module util_m

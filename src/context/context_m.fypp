@@ -36,6 +36,7 @@ module context_m
    use angular_factory_m
    use rot_par_m
    use state_m
+   use util_m
 
    use ISO_FORTRAN_ENV
 
@@ -499,14 +500,7 @@ contains
       type(cubic_interp_ct), intent(out)  :: ci_eps_rho
       type(cubic_interp_ct), intent(out)  :: ci_eps_T
 
-      integer                  :: unit
-      integer                  :: n
-      real(RD), allocatable    :: period(:)
-      real(RD), allocatable    :: A_norm(:)
-      real(RD), allocatable    :: B_norm(:)
-      real(RD), allocatable    :: A_phase(:)
-      real(RD), allocatable    :: B_phase(:)
-      integer                  :: i
+      real(RD), allocatable    :: data(:,:)
       real(RD), allocatable    :: omega(:)
       complex(RD), allocatable :: eps_rho(:)
       complex(RD), allocatable :: eps_T(:)
@@ -515,70 +509,46 @@ contains
       ! Read epsilon partials data from a file in the format used in the
       ! preparation of Wolf, Townsend & Bildsten (2018)
 
-      ! Open the file and skip the header line
+      call read_text_file(os_p%deps_file, data, skip_rows=1)
 
-      open(NEWUNIT=unit, FILE=os_p%deps_file, STATUS='OLD')
+      @:ASSERT(SIZE(data, 1) == 6, 'invalid number of columns in file')
 
-      read(unit, *)
+      associate( &
+         period => data(1,:), &
+         A_norm => data(2,:), &
+         B_norm => data(3,:), &
+         A_phase => data(4,:), &
+         B_phase => data(5,:))
 
-      ! Count lines
+         ! Convert periods to dimensionless frequencies
 
-      n = 0
+         omega = 1._RD/(period*freq_scale('HZ', ml))
 
-      count_loop : do
-         read(unit, *, END=100)
-         n = n + 1
-      end do count_loop
+         ! Reverse the phase sign because Wolf et al assume a time
+         ! depenence of exp(i omega t), rather than GYRE's exp(-i omega t)
 
-100   continue
+         A_phase = -A_phase
+         B_phase = -B_phase
 
-      rewind(unit)
+         ! Calculate complex eps_* terms
 
-      read(unit, *)
+         eps_rho = A_norm*exp((0._RD,1._RD)*A_phase)
+         eps_T = B_norm*exp((0._RD,1._RD)*A_phase)
 
-      ! Read data
+         ! Sort in order of increasing omega
 
-      allocate(period(n))
+         j = sort_indices(omega)
 
-      allocate(A_norm(n))
-      allocate(B_norm(n))
+         omega = omega(j)
+         eps_rho = eps_rho(j)
+         eps_T = eps_T(j)
 
-      allocate(A_phase(n))
-      allocate(B_phase(n))
+         ! Set up interpolating functions
 
-      read_loop : do i = 1, n
-         read(unit, *) period(i), A_norm(i), B_norm(i), A_phase(i), B_phase(i)
-      end do read_loop
+         ci_eps_rho = cubic_interp_ct(omega, eps_rho, 'SPLINE')
+         ci_eps_T = cubic_interp_ct(omega, eps_T, 'SPLINE')
 
-      close(unit)
-
-      ! Convert periods to dimensionless frequencies
-
-      omega = 1._RD/(period*freq_scale('HZ', ml))
-
-      ! Reverse the phase sign because Wolf et al assume a time
-      ! depenence of exp(i omega t), rather than GYRE's exp(-i omega t)
-
-      A_phase = -A_phase
-      B_phase = -B_phase
-
-      ! Calculate complex eps_* terms
-
-      eps_rho = A_norm*exp((0._RD,1._RD)*A_phase)
-      eps_T = B_norm*exp((0._RD,1._RD)*A_phase)
-
-      ! Sort in order of increasing omega
-
-      j = sort_indices(omega)
-
-      omega = omega(j)
-      eps_rho = eps_rho(j)
-      eps_T = eps_T(j)
-
-      ! Set up interpolating functions
-
-      ci_eps_rho = cubic_interp_ct(omega, eps_rho, 'SPLINE')
-      ci_eps_T = cubic_interp_ct(omega, eps_T, 'SPLINE')
+      end associate
 
       ! Finish
 

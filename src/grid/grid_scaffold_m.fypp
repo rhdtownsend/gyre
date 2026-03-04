@@ -94,7 +94,6 @@ contains
 
       type(hdf5io_t)        :: hi
       real(RD), allocatable :: x(:)
-      integer               :: unit
       integer               :: n
       integer               :: i
       integer               :: n_s
@@ -115,26 +114,7 @@ contains
 
       case('TEXT')
 
-         open(NEWUNIT=unit, FILE=file, STATUS='OLD')
-
-         n = 0
-
-         count_loop : do
-            read(unit, *, end=100)
-            n = n + 1
-         end do count_loop
-
-100      continue
-
-         rewind(unit)
-
-         allocate(x(n))
-
-         read_loop : do i = 1, n
-            read(unit, *) x(i)
-         end do read_loop
-
-         close(unit)
+         call read_text_file(file, x)
 
       case default
 
