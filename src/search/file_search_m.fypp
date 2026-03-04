@@ -98,7 +98,7 @@ contains
 
       id_m = id_m + SIZE(omega)
 
-      call prox_search(bp, sm, CMPLX(omega, KIND=RD), id, &
+      call prox_search(bp, sm, omega, id, &
          omega_min, omega_max, nm_p, process_mode)
 
       ! Finish
