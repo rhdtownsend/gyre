@@ -23,6 +23,7 @@ module search_m
    use bracket_search_m
    use minmod_search_m
    use contour_search_m
+   use file_search_m
 
    ! No implicit typing
 

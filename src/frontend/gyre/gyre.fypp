@@ -296,6 +296,10 @@ program gyre
                endif
             endif
 
+         case ('FILE')
+
+            call file_search(bp_nad, sm_nad, omega_min, omega_max, nm_p_sel, process_mode_nad)
+
          case default
 
             @:ABORT('Invalid nad_start')

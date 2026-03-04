@@ -1,0 +1,110 @@
+! Module  : file_search_m
+! Purpose : mode searching (complex, file)
+!
+! Copyright 2013-2025 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module file_search_m
+
+   ! Uses
+
+   use forum_m, only: RD, hdf5io_t, OPEN_FILE_RO
+
+   use bvp_m
+   use num_par_m
+   use prox_search_m
+   use sysmtx_m
+   use util_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Module variables
+
+   integer, save :: id_m = 0
+
+   ! Access specifiers
+
+   public :: file_search
+
+   ! Default access
+
+   private
+
+contains
+
+   subroutine file_search(bp, sm, omega_min, omega_max, nm_p, process_mode)
+
+      class(bvp_ct), intent(in)       :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      real(RD), intent(in)            :: omega_min
+      real(RD), intent(in)            :: omega_max
+      type(num_par_t), intent(in)     :: nm_p
+      interface
+         subroutine process_mode(md, culled)
+            use mode_m
+            implicit none (type, external)
+            type(mode_t), intent(in) :: md
+            logical, intent(out)     :: culled
+         end subroutine process_mode
+      end interface
+
+      complex(RD), allocatable :: omega(:)
+      real(RD), allocatable    :: omega_re(:)
+      integer, allocatable     :: id(:)
+      type(hdf5io_t)           :: hi
+      integer                  :: i
+
+      ! Search for modes using frequencies read from file
+
+      select case(nm_p%file_format)
+      case('SUMMARY')
+
+         hi = hdf5io_t(nm_p%file, OPEN_FILE_RO)
+         call hi%alloc_read_dset('omega', omega)
+         call hi%final()
+
+      case('TEXT')
+
+         call read_text_file(nm_p%file, omega_re)
+
+         omega = CMPLX(omega_re, KIND=RD)
+
+      case default
+
+         @:ABORT('invalid file_format')
+
+      end select
+
+      ! Search for modes
+
+      id = id_m + [(i, i=1, SIZE(omega))]
+
+      id_m = id_m + SIZE(omega)
+
+      call prox_search(bp, sm, CMPLX(omega, KIND=RD), id, &
+         omega_min, omega_max, nm_p, process_mode)
+
+      ! Finish
+
+      return
+
+   end subroutine file_search
+
+end module file_search_m

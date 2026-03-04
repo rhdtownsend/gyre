@@ -42,6 +42,8 @@ module num_par_m
       character(64)           :: nad_search = 'AD'
       character(64)           :: ad_matrix_solver = 'ROWPP'
       character(64)           :: nad_matrix_solver = 'CYCLIC'
+      character(FILENAME_LEN) :: file = ''
+      character(64)           :: file_format = ''
       character(FILENAME_LEN) :: dump_contour_template = ''
       character(2048)         :: tag_list = ''
    end type num_par_t
@@ -74,12 +76,15 @@ contains
       character(LEN(nm_p%nad_search))        :: nad_search
       character(LEN(nm_p%ad_matrix_solver))  :: ad_matrix_solver
       character(LEN(nm_p%nad_matrix_solver)) :: nad_matrix_solver
+      character(FILENAME_LEN)                :: file
+      character(LEN(nm_p%file_format))       :: file_format
       character(FILENAME_LEN)                :: dump_contour_template
       character(LEN(nm_p%tag_list))          :: tag_list
 
       namelist /num/ n_iter_max, deflate_roots, restrict_roots, &
          diff_scheme, real_root_solver, cmplx_root_solver, ad_search, nad_search, &
-         ad_matrix_solver, nad_matrix_solver, dump_contour_template, tag_list
+         ad_matrix_solver, nad_matrix_solver, file, file_format, &
+         dump_contour_template, tag_list
 
       ! Count the number of num namelists
 
@@ -116,6 +121,8 @@ contains
          nad_search = nm_p(i)%nad_search
          ad_matrix_solver = nm_p(i)%ad_matrix_solver
          nad_matrix_solver = nm_p(i)%nad_matrix_solver
+         file = nm_p(i)%file
+         file_format = nm_p(i)%file_format
          dump_contour_template = nm_p(i)%dump_contour_template
          tag_list = nm_p(i)%tag_list
 
@@ -135,6 +142,8 @@ contains
          nm_p(i)%nad_search = nad_search
          nm_p(i)%ad_matrix_solver = ad_matrix_solver
          nm_p(i)%nad_matrix_solver = nad_matrix_solver
+         nm_p(i)%file = file
+         nm_p(i)%file_format = file_format
          nm_p(i)%dump_contour_template = dump_contour_template
          nm_p(i)%tag_list = tag_list
 

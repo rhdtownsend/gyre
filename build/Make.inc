@@ -5,7 +5,7 @@
 # Checks
 #########
 
-MINIMUM_VERSION := 26.2.2
+MINIMUM_VERSION := 26.3.2
 
 ifneq ($(MAKECMDGOALS),clean)
 

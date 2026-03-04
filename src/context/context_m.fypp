@@ -518,7 +518,8 @@ contains
          A_norm => data(2,:), &
          B_norm => data(3,:), &
          A_phase => data(4,:), &
-         B_phase => data(5,:))
+         B_phase => data(5,:), &
+         eps_phase => data(6,:))
 
          ! Convert periods to dimensionless frequencies
 

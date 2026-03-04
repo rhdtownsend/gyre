@@ -95,8 +95,28 @@ last (tag-matching) one is used. The following options are available:
    - :nml:value:`'AD'` : Use adiabatic eigenfrequencies
    - :nml:value:`'MINMOD'` : Find minima in the modulus of the discriminant function, along the real-:math:`\omega` axis
    - :nml:value:`'CONTOUR'` : Find intersections between real and imaginary zero-contours of the discriminant function
-
+   - :nml:value:`'FILE'` : Read frequencies from a file (see the :nml:option:`file` and :nml:option:`file_format` options)
+     
    See the :ref:`non-ad-osc` chapter for further details about these search methods
+
+.. nml:option:: file
+   :type: string
+   :default: ''
+
+   Name of file containing frequency data. Used only when
+   :nml:option:`nad_search`\ =\ :nml:value:`'FILE'`
+
+.. nml:option:: file_format
+   :type: string
+   :default: ''
+
+   Format of file containing frequency data; one of
+
+   - :nml:value:`'TEXT'`: text file with one frequency per line
+   - :nml:value:`'SUMMARY'`: :ref:`summary <summary-files>` file with
+     frequencies provided in ``omega`` dataset
+
+   Used only when :nml:option:`nad_search` = :nml:value:`'FILE'`
 
 .. nml:option:: tag_list
    :type: string
