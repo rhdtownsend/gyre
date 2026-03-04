@@ -415,8 +415,20 @@ contains
 
          z_a = ext_ct(pr(i)%omega_a)
          z_b = ext_ct(pr(i)%omega_b)
+
          call eval_discrim_(z_a, f_z_a, stat)
+         if (stat /= STAT_OK) then
+            call report_stat_(stat, 'eval_discrim', 0, pr(i)%omega_a, pr(i)%omega_b)
+            pr(i)%active = .FALSE.
+            cycle prox_loop
+         endif
+
          call eval_discrim_(z_b, f_z_b, stat)
+         if (stat /= STAT_OK) then
+            call report_stat_(stat, 'eval_discrim', 0, pr(i)%omega_a, pr(i)%omega_b)
+            pr(i)%active = .FALSE.
+            cycle prox_loop
+         endif
 
          f_z_max = MAX(abs(f_z_a), abs(f_z_b))
 
