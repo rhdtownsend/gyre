@@ -28,6 +28,7 @@ oscillations, similar numerical techniques can be brought to bear.
    user-guide/interpreting-output.rst
    user-guide/understanding-grids.rst
    user-guide/working-with-tags.rst
+   user-guide/performance-tuning.rst
    user-guide/advanced-usage.rst
    user-guide/faq.rst
    user-guide/troubleshooting.rst

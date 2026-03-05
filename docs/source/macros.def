@@ -21,7 +21,7 @@ vu	\mathbf{u}
 vty	\tilde{\mathbf{y}}
 mS	\boldsymbol{\mathsf{S}}
 mA	\boldsymbol{\mathsf{A}}
-mY	\boldsymbol{\mathsf{Y}}
+mE	\boldsymbol{\mathsf{E}}
 mB	\boldsymbol{\mathsf{B}}
 mBin	\boldsymbol{\mathsf{B}}_{\rm in}
 mBout	\boldsymbol{\mathsf{B}}_{\rm out}
@@ -156,3 +156,6 @@ yT	y_{\rm T}
 tconv	\tau_{\rm conv}
 sigsb	\sigma_{\rm SB}
 npoly	n_{\rm poly}
+Nmode	N_{\rm mode}
+Nfreq	N_{\rm freq}
+Nthr	N_{\rm thr}

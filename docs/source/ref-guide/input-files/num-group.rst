@@ -96,7 +96,7 @@ last (tag-matching) one is used. The following options are available:
    - :nml:value:`'MINMOD'` : Find minima in the modulus of the discriminant function, along the real-:math:`\omega` axis
    - :nml:value:`'CONTOUR'` : Find intersections between real and imaginary zero-contours of the discriminant function
    - :nml:value:`'FILE'` : Read frequencies from a file (see the :nml:option:`file` and :nml:option:`file_format` options)
-     
+
    See the :ref:`non-ad-osc` chapter for further details about these search methods
 
 .. nml:option:: file

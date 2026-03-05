@@ -27,6 +27,8 @@ the same sinusoidal time dependence as in equation (:eq:`var-separation`), a
 spherical harmonic term :math:`Y^{m}_{\ell}` appears because we are
 separating in three (spherical) spatial coordinates rather than one.
 
+.. _numerical-gyre-disc:
+
 Discretization
 --------------
 
@@ -59,12 +61,13 @@ equations of the form
 
 .. math::
 
-   \vty_{j+1} = \mY_{j+1;j} \, \vty_{j},
+   \mE^{-}_{j} \, \vty_{j} + \mE^{+}_{j} \, \vty_{j+1} = 0,
 
 relating the dependent variable vector at adjacent grid points. The
-:math:`\neqn \times \neqn` fundamental solution matrix :math:`\mY_{j+1,j}`
-is evaluated from the value(s) of :math:`\mA` within the interval
-:math:`[x_{j},x_{j+1}]` using the discretization scheme.
+:math:`\neqn \times \neqn` matrices :math:`\mE^{-}_{j}`,
+:math:`\mE^{+}_{j}` are evaluated from the value(s) of :math:`\mA`
+within the interval :math:`[x_{j},x_{j+1}]` using the discretization
+scheme.
 
 There are :math:`N-1` of these sets of difference equations. They are
 augmented with the boundary conditions
@@ -82,6 +85,8 @@ the outer boundary conditions (note that :math:`\nin + \nout =
 \neqn`). Together, the difference equations and boundary conditions
 comprise a linear system of :math:`\neqn\,N` algebraic equations
 and :math:`\neqn N` unknowns.
+
+.. _numerical-gyre-linear:
 
 Linear System
 -------------
@@ -109,9 +114,9 @@ block-staircase matrix with components
    \mS =
    \begin{pmatrix}
    \subin{\mB} & \mz & \cdots & \mz & \mz \\
-   -\mY_{2;1} & \mI & \cdots & \mz & \mz \\
+   \mE^{-}_{1} & \mE^{+}_{1} & \cdots & \mz & \mz \\
    \vdots & \vdots & \ddots & \vdots & \vdots \\
-   \mz & \mz & \cdots & -\mY_{N;N-1} & \mI \\
+   \mz & \mz & \cdots & \mE^{-}_{N-1} & \mE^{+}_{N-1} \\
    \mz & \mz & \cdots & \mz & \subout{\mB}
    \end{pmatrix}.
 
@@ -135,6 +140,8 @@ frequency :math:`\sigma`. (Internally, :program:`gyre` works
 extensively with such :ref:`dimensionless quantities
 <osc-dimless-form>`, as it improves the stability of the numerical
 algorithms).
+
+.. _numerical-gyre-search:
 
 Scanning for Eigenfrequencies
 -----------------------------

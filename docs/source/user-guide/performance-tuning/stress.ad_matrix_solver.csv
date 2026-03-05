@@ -1,0 +1,4 @@
+matrix_solver,exec. time (s)
+BANDED,8.72
+CYCLIC,7.90
+ROWPP,6.48
