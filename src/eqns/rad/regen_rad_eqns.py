@@ -2,7 +2,7 @@
 # Program : regen_ad_eqns.py
 # Purpose : regenerate equations using sympy (radial adiabatic)
 #
-# Copyright 2013-2025 Rich Townsend & The GYRE Team
+# Copyright 2013-2026 Rich Townsend & The GYRE Team
 #
 # This file is part of GYRE. GYRE is free software: you can
 # redistribute it and/or modify it under the terms of the GNU General
