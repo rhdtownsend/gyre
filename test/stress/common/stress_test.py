@@ -106,12 +106,10 @@ for v in values:
                 os.environ['OMP_NUM_THREADS'] = f'{t}'
 
                 if first:
-                    label = name
+                    tbl.add_row([v, t, measure_time(f)])
                     first = False
                 else:
-                    label = ''
-                    
-                tbl.add_row([v, t, measure_time(f)])
+                    tbl.add_row(['', t, measure_time(f)])
 
         else:
 
