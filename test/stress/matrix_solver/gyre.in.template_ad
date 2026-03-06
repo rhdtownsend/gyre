@@ -15,8 +15,8 @@
 /
 
 &num
-  diff_scheme = 'COLLOC_GL4'
-  ad_matrix_solver = '{matrix_solver}'
+  diff_scheme = 'COLLOC_GL2'
+  ad_matrix_solver = '{ad_matrix_solver}'
 /
 
 &scan

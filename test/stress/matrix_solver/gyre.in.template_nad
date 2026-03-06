@@ -18,7 +18,7 @@
 
 &num
   diff_scheme = 'COLLOC_GL2'
-  nad_matrix_solver = '{matrix_solver}'
+  nad_matrix_solver = '{nad_matrix_solver}'
   nad_search = 'FILE'
   file = 'summary.h5'
   file_format = 'SUMMARY'
