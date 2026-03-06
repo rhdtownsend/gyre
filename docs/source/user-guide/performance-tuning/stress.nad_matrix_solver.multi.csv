@@ -1,9 +1,9 @@
-matrix_solver,threads,exec. time (s)
+nad_matrix_solver,threads,exec. time (s)
 BANDED,1,3.02
-,4,2.61
+,4,2.60
 ,8,2.49
 CYCLIC,1,2.47
-,4,0.83
+,4,0.84
 ,8,0.54
 ROWPP,1,1.39
 ,4,1.32

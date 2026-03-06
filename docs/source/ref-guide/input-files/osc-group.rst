@@ -59,7 +59,7 @@ available:
    - :nml:value:`'V_NEG'` : Outward phase velocity
    - :nml:value:`'V_POS'` : Inward phase velocity
 
-   Used only when :nml:option:`outer_bound`\ =\ :nml:valuelist:`'UNNO'
+   Used only when :nml:option:`outer_bound` = :nml:valuelist:`'UNNO'
    'JCD' 'ISOTHERMAL'`
 
 .. nml:option:: variables_set
@@ -91,7 +91,7 @@ available:
    :default: 0
 
    Value of angular eigenvalue :math:`\lambda`. Used only when
-   :nml:option:`lambda_method`\ =\ :nml:value:`'ADHOC'`
+   :nml:option:`lambda_method` = :nml:value:`'ADHOC'`
 
 .. nml:option:: complex_lambda
    :type: logical
@@ -99,7 +99,7 @@ available:
 
    Use complex arithmetic when evaluating the angular angular
    eigenvalue :math:`\lambda`. Used only when
-   :nml:option:`lambda_method`\ =\ :nml:valuelist:`'TAR-GRAVITY'
+   :nml:option:`lambda_method` = :nml:valuelist:`'TAR-GRAVITY'
    'TAR-ROSSBY'`
 
 .. nml:option:: alpha_grv
@@ -218,7 +218,7 @@ available:
    :default: ''
 
    Name of epsilon partial derivatives file. Used only when
-   :nml:option:`deps_scheme`\ =\ :nml:value:`'FILE'`
+   :nml:option:`deps_scheme` = :nml:value:`'FILE'`
 
 .. nml:option:: deps_file_format
    :type: string
@@ -228,7 +228,7 @@ available:
 
    - :nml:value:`'WOLF'` : Format used in preparation of :ads_citet:`wolf:2018`
 
-   Used only when :nml:option:`deps_scheme`\ =\ :nml:value:`'FILE'`
+   Used only when :nml:option:`deps_scheme` = :nml:value:`'FILE'`
 
 .. nml:option:: x_ref
    :type: real

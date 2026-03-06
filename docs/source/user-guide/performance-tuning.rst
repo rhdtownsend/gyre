@@ -179,9 +179,9 @@ parallelized when deflation is enabled (:nml:option:`deflate_roots` =
 :nml:value:`.TRUE.`, the default), . The resulting performance loss
 can partly be mitigated by using the :nml:value:`CYCLIC` matrix
 solver, which is parallelized to yield a speed-up of order
-:math:`\Nthr \log \Nthr`. This is illustrated in :numref:`table below
-<matrix_solver-table>`, which reprises
-:numref:`ad_matrix_solver-table` for non-adiabatic
+:math:`\Nthr \log \Nthr`. This is illustrated in
+:numref:`nad_matrix_solver-multi-table`, which reprises
+:numref:`ad_matrix_solver-multi-table` for non-adiabatic
 calculations. Clearly, as :math:`\Nthr` increases, the
 :nml:value:`CYCLIC` matrix solver overtakes :nml:value:`ROWPP` as the
 fastest.
@@ -195,10 +195,10 @@ fastest.
 
 To summarize this analysis:
 
-* For single-threaded calculations, choose
-  :nml:option:`ad_matrix_solver` = :nml:value:`ROWPP` and
-  :nml:option:`nad_matrix_solver` = :nml:value:`ROWPP`.
-* For multi-threaded calculations, choose
+* For single-threaded calculations, an optimal choices is
+:nml:option:`ad_matrix_solver` = :nml:value:`ROWPP` and
+:nml:option:`nad_matrix_solver` = :nml:value:`ROWPP`.
+* For multi-threaded calculations, an optimal choice is
   :nml:option:`ad_matrix_solver` = :nml:value:`ROWPP` and
   :nml:option:`nad_matrix_solver` = :nml:value:`CYCLIC`.
 

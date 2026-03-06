@@ -71,8 +71,8 @@ set up. The following options are available:
    :type: real
    :default: 5/3
 
-   First adiabatic exponent. Used only when :nml:option:`model_type`\
-   =\ :nml:valuelist:`'HOM' 'ANAPOLY_0' 'ANAPOLY_1' 'ANAPOLY_5'
+   First adiabatic exponent. Used only when :nml:option:`model_type`
+   = :nml:valuelist:`'HOM' 'ANAPOLY_0' 'ANAPOLY_1' 'ANAPOLY_5'
    'ANAPOLY_5_1'`
 
 .. nml:option:: theta_s
@@ -88,7 +88,7 @@ set up. The following options are available:
    :default: 0.5
 
    Radial coordinate of match point between inner and outer regions.
-   Used only when :nml:option:`model_type`\ =\
+   Used only when :nml:option:`model_type` =
    :nml:value:`'ANAPOLY_5_1'`
 
 .. nml:option:: grid_type
@@ -116,8 +116,8 @@ set up. The following options are available:
 
    Skewness coefficient for model grid. Used only when
    :nml:option:`model_type` = :nml:valuelist:`'HOM' 'ANAPOLY_0'
-   'ANAPOLY_1' 'ANAPOLY_5' 'ANAPOLY_5_1'` and :nml:option:`grid_type`\
-   =\ :nml:valuelist:`'GEO LOG'`
+   'ANAPOLY_1' 'ANAPOLY_5' 'ANAPOLY_5_1'` and :nml:option:`grid_type`
+   = :nml:valuelist:`'GEO LOG'`
 
 .. nml:option:: x_i
    :type: real
@@ -141,7 +141,7 @@ set up. The following options are available:
 
    Threshold for snapping model points together; if a pair of points
    are separated by less than :nml:option:`dx_snap`, they are snapped
-   together. Used only when :nml:option:`model_type`\ =\
+   together. Used only when :nml:option:`model_type` =
    :nml:value:`'EVOL'`
 
 .. nml:option:: add_center
@@ -177,7 +177,7 @@ set up. The following options are available:
    Flag to constrain first derivatives of :math:`V_2`, :math:`U` and
    :math:`c_1` structure coefficients, in accordance with equations
    (20) and (21) of :ads_citet:`takata:2006a` and the hydrostatic
-   equilibrium equation. Used only when :nml:option:`model_type`\ =\
+   equilibrium equation. Used only when :nml:option:`model_type` =
    :nml:value:`'EVOL' 'POLY'`
 
 .. nml:option:: use_nabla_rad

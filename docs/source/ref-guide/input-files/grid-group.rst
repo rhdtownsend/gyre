@@ -88,7 +88,7 @@ constructed. The following options are available:
    :default: ''
 
    Name of file containing scaffold grid data. Used only when
-   :nml:option:`scaffold_src`\ =\ :nml:value:`'FILE'`
+   :nml:option:`scaffold_src` = :nml:value:`'FILE'`
 
 .. nml:option:: file_format
    :type: string
@@ -100,7 +100,7 @@ constructed. The following options are available:
    - :nml:value:`'DETAIL'`: :ref:`detail <detail-files>` file with
      abscissa values provided in ``x`` dataset
 
-   Used only when :nml:option:`scaffold_src`\ =\ :nml:value:`'FILE'`
+   Used only when :nml:option:`scaffold_src` = :nml:value:`'FILE'`
 
 .. nml:option:: tag_list
    :type: string

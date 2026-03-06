@@ -104,7 +104,7 @@ last (tag-matching) one is used. The following options are available:
    :default: ''
 
    Name of file containing frequency data. Used only when
-   :nml:option:`nad_search`\ =\ :nml:value:`'FILE'`
+   :nml:option:`nad_search` = :nml:value:`'FILE'`
 
 .. nml:option:: file_format
    :type: string

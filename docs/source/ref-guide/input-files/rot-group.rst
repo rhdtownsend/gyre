@@ -26,7 +26,7 @@ rotation. The input file can contain one or more, but only the last
    :type: real
    :default: 0
 
-   Rotation angular frequency. Used only when :nml:option:`Omega_rot_source`\ =\ :nml:value:`'UNIFORM'`
+   Rotation angular frequency. Used only when :nml:option:`Omega_rot_source` = :nml:value:`'UNIFORM'`
 
 .. nml:option:: Omega_rot_units
    :type: string
@@ -41,7 +41,7 @@ rotation. The input file can contain one or more, but only the last
    - :nml:value:`'CYC_PER_DAY'` : Linear frequency in cycles per day\ [#only-D]_
    - :nml:value:`'CRITICAL'` : Fraction of the Roche critical rate\ [#only-D]_
 
-   Used only when :nml:option:`Omega_rot_source`\ =\ :nml:value:`'UNIFORM'`
+   Used only when :nml:option:`Omega_rot_source` = :nml:value:`'UNIFORM'`
 
 .. nml:option:: tag_list
    :type: string
