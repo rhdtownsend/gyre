@@ -21,7 +21,7 @@
 /
 
 &num
-  diff_scheme = 'COLLOC_GL4'
+  diff_scheme = 'COLLOC_GL2'
 /
 
 &orbit
