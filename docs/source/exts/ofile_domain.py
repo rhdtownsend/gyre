@@ -189,6 +189,8 @@ class OfileFieldDirective(SphinxDirective):
 
         # Build definition list entry
         dlist = nodes.definition_list()
+        dlist["classes"].append("nml-option-list")
+
         item = nodes.definition_list_item()
 
         term = nodes.term()
