@@ -184,7 +184,7 @@ contains
          alpha_pi => this%cx%alpha_pi, &
          m => this%cx%m, &
          angular_cache => this%cx%angular_cache)
-         
+
          omega_c = omega - m*Omega_rot
 
          if (angular_cache) then
@@ -202,7 +202,7 @@ contains
 
          ! Set up the matrix
 
-	 #:include 'A.inc'
+         #:include 'A.inc'
 
       end associate
 

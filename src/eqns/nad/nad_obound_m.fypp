@@ -70,6 +70,7 @@ module ${P}$_nad_obound_m
          use forum_m, only: RD
          use state_m
          import ${P}$_nad_obound_t
+         implicit none (type, external)
          class(${P}$_nad_obound_t), intent(in) :: this
          class(state_ct), intent(in)           :: st
          complex(RD), intent(out)              :: B(:,:)

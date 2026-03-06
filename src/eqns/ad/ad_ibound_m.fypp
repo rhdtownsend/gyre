@@ -59,6 +59,7 @@ module ${P}$_ad_ibound_m
          use forum_m, only: RD
          use state_m
          import ${P}$_ad_ibound_t
+         implicit none (type, external)
          class(${P}$_ad_ibound_t), intent(in) :: this
          class(state_rt), intent(in)          :: st
          real(RD), intent(out)                :: B(:,:)
