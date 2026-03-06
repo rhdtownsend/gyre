@@ -6,6 +6,6 @@ Name: gyre
 Description: GYRE stellar oscillation code (main library)
 URL: https://github.com/rhdtownsend/gyre
 Version: 9.0
-Requires.private: forum >= 1.2.1
+Requires.private: forum >= 1.2.2
 Cflags: -I${includedir}
 Libs: -Wl,-rpath,${libdir} -L${libdir} -lgyre
