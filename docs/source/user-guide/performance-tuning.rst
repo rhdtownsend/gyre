@@ -72,7 +72,7 @@ Calculation Numerics
 
 Another approach to reducing execution times is to change the
 numerical algorithms employed by GYRE; in effect, this alters the
-constantss :math:`C_{\rm b}`, :math:`C_{\rm s}` and :math:`C_{\rm t}`
+constants :math:`C_{\rm b}`, :math:`C_{\rm s}` and :math:`C_{\rm t}`
 appearing in the above expressions for :math:`\tau`.
 
 Discretization Scheme
@@ -122,7 +122,7 @@ However, one notable exception to this recommendation concerns
 non-adiabatic calculations. These are numerically challenging because
 the oscillation equations deep in the stellar interior can be
 extremely :wiki:`stiff <Stiff_equation>`. In such cases, the
-:nml:value:`MAGNUS_GL2` scheme, although computationaly expensive,
+:nml:value:`MAGNUS_GL2` scheme, although computationally expensive,
 appears to give superior results.
 
 Matrix Solver
@@ -195,9 +195,9 @@ fastest.
 
 To summarize this analysis:
 
-* For single-threaded calculations, an optimal choices is
-:nml:option:`ad_matrix_solver` = :nml:value:`ROWPP` and
-:nml:option:`nad_matrix_solver` = :nml:value:`ROWPP`.
+* For single-threaded calculations, an optimal choice is
+  :nml:option:`ad_matrix_solver` = :nml:value:`ROWPP` and
+  :nml:option:`nad_matrix_solver` = :nml:value:`ROWPP`.
 * For multi-threaded calculations, an optimal choice is
   :nml:option:`ad_matrix_solver` = :nml:value:`ROWPP` and
   :nml:option:`nad_matrix_solver` = :nml:value:`CYCLIC`.
