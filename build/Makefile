@@ -126,7 +126,8 @@ sad_SRCS = sad_bvp_m.fypp sad_factory_m.fypp \
    gyre_sad_trans_m.fypp
 
 sysmtx_SRCS = sysmtx_m.fypp sysmtx_factory_m.fypp \
-   banded_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp
+   banded_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp \
+   rowpp_simd_sysmtx_m.fypp
 
 search_SRCS = search_m.fypp bracket_search_m.fypp minmod_search_m.fypp \
    prox_search_m.fypp contour_search_m.fypp file_search_m.fypp
