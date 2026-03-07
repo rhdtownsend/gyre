@@ -168,7 +168,7 @@ contains
             integer  :: j
             real(RD) :: piv
             integer  :: i_piv
-            ${T}$    :: row(2*${N_E}$)
+            ${T}$    :: row_piv(2*${N_E}$)
             ${T}$    :: alpha
             ${T}$    :: beta
             ${T}$    :: R(${N_E}$,${N_E}$)
@@ -234,7 +234,7 @@ contains
                            rscl(i) = MAX(rscl(i), abs(M_t(s,i)))
                         end do
                      end do
-
+                     
                      rscl(n_i+1:) = 1._RD/rscl(n_i+1:)
 
                   end if
@@ -266,15 +266,19 @@ contains
 
                      if (i_piv /= j) then
 
-                        row = M_t(:,i_piv)
+                        row_piv = M_t(:,i_piv)
                         M_t(:,i_piv) = M_t(:,j)
-                        M_t(:,j) = row
+                        M_t(:,j) = row_piv
 
                         scl = rscl(i_piv)
                         rscl(i_piv) = rscl(j)
                         rscl(j) = scl
 
                         this%D(k) = -this%D(k)
+
+                     else
+
+                        row_piv = M_t(:,j)
 
                      end if
 
@@ -284,11 +288,9 @@ contains
 
                      alpha = 1._RD/M_t(j,j)
 
-                     row = M_t(:,j)
-
-                     do i = j+1, n_i+n_e
+                     do concurrent(i = j+1:n_i+n_e) local(beta)
                         beta = alpha*M_t(j,i)
-                        M_t(:,i) = M_t(:,i) - beta*row
+                        M_t(:,i) = M_t(:,i) - beta*row_piv
                      end do
 
                      ! Update the diagonal product
