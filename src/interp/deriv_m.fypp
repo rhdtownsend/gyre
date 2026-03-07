@@ -102,11 +102,11 @@ contains
          ${T}$ :: B(SIZE(x),1)
          integer  :: info
 
-         @:ASSERT_DEBUG(SIZE(x) > 1, 'array too shaort')
+         @:ASSERT_DEBUG(SIZE(x) > 1, 'array too short')
 
          @:CHECK_BOUNDS(SIZE(f), SIZE(x))
 
-         ! Calcualte the first derivatives for a cubic spline interp
+         ! Calculate the first derivatives for a cubic spline interp
          ! (ensuring the second derivatives are continuous)
 
          n = SIZE(x)
