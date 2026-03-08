@@ -252,10 +252,10 @@ contains
 
                      ! Find the pivot row
 
-                     piv = abs(M_t(j,j))*rscl(j)
+                     piv = 0._RD
                      i_piv = j
 
-                     do i = j+1, n_i+n_e
+                     do i = j, n_i+n_e
                         piv_tmp = abs(M_t(j,i))*rscl(i)
                         if (piv_tmp > piv) then
                            piv = piv_tmp
@@ -341,10 +341,10 @@ contains
 
                   ! Find the pivot row
 
-                  piv = abs(R_t(j,j))*rscl(j)
+                  piv = 0._RD
                   i_piv = j
 
-                  do i = j+1, n_e
+                  do i = j, n_e
                      piv_tmp = abs(R_t(j,i))*rscl(i)
                      if (piv_tmp > piv) then
                         piv = piv_tmp
