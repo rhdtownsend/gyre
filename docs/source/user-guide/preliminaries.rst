@@ -55,23 +55,23 @@ Development Team
 GYRE remains under active development by the following team:
 
 * `Rich Townsend <http://www.astro.wisc.edu/~townsend>`__ (University of Wisconsin-Madison); project leader
+* `Warrick Ball <https://www.birmingham.ac.uk/staff/profiles/physics/ball-warrick.aspx>`__ (University of Birmingham)
 * `Ritvik Narayan <https://ritviksainarayan.com/>`__ (UW-Madison)
 * `Jarret Rosenberg <https://www.physics.wisc.edu/directory/rosenberg-jarrett/>`__ (University of Wisconsin-Madison)
-* Meng Sun (Northwestern University)
+* `Meng Sun <https://people.ucas.ac.cn/~sunmeng?language=en>`__ (National Astronomical Observatories of Chinese Academy of Sciences)
 
 Former developers include:
 
-* `Warrick Ball <https://www.birmingham.ac.uk/staff/profiles/physics/ball-warrick.aspx>`__ (University of Birmingham)
 * `Earl Bellinger <https://earlbellinger.com/>`__ (MPIA Garching)
 * Jacqueline Goldstein (MIT)
 * Zhao Guo (Cambridge University)
 * Rianna Kuenzi (University of Wisconsin-Madison)
-* Aaron Lopez
 * Mathias Michielsen (KU-Leuven)
 * Joel Ong (University of Hawaii-Manoa)
 * Vincent Vanlaer (KU-Leuven)
 
-Also, the following people have made valuable contributions toward testing GYRE:
+Also, the following people have made valuable contributions toward
+testing GYRE:
 
 * Siemen Burssens (KU Leuven)
 * Timothy Van Reeth (KU Leven)
@@ -93,7 +93,7 @@ Acknowledgments
 GYRE has been developed with financial support from the following grants:
 
 * NSF awards AST-0908688, AST-0904607, ACI-1339606, ACI-1663696, and AST-1716436;
-* NASA awards NNX14AB55G, NNX16AB97G, and 80NSSC20K0515.
+* NASA awards NNX14AB55G, NNX16AB97G, 80NSSC20K0515 and 80NSSC24K0895.
 
 GYRE has also benefited greatly from contributions (code, bug
 reports, feature requests) from the academic community. Thanks, folks!

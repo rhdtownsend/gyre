@@ -422,7 +422,7 @@ contains
 
       real(RD) :: f
 
-      @:ASSERT_DEBUG(this%committed, 'model has not yet been commited')
+      @:ASSERT_DEBUG(this%committed, 'model has not yet been committed')
 
       @:ASSERT_DEBUG(i >= 1 .AND. i <= I_LAST, 'invalid index')
       @:ASSERT_DEBUG(this%is_defined(i), 'undefined coefficient')

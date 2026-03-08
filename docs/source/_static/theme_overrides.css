@@ -16,3 +16,20 @@
 .eqno {
     float: right;
 }
+
+/* formatting of nml and ofile lists */
+dl.nml-option-list > dt {
+  font-weight: normal;
+}
+
+dl.nml-option-list > dt strong {
+  font-weight: bold;
+}
+
+dl.ofile-field-list > dt {
+  font-weight: normal;
+}
+
+dl.ofile-field-list > dt strong {
+  font-weight: bold;
+}

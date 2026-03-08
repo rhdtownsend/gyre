@@ -5,7 +5,7 @@ includedir=${prefix}/include
 Name: gyre_mesa
 Description: GYRE stellar oscillation code (MESA interface library)
 URL: https://github.com/rhdtownsend/gyre
-Version: 8.1
-Requires.private: gyre = 8.1 forum
+Version: 9.0
+Requires.private: gyre = 9.0 forum >= 1.2.2
 Cflags: -I${includedir}
 Libs: -Wl,-rpath,{$libdir} -L${libdir} -lgyre_mesa

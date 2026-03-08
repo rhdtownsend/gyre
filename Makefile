@@ -113,6 +113,8 @@ ifneq ($(EXTERNAL_FORUM),yes)
 
    install-forum : TESTS = no
 
+   export TESTS
+
 else
 
    install-forum : ;

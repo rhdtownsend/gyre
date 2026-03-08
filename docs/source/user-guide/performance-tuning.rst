@@ -104,7 +104,7 @@ performance of each scheme will likely remain similar.
 
 .. _diff_scheme-table:
 
-.. csv-table:: Execution time vs. diff_scheme
+.. csv-table:: Execution times vs. diff_scheme
    :file: performance-tuning/stress.diff_scheme.csv
    :widths: auto
    :align: center
@@ -209,8 +209,8 @@ then, as here, empirical measurement can guide the way.
 
 
 .. [#test-diff_scheme] See the
-                       :file:`$GYRE_DIR/test/stress/stress.diff_scheme/run_stress.sh` script
-                       for details of how the test calculations are run.
+                       :file:`$GYRE_DIR/test/stress/diff_scheme/run_stress_tests.sh` script
+                       for details on how the test calculations are run.
 
 .. [#sparse-scaling] This is why the expressions for :math:`\tau`
                      scale with :math:`N`, rather than the usual
@@ -218,7 +218,7 @@ then, as here, empirical measurement can guide the way.
                      elimination.
 
 .. [#test-matrix_solver] See the
-                        :file:`$GYRE_DIR/test/stress/stress.matrix_solver/run_stress.sh` script
-                        for details of how the test calculations are run.
+                        :file:`$GYRE_DIR/test/stress/matrix_solver/run_stress_tests.sh` script
+                        for details on how the test calculations are run.
 
 .. [#nthread] As set by the :envvar:`OMP_NUM_THREADS` environment variable.

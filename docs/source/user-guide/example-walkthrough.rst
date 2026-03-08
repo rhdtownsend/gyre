@@ -55,27 +55,28 @@ groups. Detailed information on the groups can be found in the
 :ref:`namelist-input-files` chapter; for now, let's just focus on some
 of the more-important aspects of the file above:
 
-* the :nml:group:`constants` namelist group is empty, telling :program:`gyre` to use default
-  values for fundamental constants;
-* the :nml:group:`model` namelist group tells :program:`gyre` to read an evolutionary
-  model, in :ref:`MESA format <mesa-file-format>`, from the file
-  :file:`spb.mesa`;
-* the two :nml:group:`mode` namelist groups tells :program:`gyre` to search first for dipole (:math:`\ell=1`) and then
-  quadrupole (:math:`\ell=2`) modes;
+* the :nml:group:`constants` namelist group is empty, telling
+  :program:`gyre` to use default values for fundamental constants;
+* the :nml:group:`model` namelist group tells :program:`gyre` to read
+  an evolutionary model, in :ref:`MESA format <mesa-file-format>`,
+  from the file :file:`spb.mesa`;
+* the two :nml:group:`mode` namelist groups tells :program:`gyre` to
+  search first for dipole (:math:`\ell=1`) and then quadrupole
+  (:math:`\ell=2`) modes;
 * the :nml:group:`osc` namelist group tells :program:`gyre` to assume,
   when setting up the outer boundary conditions in the oscillation
   equations, that the density vanishes at the stellar surface;
-* the :nml:group:`scan` namelist group tells :program:`gyre` to scan a region of
-  dimensionless angular frequency space typically occupied by gravity
-  modes;
-* the :nml:group:`grid` namelist group tells :program:`gyre` how to refine the model
-  spatial grid;
-* the :nml:group:`ad_output` namelist group tells :program:`gyre` what adiabatic data
-  to write to which output files; summary data to the file
-  :file:`summary.h5`, and individual mode data to files having the
-  prefix ``mode.``;
-* the :nml:group:`nad_output` namelist group is empty, telling :program:`gyre` not to
-  write any non-adiabatic data.
+* the :nml:group:`scan` namelist group tells :program:`gyre` to scan a
+  region of dimensionless angular frequency space typically occupied
+  by gravity modes;
+* the :nml:group:`grid` namelist group tells :program:`gyre` how to
+  refine the model spatial grid;
+* the :nml:group:`ad_output` namelist group tells :program:`gyre` what
+  adiabatic data to write to which output files; summary data to the
+  file :file:`summary.h5`, and individual mode data to files having
+  the prefix ``mode.``;
+* the :nml:group:`nad_output` namelist group is empty, telling
+  :program:`gyre` not to write any non-adiabatic data.
 
 Running gyre
 ============
@@ -122,38 +123,47 @@ and a spatial grid:
 detail in the :ref:`numerical` and :ref:`understanding-grids`
 chapters). Next, :program:`gyre` attempts to bracket roots of the discriminant
 function (again, see the :ref:`numerical` chapter) by
-searching for changes in its sign:
+scanning for changes in its sign:
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
    :start-at: Starting search
-   :end-before: Root Solving
+   :end-before: Finding roots
 
 Finally, for each bracket found :program:`gyre` uses a root solver to
-converge to the eigenfrequency. Each row of output here corresponds to
-a mode that :program:`gyre` has successfully found:
+converge to the eigenfrequency, and then processes the mode to
+identify it and perform other calculations. Each row of output here
+corresponds to a mode that :program:`gyre` has successfully found:
 
 .. literalinclude:: example-walkthrough/gyre.out
    :language: console
-   :start-at: Root Solving
+   :start-at: Finding roots
    :end-before: Mode Search
 
 The columns appearing are as follows:
 
-``l``
-  harmonic degree :math:`\ell`
+.. ofile:filetype:: summary
+   :no-target:
 
-``m``
-  azimuthal order :math:`m`
+:ofile:field:`id`
+   Unique mode index
 
-``n_pg``
-  radial order :math:`n` (in the Eckart-Osaki-:ads_citeauthor:`scuflaire:1974`-:ads_citeauthor:`takata:2006b` scheme)
+:ofile:field:`l`
+   Harmonic degree :math:`\ell`
 
-``n_p``
-  acoustic-wave winding number :math:`n_{\rm p}`
+:ofile:field:`m`
+   Azimuthal order :math:`m`
 
-``n_g``
-  gravity-wave winding number :math:`n_{\rm g}`
+:ofile:field:`n_pg`
+   Radial order :math:`\numpg` within the
+   Eckart-Scuflaire-Osaki-Takata scheme (see
+   :ads_citealp:`takata:2006b`)
+
+:ofile:field:`n_p`
+   Acoustic-wave winding number :math:`\nump`
+
+:ofile:field:`n_g`
+   Gravity-wave winding number :math:`\numg`
 
 ``Re(omega)``
   real part of dimensionless eigenfrequency :math:`\omega`
@@ -162,33 +172,34 @@ The columns appearing are as follows:
   imaginary part of dimensionless eigenfrequency :math:`\omega` (zero
   here because we've performed an adiabatic calculation)
 
-``chi``
-  convergence parameter
+:ofile:field:`chi`
+   Root-finding convergence parameter :math:`\chi`
 
-``n_iter``
-  number of iterations required for convergence
+:ofile:field:`n_iter`
+   Root-finding number of iterations
 
 These values are printed to screen primarily to give an idea of
 :program:`gyre`'s progress. Some things to watch out for:
 
-* The convergence parameter ``chi``, defined as the ratio of
-  discriminant values before and after the root finding, should small
-  (on the order of 1E-9 to 1E-15). If it is significantly larger than
-  this, the mode may not be properly converged; and if it is
+* The convergence parameter :ofile:field:`chi`, defined as the ratio
+  of discriminant values before and after the root finding, should
+  small (on the order of 1E-9 to 1E-15). If it is significantly larger
+  than this, the mode may not be properly converged; and if it is
   significantly smaller than this, there may be numerical issues with
   the discretization scheme.
 
-* The number of iterations ``n_iter`` should be moderate; values above
-  20 or so indicate that :program:`gyre` is having problems converging.
+* The number of iterations :ofile:field:`n_iter` should be moderate;
+  values above 20 or so indicate that :program:`gyre` is having
+  problems converging.
 
-* The mode radial order ``n_pg`` should be
+* The mode radial order :ofile:field:`n_pg` should be
   monotonic-increasing. Departures from this behavior can happen for a
   number of reasons, that are discussed in the :ref:`troubleshooting`
   chapter.
 
-After processing the dipole modes, :program:`gyre` repeats the search steps for
-the quadrupole modes. Once the overall run is complete, a number of
-output files are written:
+After processing the dipole modes, :program:`gyre` repeats the search
+steps for the quadrupole modes. Once the overall run is complete, a
+number of output files are written:
 
 * A summary file with the name :file:`summary.h5`
 

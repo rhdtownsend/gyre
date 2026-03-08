@@ -12,7 +12,7 @@ EXEC=./gyre
 IN_FILE=gyre.in
 OUT_FILE=summary.h5
 
-LABEL="MESA model for Sun (non-adiabatic, diffusion vs. Eddington approxiation)"
+LABEL="MESA model for Sun (non-adiabatic, diffusion vs. Eddington approximation)"
 
 # Do the tests
 

@@ -181,20 +181,27 @@ class NmlOptionDirective(SphinxDirective):
 
         # Build definition list entry
         dlist = nodes.definition_list()
+        dlist["classes"].append("nml-option-list")
+        if not "simple" in dlist["classes"]:
+            dlist["classes"].append("simple")
+
         item = nodes.definition_list_item()
 
         term = nodes.term()
         term += nodes.strong("", "", nodes.literal(option_name, option_name))
 
-        if "type" in self.options:
-            term += nodes.Text("  (type: ")
-            term += nodes.strong(self.options["type"], self.options["type"])
-            term += nodes.Text(")")
+        term += [nodes.Text(" ("),
+                 nodes.emphasis("", "", nodes.Text("type: "))]
+        dval = self.options["type"]
+        term += [nodes.literal(dval, dval)]
 
         if "default" in self.options:
-            term += nodes.Text("  default: ")
+            term += [nodes.Text(", "),
+                     nodes.emphasis("", "", nodes.Text("default: "))]
             dval = self.options["default"]
-            term += nodes.strong("", "", nodes.literal(dval, dval))
+            term += [nodes.literal(dval, dval)]
+
+        term += nodes.Text(")")
 
         definition = nodes.definition()
         self.state.nested_parse(self.content, self.content_offset, definition)
