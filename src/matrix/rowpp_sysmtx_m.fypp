@@ -43,10 +43,10 @@ module rowpp_sysmtx_m
 
       type, extends(sysmtx_${S}$) :: rowpp_sysmtx_${S}$
          private
-         ${T}$, allocatable                          :: U(:,:,:) ! Upper-triangular blocks
-         ${T}$, allocatable                          :: S(:,:,:) ! Super-diagonal infill blocks
-         type(ext_${S}$), allocatable                :: scl(:)   ! Block scales
-         ${T}$, allocatable                          :: D(:)     ! Diagonal products
+         ${T}$, allocatable                          :: U_t(:,:,:) ! Upper-triangular blocks (transposed)
+         ${T}$, allocatable                          :: S_t(:,:,:) ! Super-diagonal infill blocks (transposed)
+         type(ext_${S}$), allocatable                :: scl(:)     ! Block scales
+         ${T}$, allocatable                          :: D(:)       ! Diagonal products
          procedure(build_and_factor_${S}$_), pointer :: build_and_factor
       contains
          private
@@ -108,8 +108,8 @@ contains
 
          ! Construct the rowpp_sysmtx_t
 
-         allocate(sm%U(n_e,n_e,n+1))
-         allocate(sm%S(n_e,n_e,n))
+         allocate(sm%U_t(n_e,n_e,n+1))
+         allocate(sm%S_t(n_e,n_e,n))
 
          allocate(sm%scl(n))
 
@@ -305,8 +305,8 @@ contains
 
                   if (full_) then
 
-                     this%U(:,:,k) = TRANSPOSE(M_t(:n_e,:n_e))
-                     this%S(:,:,k) = TRANSPOSE(M_t(n_e+1:,:n_e))
+                     this%U_t(:,:,k) = M_t(:n_e,:n_e)
+                     this%S_t(:,:,k) = M_t(n_e+1:,:n_e)
 
                   end if
 
@@ -406,7 +406,7 @@ contains
 
                if (full_) then
 
-                  this%U(:,:,n+1) = TRANSPOSE(R_t)
+                  this%U_t(:,:,n+1) = R_t
 
                end if
 
@@ -423,8 +423,8 @@ contains
       subroutine backsub_${S}$_(this, u_bound, u)
 
          class(rowpp_sysmtx_${S}$), intent(in) :: this
-         ${T}$, intent(in)                      :: u_bound(:)
-         ${T}$, intent(out)                     :: u(:)
+         ${T}$, intent(in)                     :: u_bound(:)
+         ${T}$, intent(out)                    :: u(:)
 
          integer :: k
          integer :: i
@@ -450,14 +450,14 @@ contains
                      beta = 0._RD
 
                      do j = i+1, n_e
-                        beta = beta + this%U(i,j,k)*u_k(j)
+                        beta = beta + this%U_t(j,i,k)*u_k(j)
                      end do
 
                      do j = 1, n_e
-                        beta = beta + this%S(i,j,k)*u_k1(j)
+                        beta = beta + this%S_t(j,i,k)*u_k1(j)
                      end do
 
-                     u_k(i) = -beta/this%U(i,i,k)
+                     u_k(i) = -beta/this%U_t(i,i,k)
 
                   end do
 
@@ -536,8 +536,8 @@ contains
             U_s = HUGE(0._RD)
 
             sing_loop : do i = 1, n_e
-               if (abs(this%U(i,i,n+1)) < U_s) then
-                  U_s = abs(this%U(i,i,n+1))
+               if (abs(this%U_t(i,i,n+1)) < U_s) then
+                  U_s = abs(this%U_t(i,i,n+1))
                   i_s = i
                end if
             end do sing_loop
@@ -552,10 +552,10 @@ contains
                beta = 0._RD
 
                do j = i+1, i_s
-                  beta = beta + this%U(i,j,n+1)*u_bound(j)
+                  beta = beta + this%U_t(j,i,n+1)*u_bound(j)
                end do
 
-               u_bound(i) = -beta/this%U(i,i,n+1)
+               u_bound(i) = -beta/this%U_t(i,i,n+1)
 
             end do
 
@@ -612,17 +612,17 @@ contains
 
             ! Use backsubstitution to solve for u_bound
 
-            u_bound(n_e) = f(n_e)/this%U(n_e,n_e,n+1)
+            u_bound(n_e) = f(n_e)/this%U_t(n_e,n_e,n+1)
 
             do i = n_e-1, 1, -1
 
                beta = 0._RD
 
                do j = i+1, n_e
-                  beta = beta + this%U(i,j,n+1)*u_bound(j)
+                  beta = beta + this%U_t(j,i,n+1)*u_bound(j)
                end do
 
-               u_bound(i) = (f(i) - beta)/this%U(i,i,n+1)
+               u_bound(i) = (f(i) - beta)/this%U_t(i,i,n+1)
 
             end do
 
@@ -643,7 +643,7 @@ contains
       subroutine dump_${S}$_(this, hi)
 
          class(rowpp_sysmtx_${S}$), intent(in) :: this
-         type(hdf5io_t), intent(inout)          :: hi
+         type(hdf5io_t), intent(inout)         :: hi
 
          ! Dump the rowpp_sysmtx_t to the hgroup
 
@@ -652,8 +652,8 @@ contains
          call hi%write_attr('n_i', this%n_i)
          call hi%write_attr('n_o', this%n_o)
 
-         call hi%write_dset('U', this%U)
-         call hi%write_dset('S', this%S)
+         call hi%write_dset('U_t', this%U_t)
+         call hi%write_dset('S_t', this%S_t)
 
          #:if T == 'complex(RD)'
 
