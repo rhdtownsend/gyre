@@ -497,9 +497,9 @@ contains
          #:if T == 'complex(RD)'
 
          call hi%write_dset('scl_re_f', fraction(this%scl%re))
-         call hi%write_dset('scl_re_e', exponent(this%scl%im))
+         call hi%write_dset('scl_re_e', exponent(this%scl%re))
 
-         call hi%write_dset('scl_im_f', fraction(this%scl%re))
+         call hi%write_dset('scl_im_f', fraction(this%scl%im))
          call hi%write_dset('scl_im_e', exponent(this%scl%im))
 
          #:else
