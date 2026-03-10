@@ -43,10 +43,10 @@ module rowpp_sysmtx_m
 
       type, extends(sysmtx_${S}$) :: rowpp_sysmtx_${S}$
          private
-         ${T}$, allocatable                          :: U(:,:,:) ! Upper-triangular blocks
-         ${T}$, allocatable                          :: S(:,:,:) ! Super-diagonal infill blocks
-         type(ext_${S}$), allocatable                :: scl(:)   ! Block scales
-         ${T}$, allocatable                          :: D(:)     ! Diagonal products
+         ${T}$, allocatable                          :: U_t(:,:,:) ! Upper-triangular blocks (transposed)
+         ${T}$, allocatable                          :: S_t(:,:,:) ! Super-diagonal infill blocks (transposed)
+         type(ext_${S}$), allocatable                :: scl(:)     ! Block scales
+         ${T}$, allocatable                          :: D(:)       ! Diagonal products
          procedure(build_and_factor_${S}$_), pointer :: build_and_factor
       contains
          private
@@ -108,8 +108,8 @@ contains
 
          ! Construct the rowpp_sysmtx_t
 
-         allocate(sm%U(n_e,n_e,n+1))
-         allocate(sm%S(n_e,n_e,n))
+         allocate(sm%U_t(n_e,n_e,n+1))
+         allocate(sm%S_t(n_e,n_e,n))
 
          allocate(sm%scl(n))
 
@@ -157,19 +157,23 @@ contains
             logical  :: full_
             ${T}$    :: B_i(${N_I}$,${N_E}$)
             ${T}$    :: B_o(${N_O}$,${N_E}$)
+            ${T}$    :: E_l(${N_E}$,${N_E}$)
+            ${T}$    :: E_r(${N_E}$,${N_E}$)
             integer  :: k
-            ${T}$    :: M(${N_I}$+${N_E}$,2*${N_E}$)
+            ${T}$    :: M_t(2*${N_E}$,${N_I}$+${N_E}$)
             integer  :: i
-            real(RD) :: scl
             integer  :: s
             real(RD) :: rscl(${N_I}$+${N_E}$)
             integer  :: j
             real(RD) :: piv
+            real(RD) :: piv_tmp
             integer  :: i_piv
+            ${T}$    :: piv_row(2*${N_E}$)
+            real(RD) :: rscl_tmp
             ${T}$    :: alpha
             ${T}$    :: beta
-            ${T}$    :: R(${N_E}$,${N_E}$)
-            real(RD) :: rscl_R(${N_E}$)
+            ${T}$    :: R_t(${N_E}$,${N_E}$)
+            ${T}$    :: f_tmp
 
             if (PRESENT(full)) then
                full_ = full
@@ -192,20 +196,25 @@ contains
 
                block_loop : do k = 1, n
 
-                  ! Prepare submatrices
+                  ! Prepare the working matrix. To streamline memory
+                  ! access, we use the transpose M_t of the logical
+                  ! working matrix M
 
                   if (k == 1) then
 
-                     M(:n_i,:n_e) = B_i
-                     M(:n_i,n_e+1:) = 0._RD
+                     call de(k)%df%build(st, E_l, E_r, this%scl(k))
 
-                     call de(k)%df%build(st, M(n_i+1:,:n_e), M(n_i+1:,n_e+1:), this%scl(k))
+                     M_t(:n_e,:n_i) = TRANSPOSE(B_i)
+                     M_t(n_e+1:,:n_i) = 0._RD
+
+                     M_t(:n_e,n_i+1:) = TRANSPOSE(E_l)
+                     M_t(n_e+1:,n_i+1:) = TRANSPOSE(E_r)
 
                      rscl = 0._RD
 
-                     do s = 1, n_e
-                        do i = 1, n_i+n_e
-                           rscl(i) = MAX(rscl(i), abs(M(i,s)))
+                     do i = 1, n_i+n_e
+                        do s = 1, 2*n_e
+                           rscl(i) = MAX(rscl(i), abs(M_t(s,i)))
                         end do
                      end do
 
@@ -213,18 +222,21 @@ contains
 
                   else
 
-                     M(:n_i,:n_e) = M(n_e+1:,n_e+1:)
-                     M(:n_i,n_e+1:) = 0._RD
+                     call de(k)%df%build(st, E_l, E_r, this%scl(k))
 
-                     call de(k)%df%build(st, M(n_i+1:,:n_e), M(n_i+1:,n_e+1:), this%scl(k))
+                     M_t(:n_e,:n_i) = M_t(n_e+1:, n_e+1:)
+                     M_t(n_e+1:,:n_i) = 0._RD
+
+                     M_t(:n_e,n_i+1:) = TRANSPOSE(E_l)
+                     M_t(n_e+1:,n_i+1:) = TRANSPOSE(E_r)
 
                      rscl(:n_i) = rscl(n_e+1:)
 
                      rscl(n_i+1:) = 0._RD
 
-                     do s = 1, 2*n_e
-                        do i = n_i+1, n_i+n_e
-                           rscl(i) = MAX(rscl(i), abs(M(i,s)))
+                     do i = n_i+1, n_i+n_e
+                        do s = 1, 2*n_e
+                           rscl(i) = MAX(rscl(i), abs(M_t(s,i)))
                         end do
                      end do
 
@@ -232,7 +244,7 @@ contains
 
                   end if
 
-                  ! Reduce the first n_e columns of M to
+                  ! Reduce the first n_e columns of the working matrix
                   ! upper-triangular form
 
                   this%D(k) = 1._RD
@@ -245,9 +257,9 @@ contains
                      i_piv = j
 
                      do i = j, n_i+n_e
-                        scl = abs(M(i,j))*rscl(i)
-                        if (scl > piv) then
-                           piv = scl
+                        piv_tmp = abs(M_t(j,i))*rscl(i)
+                        if (piv_tmp > piv) then
+                           piv = piv_tmp
                            i_piv = i
                         end if
                      end do
@@ -259,45 +271,34 @@ contains
 
                      if (i_piv /= j) then
 
-                        do s = 1, 2*n_e, 2
+                        piv_row = M_t(:,i_piv)
+                        M_t(:,i_piv) = M_t(:,j)
+                        M_t(:,j) = piv_row
 
-                           alpha = M(i_piv,s)
-                           M(i_piv,s) = M(j,s)
-                           M(j,s) = alpha
-
-                           beta = M(i_piv,s+1)
-                           M(i_piv,s+1) = M(j,s+1)
-                           M(j,s+1) = beta
-
-                        end do
-
-                        scl = rscl(i_piv)
+                        rscl_tmp = rscl(i_piv)
                         rscl(i_piv) = rscl(j)
-                        rscl(j) = scl
+                        rscl(j) = rscl_tmp
 
                         this%D(k) = -this%D(k)
+
+                     else
+
+                        piv_row = M_t(:,j)
 
                      end if
 
                      ! Eliminate elements below the diagonal
-                     ! (optimization: don't actually set these
-                     ! elements to zero)
 
-                     alpha = 1._RD/M(j,j)
+                     alpha = 1._RD/M_t(j,j)
 
-                     do i = j+1, n_i+n_e
-
-                        beta = alpha*M(i,j)
-
-                        do concurrent(s = j+1:2*n_e)
-                           M(i,s) = M(i,s) - beta*M(j,s)
-                        end do
-
+                     do concurrent(i = j+1:n_i+n_e) local(beta)
+                        beta = alpha*M_t(j,i)
+                        M_t(:,i) = M_t(:,i) - beta*piv_row
                      end do
 
                      ! Update the diagonal product
 
-                     this%D(k) = this%D(k)*M(j,j)
+                     this%D(k) = this%D(k)*M_t(j,j)
 
                   end do reduce_loop
 
@@ -305,33 +306,35 @@ contains
 
                   if (full_) then
 
-                     this%U(:,:,k) = M(:n_e,:n_e)
-                     this%S(:,:,k) = M(:n_e,n_e+1:)
+                     this%U_t(:,:,k) = M_t(:n_e,:n_e)
+                     this%S_t(:,:,k) = M_t(n_e+1:,:n_e)
 
                   end if
 
                end do block_loop
 
-               ! Next, build and factorize the final block
+               ! Next, build and factorize the final block (again,
+               ! using the transpose R_t of the logical working
+               ! matrix M)
 
                call bd_o%build(st, B_o)
 
-               R(:n_i,:) = M(n_e+1:,n_e+1:)
-               R(n_i+1:,:) = B_o
+               R_t(:,:n_i) = M_t(n_e+1:,n_e+1:)
+               R_t(:,n_i+1:) = TRANSPOSE(B_o)
 
-               rscl_R(:n_i) = rscl(n_e+1:)
+               rscl(:n_i) = rscl(n_e+1:)
 
-               rscl_R(n_i+1:) = 0._RD
+               rscl(n_i+1:n_e) = 0._RD
 
-               do s = 1, n_e
-                  do i = n_i+1, n_e
-                     rscl_R(i) = MAX(rscl_R(i), abs(R(i,s)))
+               do i = n_i+1, n_e
+                  do s = 1, n_e
+                     rscl(i) = MAX(rscl(i), abs(R_t(s,i)))
                   end do
                end do
 
-               rscl_R(n_i+1:) = 1._RD/rscl_R(n_i+1:)
+               rscl(n_i+1:n_e) = 1._RD/rscl(n_i+1:n_e)
 
-               ! Reduce R to upper-triangular form
+               ! Reduce the working matrix to upper-triangular form
 
                this%D(n+1) = 1._RD
 
@@ -343,9 +346,9 @@ contains
                   i_piv = j
 
                   do i = j, n_e
-                     scl = abs(R(i,j))*rscl_R(i)
-                     if (scl > piv) then
-                        piv = scl
+                     piv_tmp = abs(R_t(j,i))*rscl(i)
+                     if (piv_tmp > piv) then
+                        piv = piv_tmp
                         i_piv = i
                      end if
                   end do
@@ -360,47 +363,43 @@ contains
 
                   if (i_piv /= j) then
 
-                     do s = 1, n_e
+                     piv_row(:n_e) = R_t(:,i_piv)
+                     R_t(:,i_piv) = R_t(:,j)
+                     R_t(:,j) = piv_row(:n_e)
 
-                        alpha = R(i_piv,s)
-                        R(i_piv,s) = R(j,s)
-                        R(j,s) = alpha
-
-                     end do
-
-                     scl = rscl_R(i_piv)
-                     rscl_R(i_piv) = rscl_R(j)
-                     rscl_R(j) = scl
+                     rscl_tmp = rscl(i_piv)
+                     rscl(i_piv) = rscl(j)
+                     rscl(j) = rscl_tmp
 
                      this%D(n+1) = -this%D(n+1)
 
                      if (PRESENT(f)) then
-                        alpha = f(i_piv)
+                        f_tmp = f(i_piv)
                         f(i_piv) = f(j)
-                        f(j) = alpha
+                        f(j) = f_tmp
                      end if
+
+                  else
+
+                     piv_row(:n_e) = R_t(:,j)
 
                   end if
 
                   ! Eliminate elements below the diagonal
 
-                  do i = j+1, n_e
+                  alpha = 1._RD/R_t(j,j)
 
-                     alpha = R(i,j)/R(j,j)
-
-                     do concurrent(s = 1:n_e)
-                        R(i,s) = R(i,s) - alpha*R(j,s)
-                     end do
-
+                  do concurrent(i = j+1:n_e) local(beta)
+                     beta = alpha*R_t(j,i)
+                     R_t(:,i) = R_t(:,i) - beta*piv_row(:n_e)
                      if (PRESENT(f)) then
-                        f(i) = f(i) - alpha*f(j)
+                        f(i) = f(i) - beta*f(j)
                      end if
-
                   end do
 
                   ! Update the diagonal product
 
-                  this%D(n+1) = this%D(n+1)*R(j,j)
+                  this%D(n+1) = this%D(n+1)*R_t(j,j)
 
                end do reduce_R_loop
 
@@ -408,7 +407,7 @@ contains
 
                if (full_) then
 
-                  this%U(:,:,n+1) = R
+                  this%U_t(:,:,n+1) = R_t
 
                end if
 
@@ -425,8 +424,8 @@ contains
       subroutine backsub_${S}$_(this, u_bound, u)
 
          class(rowpp_sysmtx_${S}$), intent(in) :: this
-         ${T}$, intent(in)                      :: u_bound(:)
-         ${T}$, intent(out)                     :: u(:)
+         ${T}$, intent(in)                     :: u_bound(:)
+         ${T}$, intent(out)                    :: u(:)
 
          integer :: k
          integer :: i
@@ -452,14 +451,14 @@ contains
                      beta = 0._RD
 
                      do j = i+1, n_e
-                        beta = beta + this%U(i,j,k)*u_k(j)
+                        beta = beta + this%U_t(j,i,k)*u_k(j)
                      end do
 
                      do j = 1, n_e
-                        beta = beta + this%S(i,j,k)*u_k1(j)
+                        beta = beta + this%S_t(j,i,k)*u_k1(j)
                      end do
 
-                     u_k(i) = -beta/this%U(i,i,k)
+                     u_k(i) = -beta/this%U_t(i,i,k)
 
                   end do
 
@@ -538,8 +537,8 @@ contains
             U_s = HUGE(0._RD)
 
             sing_loop : do i = 1, n_e
-               if (abs(this%U(i,i,n+1)) < U_s) then
-                  U_s = abs(this%U(i,i,n+1))
+               if (abs(this%U_t(i,i,n+1)) < U_s) then
+                  U_s = abs(this%U_t(i,i,n+1))
                   i_s = i
                end if
             end do sing_loop
@@ -554,10 +553,10 @@ contains
                beta = 0._RD
 
                do j = i+1, i_s
-                  beta = beta + this%U(i,j,n+1)*u_bound(j)
+                  beta = beta + this%U_t(j,i,n+1)*u_bound(j)
                end do
 
-               u_bound(i) = -beta/this%U(i,i,n+1)
+               u_bound(i) = -beta/this%U_t(i,i,n+1)
 
             end do
 
@@ -614,17 +613,17 @@ contains
 
             ! Use backsubstitution to solve for u_bound
 
-            u_bound(n_e) = f(n_e)/this%U(n_e,n_e,n+1)
+            u_bound(n_e) = f(n_e)/this%U_t(n_e,n_e,n+1)
 
             do i = n_e-1, 1, -1
 
                beta = 0._RD
 
                do j = i+1, n_e
-                  beta = beta + this%U(i,j,n+1)*u_bound(j)
+                  beta = beta + this%U_t(j,i,n+1)*u_bound(j)
                end do
 
-               u_bound(i) = (f(i) - beta)/this%U(i,i,n+1)
+               u_bound(i) = (f(i) - beta)/this%U_t(i,i,n+1)
 
             end do
 
@@ -645,7 +644,7 @@ contains
       subroutine dump_${S}$_(this, hi)
 
          class(rowpp_sysmtx_${S}$), intent(in) :: this
-         type(hdf5io_t), intent(inout)          :: hi
+         type(hdf5io_t), intent(inout)         :: hi
 
          ! Dump the rowpp_sysmtx_t to the hgroup
 
@@ -654,8 +653,8 @@ contains
          call hi%write_attr('n_i', this%n_i)
          call hi%write_attr('n_o', this%n_o)
 
-         call hi%write_dset('U', this%U)
-         call hi%write_dset('S', this%S)
+         call hi%write_dset('U_t', this%U_t)
+         call hi%write_dset('S_t', this%S_t)
 
          #:if T == 'complex(RD)'
 
