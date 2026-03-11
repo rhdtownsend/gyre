@@ -110,6 +110,8 @@ else
    FPPFLAGS += -DLOG_LEVEL=\'INFO\'
 endif
 
+FPPFLAGS += -DCONTIG_ARRAYS=1
+
 # Rules
 
 %.f90 : %.fypp | $(DEPEND_DIR)
@@ -144,7 +146,7 @@ ifeq ($(DEBUG),yes)
              -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
              -finline-limit=0 -fbacktrace
 else
-   FFLAGS += -O3 -fno-backtrace
+   FFLAGS += -O3 -march=native -fno-backtrace
 endif
 
 ifeq ($(OMP),yes)
@@ -152,7 +154,7 @@ ifeq ($(OMP),yes)
 endif
 
 ifeq ($(PORTABLE),yes)
-   FFLAGS += -ffp-contract=off
+#   FFLAGS += -ffp-contract=off
 endif
 
 # Rules

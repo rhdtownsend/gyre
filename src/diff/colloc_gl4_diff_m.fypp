@@ -120,8 +120,16 @@ contains
 
          class(colloc_gl4_diff_${S}$), intent(in) :: this
          class(state_${S}$), intent(in)           :: st
+         #:if defined('CONTIG_ARRAYS')
+         ${T}$, contiguous, intent(out)           :: E_l(:,:)
+         ${T}$, contiguous, intent(out)           :: E_r(:,:)
+         #:elif defined('EXPLICIT_ARRAYS')
+         ${T}$, intent(out)                       :: E_l(this%n_e,this%n_e)
+         ${T}$, intent(out)                       :: E_r(this%n_e,this%n_e)
+         #:else
          ${T}$, intent(out)                       :: E_l(:,:)
          ${T}$, intent(out)                       :: E_r(:,:)
+         #:endif
          type(ext_${S}$), intent(out)             :: scl
 
          real(RD), parameter :: D_12 = SQRT(3._RD)/6._RD
