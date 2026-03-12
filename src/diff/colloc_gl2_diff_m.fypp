@@ -52,6 +52,7 @@ module colloc_gl2_diff_m
          private
          procedure, public :: build => build_${S}$_
          procedure, public :: build_t => build_t_${S}$_
+         procedure, public :: build_mt => build_mt_${S}$_
       end type colloc_gl2_diff_${S}$
 
       ! Interfaces
@@ -188,9 +189,7 @@ contains
          ! Algorithm note: this is equivalent to the modified midpoint
          ! method
 
-         call this%eq(1)%eval_A(st, E_l)
-
-         E_l = TRANSPOSE(E_l)
+         call this%eq(1)%eval_A_t(st, E_l)
 
          do j = 1, this%n_e
 
@@ -209,6 +208,65 @@ contains
          ! Finish
 
       end subroutine build_t_${S}$_
+
+      !****
+
+      subroutine build_mt_${S}$_(this, st, E, scl)
+
+         class(colloc_gl2_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)           :: st
+         #:if defined('CONTIG_ARRAYS')
+         ${T}$, contiguous, intent(out)           :: E(:,:)
+         #:elif defined('EXPLICIT_ARRAYS')
+         ${T}$, intent(out)                       :: E(2*this%n_e,this%n_e)
+         #:else
+         ${T}$, intent(out)                       :: E(:,:)
+         #:endif
+         type(ext_${S}$), intent(out)             :: scl
+
+         real(RD), parameter :: B_1 = 1._RD/2._RD
+
+         integer :: i
+         integer :: j
+
+         ! Build the difference equations (transposed)
+
+         ! Algorithm note: this is equivalent to the modified midpoint
+         ! method
+
+         associate (n_e => this%n_e)
+
+            call this%eq(1)%eval_A_t(st, E(:n_e,:))
+
+            !E(:n_e,:) = (this%dx*B_1)*E(:n_e,:)
+            E(n_e+1:,:) = E(:n_e,:)
+
+            alpha = 1._RD/(this%dx*B_1)
+
+            do j = 1, n_e
+               E(j,j) = E(j,j) + alpha
+               E(j+n_e,j) = E(j+n_e,j) - alpha
+            end do
+
+            ! do j = 1, n_e
+
+            !    do i = 1, n_e
+            !       E(i,j) = (this%dx*B_1)*E(i,j)
+            !       E(i+n_e,j) = E(i,j)
+            !    end do
+
+            !    E(j,j) = E(j,j) + 1._RD
+            !    E(j+n_e,j) = E(j+n_e,j) - 1._RD
+
+            ! end do
+
+         end associate
+
+         scl = ONE_${S}$
+
+         ! Finish
+
+      end subroutine build_mt_${S}$_
 
    #:endfor
 

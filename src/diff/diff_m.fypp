@@ -32,6 +32,7 @@ module diff_m
       contains
          procedure(build_${S}$_), deferred :: build
          procedure(build_${S}$_), deferred :: build_t
+         procedure(build_mt_${S}$_), deferred :: build_mt
       end type diff_${S}$
 
       ! Interfaces
@@ -58,6 +59,24 @@ module diff_m
             #:endif
             type(ext_${S}$), intent(out)   :: scl
          end subroutine build_${S}$_
+
+         subroutine build_mt_${S}$_(this, st, E, scl)
+            use forum_m, only: RD
+            use ext_m
+            use state_m
+            import diff_${S}$
+            implicit none (type, external)
+            class(diff_${S}$), intent(in)  :: this
+            class(state_${S}$), intent(in) :: st
+            #:if defined('CONTIG_ARRAYS')
+            ${T}$, contiguous, intent(out) :: E(:,:)
+            #:elif defined('EXPLICIT_ARRAYS')
+            ${T}$, intent(out)             :: E(2*this%n_e,this%n_e)
+            #:else
+            ${T}$, intent(out)             :: E(:,:)
+            #:endif
+            type(ext_${S}$), intent(out)   :: scl
+         end subroutine build_mt_${S}$_
 
       end interface
 

@@ -31,6 +31,7 @@ module eqns_m
          integer :: n_e
       contains
          procedure(eval_A_${S}$_), deferred  :: eval_A
+         procedure(eval_A_${S}$_), deferred  :: eval_A_t
          procedure(eval_C_${S}$_), deferred  :: eval_C
       end type eqns_${S}$
 

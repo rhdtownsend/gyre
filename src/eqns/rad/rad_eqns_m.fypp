@@ -53,6 +53,7 @@ module ${P}$_rad_eqns_m
    contains
       private
       procedure, public :: eval_A
+      procedure, public :: eval_A_t
       procedure, public :: eval_C
    end type ${P}$_rad_eqns_t
 
@@ -179,6 +180,26 @@ contains
       return
 
    end subroutine eval_A
+
+   !****
+
+   subroutine eval_A_t(this, st, A)
+
+      class(${P}$_rad_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)         :: st
+      real(RD), intent(out)               :: A(:,:)
+
+      ! Evaluate the Jacobian matrix (transposed)
+
+      call this%eval_A(st, A)
+
+      A = TRANSPOSE(A)
+
+      ! Finish
+
+      return
+
+   end subroutine eval_A_t
 
    !****
 

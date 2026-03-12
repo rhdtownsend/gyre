@@ -55,6 +55,7 @@ module nad_diff_m
       private
       procedure, public :: build
       procedure, public :: build_t
+      procedure, public :: build_mt
    end type nad_diff_t
 
    ! Interfaces
@@ -232,4 +233,36 @@ contains
 
    end subroutine build_t
 
+   !****
+   
+   subroutine build_mt(this, st, E, scl)
+
+      class(nad_diff_t), intent(in)        :: this
+      class(state_ct), intent(in)          :: st
+      #:if defined('CONTIG_ARRAYS')
+      complex(RD), contiguous, intent(out) :: E(:,:)
+      #:elif defined('EXPLICIT_ARRAYS')
+      complex(RD), intent(out)             :: E(2*this%n_e,this%n_e)
+      #:else
+      complex(RD), intent(out)             :: E(:,:)
+      #:endif
+      type(ext_ct), intent(out)            :: scl
+
+      ! Build the difference equations (merged, transposed)
+
+      associate (n_e => this%n_e)
+
+         call this%build(st, E(:n_e,:), E(n_e+1:,:), scl)
+
+         E(:n_e,:) = TRANSPOSE(E(:n_e,:))
+         E(n_e+1:,:) = TRANSPOSE(E(n_e+1:,:))
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine build_mt
+      
 end module nad_diff_m

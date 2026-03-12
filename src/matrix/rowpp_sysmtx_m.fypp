@@ -222,13 +222,15 @@ contains
 
                   else
 
-                     call de(k)%df%build_t(st, E_l, E_r, this%scl(k))
-
                      M_t(:n_e,:n_i) = M_t(n_e+1:, n_e+1:)
                      M_t(n_e+1:,:n_i) = 0._RD
 
-                     M_t(:n_e,n_i+1:) = E_l
-                     M_t(n_e+1:,n_i+1:) = E_r
+                     !call de(k)%df%build_t(st, E_l, E_r, this%scl(k))
+                     !call de(k)%df%build_t(st, M_t(:n_e,n_i+1:), M_t(n_e+1:,n_i+1:), this%scl(k))
+                     call de(k)%df%build_mt(st, M_t(:,n_i+1:), this%scl(k))
+
+                     !M_t(:n_e,n_i+1:) = E_l
+                     !M_t(n_e+1:,n_i+1:) = E_r
 
                      rscl(:n_i) = rscl(n_e+1:)
 

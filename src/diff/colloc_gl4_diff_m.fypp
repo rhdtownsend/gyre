@@ -53,6 +53,7 @@ module colloc_gl4_diff_m
          private
          procedure, public :: build => build_${S}$_
          procedure, public :: build_t => build_t_${S}$_
+         procedure, public :: build_mt => build_mt_${S}$_
       end type colloc_gl4_diff_${S}$
 
       ! Interfaces
@@ -229,6 +230,38 @@ contains
 
       end subroutine build_t_${S}$_
 
+      !****
+
+      subroutine build_mt_${S}$_(this, st, E, scl)
+
+         class(colloc_gl4_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)           :: st
+         #:if defined('CONTIG_ARRAYS')
+         ${T}$, contiguous, intent(out)           :: E(:,:)
+         #:elif defined('EXPLICIT_ARRAYS')
+         ${T}$, intent(out)                       :: E(2*this%n_e,this%n_e)
+         #:else
+         ${T}$, intent(out)                       :: E(:,:)
+         #:endif
+         type(ext_${S}$), intent(out)             :: scl
+
+         ! Build the difference equations (merged, transposed)
+
+         associate (n_e => this%n_e)
+
+            call this%build(st, E(:n_e,:), E(n_e+1:,:), scl)
+
+            E(:n_e,:) = TRANSPOSE(E(:n_e,:))
+            E(n_e+1:,:) = TRANSPOSE(E(n_e+1:,:))
+
+         end associate
+
+         ! Finish
+
+         return
+
+      end subroutine build_mt_${S}$_
+      
    #:endfor
 
 end module colloc_gl4_diff_m
