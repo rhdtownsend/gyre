@@ -31,6 +31,7 @@ module diff_m
          integer :: n_e
       contains
          procedure(build_${S}$_), deferred :: build
+         procedure(build_${S}$_), deferred :: build_t
       end type diff_${S}$
 
       ! Interfaces

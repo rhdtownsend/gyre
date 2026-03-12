@@ -54,6 +54,7 @@ module tnad_diff_m
    contains
       private
       procedure, public :: build
+      procedure, public :: build_t
    end type tnad_diff_t
 
    ! Interfaces
@@ -199,5 +200,36 @@ contains
       return
 
    end subroutine build
+
+   !****
+
+   subroutine build_t(this, st, E_l, E_r, scl)
+
+      class(tnad_diff_t), intent(in)       :: this
+      class(state_ct), intent(in)          :: st
+      #:if defined('CONTIG_ARRAYS')
+      complex(RD), contiguous, intent(out) :: E_l(:,:)
+      complex(RD), contiguous, intent(out) :: E_r(:,:)
+      #:elif defined('EXPLICIT_ARRAYS')
+      complex(RD), intent(out)             :: E_l(this%n_e,this%n_e)
+      complex(RD), intent(out)             :: E_r(this%n_e,this%n_e)
+      #:else
+      complex(RD), intent(out)             :: E_l(:,:)
+      complex(RD), intent(out)             :: E_r(:,:)
+      #:endif
+      type(ext_ct), intent(out)            :: scl
+
+      ! Build the difference equations (transposed)
+
+      call this%build(st, E_l, E_r, scl)
+
+      E_l = TRANSPOSE(E_l)
+      E_r = TRANSPOSE(E_r)
+
+      ! Finish
+
+      return
+
+   end subroutine build_t
 
 end module tnad_diff_m

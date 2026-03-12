@@ -51,6 +51,7 @@ module colloc_gl2_diff_m
       contains
          private
          procedure, public :: build => build_${S}$_
+         procedure, public :: build_t => build_t_${S}$_
       end type colloc_gl2_diff_${S}$
 
       ! Interfaces
@@ -158,6 +159,56 @@ contains
          ! Finish
 
       end subroutine build_${S}$_
+
+      !****
+
+      subroutine build_t_${S}$_(this, st, E_l, E_r, scl)
+
+         class(colloc_gl2_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)           :: st
+         #:if defined('CONTIG_ARRAYS')
+         ${T}$, contiguous, intent(out)           :: E_l(:,:)
+         ${T}$, contiguous, intent(out)           :: E_r(:,:)
+         #:elif defined('EXPLICIT_ARRAYS')
+         ${T}$, intent(out)                       :: E_l(this%n_e,this%n_e)
+         ${T}$, intent(out)                       :: E_r(this%n_e,this%n_e)
+         #:else
+         ${T}$, intent(out)                       :: E_l(:,:)
+         ${T}$, intent(out)                       :: E_r(:,:)
+         #:endif
+         type(ext_${S}$), intent(out)             :: scl
+
+         real(RD), parameter :: B_1 = 1._RD/2._RD
+
+         integer :: i
+         integer :: j
+
+         ! Build the difference equations (transposed)
+
+         ! Algorithm note: this is equivalent to the modified midpoint
+         ! method
+
+         call this%eq(1)%eval_A(st, E_l)
+
+         E_l = TRANSPOSE(E_l)
+
+         do j = 1, this%n_e
+
+            do i = 1, this%n_e
+               E_l(i,j) = (this%dx*B_1)*E_l(i,j)
+               E_r(i,j) = E_l(i,j)
+            end do
+
+            E_l(j,j) = E_l(j,j) + 1._RD
+            E_r(j,j) = E_r(j,j) - 1._RD
+
+         end do
+
+         scl = ONE_${S}$
+
+         ! Finish
+
+      end subroutine build_t_${S}$_
 
    #:endfor
 

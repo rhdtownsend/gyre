@@ -52,6 +52,7 @@ module mirk_diff_m
       contains
          private
          procedure, public :: build => build_${S}$_
+         procedure, public :: build_t => build_t_${S}$_
       end type mirk_diff_${S}$
 
       ! Interfaces
@@ -174,6 +175,37 @@ contains
          ! Finish
 
       end subroutine build_${S}$_
+
+      !****
+
+      subroutine build_t_${S}$_(this, st, E_l, E_r, scl)
+
+         class(mirk_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)     :: st
+         #:if defined('CONTIG_ARRAYS')
+         ${T}$, contiguous, intent(out)     :: E_l(:,:)
+         ${T}$, contiguous, intent(out)     :: E_r(:,:)
+         #:elif defined('EXPLICIT_ARRAYS')
+         ${T}$, intent(out)                 :: E_l(this%n_e,this%n_e)
+         ${T}$, intent(out)                 :: E_r(this%n_e,this%n_e)
+         #:else
+         ${T}$, intent(out)                 :: E_l(:,:)
+         ${T}$, intent(out)                 :: E_r(:,:)
+         #:endif
+         type(ext_${S}$), intent(out)       :: scl
+
+         ! Build the difference equations (transposed)
+
+         call this%build(st, E_l, E_r, scl)
+
+         E_l = TRANSPOSE(E_l)
+         E_r = TRANSPOSE(E_r)
+
+         ! Finish
+
+         return
+
+      end subroutine build_t_${S}$_
 
    #:endfor
 
