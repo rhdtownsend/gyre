@@ -21,7 +21,7 @@ import sympy.printing.fortran as spf
 # Declare symbols
 
 x = sp.Symbol('x')
-invx = sp.Symbol('invx')
+del_x = sp.Symbol('del_x')
 
 V = sp.Symbol('V')
 V_g = sp.Symbol('V_g')
@@ -133,7 +133,7 @@ def generate_A(A, T, subs=[]):
 
     printer = spf.FCodePrinter({'standard': 2008, 'source_format': 'free'})
 
-    return printer.doprint(invx*A, assign_to='A')
+    return printer.doprint(del_x*A, assign_to='A')
 
 def generate_IB(IB, T, subs=[]):
 

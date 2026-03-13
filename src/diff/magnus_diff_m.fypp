@@ -326,7 +326,7 @@ contains
 
          ! Evaluate the GL2 Magnus slope matrix
 
-         call this%eq(1)%eval_A(st, dOmega)
+         call this%eq(1)%eval_A(st, 1._RD, dOmega)
 
          ! Finish
 
@@ -352,8 +352,8 @@ contains
 
          ! Calculate the RHS matrices
 
-         call this%eq(1)%eval_A(st, A(:,:,1))
-         call this%eq(2)%eval_A(st, A(:,:,2))
+         call this%eq(1)%eval_A(st, 1._RD, A(:,:,1))
+         call this%eq(2)%eval_A(st, 1._RD, A(:,:,2))
 
          ! Set up the Magnus slope matrix (Blanes et al. 2009, eqns. 243
          ! and 253; note that the 12 in the denominator of their expression
@@ -389,9 +389,9 @@ contains
 
          ! Calculate the RHS matrices
 
-         call this%eq(1)%eval_A(st, A(:,:,1))
-         call this%eq(2)%eval_A(st, A(:,:,2))
-         call this%eq(3)%eval_A(st, A(:,:,3))
+         call this%eq(1)%eval_A(st, 1._RD, A(:,:,1))
+         call this%eq(2)%eval_A(st, 1._RD, A(:,:,2))
+         call this%eq(3)%eval_A(st, 1._RD, A(:,:,3))
 
          ! Set up the Magnus slope matrix (Blanes et al. 2009, eqns. 251
          ! and 257)

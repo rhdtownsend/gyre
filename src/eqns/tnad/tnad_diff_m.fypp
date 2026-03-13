@@ -186,13 +186,13 @@ contains
          ! Rescale by the uncoupled eigenvalues, in order to help the root
          ! finder
 
-         call this%eq%eval_A(st, A)
+         call this%eq%eval_A(st, this%dx, A)
 
          lambda(1) = sqrt(A(2,1)*A(1,2))
          lambda(2) = sqrt(A(4,3)*A(3,4))
          lambda(3) = sqrt(A(6,5)*A(5,6))
 
-         scl = scl*exp(ext_ct(-SUM(lambda, MASK=MAGNUS_EIGVAL_MASK)*this%dx))
+         scl = scl*exp(ext_ct(-SUM(lambda, MASK=MAGNUS_EIGVAL_MASK)))
 
       end select
 

@@ -1,4 +1,4 @@
-A(1, 1) = invx*(-l_e - this%U + 3)
-A(2, 1) = invx*(lambda - this%As*this%U - this%U*this%V_g)
-A(1, 2) = invx
-A(2, 2) = invx*(-l_e - this%U + 2)
+A(1, 1) = del_x*(-U - l_e + 3)
+A(2, 1) = del_x*(-As*U - U*V_g + lambda)
+A(1, 2) = del_x
+A(2, 2) = del_x*(-U - l_e + 2)

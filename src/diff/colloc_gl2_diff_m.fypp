@@ -141,12 +141,11 @@ contains
          ! Algorithm note: this is equivalent to the modified midpoint
          ! method
 
-         call this%eq(1)%eval_A(st, E_l)
+         call this%eq(1)%eval_A(st, this%dx*B_1, E_l)
 
          do j = 1, this%n_e
 
             do i = 1, this%n_e
-               E_l(i,j) = (this%dx*B_1)*E_l(i,j)
                E_r(i,j) = E_l(i,j)
             end do
 
@@ -189,12 +188,11 @@ contains
          ! Algorithm note: this is equivalent to the modified midpoint
          ! method
 
-         call this%eq(1)%eval_A_t(st, E_l)
+         call this%eq(1)%eval_A_t(st, this%dx*B_1, E_l)
 
          do j = 1, this%n_e
 
             do i = 1, this%n_e
-               E_l(i,j) = (this%dx*B_1)*E_l(i,j)
                E_r(i,j) = E_l(i,j)
             end do
 
@@ -236,16 +234,15 @@ contains
 
          associate (n_e => this%n_e)
 
-            call this%eq(1)%eval_A_t(st, E(:n_e,:))
+            call this%eq(1)%eval_A_t(st, this%dx*B_1, E(:n_e,:))
 
-            !E(:n_e,:) = (this%dx*B_1)*E(:n_e,:)
-            E(n_e+1:,:) = E(:n_e,:)
+            do concurrent (j = 1:n_e)
+               E(n_e+1:,j) = E(:n_e,j)
+            end do
 
-            alpha = 1._RD/(this%dx*B_1)
-
-            do j = 1, n_e
-               E(j,j) = E(j,j) + alpha
-               E(j+n_e,j) = E(j+n_e,j) - alpha
+            do concurrent (j = 1:n_e)
+               E(j,j) = E(j,j) + 1._RD
+               E(j+n_e,j) = E(j+n_e,j) - 1._RD
             end do
 
             ! do j = 1, n_e

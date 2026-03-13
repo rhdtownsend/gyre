@@ -158,16 +158,16 @@ contains
 
             ! Evaluate the RHS matrices
 
-            call this%eq(1)%eval_A(st, A(:,:,1))
-            call this%eq(2)%eval_A(st, A(:,:,2))
-            call this%eq(3)%eval_A(st, A(:,:,3))
+            call this%eq(1)%eval_A(st, this%dx/6._RD, A(:,:,1))
+            call this%eq(2)%eval_A(st, this%dx/3._RD, A(:,:,2))
+            call this%eq(3)%eval_A(st, this%dx/6._RD, A(:,:,3))
 
             ! Build the difference equations
 
-            E_l = -identity_matrix(this%n_e) - this%dx*A(:,:,1)/6._RD - &
-               this%dx*A(:,:,2)/3._RD - this%dx**2*MATMUL(A(:,:,2), A(:,:,1))/12._RD
-            E_r =  identity_matrix(this%n_e) - this%dx*A(:,:,3)/6._RD - &
-               this%dx*A(:,:,2)/3._RD + this%dx**2*MATMUL(A(:,:,2), A(:,:,3))/12._RD
+            E_l = -identity_matrix(this%n_e) - A(:,:,1) - &
+               A(:,:,2) - (3._RD/2._RD)*MATMUL(A(:,:,2), A(:,:,1))
+            E_r =  identity_matrix(this%n_e) - A(:,:,3) - &
+               A(:,:,2) + (3._RD/2._RD)*MATMUL(A(:,:,2), A(:,:,3))
 
             scl = ONE_${S}$
 

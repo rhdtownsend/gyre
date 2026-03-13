@@ -163,11 +163,8 @@ contains
             A_21 => J, &
             M_2 => K_1)
 
-            call this%eq(1)%eval_A(st, A_1)
-            A_1 = this%dx*A_1
-
-            call this%eq(2)%eval_A(st, A_2)
-            A_2 = this%dx*A_2
+            call this%eq(1)%eval_A(st, this%dx, A_1)
+            call this%eq(2)%eval_A(st, this%dx, A_2)
 
             A_21 = D_21*MATMUL(A_2, A_1)
 
