@@ -45,14 +45,15 @@ module colloc_gl2_diff_m
 
       type, extends(diff_${S}$) :: colloc_gl2_diff_${S}$
          private
-         class(eqns_${S}$), allocatable   :: eq(:)
-         real(RD)                         :: dx
-         logical                          :: reverse
+         class(eqns_${S}$), allocatable      :: eq(:)
+         real(RD)                            :: dx
+         logical                             :: reverse
+         procedure(build_mt_${S}$_), pointer :: build_mt_
       contains
          private
          procedure, public :: build => build_${S}$_
          procedure, public :: build_t => build_t_${S}$_
-         procedure, public :: build_mt => build_mt_${S}$_
+         procedure, public :: build_mt => build_mt_switched_${S}$_
       end type colloc_gl2_diff_${S}$
 
       ! Interfaces
@@ -106,6 +107,12 @@ contains
          call eqns_factory(pt, df%eq)
 
          df%n_e = df%eq(1)%n_e
+
+         if (df%n_e == 4) then
+            df%build_mt_ => build_mt_4_${S}$_
+         else
+            df%build_mt_ => build_mt_generic_${S}$_
+         end if
 
          ! Finish
 
@@ -222,6 +229,67 @@ contains
          #:endif
          type(ext_${S}$), intent(out)             :: scl
 
+         call this%build_mt_(st, E, scl)
+
+      end subroutine build_mt_${S}$_
+
+      !****
+
+      subroutine build_mt_4_${S}$_(this, st, E, scl)
+
+         class(colloc_gl2_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)           :: st
+         #:if defined('CONTIG_ARRAYS')
+         ${T}$, contiguous, intent(out)           :: E(:,:)
+         #:elif defined('EXPLICIT_ARRAYS')
+         ${T}$, intent(out)                       :: E(2*this%n_e,this%n_e)
+         #:else
+         ${T}$, intent(out)                       :: E(:,:)
+         #:endif
+         type(ext_${S}$), intent(out)             :: scl
+
+         real(RD), parameter :: B_1 = 1._RD/2._RD
+
+         integer :: j
+
+         ! Build the difference equations (transposed)
+
+         ! Algorithm note: this is equivalent to the modified midpoint
+         ! method
+
+         associate (n_e => 4)
+
+            call this%eq(1)%eval_A_t(st, this%dx*B_1, E(:n_e,:))
+
+            do concurrent (j = 1:n_e)
+               E(n_e+1:,j) = E(:n_e,j)
+               E(j,j) = E(j,j) + 1._RD
+               E(j+n_e,j) = E(j+n_e,j) - 1._RD
+            end do
+
+         end associate
+
+         scl = ONE_${S}$
+
+         ! Finish
+
+      end subroutine build_mt_4_${S}$_
+
+      !****
+
+      subroutine build_mt_generic_${S}$_(this, st, E, scl)
+
+         class(colloc_gl2_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)           :: st
+         #:if defined('CONTIG_ARRAYS')
+         ${T}$, contiguous, intent(out)           :: E(:,:)
+         #:elif defined('EXPLICIT_ARRAYS')
+         ${T}$, intent(out)                       :: E(2*this%n_e,this%n_e)
+         #:else
+         ${T}$, intent(out)                       :: E(:,:)
+         #:endif
+         type(ext_${S}$), intent(out)             :: scl
+
          real(RD), parameter :: B_1 = 1._RD/2._RD
 
          integer :: i
@@ -233,7 +301,7 @@ contains
          ! method
 
          associate (n_e => this%n_e)
-
+               
             call this%eq(1)%eval_A_t(st, this%dx*B_1, E(:n_e,:))
 
             do concurrent (j = 1:n_e)
@@ -244,6 +312,8 @@ contains
                E(j,j) = E(j,j) + 1._RD
                E(j+n_e,j) = E(j+n_e,j) - 1._RD
             end do
+
+         end associate
 
             ! do j = 1, n_e
 
@@ -257,14 +327,102 @@ contains
 
             ! end do
 
-         end associate
+         scl = ONE_${S}$
+
+         ! Finish
+
+      end subroutine build_mt_generic_${S}$_
+
+      !****
+      
+      subroutine build_mt_switched_${S}$_(this, st, E, scl)
+
+         class(colloc_gl2_diff_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)           :: st
+         #:if defined('CONTIG_ARRAYS')
+         ${T}$, contiguous, intent(out)           :: E(:,:)
+         #:elif defined('EXPLICIT_ARRAYS')
+         ${T}$, intent(out)                       :: E(2*this%n_e,this%n_e)
+         #:else
+         ${T}$, intent(out)                       :: E(:,:)
+         #:endif
+         type(ext_${S}$), intent(out)             :: scl
+
+         real(RD), parameter :: B_1 = 1._RD/2._RD
+
+         integer :: j
+
+         ! Build the difference equations (transposed)
+
+         ! Algorithm note: this is equivalent to the modified midpoint
+         ! method
+
+         select case(this%n_e)
+
+         case(4)
+
+            call build_4_()
+
+         case default
+
+            call build_generic_()
+
+         end select
 
          scl = ONE_${S}$
 
          ! Finish
 
-      end subroutine build_mt_${S}$_
+         return
 
+      contains
+
+         subroutine build_4_
+
+            integer :: j
+
+            associate (n_e => 4)
+               
+               call this%eq(1)%eval_A_t(st, this%dx*B_1, E(:n_e,:))
+
+               do concurrent (j = 1:n_e)
+                  E(n_e+1:,j) = E(:n_e,j)
+                  E(j,j) = E(j,j) + 1._RD
+                  E(j+n_e,j) = E(j+n_e,j) - 1._RD
+               end do
+
+            end associate
+
+            ! Finish
+
+            return
+
+         end subroutine build_4_
+
+         subroutine build_generic_
+
+            integer :: j
+
+            associate (n_e => this%n_e)
+               
+               call this%eq(1)%eval_A_t(st, this%dx*B_1, E(:n_e,:))
+
+               do concurrent (j = 1:n_e)
+                  E(n_e+1:,j) = E(:n_e,j)
+                  E(j,j) = E(j,j) + 1._RD
+                  E(j+n_e,j) = E(j+n_e,j) - 1._RD
+               end do
+
+            end associate
+
+            ! Finish
+
+            return
+
+         end subroutine build_generic_
+
+      end subroutine build_mt_switched_${S}$_
+      
    #:endfor
 
 end module colloc_gl2_diff_m
