@@ -359,9 +359,17 @@ contains
 
          select case(this%n_e)
 
+         case(2)
+
+            call build_2_()
+
          case(4)
 
             call build_4_()
+
+         case(6)
+
+            call build_6_()
 
          case default
 
@@ -376,6 +384,28 @@ contains
          return
 
       contains
+
+         subroutine build_2_
+
+            integer :: j
+
+            associate (n_e => 2)
+               
+               call this%eq(1)%eval_A_t(st, this%dx*B_1, E(:n_e,:))
+
+               do concurrent (j = 1:n_e)
+                  E(n_e+1:,j) = E(:n_e,j)
+                  E(j,j) = E(j,j) + 1._RD
+                  E(j+n_e,j) = E(j+n_e,j) - 1._RD
+               end do
+
+            end associate
+
+            ! Finish
+
+            return
+
+         end subroutine build_2_
 
          subroutine build_4_
 
@@ -398,6 +428,28 @@ contains
             return
 
          end subroutine build_4_
+
+         subroutine build_6_
+
+            integer :: j
+
+            associate (n_e => 6)
+               
+               call this%eq(1)%eval_A_t(st, this%dx*B_1, E(:n_e,:))
+
+               do concurrent (j = 1:n_e)
+                  E(n_e+1:,j) = E(:n_e,j)
+                  E(j,j) = E(j,j) + 1._RD
+                  E(j+n_e,j) = E(j+n_e,j) - 1._RD
+               end do
+
+            end associate
+
+            ! Finish
+
+            return
+
+         end subroutine build_6_
 
          subroutine build_generic_
 
