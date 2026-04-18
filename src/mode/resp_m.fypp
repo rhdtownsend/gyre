@@ -177,8 +177,8 @@ contains
       integer, intent(in)       :: j
       complex(RD)               :: deul_Phi
 
-      ! Evaluate the Eulerian potential gradient (gravity) perturbation,
-      ! in units of G M_star / R_star**2
+      ! Evaluate the Eulerian self-gravitational potential gradient
+      ! (gravity) perturbation, in units of G M_star / R_star**2
 
       deul_Phi = this%deul_Psi(j) - this%dPhi_T(j)
 
@@ -197,7 +197,7 @@ contains
       complex(RD)               :: deul_Psi
 
       ! Evaluate the Eulerian total potential gradient (gravity)
-      ! potential perturbation, in units of G M_star / R_star**2
+      ! perturbation, in units of G M_star / R_star**2
 
       deul_Psi = this%wave_t%deul_Phi(j)
 
