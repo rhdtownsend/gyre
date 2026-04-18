@@ -14,8 +14,9 @@ IFACES ?= no
 # Link against an external ForUM library
 #
 # If set to "yes", then the build system will use pkgconf to search
-# for library, with a package name speficied by EXTERNAL_FORUM_PKG.
-# Otherwise, the ForUM library will be built and linked internally
+# for the library, with a package name speficied by
+# EXTERNAL_FORUM_PKG.  Otherwise, the ForUM library will be built and
+# linked internally
 EXTERNAL_FORUM ?= no
 EXTERNAL_FORUM_PKG ?= forum
 

@@ -61,7 +61,7 @@ ALL_DEPS := $(addprefix $(DEPEND_DIR)/,$(BIN_TARGETS:%=%.dep) $(LIB_TARGETS:%=%.
 
 install : $(addprefix $(BIN_DIR)/,$(BIN_FILES)) \
           $(addprefix $(LIB_DIR)/,$(LIB_FILES)) \
-	  $(addprefix $(PKG_DIR)/,$(PKG_FILES)) \
+          $(addprefix $(PKG_DIR)/,$(PKG_FILES)) \
           $(addprefix $(INC_DIR)/,$(INC_FILES))
 	@:
 
@@ -135,7 +135,7 @@ MAKEDEP := awk -f makedepf08.awk
 
 FFLAGS += -std=f2018 -finit-real=snan -fmax-errors=25 \
           -ftrampoline-impl=heap
-	  
+
 ifeq ($(FPE),yes)
    FFLAGS += -ffpe-trap=invalid,overflow,zero
 endif
@@ -189,7 +189,7 @@ endif
 AR := ar
 
 ifeq ($(shell uname -s),Darwin)
-   SHARED_LIB_LDFLAGS +=  -Wl,-dead_strip_dylibs -shared -install_name $(LIB_DIR)/$@
+   SHARED_LIB_LDFLAGS += -Wl,-dead_strip_dylibs -shared -install_name $(LIB_DIR)/$@
    ARFLAGS := -cr
 else			   
    SHARED_LIB_LDFLAGS += -Wl,--as-needed -shared -Wl,-rpath -Wl,$(LIB_DIR)
@@ -203,15 +203,11 @@ ifeq ($(OMP),yes)
    LDFLAGS += -fopenmp
 endif
 
-ifeq ($(shell uname -s),Linux)
-  LDFLAGS += -Wl,--no-warn-execstack
-endif
-
 # Rules
 
 $(BIN_FILES) :
 	@echo LD $@
-	@$(FC) -o $@ $^ $(LDFLAGS) $(BIN_LDFLAGS)
+	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(BIN_LDFLAGS)
 
 $(STATIC_LIB_FILES) :
 	@echo AR-LIB $@
@@ -219,7 +215,7 @@ $(STATIC_LIB_FILES) :
 
 $(SHARED_LIB_FILES) :
 	@echo LD-LIB $@
-	@$(FC) -o $@ $^ $(LDFLAGS) $(SHARED_LIB_LDFLAGS)
+	@$(FC) $(FFLAGS) -o $@ $^ $(LDFLAGS) $(SHARED_LIB_LDFLAGS)
 
 #######################
 # Secondary Expansions
