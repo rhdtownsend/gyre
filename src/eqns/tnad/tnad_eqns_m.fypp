@@ -74,8 +74,6 @@ module ${P}$_tnad_eqns_m
       real(RD)                 :: c_kap_S
       real(RD)                 :: c_dif
       real(RD)                 :: f_conv
-      real(RD)                 :: L_conv
-      real(RD)                 :: tau_conv
       real(RD)                 :: Omega_rot
       real(RD)                 :: x
       complex(RD)              :: lambda
@@ -166,9 +164,6 @@ contains
       case default
          @:ABORT('invalid conv_scheme')
       end select
-
-      eq%L_conv = MIN(1._RD/eq%V, 1._RD)*cx%alpha_trb
-      eq%tau_conv = tau_conv(eq%As, eq%c_1)
 
       eq%Omega_rot = cx%Omega_rot(pt)
 
@@ -294,8 +289,6 @@ contains
          c_kap_S => this%c_kap_S, &
          c_dif => this%c_dif, &
          f_conv => this%f_conv, &
-         L_conv => this%L_conv, &
-         tau_conv => this%tau_conv, &
          Omega_rot => this%Omega_rot, &
          Omega_rot_i => this%cx%Omega_rot_i, &
          x => this%x, &
@@ -308,6 +301,7 @@ contains
          alpha_gam => this%cx%alpha_gam, &
          alpha_pi => this%cx%alpha_pi, &
          alpha_egv => this%cx%alpha_egv, &
+         alpha_trb => this%cx%alpha_trb, &
          m => this%cx%m, &
          angular_cache => this%cx%angular_cache, &
          epsilon_cache => this%cx%epsilon_cache)
@@ -341,7 +335,7 @@ contains
             c_eps_S = c_eps*(eps_T - ups_T*eps_rho)
          end if
 
-         F_trb = i_omega_c*c_1*nu_trb(omega_c_r, L_conv, tau_conv)
+         F_trb = i_omega_c*c_trb(V, As, c_1, alpha_trb, omega_c_r)
 
          del_x = del/x
 

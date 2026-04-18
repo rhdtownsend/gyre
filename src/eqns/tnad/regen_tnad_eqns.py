@@ -27,22 +27,46 @@ from regen_nad_eqns import A as A_nad
 # Differential Jacobian matrix. This is formed from the non-adiabatic
 # matrix with a turbulent correction to the radial momentum equation:
 #
-# x dy/dx = A_nad y - G_trb y_trb - x d/dx(y_trb)
+#  x dy/dx = A_nad y + G y_trb - x d/dx(y_trb)
 #
 # with
 #
-# y_trb = F_trb [x dy_1/dx + (l-1) y_1] e_2
+#  G = As + V_g - U + 1 - l
+#
+# and
+#
+#  y_trb = F_trb [x dy_1/dx + (l-1) y_1] e_2
 #
 # where e_2 is the basis vector associated with the radial momentum
-# equation, and F_trb = i omega nu_trb / (g r)
+# equation, and F_trb = i omega nu_trb / (g r).
 
-e_1 = sp.eye(6)[:,0]
-e_2 = sp.eye(6)[:,1]
+# H is an intermediate matrix defined so that y_trb = H y
 
-P = (-A_nad + (As + V_g - U(x) + 1 - l_i)*sp.eye(6)) @ e_2
-Q = -F_trb/(F_trb*A_nad[0,1] + 1) * e_1.T @ (A_nad + (l_i-1)*sp.eye(6))
+H = F_trb * sp.Matrix([
+    [0, 0, 0, 0, 0, 0],
+    [A_nad[0,0] + l_i - 1, A_nad[0,1], A_nad[0,2], A_nad[0,3], A_nad[0,4], A_nad[0,5]],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0]
+    ])
 
-A = A_nad - P @ Q
+# Use A_nad, G and H to rewrite the equations as
+#
+#  x dz/dx = A z
+#
+# where z = y + y_trb. The matrix A is given by
+#
+#  A_nad + (G - A) H Q
+#
+# where Q = (I + H)^-1. Note that y can be reconstructed
+# from z via y = Q z
+
+G = As + V_g - U(x) + 1 - l_i
+
+Q = sp.Inverse(sp.eye(6) + H)
+
+A = A_nad + (G*sp.eye(6) - A_nad) @ H @ Q
 
 # Match condition matrix
 
@@ -74,4 +98,4 @@ if __name__ == '__main__':
             f.write(generate_C(C, T, transpose=True)+'\n')
 
         with open(f'{vars}/Q.inc', 'w') as f:
-            f.write(generate(Q.row(0), 'Q')+'\n')
+            f.write(generate(Q, 'Q')+'\n')

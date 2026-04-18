@@ -52,11 +52,11 @@ module tnad_bvp_m
       private
       type(context_t), pointer     :: cx => null()
       class(trans_ct), allocatable :: tr(:)
+      real(RD), allocatable        :: V(:)
       real(RD), allocatable        :: V_g(:)
+      real(RD), allocatable        :: As(:)
       real(RD), allocatable        :: c_1(:)
       real(RD), allocatable        :: ups_T(:)
-      real(RD), allocatable        :: L_conv(:)
-      real(RD), allocatable        :: tau_conv(:)
       real(RD), allocatable        :: Omega_rot(:)
       complex(RD)                  :: lambda
       complex(RD)                  :: l_i
@@ -105,8 +105,6 @@ contains
       integer                            :: j
       type(diff_element_ct), allocatable :: de(:)
       class(model_t), pointer            :: ml
-      real(RD)                           :: V
-      real(RD)                           :: As
 
       ! Construct the tnad_bvp_t
 
@@ -132,32 +130,23 @@ contains
 
       ml => cx%model()
 
+      allocate(bp%V(gr%n))
       allocate(bp%V_g(gr%n))
+      allocate(bp%As(gr%n))
       allocate(bp%c_1(gr%n))
       allocate(bp%ups_T(gr%n))
-      allocate(bp%L_conv(gr%n))
-      allocate(bp%tau_conv(gr%n))
       allocate(bp%Omega_rot(gr%n))
 
-      !$OMP PARALLEL DO PRIVATE(V, As)
+      !$OMP PARALLEL DO
       do j = 1, gr%n
 
          associate(pt => gr%pt(j))
 
-            V = ml%coeff(I_V_2, pt)*pt%x**2
-            As = ml%coeff(I_AS, pt)
-
-            bp%V_g(j) = V/ml%coeff(I_C_1, pt)
+            bp%V(j) = ml%coeff(I_V_2, pt)*pt%x**2
+            bp%V_g(j) = bp%V(j)/ml%coeff(I_GAMMA_1, pt)
+            bp%As(j) = ml%coeff(I_AS, pt)
             bp%c_1(j) = ml%coeff(I_C_1, pt)
             bp%ups_T(j) = ml%coeff(I_UPS_T, pt)
-
-            if (pt%x /= 0._RD) then
-               bp%L_conv(j) = MIN(1._RD/V, 1._RD)*cx%alpha_trb
-            else
-               bp%L_conv(j) = cx%alpha_trb
-            end if
-
-            bp%tau_conv(j) = tau_conv(As, bp%c_1(j))
 
             bp%Omega_rot(j) = ml%coeff(I_OMEGA_ROT, pt)
 
@@ -275,18 +264,19 @@ contains
 
       integer     :: j
       complex(RD) :: y_c(6,bp%n)
+      complex(RD) :: Q(6,6)
 
       @:CHECK_BOUNDS(SIZE(y, 1), bp%n_e)
       @:CHECK_BOUNDS(SIZE(y, 2), bp%n)
 
-      ! Transform the variables to canonical form, by subtracting off
-      ! the y_trb contribution
+      ! Transform the variables to canonical form
 
-      !$OMP PARALLEL DO
+      !$OMP PARALLEL DO PRIVATE(Q)
       do j = 1, bp%n
 
-         y_c(:,j) = y(:,j)
-         y_c(2,j) = y_c(2,j) - y_trb_(j)
+         call eval_Q_(j, Q)
+
+         y_c(:,j) = MATMUL(Q, y(:,j))
 
       end do
 
@@ -300,10 +290,10 @@ contains
 
    contains
 
-      function y_trb_(j) result(y_trb)
+      subroutine eval_Q_(j, Q)
 
-         integer, intent(in) :: j
-         complex(RD)         :: y_trb
+         integer, intent(in)      :: j
+         complex(RD), intent(out) :: Q(:,:)
 
          complex(RD) :: omega_c
          real(RD)    :: omega_c_r
@@ -313,23 +303,26 @@ contains
          complex(RD) :: om2
          complex(RD) :: eta
          complex(RD) :: F_trb
-         complex(RD) :: Q(1,6)
 
-         ! Evaluate y_trb
+         @:CHECK_BOUNDS(SIZE(Q, 1), bp%n_e)
+         @:CHECK_BOUNDS(SIZE(Q, 1), bp%n_e)
+
+         ! Evaluate the Q matrix
 
          associate( &
             omega => st%omega, &
             omega_r => st%omega_r, &
+            V => bp%V(j), &
             V_g => bp%V_g(j), &
+            As => bp%As(j), &
             c_1 => bp%c_1(j), &
             ups_T => bp%ups_T(j), &
-            L_conv => bp%L_conv(j), &
-            tau_conv => bp%tau_conv(j), &
             Omega_rot => bp%Omega_rot(j), &
             Omega_rot_i => bp%cx%Omega_rot_i, &
             alpha_grv => bp%cx%alpha_grv, &
             alpha_omg => bp%cx%alpha_omg, &
             alpha_gam => bp%cx%alpha_gam, &
+            alpha_trb => bp%cx%alpha_trb, &
             m => bp%cx%m, &
             angular_cache => bp%cx%angular_cache)
 
@@ -349,23 +342,19 @@ contains
             om2 = c_1*alpha_omg*omega_c**2
             eta = lambda/om2
 
-            F_trb = i_omega_c*c_1*nu_trb(omega_c_r, L_conv, tau_conv)
+            F_trb = i_omega_c*c_trb(V, As, c_1, alpha_trb, omega_c_r)
 
-            ! Set upt the Q vector
+            ! Set upt the Q matrix
 
             #:include 'Q.inc'
 
          end associate
 
-         ! Evaluate y_trb
-
-         y_trb = DOT_PRODUCT(Q(1,:), y(:,j))
-
          ! Finish
 
          return
 
-      end function y_trb_
+      end subroutine eval_Q_
 
    end function wave_t_y_
 

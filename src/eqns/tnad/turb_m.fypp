@@ -21,7 +21,9 @@ module turb_m
 
    ! Uses
 
-   use forum_m, only: RD, TWOPI
+   use forum_m, only: RD
+
+   use math_m
 
    use ISO_FORTRAN_ENV
 
@@ -31,8 +33,7 @@ module turb_m
 
    ! Access specifiers
 
-   public :: tau_conv
-   public :: nu_trb
+   public :: c_trb
 
    ! Default access
 
@@ -40,48 +41,51 @@ module turb_m
 
 contains
 
-   function tau_conv(As, c_1)
+   function c_trb(V, As, c_1, alpha_trb, omega)
 
+      real(RD), intent(in) :: V
       real(RD), intent(in) :: As
       real(RD), intent(in) :: c_1
-      real(RD)             :: tau_conv
+      real(RD), intent(in) :: alpha_trb
+      real(RD), intent(in) :: omega
+      real(RD)             :: c_trb
 
-      ! Evaluate the convective turnover timescale
+      real(RD) :: tau_conv
+      real(RD) :: tau_trb
+      real(RD) :: l_r
 
-      if (As < 0._RD) then
-         tau_conv = SQRT(-c_1/As)
+      ! Evaluate the dimensionless turbulent viscosity coefficient
+      ! c_trb = nu_trb/(g r) * SQRT(GM/R**3)
+
+      if (As >= 0._RD) then
+
+         c_trb = 0._RD
+
       else
-         tau_conv = HUGE(0._RD)
+
+         ! Evaluate the dimensionless convective turnover timescale
+
+         tau_conv = sqrt(-c_1/As)
+
+         ! Evaluate the effective turbulence timescale, following equation
+         ! 68 of Willems, Deloye & Kalogera (2010)
+
+         tau_trb = tau_conv*(1._RD + tau_conv*ABS(omega)/TWOPI)
+
+         ! Evaluate the ratio l/r, where l is the local mixing length
+
+         l_r = alpha_trb*MIN(1._RD, 1._RD/V)
+
+         ! Evaluate c_trb
+
+         c_trb = c_1*(l_r)**2/tau_trb
+
       end if
 
       ! Finish
 
       return
 
-   end function tau_conv
-
-   !****
-
-   function nu_trb(omega_c, L_conv, tau_conv)
-
-      real(RD), intent(in) :: omega_c
-      real(RD), intent(in) :: L_conv
-      real(RD), intent(in) :: tau_conv
-      real(RD)             :: nu_trb
-
-      ! Evaluate the turbulent viscosity, following eqn. 68 of
-      ! Willems, Deloye & Kalogera (2010)
-
-      if (tau_conv == HUGE(0._RD)) then
-         nu_trb = 0._RD
-      else
-         nu_trb = (L_conv)**2/(tau_conv*(1._RD + tau_conv*ABS(omega_c)/TWOPI))
-      end if
-
-      ! Finish
-
-      return
-
-   end function nu_trb
+   end function c_trb
 
 end module turb_m
