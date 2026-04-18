@@ -411,7 +411,9 @@ contains
 
          #:for N, E in ( &
             ('eul_Psi', 'rs%eul_Psi(j)'), &
-            ('Phi_T', 'rs%Phi_T(j)'))
+            ('deul_Psi', 'rs%deul_Psi(j)'), &
+            ('Phi_T', 'rs%Phi_T(j)'), &
+            ('dPhi_T', 'rs%dPhi_T(j)'))
             case ('${N}$')
                call wr%write('${N}$', [(${E}$, j=1,gr%n)])
          #:endfor
@@ -419,7 +421,9 @@ contains
          #:for N, E in ( &
             ('k', 'rs%k'), &
             ('eul_Psi_ref', 'rs%eul_Psi(rs%j_ref)'), &
+            ('deul_Psi_ref', 'rs%deul_Psi(rs%j_ref)'), &
             ('Phi_T_ref', 'rs%Phi_T(rs%j_ref)'), &
+            ('dPhi_T_ref', 'rs%dPhi_T(rs%j_ref)'), &
             ('Omega_orb', ' rs%Omega_orb(ot_p%freq_units, ot_p%freq_frame)'), &
             ('q', ' rs%or_p%q'), &
             ('e', ' rs%or_p%e'), &
