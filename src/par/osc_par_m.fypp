@@ -45,6 +45,7 @@ module osc_par_m
       real(RD)                :: alpha_egv = 0._RD
       real(RD)                :: alpha_rht = 0._RD
       real(RD)                :: alpha_trb = 0._RD
+      real(RD)                :: alpha_con = 1._RD
       real(RD)                :: lambda = 0._RD
       character(64)           :: variables_set = 'GYRE'
       character(64)           :: inner_bound = 'REGULAR'
@@ -96,9 +97,10 @@ contains
       real(RD)                              :: alpha_pi
       real(RD)                              :: alpha_kar
       real(RD)                              :: alpha_kat
+      real(RD)                              :: alpha_egv
       real(RD)                              :: alpha_rht
       real(RD)                              :: alpha_trb
-      real(RD)                              :: alpha_egv
+      real(RD)                              :: alpha_con
       real(RD)                              :: lambda
       character(LEN(os_p%variables_set))    :: variables_set
       character(LEN(os_p%inner_bound))      :: inner_bound
@@ -120,7 +122,7 @@ contains
       logical                               :: complex_lambda
 
       namelist /osc/ x_ref, x_atm, alpha_grv, alpha_gbc, alpha_thm, alpha_hfl, alpha_gam, &
-         alpha_pi, alpha_kar, alpha_kat, alpha_rht, alpha_trb, alpha_egv, lambda, &
+         alpha_pi, alpha_kar, alpha_kat, alpha_egv, alpha_rht, alpha_trb, alpha_con, lambda, &
          inner_bound, outer_bound, outer_bound_cutoff, outer_bound_branch, &
          variables_set, inertia_norm, time_factor, &
          conv_scheme, deps_source, deps_file, deps_file_format, lambda_method, &
@@ -162,9 +164,10 @@ contains
          alpha_pi = os_p(i)%alpha_pi
          alpha_kar = os_p(i)%alpha_kar
          alpha_kat = os_p(i)%alpha_kat
+         alpha_egv = os_p(i)%alpha_egv
          alpha_rht = os_p(i)%alpha_rht
          alpha_trb = os_p(i)%alpha_trb
-         alpha_egv = os_p(i)%alpha_egv
+         alpha_con = os_p(i)%alpha_con
          lambda = os_p(i)%lambda
          variables_set = os_p(i)%variables_set
          inner_bound = os_p(i)%inner_bound
@@ -201,9 +204,10 @@ contains
          os_p(i)%alpha_pi = alpha_pi
          os_p(i)%alpha_kar = alpha_kar
          os_p(i)%alpha_kat = alpha_kat
+         os_p(i)%alpha_egv = alpha_egv
          os_p(i)%alpha_rht = alpha_rht
          os_p(i)%alpha_trb = alpha_trb
-         os_p(i)%alpha_egv = alpha_egv
+         os_p(i)%alpha_con = alpha_con
          os_p(i)%lambda = lambda
          os_p(i)%variables_set = variables_set
          os_p(i)%inner_bound = inner_bound

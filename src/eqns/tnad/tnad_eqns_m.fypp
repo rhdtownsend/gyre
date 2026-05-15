@@ -302,6 +302,7 @@ contains
          alpha_pi => this%cx%alpha_pi, &
          alpha_egv => this%cx%alpha_egv, &
          alpha_trb => this%cx%alpha_trb, &
+         alpha_con => this%cx%alpha_con, &
          m => this%cx%m, &
          angular_cache => this%cx%angular_cache, &
          epsilon_cache => this%cx%epsilon_cache)
@@ -335,7 +336,7 @@ contains
             c_eps_S = c_eps*(eps_T - ups_T*eps_rho)
          end if
 
-         F_trb = i_omega_c*c_trb(V, As, c_1, alpha_trb, omega_c_r)
+         F_trb = i_omega_c*c_trb(V, As, c_1, alpha_trb, alpha_con, omega_c_r)
 
          del_x = del/x
 

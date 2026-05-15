@@ -323,6 +323,7 @@ contains
             alpha_omg => bp%cx%alpha_omg, &
             alpha_gam => bp%cx%alpha_gam, &
             alpha_trb => bp%cx%alpha_trb, &
+            alpha_con => bp%cx%alpha_con, &
             m => bp%cx%m, &
             angular_cache => bp%cx%angular_cache)
 
@@ -342,7 +343,7 @@ contains
             om2 = c_1*alpha_omg*omega_c**2
             eta = lambda/om2
 
-            F_trb = i_omega_c*c_trb(V, As, c_1, alpha_trb, omega_c_r)
+            F_trb = i_omega_c*c_trb(V, As, c_1, alpha_trb, alpha_con, omega_c_r)
 
             ! Set upt the Q matrix
 

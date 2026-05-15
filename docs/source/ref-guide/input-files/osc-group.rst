@@ -173,6 +173,13 @@ available:
    Scaling factor for the turbulent mixing length (see the
    :math:`\alphatrb` entry in the :ref:`osc-physics-switches` section)
 
+.. nml:option:: alpha_con
+   :type: real
+   :default: 1
+
+   Exponent in the turbulent viscosity reduction factor (see the
+   :math:`\alphacon` entry in the :ref:`osc-physics-switches` section)
+
 .. nml:option:: inertia_norm
    :type: string
    :default: 'BOTH'

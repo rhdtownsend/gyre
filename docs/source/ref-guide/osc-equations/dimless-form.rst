@@ -345,3 +345,6 @@ the corresponding namelist options.
      - Scaling factor for the turbulent mixing length. Set to the
        convective mixing length to include the turbulent damping term
        (see the :ref:`osc-conv` section), and to 0 to ignore the term
+   * - :math:`\alphacon`
+     - :nml:option:`alpha_con`
+     - Exponent in turbulent viscosity reduction factor (see the :ref:`osc-conv` section)
