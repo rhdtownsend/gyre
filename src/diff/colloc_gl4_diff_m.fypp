@@ -47,8 +47,8 @@ module colloc_gl4_diff_m
    real(RD), parameter :: D_12 = sqrt(3._RD)/6._RD
    real(RD), parameter :: D_21 = -sqrt(3._RD)/6._RD
 
-   real(RD), parameter :: B_1 = 1._RD/4._RD
-   real(RD), parameter :: B_2 = 1._RD/4._RD
+   real(RD), parameter :: HALF_B_1 = 0.25_RD
+   real(RD), parameter :: HALF_B_2 = 0.25_RD
 
    #:for S in DTYPE_SUFFIXES
 
@@ -200,7 +200,7 @@ contains
 
                R_3 = MATMUL(R_2, R_1)
 
-               R_1 = b_1*R_1 - B_1*D_12*R_3 + B_2*R_2
+               R_1 = HALF_B_1*R_1 - HALF_B_1*D_12*R_3 + HALF_B_2*R_2
 
                ! Assemble the difference equations
 

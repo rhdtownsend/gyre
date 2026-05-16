@@ -40,7 +40,7 @@ module colloc_gl2_diff_m
 
    real(RD), parameter :: C_1 = 0.5_RD
 
-   real(RD), parameter :: B_1 = 1._RD/2._RD
+   real(RD), parameter :: HALF_B_1 = 0.5_RD
 
    #:for S in DTYPE_SUFFIXES
 
@@ -169,7 +169,7 @@ contains
 
             associate (n_e => ${N_E}$)
 
-               call this%eq(1)%eval_A_t(st, this%dx*B_1, E_t(:n_e,:))
+               call this%eq(1)%eval_A_t(st, HALF_B_1*this%dx, E_t(:n_e,:))
 
                do concurrent (j = 1:n_e)
                   E_t(n_e+1:,j) = E_t(:n_e,j)
