@@ -38,7 +38,7 @@ CRMATH ?= yes
 
 # Enable portable math for bit-for-bit reproducibility (with a
 # possible performance penalty)
-PORTABLE ?= no
+PORTABLE ?= yes
 
 # Use IEEE fortran features
 IEEE ?= yes
