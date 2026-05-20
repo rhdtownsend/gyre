@@ -3,7 +3,7 @@
 # Build reference files for polytropes
 
 import numpy as np
-import h5py as h5
+import h5py
 
 # Write a file in GYRE's summary format
 
@@ -11,19 +11,22 @@ def write_file (file, l, n, omega) :
 
     # Write the file
 
-    h5.get_config().complex_names = ('re', 'im')
+    h5py.get_config().complex_names = ('re', 'im')
 
-    f = h5.File(file, 'w')
+    with h5py.File(file, 'w') as f:
 
-    f.attrs['label'] = np.string_(' '*256)
+        type_id = h5py.h5t.TypeID.copy(h5py.h5t.C_S1)
+        type_id.set_size(256)
+        type_id.set_strpad(h5py.h5t.STR_SPACEPAD)
+        space_id = h5py.h5s.create(h5py.h5s.SCALAR)
 
-    f.create_dataset('id', data=range(1, len(omega)+1))
-    f.create_dataset('l', data=l)
-    f.create_dataset('n_pg', data=n)
-    f.create_dataset('omega', data=omega)
+        attr_id = h5py.h5a.create(f.id, 'label'.encode('ascii'), type_id, space_id)
+        attr_id.write(np.full(256, ' '.encode('ascii')))
 
-    f.close()
-
+        f.create_dataset('id', data=range(1, len(omega)+1), dtype=np.int32)
+        f.create_dataset('l', data=l)
+        f.create_dataset('n_pg', data=n)
+        f.create_dataset('omega', data=omega)
 
 # Build a reference file using analytical frequencies (from [Pek1938])
 
