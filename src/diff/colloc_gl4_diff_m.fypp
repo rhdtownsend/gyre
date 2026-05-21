@@ -192,7 +192,7 @@ contains
                   end do
                end do
 
-               R_3 = MATMUL(R_1, R_2)
+               !R_3 = MATMUL(R_1, R_2)
 
                R_2 = R_2 - D_21*R_3
 
@@ -207,7 +207,16 @@ contains
                   call trans_solve_${I}$(R_3, R_2)
                #:endif
 
-               R_3 = MATMUL(R_2, R_1)
+               do j = 1, ${N_E}$
+                  do i = 1,${N_E}$
+                     R_3(i,j) = 0._RD
+                     do k = 1,${N_E}$
+                        R_3(i,j) = R_3(i,j) + R_2(i,k)*R_1(k,j)
+                     end do
+                  end do
+               end do
+
+               !R_3 = MATMUL(R_2, R_1)
 
                R_1 = HALF_B_1*R_1 - HALF_B_1*D_12*R_3 + HALF_B_2*R_2
 
