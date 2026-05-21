@@ -153,7 +153,7 @@ ifeq ($(OMP),yes)
 endif
 
 ifeq ($(PORTABLE),yes)
-   FFLAGS += -ffp-contract=off
+   FFLAGS += -ffp-contract=off -finline-matmul-limit=0
 endif
 
 ifeq ($(SHARED),yes)
