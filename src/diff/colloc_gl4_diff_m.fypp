@@ -31,8 +31,6 @@ module colloc_gl4_diff_m
    use point_m
    use state_m
 
-   use f95_lapack
-
    use ISO_FORTRAN_ENV
 
    ! No implicit typing
