@@ -70,10 +70,8 @@ contains
             df_dx = deriv_spline_${S}$_(x, f, df_dx_a, df_dx_b)
          case('FINDIFF')
             df_dx = deriv_findiff_${S}$_(x, f, df_dx_a, df_dx_b)
-         #:if T == 'real(RD)'
-            case('MONO')
-               df_dx = deriv_mono_${S}$_(x, f, df_dx_a, df_dx_b)
-         #:endif
+         case('MONO')
+            df_dx = deriv_mono_${S}$_(x, f, df_dx_a, df_dx_b)
          case default
             @:ABORT('invalid deriv_type')
          end select
@@ -268,5 +266,49 @@ contains
       return
 
    end function deriv_mono_r_
+
+   !****
+
+   function deriv_mono_c_(x, f, df_dx_a, df_dx_b) result(df_dx)
+
+      real(RD), intent(in)              :: x(:)
+      complex(RD), intent(in)           :: f(:)
+      complex(RD), intent(in), optional :: df_dx_a
+      complex(RD), intent(in), optional :: df_dx_b
+      complex(RD)                       :: df_dx(SIZE(x))
+
+      real(RD), allocatable :: df_dx_a_re
+      real(RD), allocatable :: df_dx_a_im
+      real(RD), allocatable :: df_dx_b_re
+      real(RD), allocatable :: df_dx_b_im
+
+      @:ASSERT_DEBUG(SIZE(x) > 1, 'array too short')
+
+      @:CHECK_BOUNDS(SIZE(f), SIZE(x))
+
+      ! Calculate the first derivatives using the Steffen (1990, A&A,
+      ! 239, 443) monontonicity preserving algorithm (applied separately
+      ! to real and imaginary parts)
+
+      if (PRESENT(df_dx_a)) then
+         df_dx_a_re = df_dx_a%re
+         df_dx_a_im = df_dx_a%im
+      end if
+
+      if (PRESENT(df_dx_b)) then
+         df_dx_b_re = df_dx_b%re
+         df_dx_b_im = df_dx_b%im
+      end if
+
+      df_dx%re = deriv_mono_r_(x, f%re, df_dx_a_re, df_dx_b_re)
+      df_dx%im = deriv_mono_r_(x, f%im, df_dx_a_im, df_dx_b_im)
+
+      ! Finish
+
+      ! Finish
+
+      return
+
+   end function deriv_mono_c_
 
 end module deriv_m
