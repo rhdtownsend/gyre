@@ -153,7 +153,7 @@ ifeq ($(OMP),yes)
 endif
 
 ifeq ($(PORTABLE),yes)
-   FFLAGS += -ffp-contract=off -finline-matmul-limit=0
+   FFLAGS += -ffp-contract=off -finline-matmul-limit=0 -fno-expensive-optimizations -fno-tree-loop-vectorize
 endif
 
 ifeq ($(SHARED),yes)
