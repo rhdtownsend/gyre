@@ -548,8 +548,8 @@ contains
 
          ! Set up interpolating functions
 
-         ci_eps_rho = cubic_interp_ct(omega, eps_rho, 'SPLINE')
-         ci_eps_T = cubic_interp_ct(omega, eps_T, 'SPLINE')
+         ci_eps_rho = cubic_interp_ct(omega, eps_rho, 'MONO')
+         ci_eps_T = cubic_interp_ct(omega, eps_T, 'MONO')
 
       end associate
 
