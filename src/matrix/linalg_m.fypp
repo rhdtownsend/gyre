@@ -366,6 +366,8 @@ contains
             ${T}$    :: piv_row_B(SIZE(B_t, 1))
             ${T}$    :: alpha
             ${T}$    :: beta
+            ${T}$    :: S
+            integer :: k
 
             @:CHECK_BOUNDS(SIZE(A_t, 2), ${N}$)
             @:CHECK_BOUNDS(SIZE(B_t, 2), ${N}$)
@@ -434,8 +436,15 @@ contains
 
                backsub_loop: do i = n-1, 1, -1
 
+!                  do j = 1, SIZE(B_t, 1)
+!                     B_t(j,i) = (B_t(j,i) - SUM(A_t(i+1:n,i)*B_t(j,i+1:n)))/A_t(i,i)
+!                  end do
                   do j = 1, SIZE(B_t, 1)
-                     B_t(j,i) = (B_t(j,i) - SUM(A_t(i+1:n,i)*B_t(j,i+1:n)))/A_t(i,i)
+                     S = 0._RD
+                     do k = i+1, n
+                        S = S + A_t(k,i)*B_t(j,k)
+                     end do
+                     B_t(j,i) = (B_t(j,i) - S)/A_t(i,i)
                   end do
 
                end do backsub_loop
