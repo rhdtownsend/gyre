@@ -64,8 +64,8 @@ export IEEE
 
 # General make settings
 
-SH = /bin/bash
-MAKEFLAGS += --no-print-directory
+export SH = /bin/bash
+export MAKEFLAGS += --no-print-directory
 
 # Paths
 
