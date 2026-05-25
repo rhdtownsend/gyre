@@ -265,14 +265,20 @@ def main():
         metavar="ABS",
         help="Absolute tolerance for float/complex comparisons.",
     )
+    parser.add_argument(
+        "--quiet", "-q",
+        action="store_true",
+        help="Suppress all output; use the exit code to determine equivalence.",
+    )
     args = parser.parse_args()
 
     diffs = []
     with h5py.File(args.file1, "r") as f1, h5py.File(args.file2, "r") as f2:
         compare_groups("/", f1, f2, args.relative, args.absolute, diffs)
 
-    for d in diffs:
-        print(d)
+    if not args.quiet:
+        for d in diffs:
+            print(d)
 
     return 1 if diffs else 0
 
