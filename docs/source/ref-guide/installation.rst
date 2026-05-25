@@ -68,6 +68,12 @@ Compile and install GYRE using the :command:`make` utility:
 Test
 ----
 
+.. note::
+
+   The testing infrastructure uses Python, in particular the
+   :py:mod:`h5py` module. You may need to install this module using
+   :command:`pip install h5py`.
+
 To check that GYRE has compiled correctly and gives reasonable
 results, you can run the calculation test suite via the command
 

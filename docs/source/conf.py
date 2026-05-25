@@ -177,7 +177,8 @@ email_automode = True
 intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy', None),
     'astropy': ('https://docs.astropy.org/en/latest', None),
-    'pygyre': ('https://pygyre.readthedocs.io/en/latest', None)
+    'pygyre': ('https://pygyre.readthedocs.io/en/latest', None),
+    'h5py': ('https://docs.h5py.org/en/stable/', None)
 }
 intersphinx_disabled_reftypes = ["std:doc"]
 

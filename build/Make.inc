@@ -145,8 +145,9 @@ ifeq ($(DEBUG),yes)
              -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
              -finline-limit=0 -fbacktrace
 else
-   FFLAGS += -O2 -fno-backtrace -g
+   FFLAGS += -O3 -ftree-vectorize -fno-backtrace -g
    ifeq ($(PORTABLE),yes)
+      FFLAGS += -ffp-contract=off
       ifeq ($(shell uname -s),Darwin)
          FFLAGS += -march=armv8.2-a
       else
@@ -155,10 +156,6 @@ else
    else
       FFLAGS += -march=native
    endif
-endif
-
-ifeq ($(PORTABLE),yes)
-   FFLAGS += -ffp-contract=off
 endif
 
 ifeq ($(OMP),yes)
