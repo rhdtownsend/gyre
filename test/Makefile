@@ -7,6 +7,10 @@ SUBDIRS=ad nad tides
 
 # Rules
 
+ifneq ($(PORTABLE),yes)
+   $(warning Warning: PORTABLE is not set to "yes", some tests may fail)
+endif
+
 test :
 	@for DIR in ${SUBDIRS}; do \
             make -C $${DIR}; \
