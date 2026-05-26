@@ -145,7 +145,7 @@ ifeq ($(DEBUG),yes)
              -Wall -Wno-unused-dummy-argument -Wno-maybe-uninitialized \
              -finline-limit=0 -fbacktrace
 else
-   FFLAGS += -O3 -ftree-vectorize -fno-backtrace -g
+   FFLAGS += -O3 -fno-backtrace -g
    ifeq ($(PORTABLE),yes)
       FFLAGS += -ffp-contract=off
       ifeq ($(shell uname -s),Darwin)
