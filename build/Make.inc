@@ -5,7 +5,7 @@
 # Checks
 #########
 
-ifeq ($(shell uname -s),Darwin)
+ifeq ($(shell uname -sm),Darwin arm64)
    MINIMUM_VERSION := 26.5.1
 else 
    MINIMUM_VERSION := 26.3.2
