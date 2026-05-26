@@ -1,4 +1,4 @@
 ad_matrix_solver,exec. time (s)
-BANDED,3.19
-CYCLIC,2.39
-ROWPP,0.99
+BANDED,2.64
+CYCLIC,2.05
+ROWPP,0.84
