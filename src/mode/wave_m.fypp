@@ -410,7 +410,7 @@ contains
 
             l_e = this%cx%l_e(Omega_rot, this%st)
 
-            S = (U*(y_2 + y_3)*CONJG(y_1) + y_3*CONJG(y_4 + (l_e + 1._RD)*y_3))/c_1**2 * pt%x**(2*l_e+1._RD)
+            S = (U*(y_2 + y_3)*CONJG(y_1) + y_3*CONJG(y_4 + (l_e + 1._RD)*y_3))/c_1**2 * pow(pt%x, 2*l_e+1._RD)
 
          end associate
 
@@ -1347,7 +1347,7 @@ contains
                @:ABORT('unable to evaluate U_D at vacuum point')
             end select
 
-            dzeta_dx =  (-abs(y_1)**2*U_D - abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2 * pt%x**(2._RD*l_i)
+            dzeta_dx =  (-abs(y_1)**2*U_D - abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2 * pow(pt%x, 2._RD*l_i)
 
          else
 
@@ -1358,7 +1358,7 @@ contains
 
                if (pt%x /= 0._RD) then
                   dzeta_dx = (abs(y_2)**2*U*V_2*pt%x**2/Gamma_1 + abs(y_1)**2*U*As - &
-                     abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2 * pt%x**(2._RD*l_i)
+                     abs(y_4 + (l_e+1._RD)*y_3)**2)/c_1**2 * pow(pt%x, 2._RD*l_i)
                else
                   dzeta_dx = 0._RD
                end if
