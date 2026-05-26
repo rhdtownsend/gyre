@@ -5,7 +5,11 @@
 # Checks
 #########
 
-MINIMUM_VERSION := 26.3.2
+ifeq ($(shell uname -s),Darwin)
+   MINIMUM_VERSION := 26.5.1
+else 
+   MINIMUM_VERSION := 26.3.2
+endif
 
 ifneq ($(MAKECMDGOALS),clean)
 
