@@ -58,6 +58,7 @@ module ${P}$_ad_eqns_m
       private
       procedure, public :: eval_A
       procedure, public :: eval_A_t
+      procedure, public :: eval_b
       procedure, public :: eval_C
       procedure, public :: eval_C_t
    end type ${P}$_ad_eqns_t
@@ -235,6 +236,26 @@ contains
       return
 
    end subroutine eval_A_t
+
+   !****
+
+   subroutine eval_b(this, st, b)
+
+      class(${P}$_ad_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)        :: st
+      real(RD), intent(out)              :: b(:)
+
+      @:CHECK_BOUNDS(SIZE(b, 1), this%n_e)
+
+      ! Evaluate the inhomogeneous vector
+
+      b = 0._RD
+
+      ! Finish
+
+      return
+
+   end subroutine eval_b
 
    !****
 
