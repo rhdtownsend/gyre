@@ -168,8 +168,6 @@ contains
             ${T}$   :: R_3(${N_E}$,${N_E}$)
             integer :: j
 
-            integer :: i, k
-
             @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
             @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
 
@@ -183,16 +181,7 @@ contains
                call this%eq(1)%eval_A_t(st, this%dx, R_1)
                call this%eq(2)%eval_A_t(st, this%dx, R_2)
 
-               do j = 1, ${N_E}$
-                  do i = 1,${N_E}$
-                     R_3(i,j) = 0._RD
-                     do k = 1,${N_E}$
-                        R_3(i,j) = R_3(i,j) + R_1(i,k)*R_2(k,j)
-                     end do
-                  end do
-               end do
-
-               !R_3 = MATMUL(R_1, R_2)
+               R_3 = MATMUL(R_1, R_2)
 
                R_2 = R_2 - D_21*R_3
 
@@ -207,16 +196,7 @@ contains
                   call trans_solve_${I}$(R_3, R_2)
                #:endif
 
-               do j = 1, ${N_E}$
-                  do i = 1,${N_E}$
-                     R_3(i,j) = 0._RD
-                     do k = 1,${N_E}$
-                        R_3(i,j) = R_3(i,j) + R_2(i,k)*R_1(k,j)
-                     end do
-                  end do
-               end do
-
-               !R_3 = MATMUL(R_2, R_1)
+               R_3 = MATMUL(R_2, R_1)
 
                R_1 = HALF_B_1*R_1 - HALF_B_1*D_12*R_3 + HALF_B_2*R_2
 
