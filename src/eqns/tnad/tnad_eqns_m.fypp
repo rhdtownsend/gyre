@@ -216,16 +216,17 @@ contains
 
    !****
 
-   subroutine eval_A(this, st, del, A)
+   subroutine eval_A(this, st, del, A, f)
 
       class(${P}$_tnad_eqns_t), intent(in) :: this
       class(state_ct), intent(in)          :: st
       real(RD), intent(in)                 :: del
       complex(RD), intent(out)             :: A(:,:)
+      complex(RD), intent(out), optional   :: f(:)
 
-      ! Evaluate the tranposed Jacobian matrix
+      ! Evaluate the Jacobian matrix and inhomogeneous vector
 
-      call this%eval_A_t(st, del, A)
+      call this%eval_A_t(st, del, A, f)
 
       A = TRANSPOSE(A)
 
@@ -237,12 +238,13 @@ contains
 
    !****
 
-   subroutine eval_A_t(this, st, del, A_t)
+   subroutine eval_A_t(this, st, del, A_t, f)
 
       class(${P}$_tnad_eqns_t), intent(in) :: this
       class(state_ct), intent(in)          :: st
       real(RD), intent(in)                 :: del
       complex(RD), intent(out)             :: A_t(:,:)
+      complex(RD), intent(out), optional   :: f(:)
 
       complex(RD) :: omega_c
       real(RD)    :: omega_c_r
@@ -263,7 +265,8 @@ contains
       @:CHECK_BOUNDS(SIZE(A_t, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(A_t, 2), this%n_e)
 
-      ! Evaluate the transposed Jacobian matrix
+      ! Evaluate the transposed Jacobian matrix and inhomogeneous
+      ! vector
 
       associate ( &
          omega => st%omega, &
@@ -344,6 +347,10 @@ contains
 
          #:include 'A_t.inc'
 
+         ! Set up the inhomogeneous vector
+
+         if (PRESENT(f)) f = 0._RD
+
       end associate
 
       ! Finish
@@ -354,15 +361,16 @@ contains
 
    !****
 
-   subroutine eval_C(this, st, C)
+   subroutine eval_C(this, st, C, f)
 
       class(${P}$_tnad_eqns_t), intent(in) :: this
       class(state_ct), intent(in)          :: st
       complex(RD), intent(out)             :: C(:,:)
+      complex(RD), intent(out), optional   :: f(:)
 
-      ! Evaluate the match matrix
+      ! Evaluate the match matrix and inhomogeneous vector
 
-      call this%eval_C_t(st, C)
+      call this%eval_C_t(st, C, f)
 
       C = TRANSPOSE(C)
 
@@ -374,11 +382,12 @@ contains
 
    !****
 
-   subroutine eval_C_t(this, st, C_t)
+   subroutine eval_C_t(this, st, C_t, f)
 
       class(${P}$_tnad_eqns_t), intent(in) :: this
       class(state_ct), intent(in)          :: st
       complex(RD), intent(out)             :: C_t(:,:)
+      complex(RD), intent(out), optional   :: f(:)
 
       complex(RD) :: omega_c
       complex(RD) :: lambda
@@ -386,7 +395,7 @@ contains
       @:CHECK_BOUNDS(SIZE(C_t, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(C_t, 2), this%n_e)
 
-      ! Evaluate the transposed match matrix
+      ! Evaluate the transposed match matrix and inhomogeneous vector
 
       associate ( &
          omega => st%omega, &
@@ -412,6 +421,10 @@ contains
          ! Set up the matrix
 
          #:include 'C_t.inc'
+
+         ! Set up the inhomogeneous vector
+
+         if (PRESENT(f)) f = 0._RD
 
       end associate
 
