@@ -125,16 +125,17 @@ contains
 
       !****
 
-      subroutine eval_E_t_${S}$_(this, st, E_t, scl)
+      subroutine eval_E_t_${S}$_(this, st, E_t, scl, F)
 
          class(colloc_gl2_diff_${S}$), intent(in) :: this
          class(state_${S}$), intent(in)           :: st
          ${T}$, contiguous, intent(out)           :: E_t(:,:)
          type(ext_${S}$), intent(out)             :: scl
+         ${T}$, contiguous, intent(out), optional :: F(:)
 
          ! Evaluate the transposed difference equations
 
-         call this%eval_E_t_(st, E_t, scl)
+         call this%eval_E_t_(st, E_t, scl, F)
 
          ! Finish
 
@@ -150,17 +151,22 @@ contains
          ['6', 6], &
          ['gen', 'this%n_e']]
 
-         subroutine eval_E_t_${I}$_${S}$_(this, st, E_t, scl)
+         subroutine eval_E_t_${I}$_${S}$_(this, st, E_t, scl, F)
 
             class(colloc_gl2_diff_${S}$), intent(in) :: this
             class(state_${S}$), intent(in)           :: st
             ${T}$, contiguous, intent(out)           :: E_t(:,:)
             type(ext_${S}$), intent(out)             :: scl
+            ${T}$, contiguous, intent(out), optional :: F(:)
 
             integer :: j
 
             @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
             @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
+
+            if (PRESENT(F)) then
+               @:CHECK_BOUNDS(SIZE(F), this%n_e)
+            end if
 
             ! Evaluate the transposed difference equations
 
@@ -169,7 +175,7 @@ contains
 
             associate (n_e => ${N_E}$)
 
-               call this%eq(1)%eval_A_t(st, HALF_B_1*this%dx, E_t(:n_e,:))
+               call this%eq(1)%eval_A_t(st, HALF_B_1*this%dx, E_t(:n_e,:), F)
 
                do concurrent (j = 1:n_e)
                   E_t(n_e+1:,j) = E_t(:n_e,j)

@@ -131,16 +131,17 @@ contains
 
       !****
 
-      subroutine eval_E_t_${S}$_(this, st, E_t, scl)
+      subroutine eval_E_t_${S}$_(this, st, E_t, scl, F)
 
          class(colloc_gl4_diff_${S}$), intent(in) :: this
          class(state_${S}$), intent(in)           :: st
          ${T}$, contiguous, intent(out)           :: E_t(:,:)
          type(ext_${S}$), intent(out)             :: scl
+         ${T}$, contiguous, intent(out), optional :: F(:)
 
          ! Evaluate the transposed difference equations
 
-         call this%eval_E_t_(st, E_t, scl)
+         call this%eval_E_t_(st, E_t, scl, F)
 
          ! Finish
 
@@ -156,12 +157,13 @@ contains
          ['6', 6], &
          ['gen', 'this%n_e']]
 
-         subroutine eval_E_t_${I}$_${S}$_(this, st, E_t, scl)
+         subroutine eval_E_t_${I}$_${S}$_(this, st, E_t, scl, F)
 
             class(colloc_gl4_diff_${S}$), intent(in) :: this
             class(state_${S}$), intent(in)           :: st
             ${T}$, contiguous, intent(out)           :: E_t(:,:)
             type(ext_${S}$), intent(out)             :: scl
+            ${T}$, contiguous, intent(out), optional :: F(:)
 
             ${T}$   :: R_1(${N_E}$,${N_E}$)
             ${T}$   :: R_2(${N_E}$,${N_E}$)
@@ -171,6 +173,10 @@ contains
             @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
             @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
 
+            if (PRESENT(F)) then
+               @:CHECK_BOUNDS(SIZE(F), this%n_e)
+            end if
+
             ! Evaluate the transposed difference equations
 
             ! Algorithm note: this is Gauss-Legendre collocation
@@ -178,8 +184,12 @@ contains
 
             associate (n_e => ${N_E}$)
 
-               call this%eq(1)%eval_A_t(st, this%dx, R_1)
-               call this%eq(2)%eval_A_t(st, this%dx, R_2)
+               if (PRESENT(F)) then
+                  @:ABORT('not yet implemented')
+               else
+                  call this%eq(1)%eval_A_t(st, this%dx, R_1)
+                  call this%eq(2)%eval_A_t(st, this%dx, R_2)
+               end if
 
                R_3 = MATMUL(R_1, R_2)
 
