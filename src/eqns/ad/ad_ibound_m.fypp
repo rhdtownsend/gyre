@@ -131,15 +131,23 @@ contains
 
    !****
 
-   subroutine eval_B(this, st, B)
+   subroutine eval_B(this, st, B, f)
 
       class(${P}$_ad_ibound_t), intent(in) :: this
       class(state_rt), intent(in)          :: st
       real(RD), intent(out)                :: B(:,:)
+      real(RD), intent(out), optional      :: f(:)
 
-      ! Evaluate the inner boundary conditions
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
+
+      ! Evaluate the inner boundary condition matrix and inhomogeneous
+      ! vector
 
       call this%eval_B_(st, B)
+
+      if (PRESENT(f)) f = 0._RD
 
       ! Finish
 
@@ -162,7 +170,7 @@ contains
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
-      ! Evaluate the inner boundary conditions (regular-enforcing)
+      ! Evaluate the inner boundary condition matrix (regular-enforcing)
 
       associate( &
          omega => st%omega, &
@@ -201,7 +209,7 @@ contains
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
-      ! Evaluate the inner boundary conditions (zero radial
+      ! Evaluate the inner boundary condition matrix (zero radial
       ! displacement/gravity)
 
       associate( &
@@ -233,8 +241,8 @@ contains
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
-      ! Evaluate the inner boundary conditions (zero
-      ! horizontal displacement/gravity)
+      ! Evaluate the inner boundary condition matrix (zero horizontal
+      ! displacement/gravity)
 
       associate( &
          omega => st%omega, &
