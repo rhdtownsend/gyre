@@ -43,13 +43,15 @@ module cyclic_sysmtx_m
 
       type, extends(sysmtx_${S}$) :: cyclic_sysmtx_${S}$
          private
-         ${T}$, allocatable                          :: G_t(:,:,:)  ! Left factor blocks
-         ${T}$, allocatable                          :: U_t(:,:,:)  ! Middle factor blocks
-         ${T}$, allocatable                          :: E_t(:,:,:)  ! Right factor blocks
-         ${T}$, allocatable                          :: R_t(:,:)    ! Reduced system matrix
-         real(RD), allocatable                       :: rscl(:,:) ! Row scalings for pivoting
-         type(ext_${S}$), allocatable                :: scl(:)    ! Block scales
-         ${T}$, allocatable                          :: D(:)      ! Diagonal products
+         ${T}$, allocatable                          :: G_t(:,:,:) ! Left factor blocks
+         ${T}$, allocatable                          :: U_t(:,:,:) ! Middle factor blocks
+         ${T}$, allocatable                          :: E_t(:,:,:) ! Right factor blocks
+         ${T}$, allocatable                          :: F(:,:)     ! Right-hand side vectors
+         ${T}$, allocatable                          :: D(:)       ! Diagonal products
+         ${T}$, allocatable                          :: R_t(:,:)   ! Reduced system matrix
+         ${T}$, allocatable                          :: F_R(:)     ! Reduced right-hand side vector
+         real(RD), allocatable                       :: rscl(:,:)  ! Row scalings for pivoting
+         type(ext_${S}$), allocatable                :: scl(:)     ! Block scales
          procedure(build_and_factor_${S}$_), pointer :: build_and_factor_
       contains
          private
@@ -63,7 +65,7 @@ module cyclic_sysmtx_m
       ! Interfaces
 
       abstract interface
-         subroutine build_and_factor_${S}$_(this, st, bd_i, bd_o, de, full, f)
+         subroutine build_and_factor_${S}$_(this, st, bd_i, bd_o, de, set_blk, set_F, set_D)
             use forum_m, only: RD
             use state_m
             use bound_m
@@ -76,8 +78,9 @@ module cyclic_sysmtx_m
             class(bound_${S}$), intent(in)            :: bd_i
             class(bound_${S}$), intent(in)            :: bd_o
             class(diff_element_${S}$), intent(in)     :: de(:)
-            logical, intent(in), optional             :: full
-            ${T}$, intent(inout), optional            :: f(:)
+            logical, intent(in), optional             :: set_blk
+            logical, intent(in), optional             :: set_F
+            logical, intent(in), optional             :: set_D
          end subroutine build_and_factor_${S}$_
       end interface
 
@@ -114,12 +117,15 @@ contains
          allocate(sm%G_t(n_e,n_e,n))
          allocate(sm%U_t(n_e,n_e,n))
          allocate(sm%E_t(n_e,n_e,n))
+
+         allocate(sm%F(n_e,n))
+         allocate(sm%D(n))
+
          allocate(sm%R_t(2*n_e,2*n_e))
+         allocate(sm%F_R(2*n_e))
 
          allocate(sm%scl(n))
          allocate(sm%rscl(n_e,n))
-
-         allocate(sm%D(n))
 
          sm%n = n
          sm%n_e = n_e
@@ -150,29 +156,36 @@ contains
          ['6_3', 6, 3, 3], &
          ['gen', 'this%n_e', 'this%n_i', 'this%n_o']]
 
-         subroutine build_and_factor_${I}$_${S}$_(this, st, bd_i, bd_o, de, full, f)
+         subroutine build_and_factor_${I}$_${S}$_(this, st, bd_i, bd_o, de, set_blk, set_F, set_D)
 
             class(cyclic_sysmtx_${S}$), intent(inout) :: this
             class(state_${S}$), intent(in)            :: st
             class(bound_${S}$), intent(in)            :: bd_i
             class(bound_${S}$), intent(in)            :: bd_o
             class(diff_element_${S}$), intent(in)     :: de(:)
-            logical, intent(in), optional             :: full
-            ${T}$, intent(inout), optional            :: f(:)
+            logical, intent(in), optional             :: set_blk
+            logical, intent(in), optional             :: set_F
+            logical, intent(in), optional             :: set_D
 
-            logical  :: full_
+            logical  :: set_blk_
+            logical  :: set_F_
+            logical  :: set_D_
             integer  :: l
             integer  :: k
             ${T}$    :: E_t(2*this%n_e,this%n_e)
             ${T}$    :: M_t(3*this%n_e,2*this%n_e)
-            ${T}$    :: piv_row_M(3*this%n_e)
+            ${T}$    :: F(2*this%n_e)
             integer  :: i
             real(RD) :: scl
             integer  :: s
             real(RD) :: rscl(2*this%n_e)
             integer  :: j
             real(RD) :: piv
+            real(RD) :: piv_tmp
             integer  :: i_piv
+            ${T}$    :: piv_row_M(3*this%n_e)
+            real(RD) :: rscl_tmp
+            ${T}$    :: F_tmp
             ${T}$    :: alpha
             ${T}$    :: beta
             ${T}$    :: B_i(this%n_i,this%n_e)
@@ -180,23 +193,37 @@ contains
             ${T}$    :: R_t(2*this%n_e,2*this%n_e)
             ${T}$    :: piv_row_R(2*this%n_e)
 
-            if(PRESENT(full)) then
-               full_ = full
+            if (PRESENT(set_blk)) then
+               set_blk_ = set_blk
             else
-               full_ = .FALSE.
+               set_blk_ = .FALSE.
             end if
 
-            if (PRESENT(f)) then
-               @:CHECK_BOUNDS(SIZE(f), 2*this%n_e)
+            if (PRESENT(set_D)) then
+               set_D_ = set_D
+            else
+               set_D_ = .FALSE.
+            end if
+
+            if (PRESENT(set_F)) then
+               set_F_ = set_F
+            else
+               set_F_ = .FALSE.
             end if
 
             ! Build and factorize the sysmtx using the cyclic version
             ! of the structured LU algorithm by Wright (1994,
-            ! Numer. Math., 67, 521)
+            ! Numer. Math., 67, 521). The set_* flags control what is
+            ! stored back into the sysmtx arrays:
+            !
+            !  set_blk -- set G_t, U_t, E_t and R_t, for use in backsubstitution
+            !  set_F   -- set F and F_R, for use in backsubstitution with non-zero
+            !             right-hand side
+            !  set_D   -- set D, for use in determinant evaluation
 
             associate (n => this%n, n_e => ${N_E}$, n_i => ${N_I}$, n_o => ${N_O}$)
 
-               !$OMP PARALLEL PRIVATE(l, E_t, M_t, rscl)
+               !$OMP PARALLEL PRIVATE(l, E_t, M_t, F, rscl)
 
                ! First, build and factorize the sliced matrix
                ! (eqn. 2.4 of Wright 1994, and subsequent steps)
@@ -209,19 +236,27 @@ contains
 
                   if (l >= n) exit level_loop
 
-                  !$OMP DO PRIVATE(i, s, scl, piv, i_piv, piv_row_M, alpha, beta) SCHEDULE(static)
+                  !$OMP DO PRIVATE(i, s, scl, piv, piv_tmp, i_piv, piv_row_M, rscl_tmp, F_tmp, alpha, beta) SCHEDULE(static)
                   block_loop : do k = 1, n-l, 2*l
 
                      ! Prepare submatrices
 
                      if (l == 1) then
 
-                        call de(k)%df%eval_E_t(st, E_t, this%scl(k))
+                        if (set_F_) then
+                           call de(k)%df%eval_E_t(st, E_t, this%scl(k), F(:n_e))
+                        else
+                           call de(k)%df%eval_E_t(st, E_t, this%scl(k))
+                        end if
 
                         M_t(:n_e,:n_e) = E_t(:n_e,:)
                         M_t(n_e+1:2*n_e,:n_e) = E_t(n_e+1:,:)
 
-                        call de(k+l)%df%eval_E_t(st, E_t, this%scl(k+l))
+                        if (set_F_) then
+                           call de(k+l)%df%eval_E_t(st, E_t, this%scl(k+l), F(n_e+1:))
+                        else
+                           call de(k+l)%df%eval_E_t(st, E_t, this%scl(k+l))
+                        end if
 
                         M_t(n_e+1:2*n_e,n_e+1:) = E_t(:n_e,:)
                         M_t(2*n_e+1:,n_e+1:) = E_t(n_e+1:,:)
@@ -250,6 +285,11 @@ contains
                         M_t(2*n_e+1:,:n_e) = 0._RD
                         M_t(2*n_e+1:,n_e+1:) = this%E_t(:,:,k+l)
 
+                        if (set_F_) then
+                           F(:n_e) = this%F(:,k)
+                           F(n_e+1:) = this%F(:,k+l)
+                        end if
+
                         rscl(:n_e) = this%rscl(:,k)
                         rscl(n_e+1:) = this%rscl(:,k+l)
 
@@ -258,7 +298,9 @@ contains
                      ! Reduce U (the middle block colum of M) to upper
                      ! triangular form
 
-                     this%D(k+l) = 1._RD
+                     if (set_D_) then
+                        this%D(k+l) = 1._RD
+                     end if
 
                      reduce_loop: do j = 1, n_e
 
@@ -268,9 +310,9 @@ contains
                         i_piv = j
 
                         do i = j, 2*n_e
-                           scl = abs(M_t(n_e+j,i))*rscl(i)
-                           if (scl > piv) then
-                              piv = scl
+                           piv_tmp = abs(M_t(n_e+j,i))*rscl(i)
+                           if (piv_tmp > piv) then
+                              piv = piv_tmp
                               i_piv = i
                            end if
                         end do
@@ -286,11 +328,19 @@ contains
                            M_t(:,i_piv) = M_t(:,j)
                            M_t(:,j) = piv_row_M
 
-                           scl = rscl(i_piv)
+                           rscl_tmp = rscl(i_piv)
                            rscl(i_piv) = rscl(j)
-                           rscl(j) = scl
+                           rscl(j) = rscl_tmp
 
-                           this%D(k+l) = -this%D(k+l)
+                           if (set_F_) then
+                              F_tmp = F(i_piv)
+                              F(i_piv) = F(j)
+                              F(j) = F_tmp
+                           end if
+
+                           if (set_D_) then
+                              this%D(k+l) = -this%D(k+l)
+                           end if
 
                         else
 
@@ -305,17 +355,22 @@ contains
                         do concurrent(i = j+1:2*n_e) local(beta)
                            beta = alpha*M_t(n_e+j,i)
                            M_t(:,i) = M_t(:,i) - beta*piv_row_M
+                           if (set_F_) then
+                              F(i) = F(i) - beta*F(j)
+                           end if
                         end do
 
                         ! Update the diagonal product
 
-                        this%D(k+l) = this%D(k+l)*piv_row_M(n_e+j)
+                        if (set_D_) then
+                           this%D(k+l) = this%D(k+l)*piv_row_M(n_e+j)
+                        end if
 
                      end do reduce_loop
 
-                     ! If necessary, store data
+                     ! Store blocks
 
-                     if (full_) then
+                     if (set_blk_) then
 
                         this%G_t(:,:,k+l) = M_t(:n_e,:n_e)
                         this%U_t(:,:,k+l) = M_t(n_e+1:2*n_e,:n_e)
@@ -330,17 +385,26 @@ contains
 
                      this%rscl(:,k) = rscl(n_e+1:)
 
+                     if (set_F_) then
+                        this%F(:,k+l) = F(:n_e)
+                        this%F(:,k) = F(n_e+1:)
+                     end if
+
                   end do block_loop
                   !$OMP END DO
 
-                  ! If this is the first level and n is odd, we
-                  ! need to evaluate E_l and E_r for the final
-                  ! block
+                  ! If this is the first level and n is odd, we need
+                  ! to evaluate E_l and E_r (and possibly F) for the
+                  ! final block
 
                   !$OMP SINGLE
                   if (l == 1 .AND. MOD(n, 2) /= 0) then
 
-                     call de(n)%df%eval_E_t(st, E_t, this%scl(n))
+                     if (set_F_) then
+                        call de(n)%df%eval_E_t(st, E_t, this%scl(n), F(:n_e))
+                     else
+                        call de(n)%df%eval_E_t(st, E_t, this%scl(n))
+                     end if
 
                      this%G_t(:,:,n) = E_t(:n_e,:)
                      this%E_t(:,:,n) = E_t(n_e+1:,:)
@@ -354,6 +418,10 @@ contains
                      end do
 
                      this%rscl(:,n) = 1._RD/this%rscl(:,n)
+
+                     if (set_F_) then
+                        this%F(:,n) = F(:n_e)
+                     end if
 
                   end if
                   !$OMP END SINGLE
@@ -374,8 +442,14 @@ contains
                R_t(:n_e,:n_e) = this%G_t(:,:,1)
                R_t(n_e+1:,:n_e) = this%E_t(:,:,1)
 
-               call bd_i%eval_B(st, B_i)
-               call bd_o%eval_B(st, B_o)
+               if (set_F_) then
+                  F(n_i+1:n_i+n_e) = this%F(:,1)
+                  call bd_i%eval_B(st, B_i, F(:n_i))
+                  call bd_o%eval_B(st, B_o, F(n_e+n_i+1:))
+               else
+                  call bd_i%eval_B(st, B_i)
+                  call bd_o%eval_B(st, B_o)
+               end if
 
                R_t(:n_e,n_e+1:n_e+n_i) = TRANSPOSE(B_i)
                R_t(n_e+1:,n_e+1:n_e+n_i) = 0._RD
@@ -397,7 +471,9 @@ contains
 
                ! Reduce it to upper-triangular form
 
-               this%D(1) = 1._RD
+               if (set_D_) then
+                  this%D(1) = 1._RD
+               end if
 
                reduce_R_loop: do j = 1, 2*n_e
 
@@ -415,7 +491,9 @@ contains
                   end do
 
                   if (piv == 0._RD) then
-                     this%D(1) = 0._RD
+                     if (set_D_) then
+                        this%D(1) = 0._RD
+                     end if
                      cycle reduce_R_loop
                   end if
 
@@ -432,12 +510,14 @@ contains
                      rscl(i_piv) = rscl(j)
                      rscl(j) = scl
 
-                     this%D(1) = -this%D(1)
+                     if (set_F_) then
+                        F_tmp = F(i_piv)
+                        F(i_piv) = F(j)
+                        F(j) = F_tmp
+                     end if
 
-                     if (PRESENT(f)) then
-                        alpha = f(i_piv)
-                        f(i_piv) = f(j)
-                        f(j) = alpha
+                     if (set_D_) then
+                        this%D(1) = -this%D(1)
                      end if
 
                   else
@@ -453,24 +533,28 @@ contains
                   do concurrent(i = j+1:2*n_e) local(beta)
                      beta = alpha*R_t(j,i)
                      R_t(:,i) = R_t(:,i) - beta*piv_row_R
+                     if (set_F_) then
+                        F(i) = F(i) - beta*F(j)
+                     end if
                   end do
-
-                  if (PRESENT(f)) then
-                     do concurrent(i = j+1:2*n_e) local(beta)
-                        beta = alpha*R_t(j,i)
-                        f(i) = f(i) - beta*f(j)
-                     end do
-                  end if
 
                   ! Update the diagonal product
 
-                  this%D(1) = this%D(1)*piv_row_R(j)
+                  if (set_D_) then
+                     this%D(1) = this%D(1)*piv_row_R(j)
+                  end if
 
                end do reduce_R_loop
 
-               ! Store R
+               ! Store blocks
 
-               this%R_t = R_t
+               if (set_blk_) then
+                  this%R_t = R_t
+               end if
+
+               if (set_F_) then
+                  this%F_R = F
+               end if
 
             end associate
 
@@ -484,15 +568,14 @@ contains
 
       !****
 
-      subroutine backsub_${S}$_(this, u_bound, u)
+      subroutine backsub_${S}$_(this, u_bound, u, use_F)
 
          class(cyclic_sysmtx_${S}$), intent(in) :: this
          ${T}$, intent(in)                      :: u_bound(:)
          ${T}$, intent(out)                     :: u(:)
+         logical, intent(in), optional          :: use_F
 
-         ${T}$, parameter :: ZERO = 0._RD
-         ${T}$, parameter :: ONE = 1._RD
-
+         logical :: use_F_
          integer :: l
          integer :: k
          integer :: i_a
@@ -505,8 +588,16 @@ contains
          @:CHECK_BOUNDS(SIZE(u_bound), 2*this%n_e)
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
 
+         if (PRESENT(use_F)) then
+            use_F_ = use_F
+         else
+            use_F_ = .FALSE.
+         end if
+
          ! Given the solution vector u_bound at the boundaries,
-         ! backsubstitute to reconstruct the full solution vector u
+         ! backsubstitute to reconstruct the full solution vector u.
+         ! The flag use_F indicates whether to use right-hand side
+         ! data in F; otherwise, F is assumed to be zero
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
@@ -547,7 +638,11 @@ contains
                            beta = beta + this%G_t(j,i,k+l)*u_1(j) + this%E_t(j,i,k+l)*u_k1(j)
                         end do
 
-                        u_k(i) = -beta/this%U_t(i,i,k+l)
+                        if (use_F_) then
+                           u_k(i) = (this%F(i,k+l)-beta)/this%U_t(i,i,k+l)
+                        else
+                           u_k(i) = -beta/this%U_t(i,i,k+l)
+                        end if
 
                      end do
 
@@ -580,7 +675,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(st, bd_i, bd_o, de)
+         call this%build_and_factor_(st, bd_i, bd_o, de, set_D=.TRUE.)
 
          ! Evaluate the determinant as the product of the diagonal
          ! elements
@@ -620,7 +715,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(st, bd_i, bd_o, de, full=.TRUE.)
+            call this%build_and_factor_(st, bd_i, bd_o, de, set_blk=.TRUE.)
 
             ! Find the (most) singular element on the diagonal of the
             ! boundary matrix
@@ -665,47 +760,34 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, v, u)
+      subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, u)
 
          class(cyclic_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
          class(bound_${S}$), intent(in)            :: bd_i
          class(bound_${S}$), intent(in)            :: bd_o
          class(diff_element_${S}$), intent(in)     :: de(:)
-         ${T}$, intent(in)                         :: v(:)
          ${T}$, intent(out)                        :: u(:)
 
-         ${T}$   :: f(2*this%n_e)
          integer :: i
          ${T}$   :: u_bound(2*this%n_e)
          ${T}$   :: beta
          integer :: j
 
-         @:CHECK_BOUNDS(SIZE(v), this%n_e)
-
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
 
-         ! Evaluate the solution vector v of the inhomogeneous linear
-         ! system S u = v. It is assumed that the right-hand side
-         ! vector v has non-zero components in only the n_i first and
-         ! n_o last rows (corresponding to the inner and outer
-         ! boundary conditions). These components are supplied in
-         ! v(:n_i) and v(n_i+1:), respectively.
+         ! Evaluate the solution vector u of the inhomogeneous linear
+         ! system S u = F
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i)
 
-            ! Set up the right-hand side vector for the boundary matrix
-
-            f(:this%n_e) = 0._RD
-            f(this%n_e+1:) = v
-
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(st, bd_i, bd_o, de, full=.TRUE., f=f)
+            call this%build_and_factor_(st, bd_i, bd_o, de, set_blk=.TRUE., set_F=.TRUE.)
 
             ! Use backsubstitution to solve for u_bound
 
-            u_bound(2*n_e) = f(2*n_e)/this%R_t(2*n_e,2*n_e)
+            u_bound(2*n_e) = this%F_R(2*n_e)/this%R_t(2*n_e,2*n_e)
 
             do i = 2*n_e-1, 1, -1
 
@@ -715,7 +797,7 @@ contains
                   beta = beta + this%R_t(j,i)*u_bound(j)
                end do
 
-               u_bound(i) = (f(i) - beta)/this%R_t(i,i)
+               u_bound(i) = (this%F_R(i) - beta)/this%R_t(i,i)
 
             end do
 
@@ -723,7 +805,7 @@ contains
 
          ! Backsubstitute to reconstruct the full solution vector
 
-         call this%backsub_(u_bound, u)
+         call this%backsub_(u_bound, u, use_F=.TRUE.)
 
          ! Finish
 
@@ -749,7 +831,11 @@ contains
          call hi%write_dset('U_t', this%U_t)
          call hi%write_dset('E_t', this%E_t)
 
+         call hi%write_dset('F', this%F)
+         call hi%write_dset('D', this%D)
+
          call hi%write_dset('R_t', this%R_t)
+         call hi%write_dset('F_R', this%R_t)
 
          #:if T == 'complex(RD)'
 

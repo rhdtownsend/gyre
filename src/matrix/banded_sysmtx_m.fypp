@@ -45,6 +45,7 @@ module banded_sysmtx_m
       type, extends(sysmtx_${S}$) :: banded_sysmtx_${S}$
          private
          ${T}$, allocatable           :: A_b(:,:)  ! Banded matrix
+         ${T}$, allocatable           :: F(:,:)    ! Right-hand side vectors
          integer, allocatable         :: ipiv(:)   ! Pivot indices
          ${T}$, allocatable           :: scl_i(:)  ! Inner boundary scales
          ${T}$, allocatable           :: scl_o(:)  ! Outer boundary scales
@@ -100,6 +101,9 @@ contains
          sm%n_u = n_e + n_o - 1
 
          allocate(sm%A_b(2*sm%n_l+sm%n_u+1,n_e*(n+1)))
+
+         allocate(sm%F(n_e,n))
+
          allocate(sm%ipiv(n_e*(n+1)))
 
          allocate(sm%scl_i(n_i))
@@ -197,14 +201,16 @@ contains
 
       !****
 
-      subroutine build_and_factor_${S}$_(this, st, bd_i, bd_o, de)
+      subroutine build_and_factor_${S}$_(this, st, bd_i, bd_o, de, set_F)
 
          class(banded_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
          class(bound_${S}$), intent(in)            :: bd_i
          class(bound_${S}$), intent(in)            :: bd_o
          class(diff_element_${S}$), intent(in)     :: de(:)
+         logical, intent(in), optional             :: set_F
 
+         logical :: set_F_
          ${T}$   :: B_i(this%n_i,this%n_e)
          ${T}$   :: B_o(this%n_i,this%n_e)
          ${T}$   :: E_t(2*this%n_e,this%n_e)
@@ -212,6 +218,12 @@ contains
          ${T}$   :: scl
          integer :: k
          integer :: info
+
+         if (PRESENT(set_F)) then
+            set_F_ = set_F
+         else
+            set_F_ = .FALSE.
+         end if
 
          ! Build and factorize the sysmtx_t
 
@@ -238,7 +250,11 @@ contains
 
             !$OMP DO PRIVATE(E_t, i, scl)
             do k = 1, n
-               call de(k)%df%eval_E_t(st, E_t, this%scl(k))
+               if (set_F_) then
+                  call de(k)%df%eval_E_t(st, E_t, this%scl(k), this%F(:,k))
+               else
+                  call de(k)%df%eval_E_t(st, E_t, this%scl(k))
+               end if
                do i = 1, n_e
                   scl = MAXVAL(abs(E_t(:,i)))
                   this%scl(k) = this%scl(k)*scl
@@ -381,41 +397,32 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, v, u)
+      subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, u)
 
          class(banded_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
          class(bound_${S}$), intent(in)            :: bd_i
          class(bound_${S}$), intent(in)            :: bd_o
          class(diff_element_${S}$), intent(in)     :: de(:)
-         ${T}$, intent(in)                         :: v(:)
          ${T}$, intent(out)                        :: u(:)
 
          ${T}$   :: B(this%n_e*(this%n+1),1)
          integer :: info
 
-         @:CHECK_BOUNDS(SIZE(v), this%n_e)
-
          @:CHECK_BOUNDS(SIZE(u), this%n_e*(this%n+1))
 
          ! Build and factorize the sysmtx_t
 
-         call this%build_and_factor_(st, bd_i, bd_o, de)
+         call this%build_and_factor_(st, bd_i, bd_o, de, set_F=.TRUE.)
 
          ! Evaluate the solution vector u of the inhomogeneous linear
-         ! system S u = v. It is assumed that the right-hand side vector v
-         ! has non-zero components in only the n_i first and n_o last rows
-         ! (corresponding to the inner and outer boundary
-         ! conditions). These components are supplied in v_i and v_o,
-         ! respectively.
+         ! system S u = F
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_l => this%n_l, n_u => this%n_u)
 
             ! Set up the banded system
 
-            B(:n_i,1) = v(:n_i)/this%scl_i
-            B(n_i+1:n_i+n*n_e,1) = 0._RD
-            B(n_i+n*n_e+1:,1) = v(n_i+1:)/this%scl_o
+            B = RESHAPE(this%F, [n_e*(n+1),1])
 
             ! Solve for u
 

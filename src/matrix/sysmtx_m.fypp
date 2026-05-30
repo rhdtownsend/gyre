@@ -75,7 +75,7 @@ module sysmtx_m
             ${T}$, intent(out)                    :: u(:)
          end subroutine solve_hom_${S}$_
 
-         subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, v, u)
+         subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, u)
             use forum_m, only: RD
             use state_m
             use bound_m
@@ -88,7 +88,6 @@ module sysmtx_m
             class(bound_${S}$), intent(in)        :: bd_i
             class(bound_${S}$), intent(in)        :: bd_o
             class(diff_element_${S}$), intent(in) :: de(:)
-            ${T}$, intent(in)                     :: v(:)
             ${T}$, intent(out)                    :: u(:)
          end subroutine solve_inhom_${S}$_
 
