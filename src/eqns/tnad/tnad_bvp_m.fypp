@@ -73,8 +73,7 @@ module tnad_bvp_m
    end interface tnad_bvp_t
 
    interface wave_t
-      module procedure wave_t_hom_
-      module procedure wave_t_inhom_
+      module procedure wave_t_
    end interface wave_t
 
    ! Access specifiers
@@ -179,7 +178,7 @@ contains
 
    !****
 
-   function wave_t_hom_(bp, sm, st, id, chi, n_iter) result(wv)
+   function wave_t_(bp, sm, st, id, chi, n_iter) result(wv)
 
       class(tnad_bvp_t), intent(in)   :: bp
       class(sysmtx_ct), intent(inout) :: sm
@@ -191,6 +190,8 @@ contains
 
       complex(RD) :: y(6,bp%n)
       integer     :: j
+      complex(RD) :: y_c(6,bp%n)
+      complex(RD) :: Q(6,6)
 
       ! Calculate the homogeneous solution vector
 
@@ -200,74 +201,6 @@ contains
       do j = 1, bp%n
          call bp%tr(j)%transform(st, y(:,j))
       end do
-
-      ! Construct the wave_t
-
-      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
-
-      ! Finish
-
-      return
-
-   end function wave_t_hom_
-
-   !****
-
-   function wave_t_inhom_(bp, sm, st, z_i, z_o, id, chi, n_iter) result(wv)
-
-      class(tnad_bvp_t), intent(in)   :: bp
-      class(sysmtx_ct), intent(inout) :: sm
-      type(state_ct), intent(in)      :: st
-      complex(RD), intent(in)         :: z_i(:)
-      complex(RD), intent(in)         :: z_o(:)
-      integer, intent(in)             :: id
-      real(RD), intent(in)            :: chi
-      integer, intent(in)             :: n_iter
-      type(wave_t)                    :: wv
-
-      complex(RD) :: y(6,bp%n)
-      integer     :: j
-
-      @:CHECK_BOUNDS(SIZE(z_i), bp%n_i)
-      @:CHECK_BOUNDS(SIZE(z_o), bp%n_o)
-
-      ! Calculate the inhomogeneous solution vector
-
-      call bp%solve_inhom(sm, st, z_i, z_o, y)
-
-      !$OMP PARALLEL DO
-      do j = 1, bp%n
-         call bp%tr(j)%transform(st, y(:,j))
-      end do
-
-      ! Construct the wave_t
-
-      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
-
-      ! Finish
-
-      return
-
-   end function wave_t_inhom_
-
-   !****
-
-   function wave_t_y_(bp, st, y, id, chi, n_iter) result(wv)
-
-      class(tnad_bvp_t), intent(in) :: bp
-      type(state_ct), intent(in)    :: st
-      complex(RD), intent(in)       :: y(:,:)
-      integer, intent(in)           :: id
-      real(RD), intent(in)          :: chi
-      integer, intent(in)           :: n_iter
-      type(wave_t)                  :: wv
-
-      integer     :: j
-      complex(RD) :: y_c(6,bp%n)
-      complex(RD) :: Q(6,6)
-
-      @:CHECK_BOUNDS(SIZE(y, 1), bp%n_e)
-      @:CHECK_BOUNDS(SIZE(y, 2), bp%n)
 
       ! Transform the variables to canonical form
 
@@ -357,6 +290,6 @@ contains
 
       end subroutine eval_Q_
 
-   end function wave_t_y_
+   end function wave_t_
 
 end module tnad_bvp_m
