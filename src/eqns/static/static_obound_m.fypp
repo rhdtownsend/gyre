@@ -1,0 +1,183 @@
+! Module  : static_obound_m
+! Purpose : static-tide adiabatic boundary conditions
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module static_obound_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_m
+   use context_m
+   use model_m
+   use model_util_m
+   use osc_par_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(bound_rt) :: static_obound_t
+      private
+      type(context_t), pointer    :: cx => null()
+      real(RD)                    :: U
+      procedure(eval_B_), pointer :: eval_B_
+   contains
+      private
+      procedure, public :: eval_B
+   end type static_obound_t
+
+   ! Interfaces
+
+   interface
+      subroutine eval_B_(this, st, B, f)
+         use forum_m, only: RD
+         use state_m
+         import static_obound_t
+         implicit none (type, external)
+         class(static_obound_t), intent(in) :: this
+         class(state_rt), intent(in)        :: st
+         real(RD), intent(out)              :: B(:,:)
+         real(RD), intent(out), optional    :: f(:)
+      end subroutine eval_B_
+   end interface
+
+   interface static_obound_t
+      module procedure static_obound_t_
+   end interface static_obound_t
+
+   ! Access specifiers
+
+   public :: static_obound_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function static_obound_t_(cx, os_p) result(bd)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      type(static_obound_t)                :: bd
+
+      class(model_t), pointer :: ml
+      type(point_t)           :: pt
+
+      ! Construct the static_obound_t
+
+      ml => cx%model()
+      pt = cx%point_o()
+
+      select case (os_p%outer_bound)
+      case ('VACUUM')
+         bd%eval_B_ => eval_B_vacuum_
+      case default
+         @:ABORT('invalid outer_bound')
+      end select
+
+      bd%cx => cx
+
+      ! Store structure coefficients
+
+      call check_model(ml, [I_U])
+
+      bd%U = ml%coeff(I_U, pt)
+
+      ! Other initializations
+
+      bd%n_b = 1
+
+      bd%n_e = 2
+
+      ! Finish
+
+      return
+
+   end function static_obound_t_
+
+   !****
+
+   subroutine eval_B(this, st, B, f)
+
+      class(static_obound_t), intent(in) :: this
+      class(state_rt), intent(in)        :: st
+      real(RD), intent(out)              :: B(:,:)
+      real(RD), intent(out), optional    :: f(:)
+
+      ! Evaluate the outer boundary condition matrix and inhomogeneous
+      ! vector
+
+      call this%eval_B_(st, B, f)
+
+      ! Finish
+
+      return
+
+   end subroutine eval_B
+
+   !****
+
+   subroutine eval_B_vacuum_(this, st, B, f)
+
+      class(static_obound_t), intent(in) :: this
+      class(state_rt), intent(in)        :: st
+      real(RD), intent(out)              :: B(:,:)
+      real(RD), intent(out), optional    :: f(:)
+
+      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
+
+      ! Evaluate the outer boundary condition matrix (vacuum)
+
+      associate ( &
+         y_T_1 => st%y_T_1, &
+         U => this%U, &
+         l_e => this%cx%l)
+
+         ! Set up the matrix
+
+         #:include 'OB_vacuum.inc'
+
+         ! Set up the inhomogeneous vector
+
+         if (PRESENT(f)) then
+         #:include 'OG_vacuum.inc'
+         end if
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval_B_vacuum_
+
+end module static_obound_m

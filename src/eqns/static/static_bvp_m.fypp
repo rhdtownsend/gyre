@@ -1,0 +1,192 @@
+! Module  : static_bvp_m
+! Purpose : static-tide bounary value problem solver
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module static_bvp_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_m
+   use bvp_m
+   use context_m
+   use diff_element_m
+   use diff_factory_m
+   use eqns_m
+   use grid_m
+   use model_m
+   use mode_par_m
+   use num_par_m
+   use osc_par_m
+   use point_m
+   use state_m
+   use sysmtx_m
+   use wave_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(bvp_rt) :: static_bvp_t
+      private
+      type(context_t), pointer :: cx => null()
+      type(grid_t)             :: gr
+      type(mode_par_t)         :: md_p
+      type(num_par_t)          :: nm_p
+      type(osc_par_t)          :: os_p
+   end type static_bvp_t
+
+   ! Interfaces
+
+   interface static_bvp_t
+      module procedure static_bvp_t_
+   end interface static_bvp_t
+
+   interface wave_t
+      module procedure wave_t_
+   end interface wave_t
+
+   ! Access specifiers
+
+   public :: static_bvp_t
+   public :: wave_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function static_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
+
+      use static_eqns_m
+      use static_ibound_m
+      use static_obound_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(grid_t), intent(in)             :: gr
+      type(mode_par_t), intent(in)         :: md_p
+      type(num_par_t), intent(in)          :: nm_p
+      type(osc_par_t), intent(in)          :: os_p
+      type(static_bvp_t)                   :: bp
+
+      class(bound_rt), allocatable       :: bd_i
+      class(bound_rt), allocatable       :: bd_o
+      integer                            :: j
+      type(diff_element_rt), allocatable :: de(:)
+
+      ! Construct the static_bvp type
+
+      ! Initialize the boundary conditions
+
+      bd_i = static_ibound_t(cx, os_p)
+      bd_o = static_obound_t(cx, os_p)
+
+      ! Initialize the difference equations
+
+      allocate(de(gr%n-1))
+
+      !$OMP PARALLEL DO
+      do j = 1, gr%n-1
+         allocate(de(j)%df, SOURCE=diff_rt(eqns_factory_, gr%pt(j), gr%pt(j+1), nm_p))
+      end do
+
+      ! Initialize the bvp_t
+
+      bp%bvp_rt = bvp_rt(bd_i, bd_o, de, nm_p)
+
+      ! Other initializations
+
+      bp%cx => cx
+      bp%gr = gr
+
+      bp%md_p = md_p
+      bp%nm_p = nm_p
+      bp%os_p = os_p
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine eqns_factory_(pt, eq)
+
+         type(point_t), intent(in)                :: pt(:)
+         class(eqns_rt), allocatable, intent(out) :: eq(:)
+
+         ! Initialize the equations
+
+         ! Workaround: call static_eqns_t_1_ instead of static_eqns_t due to
+         ! gfortran 13 bug
+
+         eq = static_eqns_t_1_(cx, pt, os_p)
+
+         ! Finish
+
+         return
+
+      end subroutine eqns_factory_
+
+   end function static_bvp_t_
+
+   !****
+
+   function wave_t_(bp, sm, st, id) result(wv)
+
+      class(static_bvp_t), intent(in) :: bp
+      class(sysmtx_rt), intent(inout) :: sm
+      type(state_rt), intent(in)      :: st
+      integer, intent(in)             :: id
+      type(wave_t)                    :: wv
+
+      real(RD)       :: y(2,bp%n)
+      type(state_ct) :: st_c
+      complex(RD)    :: y_c(6,bp%n)
+
+      ! Calculate the inhomogeneous solution vector
+
+      call bp%solve_inhom(sm, st, y)
+
+      ! Convert to canonical form
+
+      st_c = state_ct(CMPLX(st%omega, KIND=RD), st%omega)
+
+      y_c(1,:) = -y(1,:)
+      y_c(2,:) = -y(1,:)
+      y_c(3,:) = y(1,:)
+      y_c(4,:) = y(2,:)
+      y_c(5,:) = 0._RD
+      y_c(6,:) = 0._RD
+
+      ! Construct the wave_t
+
+      wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, 0._RD, 1, static=.TRUE.)
+
+      ! Finish
+
+      return
+
+   end function wave_t_
+
+end module static_bvp_m
