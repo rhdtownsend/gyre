@@ -45,7 +45,7 @@ module banded_sysmtx_m
       type, extends(sysmtx_${S}$) :: banded_sysmtx_${S}$
          private
          ${T}$, allocatable           :: A_b(:,:)  ! Banded matrix
-         ${T}$, allocatable           :: F(:,:)    ! Right-hand side vectors
+         ${T}$, allocatable           :: F(:)      ! Right-hand side vector
          integer, allocatable         :: ipiv(:)   ! Pivot indices
          ${T}$, allocatable           :: scl_i(:)  ! Inner boundary scales
          ${T}$, allocatable           :: scl_o(:)  ! Outer boundary scales
@@ -102,7 +102,7 @@ contains
 
          allocate(sm%A_b(2*sm%n_l+sm%n_u+1,n_e*(n+1)))
 
-         allocate(sm%F(n_e,n))
+         allocate(sm%F(n_e*(n+1)))
 
          allocate(sm%ipiv(n_e*(n+1)))
 
@@ -212,8 +212,11 @@ contains
 
          logical :: set_F_
          ${T}$   :: B_i(this%n_i,this%n_e)
-         ${T}$   :: B_o(this%n_i,this%n_e)
+         ${T}$   :: g_i(this%n_i)
+         ${T}$   :: B_o(this%n_o,this%n_e)
+         ${T}$   :: g_o(this%n_o)
          ${T}$   :: E_t(2*this%n_e,this%n_e)
+         ${T}$   :: f(this%n_e)
          integer :: i
          ${T}$   :: scl
          integer :: k
@@ -231,27 +234,44 @@ contains
 
             ! Build the boundary blocks, and row-scale to unity
 
-            call bd_i%eval_B(st, B_i)
+            if (set_F_) then
+               call bd_i%eval_B(st, B_i, g_i)
+            else
+               call bd_i%eval_B(st, B_i)
+            end if
+
             do i = 1, n_i
                scl = MAXVAL(abs(B_i(i,:)))
                this%scl_i(i) = scl
                call this%set_row_(i, 1, B_i(i,:)/scl)
+               if (set_F_) then
+                  this%F(i) = -g_i(i)/scl
+               end if
             end do
-            call bd_o%eval_B(st, B_o)
+
+            if (set_F_) then
+               call bd_o%eval_B(st, B_o, g_o)
+            else
+               call bd_o%eval_B(st, B_o)
+            end if
+
             do i = 1, n_o
                scl = MAXVAL(abs(B_o(i,:)))
                this%scl_o(i) = scl
                call this%set_row_(n_e*n+n_i+i, n_e*n+1, B_o(i,:)/scl)
+               if (set_F_) then
+                  this%F(n_e*n+n_i+1) = -g_o(i)/scl
+               end if
             end do
 
             ! Build the equation blocks, and row-scale to unity
 
             !$OMP PARALLEL
 
-            !$OMP DO PRIVATE(E_t, i, scl)
+            !$OMP DO PRIVATE(E_t, F, i, scl)
             do k = 1, n
                if (set_F_) then
-                  call de(k)%df%eval_E_t(st, E_t, this%scl(k), this%F(:,k))
+                  call de(k)%df%eval_E_t(st, E_t, this%scl(k), f)
                else
                   call de(k)%df%eval_E_t(st, E_t, this%scl(k))
                end if
@@ -259,6 +279,9 @@ contains
                   scl = MAXVAL(abs(E_t(:,i)))
                   this%scl(k) = this%scl(k)*scl
                   call this%set_row_(n_e*(k-1)+n_i+i, n_e*(k-1)+1, E_t(:,i)/scl)
+                  if (set_F_) then
+                     this%F(n_e*(k-1)+n_i+i) = F(i)/scl
+                  end if
                end do
             end do
             !$OMP END DO
@@ -419,8 +442,6 @@ contains
          ! system S u = F
 
          associate (n => this%n, n_e => this%n_e, n_i => this%n_i, n_l => this%n_l, n_u => this%n_u)
-
-            ! Set up the banded system
 
             B = RESHAPE(this%F, [n_e*(n+1),1])
 
