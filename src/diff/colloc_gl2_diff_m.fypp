@@ -177,6 +177,8 @@ contains
 
                call this%eq(1)%eval_A_t(st, HALF_B_1*this%dx, E_t(:n_e,:), F)
 
+               F = -2._RD*F
+
                do concurrent (j = 1:n_e)
                   E_t(n_e+1:,j) = E_t(:n_e,j)
                   E_t(j,j) = E_t(j,j) + 1._RD
