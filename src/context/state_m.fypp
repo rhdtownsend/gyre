@@ -31,11 +31,13 @@ module state_m
 
    type :: state_rt
       real(RD) :: omega = 0._RD
+      real(RD) :: y_T_1 = 0._RD
    end type state_rt
 
    type :: state_ct
       complex(RD) :: omega = 0._RD
       real(RD)    :: omega_r = 0._RD
+      real(RD)    :: y_T_1 = 0._RD
    end type state_ct
 
    ! Access specifiers
