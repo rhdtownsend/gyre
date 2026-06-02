@@ -28,12 +28,9 @@ module nad_bvp_m
    use context_m
    use diff_element_m
    use grid_m
-   use model_m
    use mode_par_m
-   use nad_factory_m
    use num_par_m
    use osc_par_m
-   use point_m
    use state_m
    use sysmtx_m
    use trans_m
