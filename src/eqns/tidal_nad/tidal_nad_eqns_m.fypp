@@ -1,0 +1,242 @@
+! Module  : tidal_nad_eqns_m
+! Purpose : tidal nonadiabatic differential equations
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module tidal_nad_eqns_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use context_m
+   use eqns_m
+   use linalg_m
+   use math_m
+   use model_m
+   use model_util_m
+   use osc_par_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(eqns_ct) :: tidal_nad_eqns_t
+      private
+      type(context_t), pointer    :: cx => null()
+      class(eqns_ct), allocatable :: eq
+      real(RD)                    :: x
+   contains
+      private
+      procedure, public :: eval_A
+      procedure, public :: eval_A_t
+      procedure, public :: eval_C
+      procedure, public :: eval_C_t
+   end type tidal_nad_eqns_t
+
+   ! Interfaces
+
+   interface tidal_nad_eqns_t
+      module procedure tidal_nad_eqns_t_0_
+      module procedure tidal_nad_eqns_t_1_
+   end interface tidal_nad_eqns_t
+
+   ! Access specifiers
+
+   public :: tidal_nad_eqns_t
+   public :: tidal_nad_eqns_t_0_
+   public :: tidal_nad_eqns_t_1_
+
+   ! Default access
+
+   private
+
+contains
+
+   function tidal_nad_eqns_t_0_(cx, pt, os_p) result(eq)
+
+      use nad_factory_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt
+      type(osc_par_t), intent(in)          :: os_p
+      type(tidal_nad_eqns_t)               :: eq
+
+      ! Construct the tidal_nad_eqns type
+
+      eq%cx => cx
+
+      eq%eq = nad_eqns_t(cx, pt, os_p)
+
+      eq%x = pt%x
+
+      ! Finish
+
+      return
+
+   end function tidal_nad_eqns_t_0_
+
+   !****
+
+   function tidal_nad_eqns_t_1_(cx, pt, os_p) result(eq)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt(:)
+      type(osc_par_t), intent(in)          :: os_p
+      type(tidal_nad_eqns_t)               :: eq(SIZE(pt))
+
+      integer :: j
+
+      ! Construct the array of tidal_nad_eqns types
+
+      do j = 1, SIZE(pt)
+         eq(j) = tidal_nad_eqns_t(cx, pt(j), os_p)
+      end do
+
+      ! Finish
+
+      return
+
+   end function tidal_nad_eqns_t_1_
+
+   !****
+
+   subroutine eval_A(this, st, del, A, f)
+
+      class(tidal_nad_eqns_t), intent(in) :: this
+      class(state_ct), intent(in)         :: st
+      real(RD), intent(in)                :: del
+      complex(RD), intent(out)            :: A(:,:)
+      complex(RD), intent(out), optional  :: f(:)
+
+      ! Evaluate the Jacobian matrix and inhomogeneous vector
+
+      call this%eval_A_t(st, del, A, f)
+
+      A = TRANSPOSE(A)
+
+      ! Finish
+
+      return
+
+   end subroutine eval_A
+
+   !****
+
+   subroutine eval_A_t(this, st, del, A_t, f)
+
+      class(tidal_nad_eqns_t), intent(in) :: this
+      class(state_ct), intent(in)         :: st
+      real(RD), intent(in)                :: del
+      complex(RD), intent(out)            :: A_t(:,:)
+      complex(RD), intent(out), optional  :: f(:)
+
+      @:CHECK_BOUNDS(SIZE(A_t, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A_t, 2), this%n_e)
+
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_e)
+      end if
+
+      ! Evaluate the transposed Jacobian matrix and inhomogeneous
+      ! vector
+
+      associate ( &
+         omega => st%omega, &
+         y_T_1 => st%y_T_1, &
+         x => this%x, &
+         l => this%cx%l)
+
+         ! Set up the matrix
+
+         call this%eq%eval_A_t(st, del, A_t)
+
+         ! Set up the inhomogeneous vector
+
+         @:ASSERT_DEBUG(y_T_1 /= 0._RD, 'invalid y_T_1')
+
+         if (PRESENT(f)) then
+            f(1) = 0._RD
+            f(2) = -y_T_1*l*x**(l-1)
+            f(3) = 0._RD
+            f(4) = 0._RD
+            f(5) = 0._RD
+            f(6) = 0._RD
+         end if
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval_A_t
+
+   !****
+
+   subroutine eval_C(this, st, C, f)
+
+      class(tidal_nad_eqns_t), intent(in) :: this
+      class(state_ct), intent(in)         :: st
+      complex(RD), intent(out)            :: C(:,:)
+      complex(RD), intent(out), optional  :: f(:)
+
+      ! Evaluate the match matrix and inhomogeneous vector
+
+      call this%eval_C_t(st, C, f)
+
+      C = TRANSPOSE(C)
+
+      ! Finish
+
+      return
+
+   end subroutine eval_C
+
+   !****
+
+   subroutine eval_C_t(this, st, C_t, f)
+
+      class(tidal_nad_eqns_t), intent(in) :: this
+      class(state_ct), intent(in)         :: st
+      complex(RD), intent(out)            :: C_t(:,:)
+      complex(RD), intent(out), optional  :: f(:)
+
+      @:CHECK_BOUNDS(SIZE(C_t, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(C_t, 2), this%n_e)
+
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_e)
+      end if
+
+      ! Evaluate the match matrix and inhomogeneous vector
+
+      call this%eq%eval_C_t(st, C_t, f)
+
+      ! Finish
+
+      return
+
+   end subroutine eval_C_t
+
+end module tidal_nad_eqns_m
