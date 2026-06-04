@@ -51,13 +51,15 @@ module ad_factory_m
    ! Access specifiers
 
    public :: ad_eqns_t
-   public :: ad_eqns_t_0_
-   public :: ad_eqns_t_1_
    public :: ad_trans_t
-   public :: ad_trans_t_0_
-   public :: ad_trans_t_1_
    public :: ad_ibound_t
    public :: ad_obound_t
+   #:if defined('GFORTRAN_PR125610')
+   public :: ad_eqns_t_0_
+   public :: ad_eqns_t_1_
+   public :: ad_trans_t_0_
+   public :: ad_trans_t_1_
+   #:endif
 
    ! Default access
 

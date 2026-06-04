@@ -122,10 +122,11 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      ! Workaround: call ad_trans_t_1_ instead of ad_trans_t due to
-      ! gfortran 13 bug
-
+      #:if defined('GFORTRAN_PR125610')
       bp%tr = ad_trans_t_1_(cx, gr%pt, os_p)
+      #:else
+      bp%tr = ad_trans_t(cx, gr%pt, os_p)
+      #:endif
 
       if (os_p%quasiad_eigfuncs) then
          bp%qe = qad_eval_t(cx, gr, os_p)
@@ -148,10 +149,11 @@ contains
 
          ! Initialize the equations
 
-         ! Workaround: call ad_eqns_t_1_ instead of ad_eqns_t due to
-         ! gfortran 13 bug
-
+         #:if defined('GFORTRAN_PR125610')
          eq = ad_eqns_t_1_(cx, pt, os_p)
+         #:else
+         eq = ad_eqns_t(cx, pt, os_p)
+         #:endif
 
          ! Finish
 

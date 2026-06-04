@@ -126,10 +126,11 @@ contains
 
          ! Initialize the equations
 
-         ! Workaround: call tnad_eqns_t_1_ instead of tnad_eqns_t due
-         ! to gfortran 13 bug
-
+         #:if defined('GFORTRAN_PR125610')
          eq = tnad_eqns_t_1_(cx, pt, os_p)
+         #:else
+         eq = tnad_eqns_t(cx, pt, os_p)
+         #:endif
 
          ! Finish
 

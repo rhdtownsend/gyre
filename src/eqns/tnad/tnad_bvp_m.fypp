@@ -161,10 +161,11 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      ! Workaround: call tnad_trans_t_1_ instead of tnad_trans_t due
-      ! to gfortran 13 bug
-
+      #:if defined('GFORTRAN_PR125610')
       bp%tr = tnad_trans_t_1_(cx, gr%pt, os_p)
+      #:else
+      bp%tr = tnad_trans_t(cx, gr%pt, os_p)
+      #:endif
 
       bp%md_p = md_p
       bp%nm_p = nm_p

@@ -120,10 +120,11 @@ contains
 
          ! Initialize the equations
 
-         ! Workaround: call nad_eqns_t_1_ instead of nad_eqns_t due to
-         ! gfortran 13 bug
-
+         #:if defined('GFORTRAN_PR125610')
          eq = nad_eqns_t_1_(cx, pt, os_p)
+         #:else
+         eq = nad_eqns_t(cx, pt, os_p)
+         #:endif
 
          ! Finish
 

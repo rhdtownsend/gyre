@@ -137,10 +137,11 @@ contains
 
          ! Initialize the equations
 
-         ! Workaround: call static_eqns_t_1_ instead of static_eqns_t due to
-         ! gfortran 13 bug
-
+         #:if defined('GFORTRAN_PR125610')
          eq = static_eqns_t_1_(cx, pt, os_p)
+         #:else
+         eq = static_eqns_t(cx, pt, os_p)
+         #:endif
 
          ! Finish
 
