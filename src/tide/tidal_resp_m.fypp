@@ -43,14 +43,14 @@ module tidal_resp_m
    use point_m
    use resp_m
    use rot_par_m
-   use sad_bvp_m
    use state_m
+   use static_bvp_m
    use sysmtx_m
    use sysmtx_factory_m
    use tide_par_m
    use tidal_coeff_m
    use tidal_context_m
-   use tnad_bvp_m
+   use tidal_nad_bvp_m
    use util_m
    use wave_m
 
@@ -110,16 +110,12 @@ contains
       integer                       :: l
       integer                       :: m
       integer                       :: k
-      class(bvp_ct), allocatable    :: bp_nad
-      type(sad_bvp_t)               :: bp_sad
-      class(sysmtx_ct), allocatable :: sm_nad
-      class(sysmtx_rt), allocatable :: sm_sad
-      complex(RD)                   :: w_i_nad(3)
-      complex(RD)                   :: w_o_nad(3)
-      real(RD)                      :: w_i_sad(1)
-      real(RD)                      :: w_o_sad(1)
-      type(state_ct)                :: st_nad
-      type(state_rt)                :: st_sad
+      type(tidal_nad_bvp_t)         :: bp_tidal_nad
+      type(static_bvp_t)            :: bp_static
+      class(sysmtx_ct), allocatable :: sm_tidal_nad
+      class(sysmtx_rt), allocatable :: sm_static
+      type(state_ct)                :: st_tidal_nad
+      type(state_rt)                :: st_static
       type(wave_t)                  :: wv
       type(resp_t)                  :: rs
 
@@ -149,19 +145,24 @@ contains
 
             ! Create the bvp_t's
 
-            if (os_p%alpha_trb > 0._RD) then
-               bp_nad = tnad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
-            else
-               bp_nad = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
-            endif
+            ! if (os_p%alpha_trb > 0._RD) then
+            !    bp_nad = tnad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
+            ! else
+            !    bp_nad = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
+            ! endif
 
-            bp_sad = sad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
+            bp_tidal_nad = tidal_nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
 
-            allocate(sm_nad, SOURCE=sysmtx_ct(bp_nad%n-1, bp_nad%n_e, bp_nad%n_i, bp_nad%n_o, nm_p%nad_matrix_solver))
-            allocate(sm_sad, SOURCE=sysmtx_rt(bp_sad%n-1, bp_sad%n_e, bp_sad%n_i, bp_sad%n_o, nm_p%nad_matrix_solver))
+            bp_static = static_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
 
-            !$OMP PARALLEL DO ORDERED FIRSTPRIVATE(sm_nad, sm_sad) &
-            !$OMP PRIVATE(w_i_nad, w_o_nad, w_i_sad, w_o_sad, st_nad, st_sad, wv, rs) SCHEDULE(STATIC, 1)
+            allocate(sm_tidal_nad, SOURCE=sysmtx_ct(bp_tidal_nad%n-1, bp_tidal_nad%n_e, bp_tidal_nad%n_i, &
+               bp_tidal_nad%n_o, nm_p%nad_matrix_solver))
+
+            allocate(sm_static, SOURCE=sysmtx_rt(bp_static%n-1, bp_static%n_e, bp_static%n_i, &
+               bp_static%n_o, nm_p%nad_matrix_solver))
+
+            !$OMP PARALLEL DO ORDERED FIRSTPRIVATE(sm_tidal_nad, sm_static) &
+            !$OMP PRIVATE(st_tidal_nad, st_static, wv, rs) SCHEDULE(STATIC, 1)
             k_loop : do k = td_p%k_min, td_p%k_max
 
                !$OMP ATOMIC
@@ -175,30 +176,15 @@ contains
                   select case(tide_type(l,m,k))
                   case (DYNAMIC_TIDE, MIXED_TIDE)
 
-                     w_i_nad = 0._RD
+                     st_tidal_nad = state_ct(CMPLX(omega(k), KIND=RD), omega(k), y_T_1=y_T(l,m,k))
 
-                     w_o_nad = 0._RD
-                     w_o_nad(2) = (2*l+1)*y_T(l,m,k)
-
-                     st_nad = state_ct(CMPLX(omega(k), KIND=RD), omega(k))
-
-                     select type (bp_nad)
-                     type is (nad_bvp_t)
-                        wv = wave_t(bp_nad, sm_nad, st_nad, w_i_nad, w_o_nad, id_m, 0._RD, 1)
-                     type is (tnad_bvp_t)
-                        wv = wave_t(bp_nad, sm_nad, st_nad, w_i_nad, w_o_nad, id_m, 0._RD, 1)
-                     end select
+                     wv = wave_t(bp_tidal_nad, sm_tidal_nad, st_tidal_nad, id_m)
 
                   case (STATIC_TIDE)
 
-                     w_i_sad = 0._RD
+                     st_static = state_rt(omega(k), y_T_1=y_T(l,m,k))
 
-                     w_o_sad = 0._RD
-                     w_o_sad(1) = (2*l+1)*y_T(l,m,k)
-
-                     st_sad = state_rt(omega(k))
-
-                     wv = wave_t(bp_sad, sm_sad, st_sad, w_i_sad, w_o_sad, id_m)
+                     wv = wave_t(bp_static, sm_static, st_static, id_m)
 
                   case default
 
@@ -220,8 +206,8 @@ contains
 
             ! Clean up
 
-            deallocate(sm_nad)
-            deallocate(sm_sad)
+            deallocate(sm_tidal_nad)
+            deallocate(sm_static)
 
          end do m_loop
       end do l_loop
