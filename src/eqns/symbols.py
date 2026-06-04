@@ -18,6 +18,20 @@
 import sympy as sp
 import sympy.printing.fortran as spf
 
+# Define a printer class that handles (n,1) materices as vectors
+
+class FCodePrinterExt(spf.FCodePrinter):
+
+    def _print_MatrixElement(self, expr):
+        # SymPy matrices normally pass (name, row, col)
+        # We flatten it to a single index based on your preference
+        name = self._print(expr.parent)
+
+        if expr.parent.shape[1] == 1:
+            return f"{name}({expr.i+1})"
+        else:
+            return super()._print_MatrixElement(expr)
+
 # Declare symbols
 
 x = sp.Symbol('x')
@@ -69,6 +83,8 @@ alpha_hfl = sp.Symbol('alpha_hfl')
 alpha_egv = sp.Symbol('alpha_egv')
 alpha_thm = sp.Symbol('alpha_thm')
 
+y_T_1 = sp.Symbol('y_T_1')
+
 chi = sp.Symbol('chi')
 a_11 = sp.Symbol('a_11')
 a_12 = sp.Symbol('a_12')
@@ -112,7 +128,7 @@ class fcode_symbol(sp.Symbol):
 
 # Define the code printer
 
-printer = spf.FCodePrinter({'standard': 2008, 'source_format': 'free'})
+printer = FCodePrinterExt({'standard': 2008, 'source_format': 'free'})
 
 # Code generation routines
 
@@ -139,6 +155,20 @@ def generate_A(A, T, transpose=False, subs=[]):
         return printer.doprint(del_x*A.T, assign_to='A_t')
     else:
         return printer.doprint(del_x*A, assign_to='A')
+
+def generate_F(F, T, subs=[]):
+
+    # Transform the differential equation right-hand side vector
+
+    F = T*F
+
+    F = F.subs(fn_subs)
+
+    F = F.subs(subs)
+
+    # Convert to Fortran
+
+    return printer.doprint(del_x*F, assign_to='f')
 
 def generate_IB(IB, T, transpose=False, subs=[]):
 
@@ -184,6 +214,18 @@ def generate_OB(OB, T, transpose=False, subs=[]):
         return printer.doprint(OB.T, assign_to='B_t')
     else:
         return printer.doprint(OB, assign_to='B')
+
+def generate_G(G, T, subs=[]):
+
+    # Transform the boundary condition inhomoheneous vector
+
+    G = G.subs(fn_subs)
+
+    G = G.subs(subs)
+
+    # Convert to Fortran
+
+    return printer.doprint(G, assign_to='f')
 
 def generate_C(C, T, transpose=False, subs=[]):
 
