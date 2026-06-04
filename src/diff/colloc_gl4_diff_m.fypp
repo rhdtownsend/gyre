@@ -48,21 +48,49 @@ module colloc_gl4_diff_m
    real(RD), parameter :: HALF_B_1 = 0.25_RD
    real(RD), parameter :: HALF_B_2 = 0.25_RD
 
-   #:for S in DTYPE_SUFFIXES
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
       ! Derived-type definitions
 
       type, extends(diff_${S}$) :: colloc_gl4_diff_${S}$
          private
-         class(eqns_${S}$), allocatable      :: eq(:)
-         real(RD)                            :: dx
-         procedure(eval_E_t_${S}$_), pointer :: eval_E_t_
+         class(eqns_${S}$), allocatable            :: eq(:)
+         real(RD)                                  :: dx
+         procedure(eval_E_t_hom_${S}$_), pointer   :: eval_E_t_hom_
+         procedure(eval_E_t_inhom_${S}$_), pointer :: eval_E_t_inhom_
       contains
          private
          procedure, public :: eval_E_t => eval_E_t_${S}$_
       end type colloc_gl4_diff_${S}$
 
       ! Interfaces
+
+      interface
+
+         subroutine eval_E_t_hom_${S}$_(this, st, E_t, scl)
+            use forum_m, only: RD
+            use ext_m
+            use state_m
+            import colloc_gl4_diff_${S}$
+            class(colloc_gl4_diff_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in)           :: st
+            ${T}$, contiguous, intent(out)           :: E_t(:,:)
+            type(ext_${S}$), intent(out)             :: scl
+         end subroutine eval_E_t_hom_${S}$_
+
+         subroutine eval_E_t_inhom_${S}$_(this, st, E_t, scl, F)
+            use forum_m, only: RD
+            use ext_m
+            use state_m
+            import colloc_gl4_diff_${S}$
+            class(colloc_gl4_diff_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in)           :: st
+            ${T}$, contiguous, intent(out)           :: E_t(:,:)
+            type(ext_${S}$), intent(out)             :: scl
+            ${T}$, contiguous, intent(out)           :: F(:)
+         end subroutine eval_E_t_inhom_${S}$_
+
+      end interface
 
       interface colloc_gl4_diff_${S}$
          module procedure colloc_gl4_diff_${S}$_
@@ -114,13 +142,17 @@ contains
 
          select case(df%n_e)
          case(2)
-            df%eval_E_t_ => eval_E_t_2_${S}$_
+            df%eval_E_t_hom_ => eval_E_t_hom_2_${S}$_
+            df%eval_E_t_inhom_ => eval_E_t_inhom_2_${S}$_
          case(4)
-            df%eval_E_t_ => eval_E_t_4_${S}$_
+            df%eval_E_t_hom_ => eval_E_t_hom_4_${S}$_
+            df%eval_E_t_inhom_ => eval_E_t_inhom_4_${S}$_
          case(6)
-            df%eval_E_t_ => eval_E_t_6_${S}$_
+            df%eval_E_t_hom_ => eval_E_t_hom_6_${S}$_
+            df%eval_E_t_inhom_ => eval_E_t_inhom_6_${S}$_
          case default
-            df%eval_E_t_ => eval_E_t_gen_${S}$_
+            df%eval_E_t_hom_ => eval_E_t_hom_gen_${S}$_
+            df%eval_E_t_inhom_ => eval_E_t_inhom_gen_${S}$_
          end select
 
          ! Finish
@@ -141,7 +173,11 @@ contains
 
          ! Evaluate the transposed difference equations
 
-         call this%eval_E_t_(st, E_t, scl, F)
+         if (PRESENT(F)) then
+            call this%eval_E_t_inhom_(st, E_t, scl, F)
+         else
+            call this%eval_E_t_hom_(st, E_t, scl)
+         end if
 
          ! Finish
 
@@ -157,25 +193,25 @@ contains
          ['6', 6], &
          ['gen', 'this%n_e']]
 
-         subroutine eval_E_t_${I}$_${S}$_(this, st, E_t, scl, F)
+         !****
+
+         subroutine eval_E_t_hom_${I}$_${S}$_(this, st, E_t, scl)
 
             class(colloc_gl4_diff_${S}$), intent(in) :: this
             class(state_${S}$), intent(in)           :: st
             ${T}$, contiguous, intent(out)           :: E_t(:,:)
             type(ext_${S}$), intent(out)             :: scl
-            ${T}$, contiguous, intent(out), optional :: F(:)
 
-            ${T}$   :: R_1(${N_E}$,${N_E}$)
-            ${T}$   :: R_2(${N_E}$,${N_E}$)
-            ${T}$   :: R_3(${N_E}$,${N_E}$)
-            integer :: j
+            ${T}$   :: A_1(${N_E}$,${N_E}$)
+            ${T}$   :: A_2(${N_E}$,${N_E}$)
+            ${T}$   :: A_12(${N_E}$,${N_E}$)
+            ${T}$   :: P_22(${N_E}$,${N_E}$)
+            ${T}$   :: K_1(${N_E}$,${N_E}$)
+            ${T}$   :: K_2(${N_E}$,${N_E}$)
+            integer :: i
 
             @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
             @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
-
-            if (PRESENT(F)) then
-               @:CHECK_BOUNDS(SIZE(F), this%n_e)
-            end if
 
             ! Evaluate the transposed difference equations
 
@@ -184,40 +220,37 @@ contains
 
             associate (n_e => ${N_E}$)
 
-               if (PRESENT(F)) then
-                  @:ABORT('not yet implemented')
-               else
-                  call this%eq(1)%eval_A_t(st, this%dx, R_1)
-                  call this%eq(2)%eval_A_t(st, this%dx, R_2)
-               end if
+               call this%eq(1)%eval_A_t(st, this%dx, A_1)
+               call this%eq(2)%eval_A_t(st, this%dx, A_2)
 
-               R_3 = MATMUL(R_1, R_2)
+               A_12 = MATMUL(A_1, A_2)
 
-               R_2 = R_2 - D_21*R_3
+               K_1 = A_1
 
-               R_3 = -D_12*D_21*R_3
-               do concurrent(j = 1:n_e)
-                  R_3(j,j) = R_3(j,j) + 1._RD
+               K_2 = A_2 - D_21*A_12
+
+               P_22 = - D_21*D_12*A_12
+
+               do concurrent(i = 1:n_e)
+                  P_22(i,i) = P_22(i,i) + 1._RD
                end do
 
                #:if I == 'gen'
-                  call trans_solve(R_3, R_2)
+                  call trans_solve(P_22, K_2)
                #:else
-                  call trans_solve_${I}$(R_3, R_2)
+                  call trans_solve_${I}$(P_22, K_2)
                #:endif
 
-               R_3 = MATMUL(R_2, R_1)
-
-               R_1 = HALF_B_1*R_1 - HALF_B_1*D_12*R_3 + HALF_B_2*R_2
+               K_1 = K_1 - D_12*MATMUL(K_2, A_1)
 
                ! Assemble the difference equations
 
-               E_t(:n_e,:) = R_1
-               E_t(n_e+1:,:) = R_1
+               E_t(:n_e,:) = HALF_B_1*K_1 + HALF_B_2*K_2
+               E_t(n_e+1:,:) = E_t(:n_e,:)
 
-               do concurrent(j = 1:n_e)
-                  E_t(j,j) = E_t(j,j) + 1._RD
-                  E_t(n_e+j,j) = E_t(n_e+j,j) - 1._RD
+               do concurrent(i = 1:n_e)
+                  E_t(i,i) = E_t(i,i) + 1._RD
+                  E_t(n_e+i,i) = E_t(n_e+i,i) - 1._RD
                end do
 
             end associate
@@ -228,7 +261,88 @@ contains
 
             return
 
-         end subroutine eval_E_t_${I}$_${S}$_
+         end subroutine eval_E_t_hom_${I}$_${S}$_
+
+         !****
+
+         subroutine eval_E_t_inhom_${I}$_${S}$_(this, st, E_t, scl, F)
+
+            class(colloc_gl4_diff_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in)           :: st
+            ${T}$, contiguous, intent(out)           :: E_t(:,:)
+            type(ext_${S}$), intent(out)             :: scl
+            ${T}$, contiguous, intent(out)           :: F(:)
+
+            ${T}$   :: A_1(${N_E}$,${N_E}$)
+            ${T}$   :: A_2(${N_E}$,${N_E}$)
+            ${T}$   :: F_1(${N_E}$)
+            ${T}$   :: F_2(${N_E}$)
+            ${T}$   :: A_12(${N_E}$,${N_E}$)
+            ${T}$   :: P_22(${N_E}$,${N_E}$)
+            ${T}$   :: KL_1(${N_E}$+1,${N_E}$)
+            ${T}$   :: KL_2(${N_E}$+1,${N_E}$)
+            integer :: i
+
+            @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
+            @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
+
+            @:CHECK_BOUNDS(SIZE(F), this%n_e)
+
+            ! Evaluate the transposed difference equations and
+            ! inhomogeneous vector
+
+            ! Algorithm note: this is Gauss-Legendre collocation with
+            ! 2 intermediate stages and an inhomogeneous term
+
+            associate (n_e => ${N_E}$)
+
+               call this%eq(1)%eval_A_t(st, this%dx, A_1, F_1)
+               call this%eq(2)%eval_A_t(st, this%dx, A_2, F_2)
+
+               A_12 = MATMUL(A_1, A_2)
+
+               KL_1(:n_e,:) = A_1
+               KL_1(n_e+1,:) = F_1
+
+               KL_2(:n_e,:) = A_2 - D_21*A_12
+               KL_2(n_e+1,:) = F_2 - D_21*MATMUL(F_1, A_2)
+
+               P_22 = - D_21*D_12*A_12
+
+               do concurrent(i = 1:n_e)
+                  P_22(i,i) = P_22(i,i) + 1._RD
+               end do
+
+               #:if I == 'gen'
+                  call trans_solve(P_22, KL_2)
+               #:else
+                  call trans_solve_${I}$(P_22, KL_2)
+               #:endif
+
+               KL_1 = KL_1 - D_12*MATMUL(KL_2, A_1)
+
+               ! Assemble the difference equations
+
+               E_t(:n_e,:) = HALF_B_1*KL_1(:n_e,:) + HALF_B_2*KL_2(:n_e,:)
+
+               do concurrent(i = 1:n_e)
+                  E_t(:n_e,i) = HALF_B_1*KL_1(:n_e,i) + HALF_B_2*KL_2(:n_e,i)
+                  E_t(n_e+1:,i) = E_t(:n_e,i)
+                  E_t(i,i) = E_t(i,i) + 1._RD
+                  E_t(n_e+i,i) = E_t(n_e+i,i) - 1._RD
+               end do
+
+               F = -2._RD*(HALF_B_1*KL_1(n_e+1,:) + HALF_B_2*KL_2(n_e+1,:))
+
+            end associate
+
+            scl = ONE_${S}$
+
+            ! Finish
+
+            return
+
+         end subroutine eval_E_t_inhom_${I}$_${S}$_
 
       #:endfor
 
