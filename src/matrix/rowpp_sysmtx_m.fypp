@@ -686,7 +686,7 @@ contains
                   beta = beta + this%U_t(j,i,n+1)*u_bound(j)
                end do
 
-               u_bound(i) = (this%F(i,n) - beta)/this%U_t(i,i,n+1)
+               u_bound(i) = (this%F(i,n+1) - beta)/this%U_t(i,i,n+1)
 
             end do
 
