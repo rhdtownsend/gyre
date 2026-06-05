@@ -165,7 +165,7 @@ contains
                   do concurrent(j = 1:n_e)
                      E_t(:n_e,j) = E_t(:n_e,j)*(1._RD - this%w(j))
                      E_t(n_e+1:,j) = E_t(n_e+1:,j)*this%w(j)
-                     F(j) = f_1(j)*(1._RD - this%w(j)) + f_2(j)*this%w(j)
+                     F(j) = - f_1(j)*(1._RD - this%w(j)) - f_2(j)*this%w(j)
                   end do
 
                else
