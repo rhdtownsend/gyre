@@ -386,6 +386,7 @@ contains
                #:endif
 
                KL_2 = M(n_e+1:,:) - MATMUL(KL_3, M(:n_e,:))
+
                KL_1 = KL_1 - MATMUL(D_12*KL_2 + D_13*KL_3, A_1)
 
                ! Assemble the difference equations

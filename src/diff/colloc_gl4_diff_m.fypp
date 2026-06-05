@@ -323,8 +323,6 @@ contains
 
                ! Assemble the difference equations
 
-               E_t(:n_e,:) = HALF_B_1*KL_1(:n_e,:) + HALF_B_2*KL_2(:n_e,:)
-
                do concurrent(i = 1:n_e)
                   E_t(:n_e,i) = HALF_B_1*KL_1(:n_e,i) + HALF_B_2*KL_2(:n_e,i)
                   E_t(n_e+1:,i) = E_t(:n_e,i)
