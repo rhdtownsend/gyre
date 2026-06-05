@@ -443,8 +443,8 @@ contains
                R_t(n_e+1:,:n_e) = this%E_t(:,:,1)
 
                if (set_F_) then
-                  F(n_i+1:n_i+n_e) = this%F(:,1)
-                  call bd_i%eval_B(st, B_i, F(:n_i))
+                  F(:n_e) = this%F(:,1)
+                  call bd_i%eval_B(st, B_i, F(n_e+1:n_e+n_i))
                   call bd_o%eval_B(st, B_o, F(n_e+n_i+1:))
                else
                   call bd_i%eval_B(st, B_i)
@@ -835,7 +835,7 @@ contains
          call hi%write_dset('D', this%D)
 
          call hi%write_dset('R_t', this%R_t)
-         call hi%write_dset('F_R', this%R_t)
+         call hi%write_dset('F_R', this%F_R)
 
          #:if T == 'complex(RD)'
 
