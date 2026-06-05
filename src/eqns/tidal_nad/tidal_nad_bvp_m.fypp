@@ -79,6 +79,7 @@ contains
 
       use nad_factory_m
       use tidal_nad_diff_m
+      use tidal_nad_ibound_m
 
       class(context_t), pointer, intent(in) :: cx
       type(grid_t), intent(in)              :: gr
@@ -96,7 +97,7 @@ contains
 
       ! Initialize the boundary conditions
 
-      bd_i = nad_ibound_t(cx, os_p)
+      bd_i = tidal_nad_ibound_t(cx, os_p)
       bd_o = nad_obound_t(cx, os_p)
 
       ! Initialize the difference equations
@@ -117,10 +118,11 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      ! Workaround: call nad_trans_t_1_ instead of nad_trans_t due to
-      ! gfortran 13 bug
-
+      #:if defined('GFORTRAN_PR125610')
       bp%tr = nad_trans_t_1_(cx, gr%pt, os_p)
+      #:else
+      bp%tr = nad_trans_t(cx, gr%pt, os_p)
+      #:endif
 
       bp%md_p = md_p
       bp%nm_p = nm_p

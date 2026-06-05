@@ -121,10 +121,11 @@ contains
 
          ! Initialize the equations
 
-         ! Workaround: call nad_eqns_t_1_ instead of nad_eqns_t due to
-         ! gfortran 13 bug
-
-         eq = tidal_nad_eqns_t_1_(cx, pt, os_p)
+         #:if defined('GFORTRAN_PR110877')
+         ALLOCATE(eq, SOURCE=tidal_nad_eqns_t(cx, pt, os_p))
+         #:else
+         eq = tidal_nad_eqns_t(cx, pt, os_p)
+         #:endif
 
          ! Finish
 

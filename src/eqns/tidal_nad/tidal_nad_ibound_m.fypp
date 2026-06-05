@@ -1,0 +1,146 @@
+! Module  : tidal_nad_ibound_m
+! Purpose : tidal nonadiabatic inner boundary conditions
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module tidal_nad_ibound_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_m
+   use context_m
+   use math_m
+   use model_m
+   use model_util_m
+   use osc_par_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(bound_ct) :: tidal_nad_ibound_t
+      private
+      type(context_t), pointer     :: cx => null()
+      class(bound_ct), allocatable :: bd
+      real(RD)                     :: c_1
+   contains
+      private
+      procedure, public :: eval_B
+   end type tidal_nad_ibound_t
+
+   ! Interfaces
+
+   interface tidal_nad_ibound_t
+      module procedure tidal_nad_ibound_t_
+   end interface tidal_nad_ibound_t
+
+   ! Access specifiers
+
+   public :: tidal_nad_ibound_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function tidal_nad_ibound_t_(cx, os_p) result(bd)
+
+      use nad_factory_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      type(tidal_nad_ibound_t)             :: bd
+
+      class(model_t), pointer :: ml
+      type(point_t)           :: pt
+
+      ! Construct the tidal_nad_ibound
+
+      ml => cx%model()
+      pt = cx%point_i()
+
+      bd%cx => cx
+
+      bd%bd = nad_ibound_t(cx, os_p)
+
+      ! Store structure coefficients
+
+      call check_model(ml, [I_C_1])
+
+      ! Inner boundary
+
+      bd%c_1 = ml%coeff(I_C_1, pt)
+
+      ! Other initializations
+
+      bd%n_b = bd%bd%n_b
+
+      bd%n_e = bd%bd%n_e
+
+      ! Finish
+
+      return
+
+   end function tidal_nad_ibound_t_
+
+   !****
+
+   subroutine eval_B(this, st, B, f)
+
+      class(tidal_nad_ibound_t), intent(in) :: this
+      class(state_ct), intent(in)           :: st
+      complex(RD), intent(out)              :: B(:,:)
+      complex(RD), intent(out), optional    :: f(:)
+
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
+
+      ! Evaluate the inner boundary condition matrix and inhomogeneous
+      ! vector
+
+      associate ( &
+         y_T_1 => st%y_T_1, &
+         c_1 => this%c_1, &
+         l => this%cx%l)
+
+         call this%bd%eval_B(st, B)
+
+         if (PRESENT(f)) then
+            f(1) = l*y_T_1*c_1
+            f(2) = 0._RD
+            f(3) = 0._RD
+         end if
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval_B
+
+end module tidal_nad_ibound_m

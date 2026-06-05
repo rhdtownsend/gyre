@@ -45,6 +45,7 @@ module tidal_nad_eqns_m
       private
       type(context_t), pointer    :: cx => null()
       class(eqns_ct), allocatable :: eq
+      real(RD)                    :: c_1
       real(RD)                    :: x
    contains
       private
@@ -82,13 +83,27 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(tidal_nad_eqns_t)               :: eq
 
+      class(model_t), pointer :: ml
+
       ! Construct the tidal_nad_eqns type
 
       eq%cx => cx
 
       eq%eq = nad_eqns_t(cx, pt, os_p)
 
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_C_1])
+
+      eq%c_1 = ml%coeff(I_C_1, pt)
+
+      ! Other initializations
+
       eq%x = pt%x
+
+      eq%n_e = eq%eq%n_e
 
       ! Finish
 
@@ -151,6 +166,8 @@ contains
       complex(RD), intent(out)            :: A_t(:,:)
       complex(RD), intent(out), optional  :: f(:)
 
+      real(RD) :: del_x
+
       @:CHECK_BOUNDS(SIZE(A_t, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(A_t, 2), this%n_e)
 
@@ -162,8 +179,8 @@ contains
       ! vector
 
       associate ( &
-         omega => st%omega, &
          y_T_1 => st%y_T_1, &
+         c_1 => this%c_1, &
          x => this%x, &
          l => this%cx%l)
 
@@ -173,11 +190,13 @@ contains
 
          ! Set up the inhomogeneous vector
 
+         del_x = del/x
+
          @:ASSERT_DEBUG(y_T_1 /= 0._RD, 'invalid y_T_1')
 
          if (PRESENT(f)) then
             f(1) = 0._RD
-            f(2) = -y_T_1*l*x**(l-1)
+            f(2) = -del_x*y_T_1*l*c_1
             f(3) = 0._RD
             f(4) = 0._RD
             f(5) = 0._RD
