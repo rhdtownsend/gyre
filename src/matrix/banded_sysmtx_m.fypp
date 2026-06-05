@@ -245,7 +245,7 @@ contains
                this%scl_i(i) = scl
                call this%set_row_(i, 1, B_i(i,:)/scl)
                if (set_F_) then
-                  this%F(i) = -g_i(i)/scl
+                  this%F(i) = g_i(i)/scl
                end if
             end do
 
@@ -260,7 +260,7 @@ contains
                this%scl_o(i) = scl
                call this%set_row_(n_e*n+n_i+i, n_e*n+1, B_o(i,:)/scl)
                if (set_F_) then
-                  this%F(n_e*n+n_i+1) = -g_o(i)/scl
+                  this%F(n_e*n+n_i+1) = g_o(i)/scl
                end if
             end do
 
