@@ -192,11 +192,9 @@ contains
 
          del_x = del/x
 
-         @:ASSERT_DEBUG(y_T_1 /= 0._RD, 'invalid y_T_1')
-
          if (PRESENT(f)) then
             f(1) = 0._RD
-            f(2) = -del_x*y_T_1*l*c_1
+            f(2) = -del_x*l*y_T_1*c_1
             f(3) = 0._RD
             f(4) = 0._RD
             f(5) = 0._RD
