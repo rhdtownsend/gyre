@@ -450,17 +450,17 @@ contains
 
                   alpha = 1._RD/piv_row_R(j)
 
-                  do concurrent(i = j+1:2*n_e) local(beta)
-                     beta = alpha*R_t(j,i)
-                     R_t(:,i) = R_t(:,i) - beta*piv_row_R
-                  end do
-
                   if (PRESENT(f)) then
                      do concurrent(i = j+1:2*n_e) local(beta)
                         beta = alpha*R_t(j,i)
                         f(i) = f(i) - beta*f(j)
                      end do
                   end if
+
+                  do concurrent(i = j+1:2*n_e) local(beta)
+                     beta = alpha*R_t(j,i)
+                     R_t(:,i) = R_t(:,i) - beta*piv_row_R
+                  end do
 
                   ! Update the diagonal product
 
