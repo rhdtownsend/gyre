@@ -455,6 +455,7 @@ contains
       select case (sc%item)
 
          #:for N, E in ( &
+            ('y_T_ref', 'rs%y_T(rs%j_ref)'), &
             ('Phi_T_ref', 'rs%Phi_T(rs%j_ref)'), &
             ('dPhi_T_ref', 'rs%dPhi_T(rs%j_ref)'), &
             ('k', 'rs%k'), &
