@@ -125,7 +125,7 @@ static_SRCS = static_bvp_m.fypp \
    static_eqns_m.fypp \
 
 tidal_nad_SRCS = tidal_nad_bvp_m.fypp tidal_nad_diff_m.fypp \
-   tidal_nad_eqns_m.fypp
+   tidal_nad_eqns_m.fypp tidal_nad_ibound_m.fypp
 
 sysmtx_SRCS = sysmtx_m.fypp sysmtx_factory_m.fypp \
    banded_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp
