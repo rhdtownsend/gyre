@@ -192,7 +192,7 @@ contains
 
                   end select
 
-                  rs = resp_t(wv, or_p, td_p, k)
+                  rs = resp_t(wv, or_p, td_p, y_T(l,m,k), k)
 
                   ! Process the response
 
