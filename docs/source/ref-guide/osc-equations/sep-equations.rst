@@ -38,10 +38,12 @@ the mechanical (mass and momentum conservation) equations become
    \trho' + \frac{1}{r^{2}} \deriv{}{r} \left( \rho r^{2} \txir \right) - \frac{\lambda}{r} \rho \txih = 0,
 
 .. math::
+   :label: e:osc-sep-mom-r
 
    -\sigma^{2} \rho \txir = - \deriv{\tP'}{r} - \trho' \deriv{\Phi}{r} - \rho \deriv{\tPhi'}{r},
 
 .. math::
+   :label: e:osc-sep-mom-h
 
    -\sigma^{2} \rho r \txih = - \tP' - \rho \tPhi'.
 
