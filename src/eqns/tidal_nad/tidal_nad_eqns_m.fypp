@@ -45,7 +45,17 @@ module tidal_nad_eqns_m
       private
       type(context_t), pointer    :: cx => null()
       class(eqns_ct), allocatable :: eq
+      real(RD)                    :: V
+      real(RD)                    :: U
       real(RD)                    :: c_1
+      real(RD)                    :: dc_1
+      real(RD)                    :: nabla
+      real(RD)                    :: nabla_ad
+      real(RD)                    :: c_rad
+      real(RD)                    :: dc_rad
+      real(RD)                    :: c_thn
+      real(RD)                    :: f_conv
+      real(RD)                    :: Omega_rot
       real(RD)                    :: x
    contains
       private
@@ -97,7 +107,25 @@ contains
 
       call check_model(ml, [I_C_1])
 
+      eq%V = ml%coeff(I_V_2, pt)*pt%x**2
+      eq%U = ml%coeff(I_U, pt)
       eq%c_1 = ml%coeff(I_C_1, pt)
+      eq%dc_1 = ml%dcoeff(I_C_1, pt)
+      eq%nabla_ad = ml%coeff(I_NABLA_AD, pt)
+      eq%nabla = ml%coeff(I_NABLA, pt)
+      eq%c_rad = ml%coeff(I_C_RAD, pt)
+      eq%dc_rad = ml%dcoeff(I_C_RAD, pt)
+
+      select case (os_p%conv_scheme)
+      case ('FROZEN_PESNELL_1')
+         eq%f_conv = eq%c_rad*(3._RD + eq%dc_rad)
+      case ('FROZEN_PESNELL_4')
+         eq%f_conv = ml%coeff(I_C_LUM, pt)*(3._RD + ml%dcoeff(I_C_LUM, pt)) - (ml%coeff(I_C_LUM, pt) - eq%c_rad)
+      case default
+         @:ABORT('invalid conv_scheme')
+      end select
+
+      eq%Omega_rot = cx%Omega_rot(pt)
 
       ! Other initializations
 
@@ -166,7 +194,13 @@ contains
       complex(RD), intent(out)            :: A_t(:,:)
       complex(RD), intent(out), optional  :: f(:)
 
-      real(RD) :: del_x
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: om2
+      complex(RD) :: eta
+      complex(RD) :: f_rht
+      real(RD)    :: del_x
 
       @:CHECK_BOUNDS(SIZE(A_t, 1), this%n_e)
       @:CHECK_BOUNDS(SIZE(A_t, 2), this%n_e)
@@ -179,10 +213,22 @@ contains
       ! vector
 
       associate ( &
+         omega => st%omega, &
          y_T_1 => st%y_T_1, &
+         V => this%V, &
+         U => this%U, &
          c_1 => this%c_1, &
+         dc_1 => this%dc_1, &
+         nabla_ad => this%nabla_ad, &
+         nabla => this%nabla, &
+         c_thn => this%c_thn, &
+         f_conv => this%f_conv, &
+         Omega_rot => this%Omega_rot, &
+         alpha_rht => this%cx%alpha_rht, &
+         alpha_omg => this%cx%alpha_omg, &
          x => this%x, &
-         l => this%cx%l)
+         l => this%cx%l, &
+         m => this%cx%m)
 
          ! Set up the matrix
 
@@ -190,15 +236,26 @@ contains
 
          ! Set up the inhomogeneous vector
 
+         omega_c = omega - m*Omega_rot
+
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
+
+         lambda = l*(l+1)
+
+         om2 = c_1*omega_c**2
+         eta = lambda/om2
+
+         f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
+
          del_x = del/x
 
          if (PRESENT(f)) then
-            f(1) = 0._RD
+            f(1) = del_x*eta*y_T_1*c_1
             f(2) = -del_x*l*y_T_1*c_1
             f(3) = 0._RD
             f(4) = 0._RD
-            f(5) = 0._RD
-            f(6) = 0._RD
+            f(5) = del_x*(V*eta*(-nabla + nabla_ad)/f_rht + l*V*nabla_ad/f_rht)*y_T_1*c_1
+            f(6) = del_x*eta*f_conv*y_T_1*c_1
          end if
 
       end associate
