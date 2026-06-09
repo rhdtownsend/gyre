@@ -419,7 +419,6 @@ contains
 
          #:for N, E in ( &
             ('k', 'rs%k'), &
-            ('y_T_ref', 'rs%y_T(rs%j_ref)'), &
             ('Phi_T_ref', 'rs%Phi_T(rs%j_ref)'), &
             ('dPhi_T_ref', 'rs%dPhi_T(rs%j_ref)'), &
             ('Omega_orb', ' rs%Omega_orb(ot_p%freq_units, ot_p%freq_frame)'), &
