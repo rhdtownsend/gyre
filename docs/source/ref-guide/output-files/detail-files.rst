@@ -775,20 +775,6 @@ Note that these fields are available only when using :program:`gyre_tides`.
 
    Fourier harmonic :math:`k`
 
-.. ofile:field:: eul_Psi_ref
-   :type: complex
-   :units: :math:`G\Mstar/\Rstar`
-
-   Eulerian total potential perturbation :math:`\tPsi'_{\rm ref}` at
-   reference location
-
-.. ofile:field:: deul_Psi_ref
-   :type: complex
-   :units: :math:`G\Mstar/\Rstar^{2}`
-
-   Eulerian total potential gradient perturbation
-   :math:`(\sderiv{\tPsi'}{r})_{\rm ref}` at reference location
-
 .. ofile:field:: Phi_T_ref
    :type: real
    :units: :math:`G\Mstar/\Rstar`
