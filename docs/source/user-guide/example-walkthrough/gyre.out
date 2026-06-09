@@ -1,5 +1,5 @@
-gyre [9.1]
-----------
+gyre [9.1.1]
+------------
 
 OpenMP Threads   : 8
 Input filename   : gyre.in
@@ -32,10 +32,10 @@ Building spatial grid
 Starting search (adiabatic)
 
 Scanning frequencies
-  Time elapsed :     0.009 s
+  Time elapsed :     0.011 s
 
 Finding roots
-  Time elapsed :      0.003 s
+  Time elapsed :      0.004 s
 
 Processing modes
    id    l     m    n_pg    n_p    n_g       Re(omega)       Im(omega)        chi n_iter
@@ -46,7 +46,7 @@ Processing modes
     5    1     0      -5      0      5  0.89820448E+00  0.00000000E+00 0.2170E-13      6
     6    1     0      -4      0      4  0.11322842E+01  0.00000000E+00 0.1099E-13      6
     7    1     0      -3      0      3  0.13377876E+01  0.00000000E+00 0.1648E-14      6
-  Time elapsed :      0.011 s
+  Time elapsed :      0.010 s
 
 Mode Search
 -----------
@@ -68,10 +68,10 @@ Building spatial grid
 Starting search (adiabatic)
 
 Scanning frequencies
-  Time elapsed :     0.008 s
+  Time elapsed :     0.009 s
 
 Finding roots
-  Time elapsed :      0.005 s
+  Time elapsed :      0.007 s
 
 Processing modes
    id    l     m    n_pg    n_p    n_g       Re(omega)       Im(omega)        chi n_iter
@@ -86,5 +86,5 @@ Processing modes
    16    2     0      -8      0      8  0.99746970E+00  0.00000000E+00 0.9180E-14      6
    17    2     0      -7      0      7  0.11297111E+01  0.00000000E+00 0.8568E-14      6
    18    2     0      -6      0      6  0.12531594E+01  0.00000000E+00 0.2575E-14      7
-  Time elapsed :      0.014 s
+  Time elapsed :      0.019 s
 
