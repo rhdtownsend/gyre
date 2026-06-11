@@ -33,8 +33,10 @@ module static_bvp_m
    use model_m
    use mode_par_m
    use num_par_m
+   use orbit_par_m
    use osc_par_m
    use point_m
+   use resp_m
    use state_m
    use sysmtx_m
    use wave_m
@@ -62,14 +64,14 @@ module static_bvp_m
       module procedure static_bvp_t_
    end interface static_bvp_t
 
-   interface wave_t
-      module procedure wave_t_
-   end interface wave_t
+   interface resp_t
+      module procedure resp_t_
+   end interface resp_t
 
    ! Access specifiers
 
    public :: static_bvp_t
-   public :: wave_t
+   public :: resp_t
 
    ! Default access
 
@@ -153,17 +155,23 @@ contains
 
    !****
 
-   function wave_t_(bp, sm, st, id) result(wv)
+   function resp_t_(bp, sm, st, id, or_p, k) result(rs)
 
       class(static_bvp_t), intent(in) :: bp
       class(sysmtx_rt), intent(inout) :: sm
       type(state_rt), intent(in)      :: st
       integer, intent(in)             :: id
-      type(wave_t)                    :: wv
+      type(orbit_par_t)               :: or_p
+      integer, intent(in)             :: k
+      type(resp_t)                    :: rs
 
-      real(RD)       :: y(2,bp%n)
-      type(state_ct) :: st_c
-      complex(RD)    :: y_c(6,bp%n)
+      real(RD)                :: y(2,bp%n)
+      type(state_ct)          :: st_c
+      class(model_t), pointer :: ml
+      integer                 :: j
+      real(RD)                :: c_1
+      complex(RD)             :: y_c(6,bp%n)
+      type(wave_t)            :: wv
 
       ! Calculate the inhomogeneous solution vector
 
@@ -173,21 +181,38 @@ contains
 
       st_c = state_ct(CMPLX(st%omega, KIND=RD), st%omega)
 
-      y_c(1,:) = -y(1,:)
-      y_c(2,:) = -y(1,:)
-      y_c(3,:) = y(1,:)
-      y_c(4,:) = y(2,:)
-      y_c(5,:) = 0._RD
-      y_c(6,:) = 0._RD
+      ml => bp%cx%model()
+
+      !$OMP PARALLEL DO PRIVATE (c_1)
+      do j = 1, bp%n
+
+         associate( &
+            y_T_1 => st%y_T_1, &
+            pt => bp%gr%pt(j))
+
+            c_1 = ml%coeff(I_C_1, pt)
+
+            y_c(1,j) = -(y(1,j) + c_1*y_T_1)
+            y_c(2,j) = y_c(1,j)
+            y_c(3,j) = y(1,j)
+            y_c(4,j) = y(2,j)
+            y_c(5,j) = 0._RD
+            y_c(6,j) = 0._RD
+
+         end associate
+
+      end do
 
       ! Construct the wave_t
 
       wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, 0._RD, 1, static=.TRUE.)
 
+      rs = resp_t(wv, or_p, k)
+
       ! Finish
 
       return
 
-   end function wave_t_
+   end function resp_t_
 
 end module static_bvp_m
