@@ -28,8 +28,8 @@ module resp_m
    use grid_m
    use model_m
    use orbit_par_m
+   use state_m
    use tidal_coeff_m
-   use tide_par_m
    use wave_m
 
    use ISO_FORTRAN_ENV
@@ -43,7 +43,6 @@ module resp_m
    type, extends(wave_t) :: resp_t
       private
       type(orbit_par_t), public :: or_p
-      type(tide_par_t), public  :: td_p
       real(RD)                  :: y_T_1
       integer, public           :: k
    contains
@@ -82,25 +81,24 @@ module resp_m
 
 contains
 
-   function resp_t_(wv, or_p, td_p, y_T_1, k) result(rs)
+   function resp_t_(wv, or_p, k) result(rs)
 
       type(wave_t), intent(in)      :: wv
       type(orbit_par_t), intent(in) :: or_p
-      type(tide_par_t), intent(in)  :: td_p
-      real(RD), intent(in)          :: y_T_1
       integer, intent(in)           :: k
       type(resp_t)                  :: rs
+
+      type(state_ct) :: st
 
       ! Construct the resp_t
 
       rs%wave_t = wv
 
       rs%or_p = or_p
-      rs%td_p = td_p
 
-      rs%y_T_1 = y_T_1
+      st = rs%state()
 
-      print *,'created resp with',y_T_1, k
+      rs%y_T_1 = st%y_T_1
 
       rs%k = k
 
