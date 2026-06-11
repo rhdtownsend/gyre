@@ -31,8 +31,9 @@ module rad_bvp_m
    use eqns_m
    use grid_m
    use integ_m
-   use model_m
+   use mode_m
    use mode_par_m
+   use model_m
    use num_par_m
    use osc_par_m
    use point_m
@@ -67,14 +68,14 @@ module rad_bvp_m
       module procedure rad_bvp_t_
    end interface rad_bvp_t
 
-   interface wave_t
-      module procedure wave_t_
-   end interface wave_t
+   interface mode_t
+      module procedure mode_t_
+   end interface mode_t
 
    ! Access specifiers
 
    public :: rad_bvp_t
-   public :: wave_t
+   public :: mode_t
 
    ! Default access
 
@@ -170,7 +171,7 @@ contains
 
    !****
 
-   function wave_t_(bp, sm, st, id, chi, n_iter) result(wv)
+   function mode_t_(bp, sm, st, id, chi, n_iter) result(md)
 
       class(rad_bvp_t), intent(in)    :: bp
       class(sysmtx_rt), intent(inout) :: sm
@@ -178,7 +179,7 @@ contains
       integer, intent(in)             :: id
       real(RD), intent(in)            :: chi
       integer, intent(in)             :: n_iter
-      type(wave_t)                    :: wv
+      type(mode_t)                    :: md
 
       real(RD)                :: y(2,bp%n)
       integer                 :: j
@@ -195,6 +196,7 @@ contains
       real(RD)                :: y_g(4,bp%n)
       complex(RD)             :: y_c(6,bp%n)
       type(state_ct)          :: st_c
+      type(wave_t)            :: wv
 
       ! Calculate the solution vector
 
@@ -207,7 +209,6 @@ contains
          call bp%tr(j)%transform(st, y(:,j))
       end do
 
-      ! Finish
       ! Set up gravitational eigenfunctions
 
       ml => bp%cx%model()
@@ -285,14 +286,16 @@ contains
 
       endif
 
-      ! Construct the wave_t
+      ! Construct the mode_t
 
       wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
+
+      md = mode_t(wv)
 
       ! Finish
 
       return
 
-   end function wave_t_
+   end function mode_t_
 
 end module rad_bvp_m
