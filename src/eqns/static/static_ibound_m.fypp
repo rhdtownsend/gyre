@@ -159,12 +159,6 @@ contains
 
          #:include 'IB_regular.inc'
 
-         ! Set up the inhomogeneous vector
-
-         if (PRESENT(f)) then
-         #:include 'IG_regular.inc'
-         end if
-
       end associate
 
       ! Finish

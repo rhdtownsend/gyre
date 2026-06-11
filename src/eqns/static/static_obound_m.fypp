@@ -166,12 +166,6 @@ contains
 
          #:include 'OB_vacuum.inc'
 
-         ! Set up the inhomogeneous vector
-
-         if (PRESENT(f)) then
-         #:include 'OG_vacuum.inc'
-         end if
-
       end associate
 
       ! Finish

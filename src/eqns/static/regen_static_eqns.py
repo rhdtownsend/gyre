@@ -23,17 +23,17 @@ from symbols import *
 
 # Declare equation matrices
 
-# Differential Jacobian matrix and right-hand side vector
+# Differential Jacobian matrix and inhomogeneous vector
 
 A = sp.Matrix([
     [3 - U(x) - l_e, 1],
     [lamda - V_g*U(x) - As*U(x), -U(x) - l_e + 2]
 ])
 
-F = sp.Matrix([
+f = sp.Matrix([
     0,
     (-V_g*U(x)-As*U(x))*y_T_1*c_1(x)
-    ])
+])
 
 # Match condition matrix
 
@@ -42,25 +42,25 @@ C = sp.Matrix([
     [-U(x), 1]
 ])
 
-# Inner boundary condition matrices and right-hand side vectors
+# Inner boundary condition matrices and inhomogeneous vectors
 
 IB_regular = sp.Matrix([
     [l_e, -1]
 ])
 
-IG_regular = sp.Matrix([
+IB_regular_g = sp.Matrix([
     0
-    ])
+])
 
-# Outer boundary condition matrices and right-hand side vectors
+# Outer boundary condition matrices and inhomogeneous vectors
 
 OB_vacuum = sp.Matrix([
     [l_e + 1 - U(x), 1]
 ])
 
-OG_vacuum = sp.Matrix([
+OB_vacuum_g = sp.Matrix([
     -U(x)*y_T_1
-    ])
+])
 
 # Main program
 
@@ -72,23 +72,14 @@ if __name__ == '__main__':
 
     # Regenerate equation include files
 
-    with open(f'A_t.inc', 'w') as f:
-        f.write(generate_A(A, T, transpose=True)+'\n')
+    with open(f'A_t.inc', 'w') as file:
+        file.write(generate_E(A, f, T, transpose=True)+'\n')
 
-    with open(f'F.inc', 'w') as f:
-        f.write(generate_F(F, T)+'\n')
+    with open(f'IB_regular.inc', 'w') as file:
+        file.write(generate_IB(IB_regular, IB_regular_g, T)+'\n')
 
-    with open(f'IB_regular.inc', 'w') as f:
-        f.write(generate_IB(IB_regular, T)+'\n')
+    with open(f'OB_vacuum.inc', 'w') as file:
+        file.write(generate_OB(OB_vacuum, OB_vacuum_g, T)+'\n')
 
-    with open(f'IG_regular.inc', 'w') as f:
-        f.write(generate_G(IG_regular, T)+'\n')
-
-    with open(f'OB_vacuum.inc', 'w') as f:
-        f.write(generate_OB(OB_vacuum, T)+'\n')
-
-    with open(f'OG_vacuum.inc', 'w') as f:
-        f.write(generate_G(OG_vacuum, T)+'\n')
-
-    with open(f'C_t.inc', 'w') as f:
-        f.write(generate_C(C, T, transpose=True)+'\n')
+    with open(f'C_t.inc', 'w') as file:
+        file.write(generate_C(C, T, transpose=True)+'\n')

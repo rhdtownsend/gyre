@@ -193,15 +193,9 @@ contains
 
          del_x = del/x
 
-         ! Set up the matrix
+         ! Set up the matrix and inhomogeneous vector
 
          #:include 'A_t.inc'
-
-         ! Set up the inhomogeneous vector
-
-         if (PRESENT(f)) then
-            #:include 'f.inc'
-         end if
 
       end associate
 
