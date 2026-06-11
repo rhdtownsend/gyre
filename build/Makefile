@@ -124,9 +124,6 @@ static_SRCS = static_bvp_m.fypp \
    static_obound_m.fypp \
    static_eqns_m.fypp \
 
-tidal_nad_SRCS = tidal_nad_bvp_m.fypp tidal_nad_diff_m.fypp \
-   tidal_nad_eqns_m.fypp tidal_nad_ibound_m.fypp
-
 sysmtx_SRCS = sysmtx_m.fypp sysmtx_factory_m.fypp \
    banded_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp
 
@@ -139,7 +136,7 @@ search_SRCS = search_m.fypp bracket_search_m.fypp minmod_search_m.fypp \
    prox_search_m.fypp contour_search_m.fypp file_search_m.fypp
 
 libgyre_SRCS = \
-   $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS) $(static_SRCS) $(tidal_nad_SRCS)	\
+   $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS) $(static_SRCS) 			\
    $(sysmtx_SRCS) $(diff_SRCS) $(search_SRCS)						\
    adhoc_angular_m.fypp amdl_file_m.fypp						\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp anapoly_5_model_m.fypp			\

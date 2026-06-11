@@ -30,8 +30,6 @@ module gyre_m
 
    use static_bvp_m
 
-   use tidal_nad_bvp_m
-
    ! System matrices
 
    use sysmtx_m
