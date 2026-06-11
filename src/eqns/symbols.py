@@ -17,6 +17,7 @@
 
 import sympy as sp
 import sympy.printing.fortran as spf
+import textwrap as tw
 
 # Define a printer class that handles (n,1) materices as vectors
 
@@ -132,15 +133,17 @@ printer = FCodePrinterExt({'standard': 2008, 'source_format': 'free'})
 
 # Code generation routines
 
-def generate_A(A, T, transpose=False, subs=[]):
+def generate_E(A, f, T, transpose=False, subs=[]):
 
-    # Transform the Jacobian matrix
+    # Transform the Jacobian matrix and inhomogeneous vector
 
     A = T*(A*T.inv() - x*T.inv().diff(x))
+    f = T*f
 
     # Apply substitutions
 
     A = A.subs(fn_subs)
+    f = f.subs(fn_subs)
 
     subs += [
         (sp.Symbol('c_1')*alpha_omg*omega_c**2, om2),
@@ -148,29 +151,23 @@ def generate_A(A, T, transpose=False, subs=[]):
     ]
 
     A = A.subs(subs)
+    f = f.subs(subs)
 
     # Convert to Fortran
 
     if transpose:
-        return printer.doprint(del_x*A.T, assign_to='A_t')
+        code = printer.doprint(del_x*A.T, assign_to='A_t')
     else:
-        return printer.doprint(del_x*A, assign_to='A')
+        code = printer.doprint(del_x*A, assign_to='A')
 
-def generate_F(F, T, subs=[]):
+    code += f"""
+if (PRESENT(f)) then
+{printer.doprint(del_x*f, assign_to='f')}
+endif"""
 
-    # Transform the differential equation right-hand side vector
+    return code
 
-    F = T*F
-
-    F = F.subs(fn_subs)
-
-    F = F.subs(subs)
-
-    # Convert to Fortran
-
-    return printer.doprint(del_x*F, assign_to='f')
-
-def generate_IB(IB, T, transpose=False, subs=[]):
+def generate_IB(IB, g, T, transpose=False, subs=[]):
 
     # Transform the inner boundary condition matrix
 
@@ -179,6 +176,7 @@ def generate_IB(IB, T, transpose=False, subs=[]):
     # Apply substitutions
 
     IB = IB.subs(fn_subs)
+    g = g.subs(fn_subs)
 
     subs += [
         (V, 0),
@@ -188,15 +186,23 @@ def generate_IB(IB, T, transpose=False, subs=[]):
     ]
 
     IB = IB.subs(subs)
+    g = g.subs(subs)
 
     # Convert to Fortran
 
     if transpose:
-        return printer.doprint(IB.T, assign_to='B_t')
+        code = printer.doprint(IB.T, assign_to='B_t')
     else:
-        return printer.doprint(IB, assign_to='B')
+        code = printer.doprint(IB, assign_to='B')
 
-def generate_OB(OB, T, transpose=False, subs=[]):
+    code += f"""
+if (PRESENT(f)) then
+{printer.doprint(g, assign_to='f')}
+endif"""
+
+    return code
+
+def generate_OB(OB, g, T, transpose=False, subs=[]):
 
     # Transform the outer boundary condition matrix
 
@@ -205,27 +211,24 @@ def generate_OB(OB, T, transpose=False, subs=[]):
     # Apply substitutions
 
     OB = OB.subs(fn_subs)
+    g = g.subs(fn_subs)
 
     OB = OB.subs(subs)
+    g = g.subs(subs)
 
     # Convert to Fortran
 
     if transpose:
-        return printer.doprint(OB.T, assign_to='B_t')
+        code = printer.doprint(OB.T, assign_to='B_t')
     else:
-        return printer.doprint(OB, assign_to='B')
+        code = printer.doprint(OB, assign_to='B')
 
-def generate_G(G, T, subs=[]):
+    code += f"""
+if (PRESENT(f)) then
+{printer.doprint(g, assign_to='f')}
+endif"""
 
-    # Transform the boundary condition inhomoheneous vector
-
-    G = G.subs(fn_subs)
-
-    G = G.subs(subs)
-
-    # Convert to Fortran
-
-    return printer.doprint(G, assign_to='f')
+    return code
 
 def generate_C(C, T, transpose=False, subs=[]):
 
