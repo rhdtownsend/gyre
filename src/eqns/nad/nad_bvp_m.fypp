@@ -28,9 +28,12 @@ module nad_bvp_m
    use context_m
    use diff_element_m
    use grid_m
+   use mode_m
    use mode_par_m
    use num_par_m
+   use orbit_par_m
    use osc_par_m
+   use resp_m
    use state_m
    use sysmtx_m
    use trans_m
@@ -60,14 +63,19 @@ module nad_bvp_m
       module procedure nad_bvp_t_
    end interface nad_bvp_t
 
-   interface wave_t
-      module procedure wave_t_
-   end interface wave_t
+   interface mode_t
+      module procedure mode_t_
+   end interface mode_t
+
+   interface resp_t
+      module procedure resp_t_
+   end interface resp_t
 
    ! Access specifiers
 
    public :: nad_bvp_t
-   public :: wave_t
+   public :: mode_t
+   public :: resp_t
 
    ! Default access
 
@@ -135,7 +143,7 @@ contains
 
    !****
 
-   function wave_t_(bp, sm, st, id, chi, n_iter) result(wv)
+   function mode_t_(bp, sm, st, id, chi, n_iter) result(md)
 
       class(nad_bvp_t), intent(in)    :: bp
       class(sysmtx_ct), intent(inout) :: sm
@@ -143,10 +151,11 @@ contains
       integer, intent(in)             :: id
       real(RD), intent(in)            :: chi
       integer, intent(in)             :: n_iter
-      type(wave_t)                    :: wv
+      type(mode_t)                    :: md
 
-      complex(RD) :: y(6,bp%n)
-      integer     :: j
+      complex(RD)  :: y(6,bp%n)
+      integer      :: j
+      type(wave_t) :: wv
 
       ! Calculate the homogeneous solution vector
 
@@ -157,14 +166,53 @@ contains
          call bp%tr(j)%transform(st, y(:,j))
       end do
 
-      ! Construct the wave_t
+      ! Construct the mode_t
 
       wv = wave_t(st, y, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
+
+      md = mode_t(wv)
 
       ! Finish
 
       return
 
-   end function wave_t_
+   end function mode_t_
+
+   !****
+
+   function resp_t_(bp, sm, st, id, or_p, k) result(rs)
+
+      class(nad_bvp_t), intent(in)    :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      type(state_ct), intent(in)      :: st
+      integer, intent(in)             :: id
+      type(orbit_par_t)               :: or_p
+      integer, intent(in)             :: k
+      type(resp_t)                    :: rs
+
+      complex(RD)  :: y(6,bp%n)
+      integer      :: j
+      type(wave_t) :: wv
+
+      ! Calculate the inhomogeneous solution vector
+
+      call bp%solve_inhom(sm, st, y)
+
+      !$OMP PARALLEL DO
+      do j = 1, bp%n
+         call bp%tr(j)%transform(st, y(:,j))
+      end do
+
+      ! Construct the resp_t
+
+      wv = wave_t(st, y, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, 0._RD, 1)
+
+      rs = resp_t(wv, or_p, k)
+
+      ! Finish
+
+      return
+
+   end function resp_t_
 
 end module nad_bvp_m

@@ -56,7 +56,7 @@ module ${P}$_nad_ibound_m
    ! Interfaces
 
    interface
-      subroutine eval_B_(this, st, B)
+      subroutine eval_B_(this, st, B, f)
          use forum_m, only: RD
          use state_m
          import ${P}$_nad_ibound_t
@@ -64,6 +64,7 @@ module ${P}$_nad_ibound_m
          class(${P}$_nad_ibound_t), intent(in) :: this
          class(state_ct), intent(in)           :: st
          complex(RD), intent(out)              :: B(:,:)
+         complex(RD), intent(out), optional    :: f(:)
       end subroutine eval_B_
    end interface
 
@@ -141,16 +142,10 @@ contains
       complex(RD), intent(out)              :: B(:,:)
       complex(RD), intent(out), optional    :: f(:)
 
-      if (PRESENT(f)) then
-         @:CHECK_BOUNDS(SIZE(f), this%n_b)
-      end if
-
       ! Evaluate the inner boundary condition matrix and inhomogeneous
       ! vector
 
-      call this%eval_B_(st, B)
-
-      if (PRESENT(f)) f = 0._RD
+      call this%eval_B_(st, B, f)
 
       ! Finish
 
@@ -160,11 +155,12 @@ contains
 
    !****
 
-   subroutine eval_B_regular_(this, st, B)
+   subroutine eval_B_regular_(this, st, B, f)
 
       class(${P}$_nad_ibound_t), intent(in) :: this
       class(state_ct), intent(in)           :: st
       complex(RD), intent(out)              :: B(:,:)
+      complex(RD), intent(out), optional    :: f(:)
 
       complex(RD) :: omega_c
       complex(RD) :: lambda
@@ -173,11 +169,16 @@ contains
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
+
       ! Evaluate the inner boundary condition matrix
       ! (regular-enforcing)
 
       associate( &
          omega => st%omega, &
+         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          c_1 => this%c_1, &
          Omega_rot => this%cx%Omega_rot_i, &
@@ -204,19 +205,25 @@ contains
 
    !****
 
-   subroutine eval_B_zero_r_(this, st, B)
+   subroutine eval_B_zero_r_(this, st, B, f)
 
       class(${P}$_nad_ibound_t), intent(in) :: this
       class(state_ct), intent(in)           :: st
       complex(RD), intent(out)              :: B(:,:)
+      complex(RD), intent(out), optional    :: f(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
 
       ! Evaluate the inner boundary condition matrix (zero radial
       ! displacement/gravity)
 
       associate( &
+         y_T_1 => st%y_T_1, &
          alpha_grv => this%cx%alpha_grv)
 
          ! Set up the matrix
@@ -233,11 +240,12 @@ contains
 
    !****
 
-   subroutine eval_B_zero_h_(this, st, B)
+   subroutine eval_B_zero_h_(this, st, B, f)
 
       class(${P}$_nad_ibound_t), intent(in) :: this
       class(state_ct), intent(in)           :: st
       complex(RD), intent(out)              :: B(:,:)
+      complex(RD), intent(out), optional    :: f(:)
 
       complex(RD) :: omega_c
       complex(RD) :: lambda
@@ -245,11 +253,16 @@ contains
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
+
       ! Evaluate the inner boundary condition matrix (zero horizontal
       ! displacement/gravity)
 
       associate( &
          omega => st%omega, &
+         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          c_1 => this%c_1, &
          Omega_rot => this%cx%Omega_rot_i, &

@@ -75,6 +75,7 @@ module ${P}$_nad_eqns_m
       real(RD)                 :: Omega_rot
       real(RD)                 :: x
       complex(RD)              :: lambda
+      complex(RD)              :: l_e
       complex(RD)              :: l_i
    contains
       private
@@ -167,6 +168,7 @@ contains
 
       if (cx%angular_cache) then
          eq%lambda = cx%lambda(eq%Omega_rot, state_ct(0._RD))
+         eq%l_e = cx%l_e(eq%Omega_rot, state_ct(0._RD))
          eq%l_i = cx%l_e(cx%Omega_rot_i, state_ct(0._RD))
       end if
 
@@ -247,6 +249,7 @@ contains
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: lambda
+      complex(RD) :: l_e
       complex(RD) :: l_i
       complex(RD) :: om2
       complex(RD) :: eta
@@ -270,6 +273,7 @@ contains
 
       associate ( &
          omega => st%omega, &
+         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          dV_2 => this%dV_2, &
          V => this%V, &
@@ -315,9 +319,11 @@ contains
 
          if (angular_cache) then
             lambda = this%lambda
+            l_e = this%l_e
             l_i = this%l_i
          else
             lambda = this%cx%lambda(Omega_rot, st)
+            l_e = this%cx%l_e(Omega_rot, st)
             l_i = this%cx%l_e(Omega_rot_i, st)
          end if
 
@@ -339,13 +345,9 @@ contains
 
          del_x = del/x
 
-         ! Set up the matrix
+         ! Set up the matrix and inhomogeneous vector
 
          #:include 'A_t.inc'
-
-         ! Set up the inhomogeneous vector
-
-         if (PRESENT(f)) f = 0._RD
 
       end associate
 
