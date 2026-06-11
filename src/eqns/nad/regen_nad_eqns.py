@@ -98,7 +98,7 @@ C = sp.Matrix([
     [0, 0, 0, 0, 0, 1]
 ])
 
-# Inner boundary condition matrices
+# Inner boundary condition matrices and inhomogeneous vectors
 
 IB_regular = sp.Matrix([
     [c_1(x)*alpha_omg*omega_c**2, -l_i, -alpha_grv*l_i, 0, 0, 0],
@@ -124,7 +124,7 @@ IB_zero_h = sp.Matrix([
 
 IB_zero_h_g = generate_tidal_g(IB_zero_h)
 
-# Outer boundary condition matrices
+# Outer boundary condition matrices and inhomogeneous vectors
 
 OB_vacuum = sp.Matrix([
     [1, -1, 0, 0, 0, 0],
