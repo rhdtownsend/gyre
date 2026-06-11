@@ -378,7 +378,6 @@ contains
       integer      :: c_end
       integer      :: c_rate
       integer      :: i
-      type(wave_t) :: wv
       type(mode_t) :: md
       logical      :: culled
 
@@ -397,7 +396,7 @@ contains
 
       ! Process the modes in order
 
-      !$OMP DO ORDERED PRIVATE(wv, md, culled) SCHEDULE(static, 1)
+      !$OMP DO ORDERED PRIVATE(md, culled) SCHEDULE(static, 1)
       bracket_loop: do i = 1, SIZE(br)
 
          if (.NOT. br(i)%active) cycle bracket_loop
@@ -406,14 +405,12 @@ contains
 
          select type (bp)
          type is (ad_bvp_t)
-            wv = wave_t(bp, sm, state_rt(br(i)%omega_root), br(i)%id, br(i)%chi, br(i)%n_iter)
+            md = mode_t(bp, sm, state_rt(br(i)%omega_root), br(i)%id, br(i)%chi, br(i)%n_iter)
          type is (rad_bvp_t)
-            wv = wave_t(bp, sm, state_rt(br(i)%omega_root), br(i)%id, br(i)%chi, br(i)%n_iter)
+            md = mode_t(bp, sm, state_rt(br(i)%omega_root), br(i)%id, br(i)%chi, br(i)%n_iter)
          class default
             @:ABORT('invalid bp class')
          end select
-
-         md = mode_t(wv)
 
          ! Process the mode
 

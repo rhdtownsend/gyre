@@ -30,8 +30,9 @@ module ad_bvp_m
    use diff_factory_m
    use eqns_m
    use grid_m
-   use model_m
+   use mode_m
    use mode_par_m
+   use model_m
    use num_par_m
    use osc_par_m
    use point_m
@@ -66,14 +67,14 @@ module ad_bvp_m
       module procedure ad_bvp_t_
    end interface ad_bvp_t
 
-   interface wave_t
-      module procedure wave_t_
-   end interface wave_t
+   interface mode_t
+      module procedure mode_t_
+   end interface mode_t
 
    ! Access specifiers
 
    public :: ad_bvp_t
-   public :: wave_t
+   public :: mode_t
 
    ! Default access
 
@@ -165,7 +166,7 @@ contains
 
    !****
 
-   function wave_t_(bp, sm, st, id, chi, n_iter) result(wv)
+   function mode_t_(bp, sm, st, id, chi, n_iter) result(md)
 
       class(ad_bvp_t), intent(in)     :: bp
       class(sysmtx_rt), intent(inout) :: sm
@@ -173,12 +174,13 @@ contains
       integer, intent(in)             :: id
       real(RD), intent(in)            :: chi
       integer, intent(in)             :: n_iter
-      type(wave_t)                    :: wv
+      type(mode_t)                    :: md
 
       real(RD)       :: y(4,bp%n)
       integer        :: j
       type(state_ct) :: st_c
       complex(RD)    :: y_c(6,bp%n)
+      type(wave_t)   :: wv
 
       ! Calculate the homogeneous solution vector
 
@@ -206,14 +208,16 @@ contains
 
       endif
 
-      ! Construct the wave type
+      ! Construct the mode type
 
       wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
+
+      md = mode_t(wv)
 
       ! Finish
 
       return
 
-   end function wave_t_
+   end function mode_t_
 
 end module ad_bvp_m
