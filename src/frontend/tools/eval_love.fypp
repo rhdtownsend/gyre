@@ -46,6 +46,7 @@ program eval_love
    type(num_par_t)               :: nm_p
    type(grid_par_t)              :: gr_p
    type(mode_par_t)              :: md_p
+   type(orbit_par_t)             :: or_p
    class(model_t), pointer       :: ml => null()
    type(context_t), pointer      :: cx
    type(grid_t)                  :: gr
@@ -54,7 +55,7 @@ program eval_love
    type(state_rt)                :: st
    real(RD)                      :: A
    real(RD)                      :: B
-   type(wave_t)                  :: wv
+   type(resp_t)                  :: rs
    real(RD)                      :: k_l
 
    type(out_par_t) :: ot_p
@@ -137,6 +138,7 @@ program eval_love
    nm_p = num_par_t(diff_scheme='COLLOC_GL6')
    gr_p = grid_par_t(w_osc=10._RD, w_exp=2._RD, w_ctr=10._RD)
    md_p = mode_par_t(l=l)
+   or_p = orbit_par_t()
 
    ot_p = out_par_t(detail_template='detail.id%id.h5', &
       detail_item_list='x,y_1,y_2,y_3,y_4,Phi_T,V_2,As,U,Gamma_1,l')
@@ -170,16 +172,16 @@ program eval_love
 
    st = state_rt(0._RD, y_T_1=A)
 
-   wv = wave_t(bp, sm, st, 0)
+   rs = resp_t(bp, sm, st, 0, or_p, 0)
 
    ! Write out the wave_t
 
    dt = detail_t(ot_p)
-   call dt%write(wv)
+   call dt%write(rs)
 
    ! Evaluate the Love number
 
-   B = REAL(wv%eul_Phi(wv%n), RD)
+   B = REAL(rs%eul_Phi(rs%n), RD)
 
    k_l = B/A
 
