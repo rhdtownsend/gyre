@@ -6,3 +6,7 @@ B(1, 3) = alpha_grv
 B(2, 3) = 0
 B(1, 4) = 0
 B(2, 4) = 1
+if (PRESENT(f)) then
+f(1) = -c_1*y_T_1
+f(2) = 0
+endif

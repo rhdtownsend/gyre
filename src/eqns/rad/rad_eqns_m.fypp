@@ -184,6 +184,7 @@ contains
 
       associate ( &
          omega => st%omega, &
+         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          dV_2 => this%dV_2, &
          V_g => this%V_g, &
@@ -199,13 +200,9 @@ contains
 
          del_x = del/x
 
-         ! Set up the matrix
+         ! Set up the matrix and inhomogeneous vector
 
          #:include 'A_t.inc'
-
-         ! Set up the inhomogeneous vector
-
-         if (PRESENT(f)) f = 0._RD
 
       end associate
 

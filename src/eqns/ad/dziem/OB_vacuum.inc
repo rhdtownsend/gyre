@@ -6,3 +6,7 @@ B(1, 3) = 1
 B(2, 3) = alpha_grv*l_e + 1
 B(1, 4) = 0
 B(2, 4) = alpha_grv
+if (PRESENT(f)) then
+f(1) = 0
+f(2) = 0
+endif

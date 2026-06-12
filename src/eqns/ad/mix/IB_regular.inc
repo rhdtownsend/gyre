@@ -6,3 +6,7 @@ B(1, 3) = alpha_grv*l_i
 B(2, 3) = -alpha_grv*l_i + 4*alpha_grv - 2
 B(1, 4) = 0
 B(2, 4) = 2*alpha_grv - 1
+if (PRESENT(f)) then
+f(1) = c_1*l_i*y_T_1
+f(2) = 0
+endif
