@@ -21,7 +21,7 @@ import sympy.printing.fortran as spf
 
 from symbols import *
 
-# Routines to gerate inhomogeneous terms
+# Routines to generate inhomogeneous terms
 
 def generate_tidal_f(A):
 
