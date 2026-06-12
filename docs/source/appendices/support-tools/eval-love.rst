@@ -10,12 +10,12 @@ Synopsis
 
 .. code-block:: text
 
-   eval_love MODEL_FILE [options]
+   eval_love l[options]
 
 Description
 -----------
 
-The :program:`eval_love` tool evaluates the hydrostatic Love number
+The :program:`eval_love` tool evaluates the *hydrostatic* Love number
 :math:`k_{\ell}` of an input stellar model (see
 :ads_citealp:`ogilvie:2014` for the adopted definition of
 :math:`k_{\ell}`), and writes it to standard output.
@@ -31,10 +31,18 @@ Options
 
    Type of input stellar model (see the :nml:option:`model_type <model.model_type>` option)
 
+.. option:: --file-name=NAME
+
+   Format of input stellar model file (see the :nml:option:`file <model.file>` option)
+
 .. option:: --file-format=FORMAT
 
    Format of input stellar model file (see the :nml:option:`file_format <model.file_format>` option)
 
-.. option:: -l, --l=L
+.. option:: --n=N
 
-   Harmonic degree :math:`\ell`.
+   Number of points in model grid. Used only when TYPE is one of
+   :nml:value:`'HOM'`, :nml:value:`'ANAPOLY_0'`,
+   :nml:value:`'ANAPOLY_1'`, :nml:value:`'ANAPOLY_5'` or
+   :nml:value:`'ANAPOLY_5_1'`
+
