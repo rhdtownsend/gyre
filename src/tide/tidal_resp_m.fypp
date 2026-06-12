@@ -50,9 +50,7 @@ module tidal_resp_m
    use tide_par_m
    use tidal_coeff_m
    use tidal_context_m
-   use tidal_nad_bvp_m
    use util_m
-   use wave_m
 
    use ISO_FORTRAN_ENV
 
@@ -110,13 +108,12 @@ contains
       integer                       :: l
       integer                       :: m
       integer                       :: k
-      type(tidal_nad_bvp_t)         :: bp_tidal_nad
-      type(static_bvp_t)            :: bp_static
-      class(sysmtx_ct), allocatable :: sm_tidal_nad
-      class(sysmtx_rt), allocatable :: sm_static
-      type(state_ct)                :: st_tidal_nad
-      type(state_rt)                :: st_static
-      type(wave_t)                  :: wv
+      type(nad_bvp_t)               :: bp_dyn
+      type(static_bvp_t)            :: bp_stat
+      class(sysmtx_ct), allocatable :: sm_dyn
+      class(sysmtx_rt), allocatable :: sm_stat
+      type(state_ct)                :: st_dyn
+      type(state_rt)                :: st_stat
       type(resp_t)                  :: rs
 
       ! Check that the SPH lambda method is being used
@@ -151,18 +148,18 @@ contains
             !    bp_nad = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
             ! endif
 
-            bp_tidal_nad = tidal_nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
+            bp_dyn = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
 
-            bp_static = static_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
+            bp_stat = static_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
 
-            allocate(sm_tidal_nad, SOURCE=sysmtx_ct(bp_tidal_nad%n-1, bp_tidal_nad%n_e, bp_tidal_nad%n_i, &
-               bp_tidal_nad%n_o, nm_p%nad_matrix_solver))
+            allocate(sm_dyn, SOURCE=sysmtx_ct(bp_dyn%n-1, bp_dyn%n_e, bp_dyn%n_i, &
+               bp_dyn%n_o, nm_p%nad_matrix_solver))
 
-            allocate(sm_static, SOURCE=sysmtx_rt(bp_static%n-1, bp_static%n_e, bp_static%n_i, &
-               bp_static%n_o, nm_p%nad_matrix_solver))
+            allocate(sm_stat, SOURCE=sysmtx_rt(bp_stat%n-1, bp_stat%n_e, bp_stat%n_i, &
+               bp_stat%n_o, nm_p%nad_matrix_solver))
 
-            !$OMP PARALLEL DO ORDERED FIRSTPRIVATE(sm_tidal_nad, sm_static) &
-            !$OMP PRIVATE(st_tidal_nad, st_static, wv, rs) SCHEDULE(STATIC, 1)
+            !$OMP PARALLEL DO ORDERED FIRSTPRIVATE(sm_dyn, sm_stat) &
+            !$OMP PRIVATE(st_dyn, st_stat, rs) SCHEDULE(STATIC, 1)
             k_loop : do k = td_p%k_min, td_p%k_max
 
                !$OMP ATOMIC
@@ -176,23 +173,21 @@ contains
                   select case(tide_type(l,m,k))
                   case (DYNAMIC_TIDE, MIXED_TIDE)
 
-                     st_tidal_nad = state_ct(CMPLX(omega(k), KIND=RD), omega(k), y_T_1=y_T(l,m,k))
+                     st_dyn = state_ct(CMPLX(omega(k), KIND=RD), omega(k), y_T_1=y_T(l,m,k))
 
-                     wv = wave_t(bp_tidal_nad, sm_tidal_nad, st_tidal_nad, id_m)
+                     rs = resp_t(bp_dyn, sm_dyn, st_dyn, id_m, or_p, k)
 
                   case (STATIC_TIDE)
 
-                     st_static = state_rt(omega(k), y_T_1=y_T(l,m,k))
+                     st_stat = state_rt(omega(k), y_T_1=y_T(l,m,k))
 
-                     wv = wave_t(bp_static, sm_static, st_static, id_m)
+                     rs = resp_t(bp_stat, sm_stat, st_stat, id_m, or_p, k)
 
                   case default
 
                      @:ABORT('invalid tide_type')
 
                   end select
-
-                  rs = resp_t(wv, or_p, td_p, y_T(l,m,k), k)
 
                   ! Process the response
 
@@ -206,8 +201,8 @@ contains
 
             ! Clean up
 
-            deallocate(sm_tidal_nad)
-            deallocate(sm_static)
+            deallocate(sm_dyn)
+            deallocate(sm_stat)
 
          end do m_loop
       end do l_loop
