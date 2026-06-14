@@ -54,20 +54,27 @@ Tidal Equations
 ---------------
 
 Because the tidal potential (:eq:`e:tidal-pot`) superposes many
-different spherical harmonics, the solution forms
-(:eq:`e:osc-sol-forms`) must be replaced by the more-general
-expressions
+different spherical harmonics, the solution forms given in equations
+(:eq:`e:osc-sol-form`) must be replaced by
 
 .. math::
-   :label: e:tidal-sol-forms
+   :label: e:osc-sol-form-tide
 
    \begin{aligned}
-   \xir(r,\theta,\phi;t) &= \sum_{\ell,m,k} \txirlmk(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii k \Oorb t), \\
-   \xit(r,\theta,\phi;t) &= \sum_{\ell,m,k} \txihlmk(r) \, \pderiv{}{\theta} Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii k \Oorb t), \\
-   \xip(r,\theta,\phi;t) &= \sum_{\ell,m,k} \txihlmk(r) \, \frac{\ii m}{\sin\theta} Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii k \Oorb t), \\
-   f'(r,\theta,\phi;t) &= \sum_{\ell,m,k} \tflmk'(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii k \Oorb t)
+   f'(r,\theta,\phi;t) &=
+   \sum_{\ell,m,k} \tflmk'(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii k \Oorb t) \\
+   \va'(r,\theta,\phi;t) &=
+   \sum_{\ell,m,k} \left[ \tarlmk'(r) \, \ver + \tahlmk'(r) \, r \, \nablah \right] Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t),
    \end{aligned}
 
+and those in equation (:eq:`e:osc-sol-form-vxi`) by
+
+.. math::
+   :label: e:osc-sol-form-vxi-tide
+
+   \vxi(r,\theta,\phi;t) =
+   \sum_{\ell,m,k} \left[ \txirlmk(r) \, \ver + \txihlmk(r) \, r \, \nablah \right] Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t)
+	   
 (the notation for the sums has been abbreviated). Substituting these
 solution forms into the :ref:`linearized equations <osc-linear-eqns>`
 (with the additional :math:`\rho \nabla \PhiT` term, as above), and
@@ -85,9 +92,10 @@ and the horizontal momentum equation (:eq:`e:osc-sep-mom-h`) by
 
 .. math::
 
-   -\sigmac^{2} \rho r \txih = - \tP' - \rho \tPhi' - \rho \tPhiT.
+   -\sigmac^{2} \rho \txih = - \frac{1}{r} \left( - \tP' - \rho \tPhi' - \rho \tPhiT \right).
 
-Here,
+(in the interests of brevity, the :math:`\ell,m,k` are now
+dropped). Here,
 
 .. math::
 
@@ -125,8 +133,7 @@ of tidal forcing, and
    \yT \equiv x^{2-\ell}\, \frac{\tPhiT}{gr} = - \epsT \, c_{1} \cbar_{\ell,m,k}.
 
 (The differential equations for :math:`y_{3}` and :math:`y_{4}` remain
-unchanged, because the tidal potential satisfies Laplace's equation).
-Moreover, the first of the regularity-enforcing equations
+unchanged). Moreover, the first of the regularity-enforcing equations
 (:eq:`e:inner-bound`) becomes
 
  .. math::
