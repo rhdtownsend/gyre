@@ -85,15 +85,65 @@ equations for the radial functions :math:`\txir`, :math:`\txih`,
 :math:`\tP'` etc. The mechanical (mass and momentum conservation)
 equations become
 
-.. math::
-   :label: e:osc-sep-cont
+   is the horizontal part of the gradient operator; and
+   :math:`(\ver,\vet,\vep)` are the unit basis vectors in the
+   :math:`(r,\theta,\phi)` directions. 
 
-   \trho' + \frac{1}{r^{2}} \deriv{}{r} \left( \rho r^{2} \txir \right) - \frac{\lambda}{r} \rho \txih = 0,
+#. The velocity perturbation vector can be expressed as
+
+   .. math::
+
+      \vv' = \pderiv{\vxi}{t},
+
+   where the displacement perturbation vector :math:`\vxi` describes
+   the spatial displacement of a fluid element from its equilibrium
+   position. As a specific application of
+   eqn. (:eq:`e:osc-sol-form`), :math:`\vxi` takes the form
+
+   .. math::
+      :label: e:osc-sol-form-vxi
+
+      \vxi(r,\theta,\phi;t) = \left[ \txir(r) \, \ver + \txih(r) \, r \, \nablah \right] Y^{m}_{\ell}(\theta,\phi) \, \exp(\ii \sigma t),
+
+   where :math:`\txir` and :math:`\txih` describe the radial
+   dependence of the radial and horizontal displacement perturbations.
+
+#. Lagrangian perturbations to scalar and vector quantities can be
+   derived by applying eqn. (:eq:`e:osc-eul-lag`) to the expressions
+   in eqn. (:eq:`e:osc-sol-form`). Specifically, the Lagrangian
+   perturbations to any scalar quantity :math:`f` and vector quantity
+   :math:`\va` take the forms
+
+   .. math::
+
+      \begin{aligned}
+      \delta f(r,\theta,\phi;t) &= \delta \tf(r) \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t), \\
+      \delta \va(r,\theta,\phi;t) &= \left[ \delta \tar(r) \, \ver + \delta \tah(r) \, r \, \nablah \right] \, Y^{m}_{\ell}(\theta,\phi) \, \exp(-\ii \sigma t),
+      \end{aligned}
+
+   respectively. Assuming a spherically symmetric equilibrium state,
+   the functions :math:`\delta \tf`, :math:`\delta \tar` and
+   :math:`\delta \tah` are related to their Lagrangian counterparts
+   by
+
+   .. math::
+
+      \begin{aligned}
+      \delta \tf &= \tf' + \txir \deriv{f}{r}, \\
+      \delta \tar &= \tar' + \txir \deriv{a_{r}}{r}, \\
+      \delta \tah &= \tah' + \frac{\txih}{r} a_{r}.
+      \end{aligned}
+
+Substituting the solution forms dictated by these anzatzes into the
+linearized equations leads to a system of ordinary differential
+equations for the radial functions :math:`\txir`, :math:`\txih`,
+:math:`\tP'` etc. The mechanical (mass and momentum conservation)
+equations become
 
 .. math::
    :label: e:osc-sep-mom-r
 
-   -\sigma^{2} \rho \txir = - \deriv{\tP'}{r} - \trho' \deriv{\Phi}{r} - \rho \deriv{\tPhi'}{r},
+   \trho' + \frac{1}{r^{2}} \deriv{}{r} \left( \rho r^{2} \txir \right) - \frac{\lambda}{r} \rho \txih = 0,
 
 .. math::
    :label: e:osc-sep-mom-h
