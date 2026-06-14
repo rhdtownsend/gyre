@@ -41,10 +41,10 @@ from a Fourier time expansion). Here,
 
 .. math::
 
-   \epsT = \left( \frac{\Rstar}{a} \right)^{3} q = \frac{\Oorb^{2} \Rstar^{3}}{G\Mstar} \frac{q}{1+q}
+   \epsT = \left( \frac{\Rstar}{a} \right)^{3} q_{2} = \frac{\Oorb^{2} \Rstar^{3}}{G\Mstar} \frac{q_{2}}{1+q_{2}}
 
 quantifies the overall strength of the tidal forcing, in terms of the
-companion's mass :math:`q M`, semi-major axis :math:`a` and orbital
+companion's mass :math:`q_{2} \Mstar`, semi-major axis :math:`a` and orbital
 angular frequency :math:`\Oorb`. These expressions, and the definition
 of the tidal expansion coefficients :math:`\cbar_{\ell,m,k}`, are presented in
 greater detail in :ads_citet:`sun:2023`.

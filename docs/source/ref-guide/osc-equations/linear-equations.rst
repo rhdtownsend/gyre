@@ -62,12 +62,17 @@ opacity can be expressed as
    \end{gathered}
 
 In these expressions, Eulerian and Lagrangian perturbations to any
-scalar quantity :math:`f` are related via
+scalar quantity :math:`f` and vector quantity :math:`\va` are related
+(to first order) via
 
 .. math::
    :label: e:osc-eul-lag
 
-   \frac{\delta f}{f} = \frac{f'}{f} + \frac{\xir}{r} \deriv{\ln f}{\ln r}.
+      \delta f = f' + (\vxi \cdot \nabla) f, \qquad
+      \delta \va = \va' + (\vxi \cdot \nabla) \va,
+
+where :math:`\vxi` is the disiplacement perturbation vector
+introduced in the :ref:`osc-sep-eqns` section.
 
 Moreover, the thermodynamic partial derivatives are defined as
 
