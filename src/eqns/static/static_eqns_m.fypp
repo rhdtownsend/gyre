@@ -1,0 +1,266 @@
+! Module  : static_eqns_m
+! Purpose : static-tide differential equations
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module static_eqns_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use context_m
+   use eqns_m
+   use model_m
+   use model_util_m
+   use osc_par_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(eqns_rt) :: static_eqns_t
+      private
+      type(context_t), pointer :: cx => null()
+      real(RD)                 :: V_g
+      real(RD)                 :: As
+      real(RD)                 :: U
+      real(RD)                 :: c_1
+      real(RD)                 :: x
+   contains
+      private
+      procedure, public :: eval_A
+      procedure, public :: eval_A_t
+      procedure, public :: eval_C
+      procedure, public :: eval_C_t
+   end type static_eqns_t
+
+   ! Interfaces
+
+   interface static_eqns_t
+      module procedure static_eqns_t_0_
+      module procedure static_eqns_t_1_
+   end interface static_eqns_t
+
+   ! Access specifiers
+
+   public :: static_eqns_t
+   public :: static_eqns_t_0_
+   public :: static_eqns_t_1_
+
+   ! Default access
+
+   private
+
+contains
+
+   function static_eqns_t_0_(cx, pt, os_p) result(eq)
+
+      class(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)             :: pt
+      type(osc_par_t), intent(in)           :: os_p
+      type(static_eqns_t)                   :: eq
+
+      class(model_t), pointer :: ml
+
+      ! Construct the static_eqns_t
+
+      eq%cx => cx
+
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1])
+
+      @:ASSERT(.NOT. ml%is_vacuum(pt), 'vacuum point')
+
+      eq%V_g = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+      eq%As = ml%coeff(I_AS, pt)
+      eq%U = ml%coeff(I_U, pt)
+      eq%c_1 = ml%coeff(I_C_1, pt)
+
+      ! Other initializations
+
+      eq%x = pt%x
+
+      eq%n_e = 2
+
+      ! Finish
+
+      return
+
+   end function static_eqns_t_0_
+
+   !****
+
+   function static_eqns_t_1_(cx, pt, os_p) result(eq)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt(:)
+      type(osc_par_t), intent(in)          :: os_p
+      type(static_eqns_t)                  :: eq(SIZE(pt))
+
+      integer :: j
+
+      ! Construct the array of static_eqns types
+
+      do j = 1, SIZE(pt)
+         eq(j) = static_eqns_t(cx, pt(j), os_p)
+      end do
+
+      ! Finish
+
+      return
+
+   end function static_eqns_t_1_
+
+   !****
+
+   subroutine eval_A(this, st, del, A, f)
+
+      class(static_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)      :: st
+      real(RD), intent(in)             :: del
+      real(RD), intent(out)            :: A(:,:)
+      real(RD), intent(out), optional  :: f(:)
+
+      ! Evaluate the Jacobian matrix and inhomogeneous vector
+
+      call this%eval_A_t(st, del, A, f)
+
+      A = TRANSPOSE(A)
+
+      ! Finish
+
+      return
+
+   end subroutine eval_A
+
+   !****
+
+   subroutine eval_A_t(this, st, del, A_t, f)
+
+      class(static_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)      :: st
+      real(RD), intent(in)             :: del
+      real(RD), intent(out)            :: A_t(:,:)
+      real(RD), intent(out), optional  :: f(:)
+
+      real(RD) :: lambda
+      real(RD) :: del_x
+
+      @:CHECK_BOUNDS(SIZE(A_t, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A_t, 2), this%n_e)
+
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_e)
+      end if
+
+      ! Evaluate the transposed Jacobian matrix and inhomogeneous
+      ! vector
+
+      associate ( &
+         y_T_1 => st%y_T_1, &
+         V_g => this%V_g, &
+         As => this%As, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         x => this%x, &
+         l_e => this%cx%l)
+
+         lambda = l_e*(l_e+1._RD)
+
+         del_x = del/x
+
+         ! Set up the matrix and inhomogeneous vector
+
+         #:include 'A_t.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval_A_t
+
+   !****
+
+   subroutine eval_C(this, st, C, f)
+
+      class(static_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)      :: st
+      real(RD), intent(out)            :: C(:,:)
+      real(RD), intent(out), optional  :: f(:)
+
+      ! Evaluate the match matrix and inhomogeneous vector
+
+      call this%eval_C_t(st, C, f)
+
+      C = TRANSPOSE(C)
+
+      ! Finish
+
+      return
+
+   end subroutine eval_C
+
+   !****
+
+   subroutine eval_C_t(this, st, C_t, f)
+
+      class(static_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)      :: st
+      real(RD), intent(out)            :: C_t(:,:)
+      real(RD), intent(out), optional  :: f(:)
+
+      @:CHECK_BOUNDS(SIZE(C_t, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(C_t, 2), this%n_e)
+
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_e)
+      end if
+
+      ! Evaluate the transposed match matrix and inhomogeneous vector
+
+      associate ( &
+         U => this%U)
+
+         ! Set up the matrix
+
+         #:include 'C_t.inc'
+
+         ! Set up the inhomogeneous vector
+
+         if (PRESENT(f)) f = 0._RD
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval_C_t
+
+end module static_eqns_m

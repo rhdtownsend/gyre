@@ -185,13 +185,11 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, sm, st, z_i, z_o, y)
+      subroutine solve_inhom_${S}$_(this, sm, st, y)
 
          class(bvp_${S}$), intent(in)       :: this
          class(sysmtx_${S}$), intent(inout) :: sm
          class(state_${S}$), intent(in)     :: st
-         ${T}$, intent(in)                  :: z_i(:)
-         ${T}$, intent(in)                  :: z_o(:)
          ${T}$, intent(out)                 :: y(:,:)
 
          ${T}$ :: u(this%n_e*this%n)
@@ -201,15 +199,12 @@ contains
          @:ASSERT_DEBUG(sm%n_i == this%n_i, 'dimension mismatch')
          @:ASSERT_DEBUG(sm%n_o == this%n_o, 'dimension mismatch')
 
-         @:CHECK_BOUNDS(SIZE(z_i), this%n_i)
-         @:CHECK_BOUNDS(SIZE(z_o), this%n_o)
-
          @:CHECK_BOUNDS(SIZE(y, 1), this%n_e)
          @:CHECK_BOUNDS(SIZE(y, 2), this%n)
 
          ! Evaluate the solution vector y of the inhomogeneous system
 
-         call sm%solve_inhom(st, this%bd_i, this%bd_o, this%de, [z_i,z_o], u)
+         call sm%solve_inhom(st, this%bd_i, this%bd_o, this%de, u)
 
          y = RESHAPE(u, SHAPE(y))
 

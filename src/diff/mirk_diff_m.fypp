@@ -116,12 +116,13 @@ contains
 
       !****
 
-      subroutine eval_E_t_${S}$_(this, st, E_t, scl)
+      subroutine eval_E_t_${S}$_(this, st, E_t, scl, F)
 
-         class(mirk_diff_${S}$), intent(in) :: this
-         class(state_${S}$), intent(in)     :: st
-         ${T}$, contiguous, intent(out)     :: E_t(:,:)
-         type(ext_${S}$), intent(out)       :: scl
+         class(mirk_diff_${S}$), intent(in)       :: this
+         class(state_${S}$), intent(in)           :: st
+         ${T}$, contiguous, intent(out)           :: E_t(:,:)
+         type(ext_${S}$), intent(out)             :: scl
+         ${T}$, contiguous, intent(out), optional :: F(:)
 
          ${T}$   :: A(this%n_e,this%n_e,3)
          integer :: j
@@ -129,24 +130,41 @@ contains
          @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
          @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
 
+         if (PRESENT(F)) then
+            @:CHECK_BOUNDS(SIZE(F), this%n_e)
+         end if
+
          ! Evaluate the tranposed difference equations
 
          associate (n_e => this%n_e)
 
             if (this%origin) then
 
-               ! If we're at the origin, fudge things to avoid evaluating A there
+               ! If we're at the origin, fudge things to avoid
+               ! evaluating A and f there
 
                E_t = 0._RD
 
+               if (PRESENT(F)) then
+                  F = 0._RD
+               end if
+
             else
 
-               call this%eq(1)%eval_A_t(st, this%dx/6._RD, A(:,:,1))
-               call this%eq(2)%eval_A_t(st, this%dx/3._RD, A(:,:,2))
-               call this%eq(3)%eval_A_t(st, this%dx/6._RD, A(:,:,3))
+               if (PRESENT(f)) then
 
-               E_t(:n_e,:) = A(:,:,1) + A(:,:,2) + (3._RD/2._RD)*MATMUL(A(:,:,1), A(:,:,2))
-               E_t(n_e+1:,:) =  A(:,:,3) + A(:,:,2) - (3._RD/2._RD)*MATMUL(A(:,:,3), A(:,:,2))
+                  @:ABORT('not yet implemented')
+
+               else
+
+                  call this%eq(1)%eval_A_t(st, this%dx/6._RD, A(:,:,1))
+                  call this%eq(2)%eval_A_t(st, this%dx/3._RD, A(:,:,2))
+                  call this%eq(3)%eval_A_t(st, this%dx/6._RD, A(:,:,3))
+
+                  E_t(:n_e,:) = A(:,:,1) + A(:,:,2) + (3._RD/2._RD)*MATMUL(A(:,:,1), A(:,:,2))
+                  E_t(n_e+1:,:) =  A(:,:,3) + A(:,:,2) - (3._RD/2._RD)*MATMUL(A(:,:,3), A(:,:,2))
+
+               end if
 
                scl = ONE_${S}$
 

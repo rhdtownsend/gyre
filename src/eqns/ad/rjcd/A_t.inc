@@ -17,3 +17,9 @@ A_t(3, 4) = del_x*(-U*V_g*alpha_grv - U*(-As - U - V_g + 3) + alpha_grv* &
       lambda - alpha_grv*(1 - U)*(-U - l_i + 2) + (U - 1)*(alpha_grv*(1 &
       - U) - alpha_grv*(-U - l_i + 3)))
 A_t(4, 4) = del_x*(-alpha_grv*(U - 1) + alpha_grv*(-U - l_i + 2))
+if (PRESENT(f)) then
+f(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
+f(2) = -del_x*l_e*y_T_1/(alpha_omg*omega_c**2)
+f(3) = 0
+f(4) = 0
+endif

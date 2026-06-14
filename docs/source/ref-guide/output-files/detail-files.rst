@@ -775,19 +775,11 @@ Note that these fields are available only when using :program:`gyre_tides`.
 
    Fourier harmonic :math:`k`
 
-.. ofile:field:: eul_Psi_ref
-   :type: complex
-   :units: :math:`G\Mstar/\Rstar`
+.. ofile:field:: y_T
+   :type: real
+   :dim: :ofile:field:`n`
 
-   Eulerian total potential perturbation :math:`\tPsi'_{\rm ref}` at
-   reference location
-
-.. ofile:field:: deul_Psi_ref
-   :type: complex
-   :units: :math:`G\Mstar/\Rstar^{2}`
-
-   Eulerian total potential gradient perturbation
-   :math:`(\sderiv{\tPsi'}{r})_{\rm ref}` at reference location
+   Dimensionless tidal potential :math:`\yT`
 
 .. ofile:field:: Phi_T_ref
    :type: real
@@ -799,37 +791,22 @@ Note that these fields are available only when using :program:`gyre_tides`.
    :type: real
    :units: :math:`G\Mstar/\Rstar^{2}`
 
-   Tidal potential gradient :math:`(\sderiv{\tPhi_{\rm T}}{x})_{\rm
+   Tidal potential gradient :math:`(\sderiv{\tPhiT}{x})_{\rm
    ref}` at reference location
-
-.. ofile:field:: eul_Psi
-   :type: complex
-   :dim: :ofile:field:`n`
-   :units: :math:`G\Mstar/\Rstar`
-
-   Eulerian total potential perturbation :math:`\tPsi'`
-
-.. ofile:field:: deul_Psi
-   :type: complex
-   :dim: :ofile:field:`n`
-   :units: :math:`G\Mstar/\Rstar^{2}`
-
-   Eulerian total potential gradient perturbation
-   :math:`\sderiv{\tPsi'}{r}`
 
 .. ofile:field:: Phi_T
    :type: real
    :dim: :ofile:field:`n`
    :units: :math:`G\Mstar/\Rstar`
 
-   Tidal potential :math:`\tPhi_{{\rm T}}`
+   Tidal potential :math:`\tPhiT`
 
 .. ofile:field:: dPhi_T
    :type: real
    :dim: :ofile:field:`n`
    :units: :math:`G\Mstar/\Rstar^{2}`
 
-   Tidal potential gradient :math:`\sderiv{\tPhi_{\rm T}}{x}`
+   Tidal potential gradient :math:`\sderiv{\tPhiT}{x}`
 
 .. ofile:field:: Omega_orb
    :type: real

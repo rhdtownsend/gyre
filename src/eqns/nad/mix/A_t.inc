@@ -43,3 +43,12 @@ A_t(4, 6) = 0
 A_t(5, 6) = del_x*(alpha_egv*c_egv + alpha_thm*c_thk*i_omega_c + c_eps_S &
       - alpha_hfl*c_rad*lambda/(V*nabla))
 A_t(6, 6) = del_x*(-l_i - 1)
+if (PRESENT(f)) then
+f(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
+f(2) = -c_1*del_x*l_e*y_T_1
+f(3) = 0
+f(4) = 0
+f(5) = c_1*del_x*y_T_1*(V*eta*(-nabla + nabla_ad)/f_rht + V*l_e*nabla_ad &
+      /f_rht)
+f(6) = del_x*f_conv*lambda*y_T_1/(alpha_omg*omega_c**2)
+endif

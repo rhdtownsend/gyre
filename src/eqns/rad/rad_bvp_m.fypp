@@ -31,8 +31,9 @@ module rad_bvp_m
    use eqns_m
    use grid_m
    use integ_m
-   use model_m
+   use mode_m
    use mode_par_m
+   use model_m
    use num_par_m
    use osc_par_m
    use point_m
@@ -67,15 +68,14 @@ module rad_bvp_m
       module procedure rad_bvp_t_
    end interface rad_bvp_t
 
-   interface wave_t
-      module procedure wave_t_hom_
-      module procedure wave_t_inhom_
-   end interface wave_t
+   interface mode_t
+      module procedure mode_t_
+   end interface mode_t
 
    ! Access specifiers
 
    public :: rad_bvp_t
-   public :: wave_t
+   public :: mode_t
 
    ! Default access
 
@@ -128,10 +128,11 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      ! Workaround: call rad_trans_t_1_ instead of rad_trans_t due to
-      ! gfortran 13 bug
-
+      #:if defined('GFORTRAN_PR125610')
       bp%tr = rad_trans_t_1_(cx, gr%pt, os_p)
+      #:else
+      bp%tr = rad_trans_t(cx, gr%pt, os_p)
+      #:endif
 
       if (os_p%quasiad_eigfuncs) then
          bp%qe = qad_eval_t(cx, gr, os_p)
@@ -154,10 +155,11 @@ contains
 
          ! Initialize the equations
 
-         ! Workaround: call nad_eqns_t_1_ instead of nad_eqns_t due to
-         ! gfortran 13 bug
-
+         #:if defined('GFORTRAN_PR125610')
          eq = rad_eqns_t_1_(cx, pt, os_p)
+         #:else
+         eq = rad_eqns_t(cx, pt, os_p)
+         #:endif
 
          ! Finish
 
@@ -169,7 +171,7 @@ contains
 
    !****
 
-   function wave_t_hom_(bp, sm, st, id, chi, n_iter) result(wv)
+   function mode_t_(bp, sm, st, id, chi, n_iter) result(md)
 
       class(rad_bvp_t), intent(in)    :: bp
       class(sysmtx_rt), intent(inout) :: sm
@@ -177,87 +179,11 @@ contains
       integer, intent(in)             :: id
       real(RD), intent(in)            :: chi
       integer, intent(in)             :: n_iter
-      type(wave_t)                    :: wv
+      type(mode_t)                    :: md
 
-      real(RD) :: y(2,bp%n)
-      integer  :: j
-
-      ! Calculate the homogeneous solution vector
-
-      call bp%solve_hom(sm, st, y)
-
-      ! Convert to canonical form
-
-      !$OMP PARALLEL DO
-      do j = 1, bp%n
-         call bp%tr(j)%transform(st, y(:,j))
-      end do
-
-      ! Construct the wave_t
-
-      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
-
-      ! Finish
-
-      return
-
-   end function wave_t_hom_
-
-   !****
-
-   function wave_t_inhom_(bp, sm, st, z_i, z_o, id, chi, n_iter) result(wv)
-
-      class(rad_bvp_t), intent(in)    :: bp
-      class(sysmtx_rt), intent(inout) :: sm
-      type(state_rt), intent(in)      :: st
-      real(RD), intent(in)            :: z_i(:)
-      real(RD), intent(in)            :: z_o(:)
-      integer, intent(in)             :: id
-      real(RD), intent(in)            :: chi
-      integer, intent(in)             :: n_iter
-      type(wave_t)                    :: wv
-
-      real(RD) :: y(2,bp%n)
-      integer  :: j
-
-      @:CHECK_BOUNDS(SIZE(z_i), bp%n_i)
-      @:CHECK_BOUNDS(SIZE(z_o), bp%n_o)
-
-      ! Calculate the inhomogeneous solution vector
-
-      call bp%solve_inhom(sm, st, z_i, z_o, y)
-
-      ! Convert to canonical form
-
-      !$OMP PARALLEL DO
-      do j = 1, bp%n
-         call bp%tr(j)%transform(st, y(:,j))
-      end do
-
-      ! Construct the wave_t
-
-      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
-
-      ! Finish
-
-      return
-
-   end function wave_t_inhom_
-
-   !****
-
-   function wave_t_y_(bp, st, y, id, chi, n_iter) result(wv)
-
-      class(rad_bvp_t), intent(in) :: bp
-      type(state_rt), intent(in)   :: st
-      real(RD), intent(in)         :: y(:,:)
-      integer, intent(in)          :: id
-      real(RD), intent(in)         :: chi
-      integer, intent(in)          :: n_iter
-      type(wave_t)                 :: wv
-
-      class(model_t), pointer :: ml
+      real(RD)                :: y(2,bp%n)
       integer                 :: j
+      class(model_t), pointer :: ml
       real(RD)                :: U
       real(RD)                :: c_1(bp%n)
       real(RD)                :: y_4(bp%n)
@@ -270,6 +196,18 @@ contains
       real(RD)                :: y_g(4,bp%n)
       complex(RD)             :: y_c(6,bp%n)
       type(state_ct)          :: st_c
+      type(wave_t)            :: wv
+
+      ! Calculate the solution vector
+
+      call bp%solve_hom(sm, st, y)
+
+      ! Convert to canonical form
+
+      !$OMP PARALLEL DO
+      do j = 1, bp%n
+         call bp%tr(j)%transform(st, y(:,j))
+      end do
 
       ! Set up gravitational eigenfunctions
 
@@ -278,7 +216,8 @@ contains
       !$OMP PARALLEL DO PRIVATE (U)
       do j = 1, bp%n
 
-         associate ( pt => bp%gr%pt(j) )
+         associate( &
+            pt => bp%gr%pt(j))
 
             U = ml%coeff(I_U, pt)
             c_1(j) = ml%coeff(I_C_1, pt)
@@ -347,14 +286,16 @@ contains
 
       endif
 
-      ! Construct the wave_t
+      ! Construct the mode_t
 
       wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
+
+      md = mode_t(wv)
 
       ! Finish
 
       return
 
-   end function wave_t_y_
+   end function mode_t_
 
 end module rad_bvp_m

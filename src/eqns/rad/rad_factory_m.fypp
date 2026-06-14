@@ -51,13 +51,15 @@ module rad_factory_m
    ! Access specifiers
 
    public :: rad_eqns_t
-   public :: rad_eqns_t_0_
-   public :: rad_eqns_t_1_
    public :: rad_trans_t
-   public :: rad_trans_t_0_
-   public :: rad_trans_t_1_
    public :: rad_ibound_t
    public :: rad_obound_t
+   #:if defined('GFORTRAN_PR125610')
+   public :: rad_eqns_t_0_
+   public :: rad_eqns_t_1_
+   public :: rad_trans_t_0_
+   public :: rad_trans_t_1_
+   #:endif
 
    ! Default access
 

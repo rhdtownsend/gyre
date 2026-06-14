@@ -71,8 +71,8 @@ scalar quantity :math:`f` and vector quantity :math:`\va` are related
       \delta f = f' + (\vxi \cdot \nabla) f, \qquad
       \delta \va = \va' + (\vxi \cdot \nabla) \va,
 
-where :math:`\vxi` is the disiplacement perturbation vector
-introduced in the :ref:`osc-sep-eqns` section.
+respectively, where :math:`\vxi` is the disiplacement perturbation
+vector introduced in the :ref:`osc-sep-eqns` section.
 
 Moreover, the thermodynamic partial derivatives are defined as
 

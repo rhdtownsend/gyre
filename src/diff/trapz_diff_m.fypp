@@ -121,17 +121,24 @@ contains
 
       !****
 
-      subroutine eval_E_t_${S}$_(this, st, E_t, scl)
+      subroutine eval_E_t_${S}$_(this, st, E_t, scl, F)
 
-         class(trapz_diff_${S}$), intent(in) :: this
-         class(state_${S}$), intent(in)      :: st
-         ${T}$, contiguous, intent(out)      :: E_t(:,:)
-         type(ext_${S}$), intent(out)        :: scl
+         class(trapz_diff_${S}$), intent(in)      :: this
+         class(state_${S}$), intent(in)           :: st
+         ${T}$, contiguous, intent(out)           :: E_t(:,:)
+         type(ext_${S}$), intent(out)             :: scl
+         ${T}$, contiguous, intent(out), optional :: F(:)
 
+         ${T}$   :: f_1(this%n_e)
+         ${T}$   :: f_2(this%n_e)
          integer :: j
 
          @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
          @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
+
+         if (PRESENT(F)) then
+            @:CHECK_BOUNDS(SIZE(F), this%n_e)
+         end if
 
          ! Evaluate the transposed difference equations
 
@@ -139,19 +146,39 @@ contains
 
             if (this%origin) then
 
-               ! If we're at the origin, fudge things to avoid evaluating A there
+               ! If we're at the origin, fudge things to avoid
+               ! evaluating A and f there
 
                E_t = 0._RD
 
+               if (PRESENT(F)) then
+                  F = 0._RD
+               end if
+
             else
 
-               call this%eq(1)%eval_A_t(st, this%dx, E_t(:n_e,:))
-               call this%eq(2)%eval_A_t(st, this%dx, E_t(n_e+1:,:))
+               if (PRESENT(F)) then
 
-               do concurrent(j = 1:n_e)
-                  E_t(:n_e,j) = E_t(:n_e,j)*(1._RD - this%w(j))
-                  E_t(n_e+1:,j) = E_t(n_e+1:,j)*this%w(j)
-               end do
+                  call this%eq(1)%eval_A_t(st, this%dx, E_t(:n_e,:), f_1)
+                  call this%eq(2)%eval_A_t(st, this%dx, E_t(n_e+1:,:), f_2)
+
+                  do concurrent(j = 1:n_e)
+                     E_t(:n_e,j) = E_t(:n_e,j)*(1._RD - this%w(j))
+                     E_t(n_e+1:,j) = E_t(n_e+1:,j)*this%w(j)
+                     F(j) = - f_1(j)*(1._RD - this%w(j)) - f_2(j)*this%w(j)
+                  end do
+
+               else
+
+                  call this%eq(1)%eval_A_t(st, this%dx, E_t(:n_e,:))
+                  call this%eq(2)%eval_A_t(st, this%dx, E_t(n_e+1:,:))
+
+                  do concurrent(j = 1:n_e)
+                     E_t(:n_e,j) = E_t(:n_e,j)*(1._RD - this%w(j))
+                     E_t(n_e+1:,j) = E_t(n_e+1:,j)*this%w(j)
+                  end do
+
+               end if
 
             end if
 

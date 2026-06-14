@@ -51,13 +51,15 @@ module tnad_factory_m
    ! Access specifiers
 
    public :: tnad_eqns_t
-   public :: tnad_eqns_t_0_
-   public :: tnad_eqns_t_1_
    public :: tnad_trans_t
-   public :: tnad_trans_t_0_
-   public :: tnad_trans_t_1_
    public :: tnad_ibound_t
    public :: tnad_obound_t
+   #:if defined('GFORTRAN_PR125610')
+   public :: tnad_eqns_t_0_
+   public :: tnad_eqns_t_1_
+   public :: tnad_trans_t_0_
+   public :: tnad_trans_t_1_
+   #:endif
 
    ! Default access
 

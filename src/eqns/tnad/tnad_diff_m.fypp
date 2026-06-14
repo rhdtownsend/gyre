@@ -126,10 +126,11 @@ contains
 
          ! Initialize the equations
 
-         ! Workaround: call tnad_eqns_t_1_ instead of tnad_eqns_t due
-         ! to gfortran 13 bug
-
+         #:if defined('GFORTRAN_PR125610')
          eq = tnad_eqns_t_1_(cx, pt, os_p)
+         #:else
+         eq = tnad_eqns_t(cx, pt, os_p)
+         #:endif
 
          ! Finish
 
@@ -141,16 +142,17 @@ contains
 
    !****
 
-   subroutine eval_E_t(this, st, E_t, scl)
+   subroutine eval_E_t(this, st, E_t, scl, F)
 
       use magnus_gl2_diff_m
       use magnus_gl4_diff_m
       use magnus_gl6_diff_m
 
-      class(tnad_diff_t), intent(in)       :: this
-      class(state_ct), intent(in)          :: st
-      complex(RD), contiguous, intent(out) :: E_t(:,:)
-      type(ext_ct), intent(out)            :: scl
+      class(tnad_diff_t), intent(in)                 :: this
+      class(state_ct), intent(in)                    :: st
+      complex(RD), contiguous, intent(out)           :: E_t(:,:)
+      type(ext_ct), intent(out)                      :: scl
+      complex(RD), contiguous, intent(out), optional :: F(:)
 
       logical, parameter :: MAGNUS_EIGVAL_MASK(3) = [.FALSE.,.FALSE.,.TRUE.]
 
@@ -161,9 +163,13 @@ contains
       @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
       @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
 
+      if (PRESENT(f)) then
+         @:ABORT('not yet implemented')
+      end if
+
       ! Evaluate the transposed difference equations
 
-      call this%df%eval_E_t(st, E_t, scl)
+      call this%df%eval_E_t(st, E_t, scl, F)
 
       ! Apply regularization corrections
 

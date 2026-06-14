@@ -60,7 +60,7 @@ module ${P}$_rad_obound_m
    ! Interfaces
 
    interface
-      subroutine eval_B_(this, st, B)
+      subroutine eval_B_(this, st, B, f)
          use forum_m, only: RD
          use state_m
          import ${P}$_rad_obound_t
@@ -68,6 +68,7 @@ module ${P}$_rad_obound_m
          class(${P}$_rad_obound_t), intent(in) :: this
          class(state_rt), intent(in)           :: st
          real(RD), intent(out)                 :: B(:,:)
+         real(RD), intent(out), optional       :: f(:)
       end subroutine eval_B_
    end interface
 
@@ -174,15 +175,17 @@ contains
 
    !****
 
-   subroutine eval_B(this, st, B)
+   subroutine eval_B(this, st, B, f)
 
       class(${P}$_rad_obound_t), intent(in) :: this
       class(state_rt), intent(in)           :: st
       real(RD), intent(out)                 :: B(:,:)
+      real(RD), intent(out), optional       :: f(:)
 
-      ! Evaluate the outer boundary conditions
+      ! Evaluate the outer boundary condition matrix and homogeneous
+      ! vector
 
-      call this%eval_B_(st, B)
+      call this%eval_B_(st, B, f)
 
       ! Finish
 
@@ -192,18 +195,23 @@ contains
 
    !****
 
-   subroutine eval_B_vacuum_(this, st, B)
+   subroutine eval_B_vacuum_(this, st, B, f)
 
       class(${P}$_rad_obound_t), intent(in) :: this
       class(state_rt), intent(in)           :: st
       real(RD), intent(out)                 :: B(:,:)
+      real(RD), intent(out), optional       :: f(:)
 
       real(RD) :: omega_c
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
-      ! Evaluate the outer boundary conditions (vacuum)
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
+
+      ! Evaluate the outer boundary condition matrix (vacuum)
 
       associate( &
          omega => st%omega, &
@@ -228,16 +236,21 @@ contains
 
    !****
 
-   subroutine eval_B_zero_r_(this, st, B)
+   subroutine eval_B_zero_r_(this, st, B, f)
 
       class(${P}$_rad_obound_t), intent(in) :: this
       class(state_rt), intent(in)           :: st
       real(RD), intent(out)                 :: B(:,:)
+      real(RD), intent(out), optional       :: f(:)
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
-      ! Evaluate the outer boundary conditions (zero radial
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
+
+      ! Evaluate the outer boundary condition matrix (zero radial
       ! displacement)
 
       associate( &
@@ -257,18 +270,24 @@ contains
 
    !****
 
-   subroutine eval_B_dziem_(this, st, B)
+   subroutine eval_B_dziem_(this, st, B, f)
 
       class(${P}$_rad_obound_t), intent(in) :: this
       class(state_rt), intent(in)           :: st
       real(RD), intent(out)                 :: B(:,:)
+      real(RD), intent(out), optional       :: f(:)
 
       real(RD) :: omega_c
 
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
-      ! Evaluate the outer boundary conditions ([Dzi1971] formulation)
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
+
+      ! Evaluate the outer boundary condition matrix ([Dzi1971]
+      ! formulation)
 
       associate( &
          omega => st%omega, &
@@ -293,11 +312,12 @@ contains
 
    !****
 
-   subroutine eval_B_decomp_(this, st, B)
+   subroutine eval_B_decomp_(this, st, B, f)
 
       class(${P}$_rad_obound_t), intent(in) :: this
       class(state_rt), intent(in)           :: st
       real(RD), intent(out)                 :: B(:,:)
+      real(RD), intent(out), optional       :: f(:)
 
       real(RD) :: omega_c
       real(RD) :: a_11
@@ -307,7 +327,11 @@ contains
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
-      ! Evaluate the outer boundary conditions, based on a local
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
+
+      ! Evaluate the outer boundary condition matrix, based on a local
       ! eigendecomposition
 
       associate( &
@@ -343,11 +367,12 @@ contains
 
    !****
 
-   subroutine eval_B_jcd_(this, st, B)
+   subroutine eval_B_jcd_(this, st, B, f)
 
       class(${P}$_rad_obound_t), intent(in) :: this
       class(state_rt), intent(in)           :: st
       real(RD), intent(out)                 :: B(:,:)
+      real(RD), intent(out), optional       :: f(:)
 
       real(RD) :: omega_c
       real(RD) :: chi
@@ -357,7 +382,12 @@ contains
       @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
       @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
 
-      ! Evaluate the outer boundary conditions ([Chr2008] formulation)
+      if (PRESENT(f)) then
+         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      end if
+
+      ! Evaluate the outer boundary condition matrix ([Chr2008]
+      ! formulation)
 
       ! Calculate coefficients
 
@@ -376,7 +406,7 @@ contains
          b_11 = V_g - 3._RD
          b_12 = -V_g
 
-         ! Set up the boundary conditions
+         ! Set up the matrix
 
          #:include 'OB_jcd.inc'
 

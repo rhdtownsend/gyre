@@ -25,10 +25,11 @@ module resp_m
 
    use context_m
    use freq_context_m
+   use grid_m
    use model_m
    use orbit_par_m
+   use state_m
    use tidal_coeff_m
-   use tide_par_m
    use wave_m
 
    use ISO_FORTRAN_ENV
@@ -42,15 +43,12 @@ module resp_m
    type, extends(wave_t) :: resp_t
       private
       type(orbit_par_t), public :: or_p
-      type(tide_par_t), public  :: td_p
+      real(RD)                  :: y_T_1
       integer, public           :: k
    contains
       private
-      procedure, public :: eul_Phi
-      procedure, public :: eul_Psi
+      procedure, public :: y_T
       procedure, public :: Phi_T
-      procedure, public :: deul_Phi
-      procedure, public :: deul_Psi
       procedure, public :: dPhi_T
       procedure, public :: Omega_orb
       procedure, public :: R_a
@@ -83,20 +81,24 @@ module resp_m
 
 contains
 
-   function resp_t_(wv, or_p, td_p, k) result(rs)
+   function resp_t_(wv, or_p, k) result(rs)
 
       type(wave_t), intent(in)      :: wv
       type(orbit_par_t), intent(in) :: or_p
-      type(tide_par_t), intent(in)  :: td_p
       integer, intent(in)           :: k
       type(resp_t)                  :: rs
+
+      type(state_ct) :: st
 
       ! Construct the resp_t
 
       rs%wave_t = wv
 
       rs%or_p = or_p
-      rs%td_p = td_p
+
+      st = rs%state()
+
+      rs%y_T_1 = st%y_T_1
 
       rs%k = k
 
@@ -108,41 +110,37 @@ contains
 
    !****
 
-   function eul_Phi(this, j)
+   function y_T(this, j)
 
       class(resp_t), intent(in) :: this
       integer, intent(in)       :: j
-      complex(RD)               :: eul_Phi
+      real(RD)                  :: y_T
 
-      ! Evaluate the Eulerian self gravitational potential
-      ! perturbation, in units of G M_star / R_star
+      type(context_t) :: cx
+      type(grid_t)    :: gr
+      real(RD)        :: c_1
 
-      eul_Phi = this%eul_Psi(j) - this%Phi_T(j)
+      ! Evaluate the dimensionless tidal potential y_T = Phi_T/(g r) x**(2-l)
+
+      cx = this%context()
+      gr = this%grid()
+
+      associate ( &
+         y_T_1 => this%y_T_1, &
+         ml => cx%model(), &
+         pt => gr%pt(j))
+
+         c_1 = ml%coeff(I_C_1, pt)
+
+         y_T = y_T_1*c_1
+
+      end associate
 
       ! Finish
 
       return
 
-   end function eul_Phi
-
-   !****
-
-   function eul_Psi(this, j)
-
-      class(resp_t), intent(in) :: this
-      integer, intent(in)       :: j
-      complex(RD)               :: eul_Psi
-
-      ! Evaluate the Eulerian total gravitational potential
-      ! perturbation, in units of G M_star / R_star
-
-      eul_Psi = this%wave_t%eul_Phi(j)
-
-      ! Finish
-
-      return
-
-   end function eul_Psi
+   end function y_T
 
    !****
 
@@ -152,15 +150,15 @@ contains
       integer, intent(in)       :: j
       real(RD)                  :: Phi_T
 
-      type(context_t) :: cx
-
       ! Evaluate the tidal potential, in units of G M_star / R_star
 
-      cx = this%context()
+      associate ( &
+         y_T_1 => this%y_T_1, &
+         x => this%x(j), &
+         l => this%l)
 
-      associate (ml => cx%model(),&
-         x => this%x(j))
-         Phi_T = tidal_Phi_T(ml, this%or_p, x, this%l, this%m, this%k)
+         Phi_T = y_T_1*x**l
+
       end associate
 
       ! Finish
@@ -171,60 +169,22 @@ contains
 
    !****
 
-   function deul_Phi(this, j)
-
-      class(resp_t), intent(in) :: this
-      integer, intent(in)       :: j
-      complex(RD)               :: deul_Phi
-
-      ! Evaluate the Eulerian self-gravitational potential gradient
-      ! (gravity) perturbation, in units of G M_star / R_star**2
-
-      deul_Phi = this%deul_Psi(j) - this%dPhi_T(j)
-
-      ! Finish
-
-      return
-
-   end function deul_Phi
-
-   !****
-
-   function deul_Psi(this, j)
-
-      class(resp_t), intent(in) :: this
-      integer, intent(in)       :: j
-      complex(RD)               :: deul_Psi
-
-      ! Evaluate the Eulerian total potential gradient (gravity)
-      ! perturbation, in units of G M_star / R_star**2
-
-      deul_Psi = this%wave_t%deul_Phi(j)
-
-      ! Finish
-
-      return
-
-   end function deul_Psi
-
-   !****
-
    function dPhi_T(this, j)
 
       class(resp_t), intent(in) :: this
       integer, intent(in)       :: j
       real(RD)                  :: dPhi_T
 
-      type(context_t) :: cx
-
       ! Evaluate the tidal potential gradient (gravity), in units of G
-      ! M_star / R_star**2
+     ! M_star / R_star**2
 
-      cx = this%context()
+      associate ( &
+         y_T_1 => this%y_T_1, &
+         x => this%x(j), &
+         l => this%l)
 
-      associate (ml => cx%model(),&
-         x => this%x(j))
-         dPhi_T = tidal_dPhi_T(ml, this%or_p, x, this%l, this%m, this%k)
+         dPhi_T = l*y_T_1*x**(l-1)
+
       end associate
 
       ! Finish
@@ -248,7 +208,8 @@ contains
 
       cx = this%context()
 
-      associate (ml => cx%model())
+      associate ( &
+         ml => cx%model())
 
          if (PRESENT(freq_frame)) then
             Omega_orb = (tidal_Omega_orb(ml, this%or_p) + &

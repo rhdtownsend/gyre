@@ -33,10 +33,11 @@ program eval_love
 
    ! Variables
 
-   character(:), allocatable :: file_name
-   character(:), allocatable :: model_type
-   character(:), allocatable :: file_format
    integer, allocatable      :: l
+   character(:), allocatable :: model_type
+   character(:), allocatable :: file_name
+   character(:), allocatable :: file_format
+   integer, allocatable      :: n
 
    type(arg_parser_t)            :: arg_parser
    type(model_par_t)             :: ml_p
@@ -45,40 +46,77 @@ program eval_love
    type(num_par_t)               :: nm_p
    type(grid_par_t)              :: gr_p
    type(mode_par_t)              :: md_p
+   type(orbit_par_t)             :: or_p
    class(model_t), pointer       :: ml => null()
    type(context_t), pointer      :: cx
    type(grid_t)                  :: gr
-   type(sad_bvp_t)               :: bp
+   type(static_bvp_t)            :: bp
    class(sysmtx_rt), allocatable :: sm
    type(state_rt)                :: st
    real(RD)                      :: A
    real(RD)                      :: B
-   real(RD)                      :: w_i(1)
-   real(RD)                      :: w_o(1)
-   type(wave_t)                  :: wv
+   type(resp_t)                  :: rs
    real(RD)                      :: k_l
+
+   type(out_par_t) :: ot_p
+   type(detail_t)  :: dt
 
    ! Read parameters
 
-   model_type = 'EVOL'
-   file_format = 'GSM'
+   arg_parser = arg_parser_t('eval_love l', auto_help=.TRUE.)
 
-   arg_parser = arg_parser_t('eval_love MODEL_FILE', auto_help=.TRUE.)
-
-   call arg_parser%define_option('l', OPT_REQUIRED_ARG, 'l', &
-      usage='--l=L', description='harmonic degree')
    call arg_parser%define_option('model-type', OPT_REQUIRED_ARG, &
       usage='--model-type=TYPE', description='model type ( EVOL | POLY | ...)')
+   call arg_parser%define_option('file-name', OPT_REQUIRED_ARG, &
+      usage='--file-name=NAME', description='file name')
    call arg_parser%define_option('file-format', OPT_REQUIRED_ARG, &
       usage='--file-format=FORMAT', description='file format ( GSM | MESA | ... )')
+   call arg_parser%define_option('n', OPT_REQUIRED_ARG, &
+      usage='--n=N', description='number of grid points')
 
    call arg_parser%parse(arg_proc, opt_proc)
 
-   if (.NOT. ALLOCATED(file_name)) call print_summary()
+   if (.NOT. ALLOCATED(l)) call print_summary()
 
-   if (.NOT. ALLOCATED(l)) then
-      @:STOP('--l must be specified')
+   if (.NOT. ALLOCATED(model_type)) then
+      @:ABORT('--model-type must be specified')
    end if
+
+   select case(model_type)
+   case('EVOL')
+      if (.NOT. ALLOCATED(file_name)) then
+         @:ABORT('--file-name must be specified for EVOL models')
+      end if
+      if (.NOT. ALLOCATED(file_format)) then
+         @:ABORT('--file-format must be specified for EVOL models')
+      end if
+   case('POLY')
+      if (.NOT. ALLOCATED(file_name)) then
+         @:ABORT('--file-name must be specified for POLY models')
+      end if
+   case('HOM')
+      if (.NOT. ALLOCATED(n)) then
+         @:ABORT('--n must be specified for HOM models')
+      end if
+   case('ANAPOLY_0')
+      if (.NOT. ALLOCATED(n)) then
+         @:ABORT('--n must be specified for ANAPOLY_0 models')
+      end if
+   case('ANAPOLY_1')
+      if (.NOT. ALLOCATED(n)) then
+         @:ABORT('--n must be specified for ANAPOLY_1 models')
+      end if
+   case('ANAPOLY_5')
+      if (.NOT. ALLOCATED(n)) then
+         @:ABORT('--n must be specified for ANAPOLY_5 models')
+      end if
+   case('ANAPOLY_5_1')
+      if (.NOT. ALLOCATED(n)) then
+         @:ABORT('--n must be specified for ANAPOLY_5_1 models')
+      end if
+   case default
+      @:ABORT('invalid model_type')
+   end select
 
    ! Initialize
 
@@ -90,13 +128,20 @@ program eval_love
 
    ! Set up parameters
 
-   ml_p = model_par_t(model_type=model_type, file_format=file_format, file=file_name)
+   ml_p = model_par_t(model_type=model_type)
+   if (ALLOCATED(file_name)) ml_p%file = file_name
+   if (ALLOCATED(file_format)) ml_p%file_format = file_format
+   if (ALLOCATED(n)) ml_p%n = n
 
    os_p = osc_par_t()
    rt_p = rot_par_t()
-   nm_p = num_par_t()
+   nm_p = num_par_t(diff_scheme='COLLOC_GL6')
    gr_p = grid_par_t(w_osc=10._RD, w_exp=2._RD, w_ctr=10._RD)
    md_p = mode_par_t(l=l)
+   or_p = orbit_par_t()
+
+   ot_p = out_par_t(detail_template='detail.id%id.h5', &
+      detail_item_list='x,y_1,y_2,y_3,y_4,Phi_T,V_2,As,U,Gamma_1,l')
 
    ! Initialize the model
 
@@ -119,22 +164,24 @@ program eval_love
 
    ! Solve for the tidal response
 
-   bp = sad_bvp_t(cx, gr, md_p, nm_p, os_p)
+   bp = static_bvp_t(cx, gr, md_p, nm_p, os_p)
 
-   allocate(sm, SOURCE=sysmtx_rt(bp, 'ROWPP'))
+   allocate(sm, SOURCE=sysmtx_rt(bp, 'BANDED'))
 
    A = 1._RD
 
-   w_i = 0._RD
-   w_o = (2*l+1)*A
+   st = state_rt(0._RD, y_T_1=A)
 
-   st = state_rt(0._RD)
+   rs = resp_t(bp, sm, st, 0, or_p, 0)
 
-   wv = wave_t(bp, sm, st, w_i, w_o, 0)
+   ! Write out the wave_t
+
+   dt = detail_t(ot_p)
+   call dt%write(rs)
 
    ! Evaluate the Love number
 
-   B = REAL(wv%eul_Phi(wv%n), RD) - A
+   B = REAL(rs%eul_Phi(rs%n), RD)
 
    k_l = B/A
 
@@ -151,7 +198,7 @@ contains
 
       select case(a)
       case(1)
-         file_name = value
+         call parse_value(value, l)
       case default
          call print_summary()
       end select
@@ -170,12 +217,14 @@ contains
       stat = STAT_OK
 
       select case(name)
-      case('l')
-         call parse_value(value, l)
       case('model-type')
          model_type = value
+      case('file-name')
+         file_name = value
       case('file-format')
          file_format = value
+      case('n')
+         call parse_value(value, n)
       case('help')
          call print_summary()
       case default

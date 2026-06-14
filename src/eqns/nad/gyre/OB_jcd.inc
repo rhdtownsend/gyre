@@ -17,3 +17,9 @@ B(3, 5) = 4*f_rht
 B(1, 6) = 0
 B(2, 6) = 0
 B(3, 6) = -1
+if (PRESENT(f)) then
+f(1) = -b_12*c_1*y_T_1*(-l_e - 1 + lambda/(alpha_omg*c_1*omega_c**2))/( &
+      As + V_g)
+f(2) = 0
+f(3) = 0
+endif

@@ -410,8 +410,7 @@ contains
       select case (item)
 
          #:for N, E in ( &
-            ('eul_Psi', 'rs%eul_Psi(j)'), &
-            ('deul_Psi', 'rs%deul_Psi(j)'), &
+            ('y_T', 'rs%y_T(j)'), &
             ('Phi_T', 'rs%Phi_T(j)'), &
             ('dPhi_T', 'rs%dPhi_T(j)'))
             case ('${N}$')
@@ -420,8 +419,6 @@ contains
 
          #:for N, E in ( &
             ('k', 'rs%k'), &
-            ('eul_Psi_ref', 'rs%eul_Psi(rs%j_ref)'), &
-            ('deul_Psi_ref', 'rs%deul_Psi(rs%j_ref)'), &
             ('Phi_T_ref', 'rs%Phi_T(rs%j_ref)'), &
             ('dPhi_T_ref', 'rs%dPhi_T(rs%j_ref)'), &
             ('Omega_orb', ' rs%Omega_orb(ot_p%freq_units, ot_p%freq_frame)'), &

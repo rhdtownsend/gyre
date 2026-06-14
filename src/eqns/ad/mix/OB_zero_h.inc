@@ -6,3 +6,7 @@ B(1, 3) = -alpha_grv
 B(2, 3) = -alpha_grv*l_e + alpha_grv*(1 - U) - 1
 B(1, 4) = 0
 B(2, 4) = -alpha_grv
+if (PRESENT(f)) then
+f(1) = -c_1*y_T_1
+f(2) = 0
+endif

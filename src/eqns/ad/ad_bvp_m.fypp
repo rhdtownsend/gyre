@@ -30,8 +30,9 @@ module ad_bvp_m
    use diff_factory_m
    use eqns_m
    use grid_m
-   use model_m
+   use mode_m
    use mode_par_m
+   use model_m
    use num_par_m
    use osc_par_m
    use point_m
@@ -66,15 +67,14 @@ module ad_bvp_m
       module procedure ad_bvp_t_
    end interface ad_bvp_t
 
-   interface wave_t
-      module procedure wave_t_hom_
-      module procedure wave_t_inhom_
-   end interface wave_t
+   interface mode_t
+      module procedure mode_t_
+   end interface mode_t
 
    ! Access specifiers
 
    public :: ad_bvp_t
-   public :: wave_t
+   public :: mode_t
 
    ! Default access
 
@@ -123,10 +123,11 @@ contains
       bp%cx => cx
       bp%gr = gr
 
-      ! Workaround: call ad_trans_t_1_ instead of ad_trans_t due to
-      ! gfortran 13 bug
-
+      #:if defined('GFORTRAN_PR125610')
       bp%tr = ad_trans_t_1_(cx, gr%pt, os_p)
+      #:else
+      bp%tr = ad_trans_t(cx, gr%pt, os_p)
+      #:endif
 
       if (os_p%quasiad_eigfuncs) then
          bp%qe = qad_eval_t(cx, gr, os_p)
@@ -149,10 +150,11 @@ contains
 
          ! Initialize the equations
 
-         ! Workaround: call ad_eqns_t_1_ instead of ad_eqns_t due to
-         ! gfortran 13 bug
-
+         #:if defined('GFORTRAN_PR125610')
          eq = ad_eqns_t_1_(cx, pt, os_p)
+         #:else
+         eq = ad_eqns_t(cx, pt, os_p)
+         #:endif
 
          ! Finish
 
@@ -164,7 +166,7 @@ contains
 
    !****
 
-   function wave_t_hom_(bp, sm, st, id, chi, n_iter) result(wv)
+   function mode_t_(bp, sm, st, id, chi, n_iter) result(md)
 
       class(ad_bvp_t), intent(in)     :: bp
       class(sysmtx_rt), intent(inout) :: sm
@@ -172,10 +174,13 @@ contains
       integer, intent(in)             :: id
       real(RD), intent(in)            :: chi
       integer, intent(in)             :: n_iter
-      type(wave_t)                    :: wv
+      type(mode_t)                    :: md
 
-      real(RD) :: y(4,bp%n)
-      integer  :: j
+      real(RD)       :: y(4,bp%n)
+      integer        :: j
+      type(state_ct) :: st_c
+      complex(RD)    :: y_c(6,bp%n)
+      type(wave_t)   :: wv
 
       ! Calculate the homogeneous solution vector
 
@@ -187,75 +192,6 @@ contains
       do j = 1, bp%n
          call bp%tr(j)%transform(st, y(:,j))
       end do
-
-      ! Construct the wave type
-
-      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
-
-      ! Finish
-
-      return
-
-   end function wave_t_hom_
-
-   !****
-
-   function wave_t_inhom_(bp, sm, st, z_i, z_o, id, chi, n_iter) result(wv)
-
-      class(ad_bvp_t), intent(in)     :: bp
-      class(sysmtx_rt), intent(inout) :: sm
-      type(state_rt), intent(in)      :: st
-      real(RD), intent(in)            :: z_i(:)
-      real(RD), intent(in)            :: z_o(:)
-      integer, intent(in)             :: id
-      real(RD), intent(in)            :: chi
-      integer, intent(in)             :: n_iter
-      type(wave_t)                    :: wv
-
-      real(RD) :: y(4,bp%n)
-      integer  :: j
-
-      @:CHECK_BOUNDS(SIZE(z_i), bp%n_i)
-      @:CHECK_BOUNDS(SIZE(z_o), bp%n_o)
-
-      ! Calculate the inhomogeneous solution vector
-
-      call bp%solve_inhom(sm, st, z_i, z_o, y)
-
-      ! Convert to canonical form
-
-      !$OMP PARALLEL DO
-      do j = 1, bp%n
-         call bp%tr(j)%transform(st, y(:,j))
-      end do
-
-      ! Construct the wave type
-
-      wv = wave_t_y_(bp, st, y, id, chi, n_iter)
-
-      ! Finish
-
-      return
-
-   end function wave_t_inhom_
-
-   !****
-
-   function wave_t_y_(bp, st, y, id, chi, n_iter) result(wv)
-
-      class(ad_bvp_t), intent(in) :: bp
-      type(state_rt), intent(in)  :: st
-      real(RD), intent(in)        :: y(:,:)
-      integer, intent(in)         :: id
-      real(RD), intent(in)        :: chi
-      integer, intent(in)         :: n_iter
-      type(wave_t)                :: wv
-
-      type(state_ct) :: st_c
-      complex(RD)    :: y_c(6,bp%n)
-
-      @:CHECK_BOUNDS(SIZE(y, 1), bp%n_e)
-      @:CHECK_BOUNDS(SIZE(y, 2), bp%n)
 
       ! Set up complex eigenfunctions
 
@@ -272,14 +208,16 @@ contains
 
       endif
 
-      ! Construct the wave type
+      ! Construct the mode type
 
       wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
+
+      md = mode_t(wv)
 
       ! Finish
 
       return
 
-   end function wave_t_y_
+   end function mode_t_
 
 end module ad_bvp_m

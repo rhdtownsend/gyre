@@ -124,16 +124,17 @@ contains
 
       !****
 
-      subroutine eval_E_t_${S}$_(this, st, E_t, scl)
+      subroutine eval_E_t_${S}$_(this, st, E_t, scl, F)
 
          class(magnus_gl2_diff_${S}$), intent(in) :: this
          class(state_${S}$), intent(in)           :: st
          ${T}$, contiguous, intent(out)           :: E_t(:,:)
          type(ext_${S}$), intent(out)             :: scl
+         ${T}$, contiguous, intent(out), optional :: F(:)
 
          ! Evaluate the transposed difference equations
 
-         call this%eval_E_t_(st, E_t, scl)
+         call this%eval_E_t_(st, E_t, scl, F)
 
          ! Finish
 
@@ -149,12 +150,13 @@ contains
          ['6', 6], &
          ['gen', 'this%n_e']]
 
-         subroutine eval_E_t_${I}$_${S}$_(this, st, E_t, scl)
+         subroutine eval_E_t_${I}$_${S}$_(this, st, E_t, scl, F)
 
             class(magnus_gl2_diff_${S}$), intent(in) :: this
             class(state_${S}$), intent(in)           :: st
             ${T}$, contiguous, intent(out)           :: E_t(:,:)
             type(ext_${S}$), intent(out)             :: scl
+            ${T}$, contiguous, intent(out), optional :: F(:)
 
             ${T}$       :: Omega_t(${N_E}$,${N_E}$)
             complex(RD) :: lambda(${N_E}$)
@@ -166,6 +168,14 @@ contains
 
             @:CHECK_BOUNDS(SIZE(E_t, 1), 2*${N_E}$)
             @:CHECK_BOUNDS(SIZE(E_t, 2), ${N_E}$)
+
+            if (PRESENT(F)) then
+               @:CHECK_BOUNDS(SIZE(F), this%n_e)
+            end if
+
+            if (PRESENT(f)) then
+               @:ABORT('not yet implemented')
+            end if
 
             ! Set up the transposed Magnus matrix
 

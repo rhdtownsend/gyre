@@ -135,6 +135,7 @@ When :nml:option:`inner_bound` = :nml:value:`'REGULAR'`, GYRE applies
 regularity-enforcing conditions at the inner boundary:
 
 .. math::
+   :label: e:inner-bound
 
    \begin{aligned}
    c_{1} \omega^{2} y_{1} - \ell y_{2} - \alphagrv \ell y_{3} &= 0, \\

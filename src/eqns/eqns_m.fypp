@@ -40,7 +40,7 @@ module eqns_m
 
       abstract interface
 
-         subroutine eval_A_${S}$_(this, st, del, A)
+         subroutine eval_A_${S}$_(this, st, del, A, f)
             use forum_m, only: RD
             use state_m
             import eqns_${S}$
@@ -49,9 +49,10 @@ module eqns_m
             class(state_${S}$), intent(in) :: st
             real(RD), intent(in)           :: del
             ${T}$, intent(out)             :: A(:,:)
+            ${T}$, intent(out), optional   :: f(:)
          end subroutine eval_A_${S}$_
 
-         subroutine eval_A_t_${S}$_(this, st, del, A_t)
+         subroutine eval_A_t_${S}$_(this, st, del, A_t, f)
             use forum_m, only: RD
             use state_m
             import eqns_${S}$
@@ -60,9 +61,10 @@ module eqns_m
             class(state_${S}$), intent(in) :: st
             real(RD), intent(in)           :: del
             ${T}$, intent(out)             :: A_t(:,:)
+            ${T}$, intent(out), optional   :: f(:)
          end subroutine eval_A_t_${S}$_
 
-         subroutine eval_C_${S}$_(this, st, C)
+         subroutine eval_C_${S}$_(this, st, C, f)
             use forum_m, only: RD
             use state_m
             import eqns_${S}$
@@ -70,9 +72,10 @@ module eqns_m
             class(eqns_${S}$), intent(in)  :: this
             class(state_${S}$), intent(in) :: st
             ${T}$, intent(out)             :: C(:,:)
+            ${T}$, intent(out), optional   :: f(:)
          end subroutine eval_C_${S}$_
 
-         subroutine eval_C_t_${S}$_(this, st, C_t)
+         subroutine eval_C_t_${S}$_(this, st, C_t, f)
             use forum_m, only: RD
             use state_m
             import eqns_${S}$
@@ -80,6 +83,7 @@ module eqns_m
             class(eqns_${S}$), intent(in)  :: this
             class(state_${S}$), intent(in) :: st
             ${T}$, intent(out)             :: C_t(:,:)
+            ${T}$, intent(out), optional   :: f(:)
          end subroutine eval_C_t_${S}$_
       end interface
 

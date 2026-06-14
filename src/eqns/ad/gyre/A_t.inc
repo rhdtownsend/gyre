@@ -14,3 +14,9 @@ A_t(1, 4) = As*U*alpha_grv*del_x
 A_t(2, 4) = U*V_g*alpha_grv*del_x
 A_t(3, 4) = alpha_grv*del_x*lambda
 A_t(4, 4) = alpha_grv*del_x*(-U - l_i + 2)
+if (PRESENT(f)) then
+f(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
+f(2) = -c_1*del_x*l_e*y_T_1
+f(3) = 0
+f(4) = 0
+endif
