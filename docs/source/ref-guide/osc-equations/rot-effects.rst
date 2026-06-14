@@ -85,18 +85,29 @@ and has since been used extensively within the pulsation community
 :ads_citealp:`townsend:2003a`; :ads_citealp:`bouabid:2013`;
 :ads_citealp:`townsend:2020`).
 
-Within the TAR, the solution forms given in
-equation (:eq:`e:osc-sol-forms`) are replaced by
+Within the TAR, the solution forms given in equations
+(:eq:`e:osc-sol-form`) are replaced by
 
 .. math::
-   :label: e:osc-sol-forms-hough
+   :label: e:osc-sol-form-tar
 
    \begin{aligned}
-   \xir(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \txir(r) \, \houghr(\theta) \, \exp(\ii m \phi -\ii \sigma t) \right], \\
-   \xit(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \txih(r) \, \frac{\hought(\theta)}{\sin\theta} \, \exp(\ii m \phi -\ii \sigma t) \right], \\
-   \xip(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \txih(r) \, \frac{\houghp(\theta)}{\ii \sin\theta} \, \exp(\ii m \phi -\ii \sigma t) \right], \\
-   f'(r,\theta,\phi;t) &= \operatorname{Re} \left[ \sqrt{4\pi} \, \tf'(r) \, \houghr(\theta) \, \exp(\ii m \phi -\ii \sigma t) \right]
+   f'(r,\theta,\phi;t) &= \tf'(r) \, \houghr(\theta) \, \exp(\ii m \phi -\ii \sigma t), \\
+   \va(r,\theta,\phi;t) &= \left\{
+   \tar'(r) \, \houghr(\theta) \, \ver +
+   \frac{\tah'(r)}{\sin\theta} \left[ \hought(\theta) \, \vet - \ii \houghp(\theta) \, \vep \right]
+   \right\} \exp(\ii m \phi -\ii \sigma t),
    \end{aligned}
+
+and those in equation (:eq:`e:osc-sol-form-vxi`) by
+
+.. math::
+   :label: e:osc-sol-form-vxi-tar
+
+   \vxi(r,\theta,\phi;t) = \left\{
+   \txir(r) \, \houghr(\theta) \, \ver +
+   \frac{\txih(r)}{\sin\theta} \left[ \hought(\theta) \, \vet - \ii \houghp(\theta) \, \vep \right]
+   \right\} \exp(\ii m \phi -\ii \sigma t),
 
 Here, the Hough functions :math:`\houghr`, :math:`\hought` and
 :math:`\houghp` are the eigenfunctions obtained by solving Laplace's
@@ -134,8 +145,9 @@ behavior of the eigenfunctions and eigenvalue in the limit :math:`\Orot
    \text{as } \Orot \rightarrow 0,
 
 and :math:`\lambda \rightarrow \ell(\ell+1)`. With these expressions,
-the solution forms (:eq:`e:osc-sol-forms-hough`) reduce to those given
-in equation (:eq:`e:osc-sol-forms`).
+the solution forms (:eq:`e:osc-sol-form-tar`,
+:eq:`e:osc-sol-form-vxi-tar`) reduce to those given in equations
+(:eq:`e:osc-sol-form`, :eq:`e:osc-sol-form-vxi`).
 
 Conversely, for the Rossby family
 
@@ -153,7 +165,7 @@ Conversely, for the Rossby family
    \text{as } \Orot \rightarrow 0,
 
 and :math:`\lambda \rightarrow 0`. The solution forms
-(:eq:`e:osc-sol-forms-hough`) then reduce to toroidal-mode solutions
+(:eq:`e:osc-sol-form-vxi-tar`) then reduce to toroidal-mode solutions
 of the oscillation equations, as described in section 13.3 of
 :ads_citet:`unno:1989`. In the approach to the non-rotating limit,
 the frequencies of Rossby modes behave as

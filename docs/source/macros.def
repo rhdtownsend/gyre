@@ -27,7 +27,10 @@ mBin	\boldsymbol{\mathsf{B}}_{\rm in}
 mBout	\boldsymbol{\mathsf{B}}_{\rm out}
 mI	\boldsymbol{\mathsf{I}}
 mz	\boldsymbol{0}
+va	\mathbf{a}
 ver	\mathbf{e}_{r}
+vet	\mathbf{e}_{\theta}
+vep	\mathbf{e}_{\phi}
 vv	\mathbf{v}
 vF	\mathbf{F}
 rhoc	\rho_{\rm c}
@@ -77,10 +80,13 @@ tPsi	\tilde{\Psi}
 tL	\tilde{L}
 tLrad	\tilde{L}_{\rm R}
 tFradr	\tilde{F}_{{\rm R},r}
+tFradh	\tilde{F}_{{\rm R, h}}
 tepsnuc	\tilde{\epsilon}_{\rm n}
 tkappa	\tilde{\kappa}
 tf	\tilde{f}
 tflmk	\tilde{f}_{\ell,m,k}
+tar	\tilde{a}_{r}
+tah	\tilde{a}_{\rm h}
 yT	y_{\rm T}
 subin	#1_{\rm i}
 subout	#1_{\rm o}
