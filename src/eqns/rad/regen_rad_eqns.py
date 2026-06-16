@@ -23,17 +23,26 @@ from symbols import *
 
 # Routines to generate inhomogeneous terms
 
-def generate_tidal_f(A):
+def generate_tidal_A_F(A):
 
-    f = sp.Matrix([0,0])
+    A_F = sp.zeros(2, 1)
 
-    return f
+    return A_F
 
-def generate_tidal_g(B):
 
-    g = sp.Matrix([0])
+def generate_tidal_B_F(B):
 
-    return g
+    B_F = sp.zeros(1, 1)
+
+    return B_F
+
+
+def generate_tidal_C_F(C):
+
+    C_F = sp.zeros(2, 1)
+
+    return C_F
+
 
 # Declare equation matrices
 
@@ -44,14 +53,16 @@ A = sp.Matrix([
     [c_1(x)*alpha_omg*omega_c**2 + U(x) - As, As - U(x) + 3]
 ])
 
-f = generate_tidal_f(A)
+A_F = generate_tidal_A_F(A)
 
-# Match condition matrix
+# Match condition matrix and inhomogeneous vector
 
 C = sp.Matrix([
     [1, 0],
     [-U(x), U(x)]
 ])
+
+C_F = generate_tidal_C_F(C)
 
 # Inner boundary condition matrices and inhomogeneous vectors
 
@@ -59,13 +70,13 @@ IB_regular = sp.Matrix([
     [c_1(x)*alpha_omg*omega_c**2, 0]
 ])
 
-IB_regular_g = generate_tidal_g(IB_regular)
+IB_F_regular = generate_tidal_B_F(IB_regular)
 
 IB_zero_r = sp.Matrix([
     [1, 0]
 ])
 
-IB_zero_r_g = generate_tidal_g(IB_zero_r)
+IB_F_zero_r = generate_tidal_B_F(IB_zero_r)
 
 # Outer boundary condition matrices
 
@@ -73,31 +84,31 @@ OB_vacuum = sp.Matrix([
     [1, -1]
 ])
 
-OB_vacuum_g = generate_tidal_g(OB_vacuum)
+OB_F_vacuum = generate_tidal_B_F(OB_vacuum)
 
 OB_zero_r = sp.Matrix([
     [1, 0]
 ])
 
-OB_zero_r_g = generate_tidal_g(OB_zero_r)
+OB_F_zero_r = generate_tidal_B_F(OB_zero_r)
 
 OB_dziem = sp.Matrix([
     [1 - (4 + c_1(x)*alpha_omg*omega_c**2)/V, -1]
 ])
 
-OB_dziem_g = generate_tidal_g(OB_dziem)
+OB_F_dziem = generate_tidal_B_F(OB_dziem)
 
 OB_decomp = sp.Matrix([
     [-(chi - a_11), a_12]
 ])
 
-OB_decomp_g = generate_tidal_g(OB_decomp)
+OB_F_decomp = generate_tidal_B_F(OB_decomp)
 
 OB_jcd = sp.Matrix([
     [chi - b_11, -b_12]
 ])
 
-OB_jcd_g = generate_tidal_g(OB_jcd)
+OB_F_jcd = generate_tidal_B_F(OB_jcd)
 
 # Main program
 
@@ -125,32 +136,32 @@ if __name__ == '__main__':
 
     for vars, T in zip(('gyre', 'dziem', 'jcd', 'mix', 'lagp'), (T_gyre, T_dziem, T_jcd, T_mix, T_lagp)):
 
-        with open(f'{vars}/A_t.inc', 'w') as file:
-            file.write(generate_E(A, f, T, transpose=True)+'\n')
+        with open(f'{vars}/A.inc', 'w') as file:
+            file.write(generate_A(A, A_F, T)+'\n')
+
+        with open(f'{vars}/C.inc', 'w') as file:
+            file.write(generate_C(C, C_F, T)+'\n')
 
         with open(f'{vars}/IB_regular.inc', 'w') as file:
-            file.write(generate_IB(IB_regular, IB_regular_g, T)+'\n')
+            file.write(generate_IB(IB_regular, IB_F_regular, T)+'\n')
 
         with open(f'{vars}/IB_zero_r.inc', 'w') as file:
-            file.write(generate_IB(IB_zero_r, IB_zero_r_g, T)+'\n')
+            file.write(generate_IB(IB_zero_r, IB_F_zero_r, T)+'\n')
 
         with open(f'{vars}/OB_vacuum.inc', 'w') as file:
-            file.write(generate_OB(OB_vacuum, OB_vacuum_g, T)+'\n')
+            file.write(generate_OB(OB_vacuum, OB_F_vacuum, T)+'\n')
 
         with open(f'{vars}/OB_zero_r.inc', 'w') as file:
-            file.write(generate_OB(OB_zero_r, OB_zero_r_g, T)+'\n')
+            file.write(generate_OB(OB_zero_r, OB_F_zero_r, T)+'\n')
 
         with open(f'{vars}/OB_dziem.inc', 'w') as file:
-            file.write(generate_OB(OB_dziem, OB_dziem_g, T)+'\n')
+            file.write(generate_OB(OB_dziem, OB_F_dziem, T)+'\n')
 
         with open(f'{vars}/OB_decomp.inc', 'w') as file:
-            file.write(generate_OB(OB_decomp, OB_decomp_g, T)+'\n')
+            file.write(generate_OB(OB_decomp, OB_F_decomp, T)+'\n')
 
         with open(f'{vars}/OB_jcd.inc', 'w') as file:
-            file.write(generate_OB(OB_jcd, OB_jcd_g, T)+'\n')
-
-        with open(f'{vars}/C_t.inc', 'w') as file:
-            file.write(generate_C(C, T, transpose=True)+'\n')
+            file.write(generate_OB(OB_jcd, OB_F_jcd, T)+'\n')
 
         with open(f'{vars}/R.inc', 'w') as file:
             file.write(generate_R(T)+'\n')

@@ -50,9 +50,7 @@ module static_eqns_m
    contains
       private
       procedure, public :: eval_A
-      procedure, public :: eval_A_t
       procedure, public :: eval_C
-      procedure, public :: eval_C_t
    end type static_eqns_t
 
    ! Interfaces
@@ -137,48 +135,33 @@ contains
 
    !****
 
-   subroutine eval_A(this, st, del, A, f)
+   subroutine eval_A(this, st, del, A, F, trans)
 
       class(static_eqns_t), intent(in) :: this
       class(state_rt), intent(in)      :: st
       real(RD), intent(in)             :: del
       real(RD), intent(out)            :: A(:,:)
-      real(RD), intent(out), optional  :: f(:)
+      real(RD), intent(out), optional  :: F(:)
+      logical, intent(in), optional    :: trans
 
-      ! Evaluate the Jacobian matrix and inhomogeneous vector
-
-      call this%eval_A_t(st, del, A, f)
-
-      A = TRANSPOSE(A)
-
-      ! Finish
-
-      return
-
-   end subroutine eval_A
-
-   !****
-
-   subroutine eval_A_t(this, st, del, A_t, f)
-
-      class(static_eqns_t), intent(in) :: this
-      class(state_rt), intent(in)      :: st
-      real(RD), intent(in)             :: del
-      real(RD), intent(out)            :: A_t(:,:)
-      real(RD), intent(out), optional  :: f(:)
-
+      logical  :: trans_
       real(RD) :: lambda
       real(RD) :: del_x
 
-      @:CHECK_BOUNDS(SIZE(A_t, 1), this%n_e)
-      @:CHECK_BOUNDS(SIZE(A_t, 2), this%n_e)
-
-      if (PRESENT(f)) then
-         @:CHECK_BOUNDS(SIZE(f), this%n_e)
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
       end if
 
-      ! Evaluate the transposed Jacobian matrix and inhomogeneous
-      ! vector
+      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
+
+      if (PRESENT(F)) then
+         @:CHECK_BOUNDS(SIZE(F), this%n_e)
+      end if
+
+      ! Evaluate the Jacobian matrix and inhomogeneous vector
 
       associate ( &
          y_T_1 => st%y_T_1, &
@@ -193,9 +176,7 @@ contains
 
          del_x = del/x
 
-         ! Set up the matrix and inhomogeneous vector
-
-         #:include 'A_t.inc'
+         #:include 'A.inc'
 
       end associate
 
@@ -203,64 +184,46 @@ contains
 
       return
 
-   end subroutine eval_A_t
+   end subroutine eval_A
 
    !****
 
-   subroutine eval_C(this, st, C, f)
+   subroutine eval_C(this, st, C, F, trans)
 
       class(static_eqns_t), intent(in) :: this
       class(state_rt), intent(in)      :: st
       real(RD), intent(out)            :: C(:,:)
-      real(RD), intent(out), optional  :: f(:)
+      real(RD), intent(out), optional  :: F(:)
+      logical, intent(in), optional    :: trans
+
+      logical :: trans_
+
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
+      end if
+
+      @:CHECK_BOUNDS(SIZE(C, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
+
+      if (PRESENT(F)) then
+         @:CHECK_BOUNDS(SIZE(F), this%n_e)
+      end if
 
       ! Evaluate the match matrix and inhomogeneous vector
 
-      call this%eval_C_t(st, C, f)
+      associate ( &
+         U => this%U)
 
-      C = TRANSPOSE(C)
+         #:include 'C.inc'
+
+      end associate
 
       ! Finish
 
       return
 
    end subroutine eval_C
-
-   !****
-
-   subroutine eval_C_t(this, st, C_t, f)
-
-      class(static_eqns_t), intent(in) :: this
-      class(state_rt), intent(in)      :: st
-      real(RD), intent(out)            :: C_t(:,:)
-      real(RD), intent(out), optional  :: f(:)
-
-      @:CHECK_BOUNDS(SIZE(C_t, 1), this%n_e)
-      @:CHECK_BOUNDS(SIZE(C_t, 2), this%n_e)
-
-      if (PRESENT(f)) then
-         @:CHECK_BOUNDS(SIZE(f), this%n_e)
-      end if
-
-      ! Evaluate the transposed match matrix and inhomogeneous vector
-
-      associate ( &
-         U => this%U)
-
-         ! Set up the matrix
-
-         #:include 'C_t.inc'
-
-         ! Set up the inhomogeneous vector
-
-         if (PRESENT(f)) f = 0._RD
-
-      end associate
-
-      ! Finish
-
-      return
-
-   end subroutine eval_C_t
 
 end module static_eqns_m

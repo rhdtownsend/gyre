@@ -366,8 +366,6 @@ contains
             ${T}$    :: piv_row_B(SIZE(B_t, 1))
             ${T}$    :: alpha
             ${T}$    :: beta
-            ${T}$    :: S
-            integer :: k
 
             @:CHECK_BOUNDS(SIZE(A_t, 2), ${N}$)
             @:CHECK_BOUNDS(SIZE(B_t, 2), ${N}$)

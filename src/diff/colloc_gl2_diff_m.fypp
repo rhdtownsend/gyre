@@ -23,12 +23,12 @@ module colloc_gl2_diff_m
 
    use forum_m, only: RD
 
-   use diff_m
    use eqns_m
    use ext_m
    use math_m
    use point_m
    use state_m
+   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -46,43 +46,45 @@ module colloc_gl2_diff_m
 
       ! Derived-type definitions
 
-      type, extends(diff_${S}$) :: colloc_gl2_diff_${S}$
+      type, extends(sysblock_${S}$) :: colloc_gl2_diff_${S}$
          private
-         class(eqns_${S}$), allocatable            :: eq(:)
-         real(RD)                                  :: dx
-         procedure(eval_E_t_hom_${S}$_), pointer   :: eval_E_t_hom_
-         procedure(eval_E_t_inhom_${S}$_), pointer :: eval_E_t_inhom_
+         class(eqns_${S}$), allocatable        :: eq(:)
+         real(RD)                              :: dx
+         procedure(eval_hom_${S}$_), pointer   :: eval_hom_
+         procedure(eval_inhom_${S}$_), pointer :: eval_inhom_
       contains
          private
-         procedure, public :: eval_E_t => eval_E_t_${S}$_
+         procedure, public :: eval => eval_${S}$_
       end type colloc_gl2_diff_${S}$
 
       ! Interfaces
 
       interface
 
-         subroutine eval_E_t_hom_${S}$_(this, st, E_t, scl)
+         subroutine eval_hom_${S}$_(this, st, E, scl, trans)
             use forum_m, only: RD
             use ext_m
             use state_m
             import colloc_gl2_diff_${S}$
             class(colloc_gl2_diff_${S}$), intent(in) :: this
             class(state_${S}$), intent(in)           :: st
-            ${T}$, contiguous, intent(out)           :: E_t(:,:)
+            ${T}$, contiguous, intent(out)           :: E(:,:)
             type(ext_${S}$), intent(out)             :: scl
-         end subroutine eval_E_t_hom_${S}$_
+            logical, intent(in), optional            :: trans
+         end subroutine eval_hom_${S}$_
 
-         subroutine eval_E_t_inhom_${S}$_(this, st, E_t, scl, F)
+         subroutine eval_inhom_${S}$_(this, st, E, scl, F, trans)
             use forum_m, only: RD
             use ext_m
             use state_m
             import colloc_gl2_diff_${S}$
             class(colloc_gl2_diff_${S}$), intent(in) :: this
             class(state_${S}$), intent(in)           :: st
-            ${T}$, contiguous, intent(out)           :: E_t(:,:)
+            ${T}$, contiguous, intent(out)           :: E(:,:)
             type(ext_${S}$), intent(out)             :: scl
             ${T}$, contiguous, intent(out)           :: F(:)
-         end subroutine eval_E_t_inhom_${S}$_
+            logical, intent(in), optional            :: trans
+         end subroutine eval_inhom_${S}$_
 
       end interface
 
@@ -133,20 +135,21 @@ contains
          call eqns_factory(pt, df%eq)
 
          df%n_e = df%eq(1)%n_e
+         df%n_v = 2*df%n_e
 
          select case(df%n_e)
          case(2)
-            df%eval_E_t_hom_ => eval_E_t_hom_2_${S}$_
-            df%eval_E_t_inhom_ => eval_E_t_inhom_2_${S}$_
+            df%eval_hom_ => eval_hom_2_${S}$_
+            df%eval_inhom_ => eval_inhom_2_${S}$_
          case(4)
-            df%eval_E_t_hom_ => eval_E_t_hom_4_${S}$_
-            df%eval_E_t_inhom_ => eval_E_t_inhom_4_${S}$_
+            df%eval_hom_ => eval_hom_4_${S}$_
+            df%eval_inhom_ => eval_inhom_4_${S}$_
          case(6)
-            df%eval_E_t_hom_ => eval_E_t_hom_6_${S}$_
-            df%eval_E_t_inhom_ => eval_E_t_inhom_6_${S}$_
+            df%eval_hom_ => eval_hom_6_${S}$_
+            df%eval_inhom_ => eval_inhom_6_${S}$_
          case default
-            df%eval_E_t_hom_ => eval_E_t_hom_gen_${S}$_
-            df%eval_E_t_inhom_ => eval_E_t_inhom_gen_${S}$_
+            df%eval_hom_ => eval_hom_gen_${S}$_
+            df%eval_inhom_ => eval_inhom_gen_${S}$_
          end select
 
          ! Finish
@@ -157,27 +160,28 @@ contains
 
       !****
 
-      subroutine eval_E_t_${S}$_(this, st, E_t, scl, F)
+      subroutine eval_${S}$_(this, st, E, scl, F, trans)
 
          class(colloc_gl2_diff_${S}$), intent(in) :: this
          class(state_${S}$), intent(in)           :: st
-         ${T}$, contiguous, intent(out)           :: E_t(:,:)
+         ${T}$, contiguous, intent(out)           :: E(:,:)
          type(ext_${S}$), intent(out)             :: scl
          ${T}$, contiguous, intent(out), optional :: F(:)
+         logical, intent(in), optional            :: trans
 
-         ! Evaluate the transposed difference equations
+         ! Evaluate the difference equations
 
          if (PRESENT(F)) then
-            call this%eval_E_t_inhom_(st, E_t, scl, F)
+            call this%eval_inhom_(st, E, scl, F, trans)
          else
-            call this%eval_E_t_hom_(st, E_t, scl)
+            call this%eval_hom_(st, E, scl, trans)
          end if
 
          ! Finish
 
          return
 
-      end subroutine eval_E_t_${S}$_
+      end subroutine eval_${S}$_
 
       !****
 
@@ -187,32 +191,66 @@ contains
          ['6', 6], &
          ['gen', 'this%n_e']]
 
-         subroutine eval_E_t_hom_${I}$_${S}$_(this, st, E_t, scl)
+         subroutine eval_hom_${I}$_${S}$_(this, st, E, scl, trans)
 
             class(colloc_gl2_diff_${S}$), intent(in) :: this
             class(state_${S}$), intent(in)           :: st
-            ${T}$, contiguous, intent(out)           :: E_t(:,:)
+            ${T}$, contiguous, intent(out)           :: E(:,:)
             type(ext_${S}$), intent(out)             :: scl
+            logical, intent(in), optional            :: trans
 
+            logical :: trans_
+            ${T}$   :: A_1(this%n_e,this%n_e)
             integer :: i
 
-            @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
-            @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
+            if (PRESENT(trans)) then
+               trans_ = trans
+            else
+               trans_ = .FALSE.
+            end if
 
-            ! Evaluate the transposed difference equations
+            if (trans_) then
+               @:CHECK_BOUNDS(SIZE(E, 1), this%n_v)
+               @:CHECK_BOUNDS(SIZE(E, 2), this%n_e)
+            else
+               @:CHECK_BOUNDS(SIZE(E, 1), this%n_e)
+               @:CHECK_BOUNDS(SIZE(E, 2), this%n_v)
+            end if
+
+            ! Evaluate the difference equations
 
             ! Algorithm note: this is equivalent to the modified
             ! midpoint method
 
             associate (n_e => ${N_E}$)
 
-               call this%eq(1)%eval_A_t(st, HALF_B_1*this%dx, E_t(:n_e,:))
+               call this%eq(1)%eval_A(st, HALF_B_1*this%dx, A_1, trans=trans_)
 
-               do concurrent (i = 1:n_e)
-                  E_t(n_e+1:,i) = E_t(:n_e,i)
-                  E_t(i,i) = E_t(i,i) + 1._RD
-                  E_t(i+n_e,i) = E_t(i+n_e,i) - 1._RD
-               end do
+               if (trans_) then
+
+                  do concurrent (i = 1:n_e)
+
+                     E(:n_e,i) = A_1(:,i)
+                     E(n_e+1:,i) = A_1(:,i)
+
+                     E(i,i) = E(i,i) + 1._RD
+                     E(n_e+i,i) = E(n_e+i,i) - 1._RD
+
+                  end do
+
+               else
+
+                  do concurrent (i = 1:n_e)
+
+                     E(i,:n_e) = A_1(i,:)
+                     E(i,n_e+1:) = A_1(i,:)
+
+                     E(i,i) = E(i,i) + 1._RD
+                     E(i,n_e+i) = E(i,n_e+i) - 1._RD
+
+                  end do
+
+               end if
 
             end associate
 
@@ -222,27 +260,41 @@ contains
 
             return
 
-         end subroutine eval_E_t_hom_${I}$_${S}$_
+         end subroutine eval_hom_${I}$_${S}$_
 
          !****
 
-         subroutine eval_E_t_inhom_${I}$_${S}$_(this, st, E_t, scl, F)
+         subroutine eval_inhom_${I}$_${S}$_(this, st, E, scl, F, trans)
 
             class(colloc_gl2_diff_${S}$), intent(in) :: this
             class(state_${S}$), intent(in)           :: st
-            ${T}$, contiguous, intent(out)           :: E_t(:,:)
+            ${T}$, contiguous, intent(out)           :: E(:,:)
             type(ext_${S}$), intent(out)             :: scl
             ${T}$, contiguous, intent(out)           :: F(:)
+            logical, intent(in), optional            :: trans
 
+            logical :: trans_
+            ${T}$   :: A_1(this%n_e,this%n_e)
             integer :: i
 
-            @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
-            @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
+            if (PRESENT(trans)) then
+               trans_ = trans
+            else
+               trans_ = .FALSE.
+            end if
+
+            if (trans_) then
+               @:CHECK_BOUNDS(SIZE(E, 1), this%n_v)
+               @:CHECK_BOUNDS(SIZE(E, 2), this%n_e)
+            else
+               @:CHECK_BOUNDS(SIZE(E, 1), this%n_e)
+               @:CHECK_BOUNDS(SIZE(E, 2), this%n_v)
+            end if
 
             @:CHECK_BOUNDS(SIZE(F), this%n_e)
 
-            ! Evaluate the transposed difference equations and
-            ! inhomogeneous vector
+            ! Evaluate the difference equations and inhomogeneous
+            ! vector
 
             ! Algorithm note: this is Gauss-Legendre collocation with
             ! 1 intermediate stage and an inhomogeneous term,
@@ -250,13 +302,33 @@ contains
 
             associate (n_e => ${N_E}$)
 
-               call this%eq(1)%eval_A_t(st, HALF_B_1*this%dx, E_t(:n_e,:), F)
+               call this%eq(1)%eval_A(st, HALF_B_1*this%dx, A_1, F=F, trans=trans_)
 
-               do concurrent (i = 1:n_e)
-                  E_t(n_e+1:,i) = E_t(:n_e,i)
-                  E_t(i,i) = E_t(i,i) + 1._RD
-                  E_t(i+n_e,i) = E_t(i+n_e,i) - 1._RD
-               end do
+               if (trans_) then
+
+                  do concurrent (i = 1:n_e)
+
+                     E(:n_e,i) = A_1(:,i)
+                     E(n_e+1:,i) = A_1(:,i)
+
+                     E(i,i) = E(i,i) + 1._RD
+                     E(n_e+i,i) = E(n_e+i,i) - 1._RD
+
+                  end do
+
+               else
+
+                  do concurrent (i = 1:n_e)
+
+                     E(i,:n_e) = A_1(i,:)
+                     E(i,n_e+1:) = A_1(i,:)
+
+                     E(i,i) = E(i,i) + 1._RD
+                     E(i,n_e+i) = E(i,n_e+i) - 1._RD
+
+                  end do
+
+               end if
 
                F = -2._RD*F
 
@@ -268,7 +340,7 @@ contains
 
             return
 
-         end subroutine eval_E_t_inhom_${I}$_${S}$_
+         end subroutine eval_inhom_${I}$_${S}$_
 
       #:endfor
 

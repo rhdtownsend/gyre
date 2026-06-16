@@ -23,10 +23,8 @@ module tnad_bvp_m
 
    use forum_m, only: RD
 
-   use bound_m
    use bvp_m
    use context_m
-   use diff_element_m
    use ext_m
    use grid_m
    use model_m
@@ -35,6 +33,8 @@ module tnad_bvp_m
    use osc_par_m
    use point_m
    use state_m
+   use sysblock_m
+   use sysblock_elem_m
    use sysmtx_m
    use trans_m
    use turb_m
@@ -99,31 +99,31 @@ contains
       type(osc_par_t), intent(in)           :: os_p
       type(tnad_bvp_t)                      :: bp
 
-      class(bound_ct), allocatable       :: bd_i
-      class(bound_ct), allocatable       :: bd_o
-      integer                            :: j
-      type(diff_element_ct), allocatable :: de(:)
-      class(model_t), pointer            :: ml
+      class(sysblock_ct), allocatable     :: sb_i
+      class(sysblock_ct), allocatable     :: sb_o
+      integer                             :: j
+      type(sysblock_elem_ct), allocatable :: se(:)
+      class(model_t), pointer             :: ml
 
       ! Construct the tnad_bvp_t
 
-      ! Initialize the boundary conditions
+      ! Initialize the boundary condition blocks
 
-      bd_i = tnad_ibound_t(cx, os_p)
-      bd_o = tnad_obound_t(cx, os_p)
+      sb_i = tnad_ibound_t(cx, os_p)
+      sb_o = tnad_obound_t(cx, os_p)
 
-      ! Initialize the difference equations
+      ! Initialize the difference equation blocks
 
-      allocate(de(gr%n-1))
+      allocate(se(gr%n-1))
 
       !$OMP PARALLEL DO
       do j = 1, gr%n-1
-         allocate(de(j)%df, SOURCE=tnad_diff_t(cx, gr%pt(j), gr%pt(j+1), nm_p, os_p))
+         allocate(se(j)%sb, SOURCE=tnad_diff_t(cx, gr%pt(j), gr%pt(j+1), nm_p, os_p))
       end do
 
       ! Initialize the bvp_t
 
-      bp%bvp_ct = bvp_ct(bd_i, bd_o, de, nm_p)
+      bp%bvp_ct = bvp_ct(sb_i, sb_o, se, nm_p)
 
       ! Other initializations
 

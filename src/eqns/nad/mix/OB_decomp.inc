@@ -1,3 +1,4 @@
+
 B(1, 1) = a_11 - chi
 B(2, 1) = U*alpha_gbc*alpha_grv
 B(3, 1) = -4*V*nabla_ad + 2
@@ -16,8 +17,8 @@ B(3, 5) = 4*f_rht
 B(1, 6) = 0
 B(2, 6) = 0
 B(3, 6) = -1
-if (PRESENT(f)) then
-f(1) = c_1*y_T_1*(G_1 - G_2*l_e)
-f(2) = 0
-f(3) = 0
+if (PRESENT(F)) then
+F(1) = c_1*y_T_1*(G_1 - G_2*l_e)
+F(2) = 0
+F(3) = 0
 endif

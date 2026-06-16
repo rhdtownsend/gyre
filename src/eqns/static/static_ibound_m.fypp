@@ -23,13 +23,14 @@ module static_ibound_m
 
    use forum_m, only: RD
 
-   use bound_m
    use context_m
+   use ext_m
    use model_m
    use model_util_m
    use osc_par_m
    use point_m
    use state_m
+   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -39,28 +40,29 @@ module static_ibound_m
 
    ! Derived-type definitions
 
-   type, extends(bound_rt) :: static_ibound_t
+   type, extends(sysblock_rt) :: static_ibound_t
       private
-      type(context_t), pointer    :: cx => null()
-      procedure(eval_B_), pointer :: eval_B_
+      type(context_t), pointer  :: cx => null()
+      procedure(eval_), pointer :: eval_
    contains
       private
-      procedure, public :: eval_B
+      procedure, public :: eval
    end type static_ibound_t
 
    ! Interfaces
 
    interface
-      subroutine eval_B_(this, st, B, f)
+      subroutine eval_(this, st, B, F, trans)
          use forum_m, only: RD
          use state_m
          import static_ibound_t
          implicit none (type, external)
-         class(static_ibound_t), intent(in) :: this
-         class(state_rt), intent(in)        :: st
-         real(RD), intent(out)              :: B(:,:)
-         real(RD), intent(out), optional    :: f(:)
-      end subroutine eval_B_
+         class(static_ibound_t), intent(in)          :: this
+         class(state_rt), intent(in)                 :: st
+         real(RD), contiguous, intent(out)           :: B(:,:)
+         real(RD), contiguous, intent(out), optional :: F(:)
+         logical, intent(in), optional               :: trans
+      end subroutine eval_
    end interface
 
    interface static_ibound_t
@@ -94,7 +96,7 @@ contains
       select case (os_p%inner_bound)
       case ('REGULAR')
          @:ASSERT(pt%x == 0._RD, 'boundary condition invalid for x /= 0')
-         bd%eval_B_ => eval_B_regular_
+         bd%eval_ => eval_regular_
       case default
          @:ABORT('invalid inner_bound')
       end select
@@ -103,9 +105,8 @@ contains
 
       ! Other initializations
 
-      bd%n_b = 1
-
-      bd%n_e = 2
+      bd%n_e = 1
+      bd%n_v = 2
 
       ! Finish
 
@@ -115,47 +116,63 @@ contains
 
    !****
 
-   subroutine eval_B(this, st, B, f)
+   subroutine eval(this, st, E, scl, F, trans)
 
-      class(static_ibound_t), intent(in) :: this
-      class(state_rt), intent(in)        :: st
-      real(RD), intent(out)              :: B(:,:)
-      real(RD), intent(out), optional    :: f(:)
+      class(static_ibound_t), intent(in)          :: this
+      class(state_rt), intent(in)                 :: st
+      real(RD), contiguous, intent(out)           :: E(:,:)
+      type(ext_rt), intent(out)                   :: scl
+      real(RD), contiguous, intent(out), optional :: F(:)
+      logical, intent(in), optional               :: trans
 
       ! Evaluate the inner boundary condition matrix and inhomogeneous
       ! vector
 
-      call this%eval_B_(st, B, f)
+      call this%eval_(st, E, F, trans)
+
+      scl = ONE_rt
 
       ! Finish
 
       return
 
-   end subroutine eval_B
+   end subroutine eval
 
    !****
 
-   subroutine eval_B_regular_(this, st, B, f)
+   subroutine eval_regular_(this, st, B, F, trans)
 
-      class(static_ibound_t), intent(in) :: this
-      class(state_rt), intent(in)        :: st
-      real(RD), intent(out)              :: B(:,:)
-      real(RD), intent(out), optional    :: f(:)
+      class(static_ibound_t), intent(in)          :: this
+      class(state_rt), intent(in)                 :: st
+      real(RD), contiguous, intent(out)           :: B(:,:)
+      real(RD), contiguous, intent(out), optional :: F(:)
+      logical, intent(in), optional               :: trans
 
-      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
-      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      logical :: trans_
 
-      if (PRESENT(f)) then
-         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
       end if
 
-      ! Evaluate the inner boundary condition matrix
-      ! (regular-enforcing)
+      if (trans_) then
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_v)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      else
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_v)
+      end if
+
+      if (PRESENT(F)) then
+         @:CHECK_BOUNDS(SIZE(F), this%n_e)
+      end if
+
+      ! Evaluate the inner boundary condition matrix and inhomogeneous
+      ! vector (regularity-enforcing)
 
       associate (&
          l_e => this%cx%l)
-
-         ! Set up the matrix
 
          #:include 'IB_regular.inc'
 
@@ -165,6 +182,6 @@ contains
 
       return
 
-   end subroutine eval_B_regular_
+   end subroutine eval_regular_
 
 end module static_ibound_m

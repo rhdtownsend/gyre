@@ -23,12 +23,12 @@ module cyclic_sysmtx_m
 
    use forum_m, only: RD, hdf5io_t
 
-   use bound_m
-   use diff_element_m
    use ext_m
    use linalg_m
    use math_m
    use state_m
+   use sysblock_m
+   use sysblock_elem_m
    use sysmtx_m
 
    use ISO_FORTRAN_ENV
@@ -65,19 +65,19 @@ module cyclic_sysmtx_m
       ! Interfaces
 
       abstract interface
-         subroutine build_and_factor_${S}$_(this, st, bd_i, bd_o, de, set_blk, set_F, set_D)
+         subroutine build_and_factor_${S}$_(this, st, sb_i, sb_o, se, set_blk, set_F, set_D)
             use forum_m, only: RD
-            use state_m
-            use bound_m
-            use diff_element_m
             use ext_m
+            use state_m
+            use sysblock_m
+            use sysblock_elem_m
             import cyclic_sysmtx_${S}$
             implicit none (type, external)
             class(cyclic_sysmtx_${S}$), intent(inout) :: this
             class(state_${S}$), intent(in)            :: st
-            class(bound_${S}$), intent(in)            :: bd_i
-            class(bound_${S}$), intent(in)            :: bd_o
-            class(diff_element_${S}$), intent(in)     :: de(:)
+            class(sysblock_${S}$), intent(in)         :: sb_i
+            class(sysblock_${S}$), intent(in)         :: sb_o
+            class(sysblock_elem_${S}$), intent(in)    :: se(:)
             logical, intent(in), optional             :: set_blk
             logical, intent(in), optional             :: set_F
             logical, intent(in), optional             :: set_D
@@ -156,42 +156,44 @@ contains
          ['6_3', 6, 3, 3], &
          ['gen', 'this%n_e', 'this%n_i', 'this%n_o']]
 
-         subroutine build_and_factor_${I}$_${S}$_(this, st, bd_i, bd_o, de, set_blk, set_F, set_D)
+         subroutine build_and_factor_${I}$_${S}$_(this, st, sb_i, sb_o, se, set_blk, set_F, set_D)
 
             class(cyclic_sysmtx_${S}$), intent(inout) :: this
             class(state_${S}$), intent(in)            :: st
-            class(bound_${S}$), intent(in)            :: bd_i
-            class(bound_${S}$), intent(in)            :: bd_o
-            class(diff_element_${S}$), intent(in)     :: de(:)
+            class(sysblock_${S}$), intent(in)         :: sb_i
+            class(sysblock_${S}$), intent(in)         :: sb_o
+            class(sysblock_elem_${S}$), intent(in)    :: se(:)
             logical, intent(in), optional             :: set_blk
             logical, intent(in), optional             :: set_F
             logical, intent(in), optional             :: set_D
 
-            logical  :: set_blk_
-            logical  :: set_F_
-            logical  :: set_D_
-            integer  :: l
-            integer  :: k
-            ${T}$    :: E_t(2*this%n_e,this%n_e)
-            ${T}$    :: M_t(3*this%n_e,2*this%n_e)
-            ${T}$    :: F(2*this%n_e)
-            integer  :: i
-            real(RD) :: scl
-            integer  :: s
-            real(RD) :: rscl(2*this%n_e)
-            integer  :: j
-            real(RD) :: piv
-            real(RD) :: piv_tmp
-            integer  :: i_piv
-            ${T}$    :: piv_row_M(3*this%n_e)
-            real(RD) :: rscl_tmp
-            ${T}$    :: F_tmp
-            ${T}$    :: alpha
-            ${T}$    :: beta
-            ${T}$    :: B_i(this%n_i,this%n_e)
-            ${T}$    :: B_o(this%n_o,this%n_e)
-            ${T}$    :: R_t(2*this%n_e,2*this%n_e)
-            ${T}$    :: piv_row_R(2*this%n_e)
+            logical         :: set_blk_
+            logical         :: set_F_
+            logical         :: set_D_
+            integer         :: l
+            integer         :: k
+            ${T}$           :: E_t(2*this%n_e,this%n_e)
+            ${T}$           :: M_t(3*this%n_e,2*this%n_e)
+            ${T}$           :: F(2*this%n_e)
+            integer         :: i
+            real(RD)        :: scl
+            integer         :: s
+            real(RD)        :: rscl(2*this%n_e)
+            integer         :: j
+            real(RD)        :: piv
+            real(RD)        :: piv_tmp
+            integer         :: i_piv
+            ${T}$           :: piv_row_M(3*this%n_e)
+            real(RD)        :: rscl_tmp
+            ${T}$           :: F_tmp
+            ${T}$           :: alpha
+            ${T}$           :: beta
+            ${T}$           :: B_i(this%n_i,this%n_e)
+            ${T}$           :: B_o(this%n_o,this%n_e)
+            type(ext_${S}$) :: scl_i
+            type(ext_${S}$) :: scl_o
+            ${T}$           :: R_t(2*this%n_e,2*this%n_e)
+            ${T}$           :: piv_row_R(2*this%n_e)
 
             if (PRESENT(set_blk)) then
                set_blk_ = set_blk
@@ -244,18 +246,18 @@ contains
                      if (l == 1) then
 
                         if (set_F_) then
-                           call de(k)%df%eval_E_t(st, E_t, this%scl(k), F(:n_e))
+                           call se(k)%sb%eval(st, E_t, this%scl(k), F=F(:n_e), trans=.TRUE.)
                         else
-                           call de(k)%df%eval_E_t(st, E_t, this%scl(k))
+                           call se(k)%sb%eval(st, E_t, this%scl(k), trans=.TRUE.)
                         end if
 
                         M_t(:n_e,:n_e) = E_t(:n_e,:)
                         M_t(n_e+1:2*n_e,:n_e) = E_t(n_e+1:,:)
 
                         if (set_F_) then
-                           call de(k+l)%df%eval_E_t(st, E_t, this%scl(k+l), F(n_e+1:))
+                           call se(k+l)%sb%eval(st, E_t, this%scl(k+l), F=F(n_e+1:), trans=.TRUE.)
                         else
-                           call de(k+l)%df%eval_E_t(st, E_t, this%scl(k+l))
+                           call se(k+l)%sb%eval(st, E_t, this%scl(k+l), trans=.TRUE.)
                         end if
 
                         M_t(n_e+1:2*n_e,n_e+1:) = E_t(:n_e,:)
@@ -394,16 +396,16 @@ contains
                   !$OMP END DO
 
                   ! If this is the first level and n is odd, we need
-                  ! to evaluate E_l and E_r (and possibly F) for the
-                  ! final block
+                  ! to evaluate E_t (and possibly F) for the final
+                  ! block
 
                   !$OMP SINGLE
                   if (l == 1 .AND. MOD(n, 2) /= 0) then
 
                      if (set_F_) then
-                        call de(n)%df%eval_E_t(st, E_t, this%scl(n), F(:n_e))
+                        call se(n)%sb%eval(st, E_t, this%scl(n), F=F(:n_e), trans=.TRUE.)
                      else
-                        call de(n)%df%eval_E_t(st, E_t, this%scl(n))
+                        call se(n)%sb%eval(st, E_t, this%scl(n), trans=.TRUE.)
                      end if
 
                      this%G_t(:,:,n) = E_t(:n_e,:)
@@ -444,11 +446,11 @@ contains
 
                if (set_F_) then
                   F(:n_e) = this%F(:,1)
-                  call bd_i%eval_B(st, B_i, F(n_e+1:n_e+n_i))
-                  call bd_o%eval_B(st, B_o, F(n_e+n_i+1:))
+                  call sb_i%eval(st, B_i, scl_i, F=F(n_e+1:n_e+n_i))
+                  call sb_o%eval(st, B_o, scl_o, F=F(n_e+n_i+1:))
                else
-                  call bd_i%eval_B(st, B_i)
-                  call bd_o%eval_B(st, B_o)
+                  call sb_i%eval(st, B_i, scl_i)
+                  call sb_o%eval(st, B_o, scl_o)
                end if
 
                R_t(:n_e,n_e+1:n_e+n_i) = TRANSPOSE(B_i)
@@ -662,20 +664,20 @@ contains
 
       !****
 
-      subroutine eval_det_${S}$_(this, st, bd_i, bd_o, de, det)
+      subroutine eval_det_${S}$_(this, st, sb_i, sb_o, se, det)
 
          class(cyclic_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(bound_${S}$), intent(in)            :: bd_i
-         class(bound_${S}$), intent(in)            :: bd_o
-         class(diff_element_${S}$), intent(in)     :: de(:)
+         class(sysblock_${S}$), intent(in)         :: sb_i
+         class(sysblock_${S}$), intent(in)         :: sb_o
+         class(sysblock_elem_${S}$), intent(in)    :: se(:)
          type(ext_${S}$), intent(out)              :: det
 
          ! Evaluate the determinant of the sysmtx
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(st, bd_i, bd_o, de, set_D=.TRUE.)
+         call this%build_and_factor_(st, sb_i, sb_o, se, set_D=.TRUE.)
 
          ! Evaluate the determinant as the product of the diagonal
          ! elements
@@ -690,13 +692,13 @@ contains
 
       !****
 
-      subroutine solve_hom_${S}$_(this, st, bd_i, bd_o, de, u)
+      subroutine solve_hom_${S}$_(this, st, sb_i, sb_o, se, u)
 
          class(cyclic_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(bound_${S}$), intent(in)            :: bd_i
-         class(bound_${S}$), intent(in)            :: bd_o
-         class(diff_element_${S}$), intent(in)     :: de(:)
+         class(sysblock_${S}$), intent(in)         :: sb_i
+         class(sysblock_${S}$), intent(in)         :: sb_o
+         class(sysblock_elem_${S}$), intent(in)    :: se(:)
          ${T}$, intent(out)                        :: u(:)
 
          real(RD) :: R_s
@@ -715,7 +717,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(st, bd_i, bd_o, de, set_blk=.TRUE.)
+            call this%build_and_factor_(st, sb_i, sb_o, se, set_blk=.TRUE.)
 
             ! Find the (most) singular element on the diagonal of the
             ! boundary matrix
@@ -760,13 +762,13 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, u)
+      subroutine solve_inhom_${S}$_(this, st, sb_i, sb_o, se, u)
 
          class(cyclic_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(bound_${S}$), intent(in)            :: bd_i
-         class(bound_${S}$), intent(in)            :: bd_o
-         class(diff_element_${S}$), intent(in)     :: de(:)
+         class(sysblock_${S}$), intent(in)         :: sb_i
+         class(sysblock_${S}$), intent(in)         :: sb_o
+         class(sysblock_elem_${S}$), intent(in)    :: se(:)
          ${T}$, intent(out)                        :: u(:)
 
          integer :: i
@@ -783,7 +785,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(st, bd_i, bd_o, de, set_blk=.TRUE., set_F=.TRUE.)
+            call this%build_and_factor_(st, sb_i, sb_o, se, set_blk=.TRUE., set_F=.TRUE.)
 
             ! Use backsubstitution to solve for u_bound
 

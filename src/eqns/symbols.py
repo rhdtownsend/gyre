@@ -133,17 +133,17 @@ printer = FCodePrinterExt({'standard': 2008, 'source_format': 'free'})
 
 # Code generation routines
 
-def generate_E(A, f, T, transpose=False, subs=[]):
+def generate_A(A, A_F, T, subs=[]):
 
     # Transform the Jacobian matrix and inhomogeneous vector
 
     A = T*(A*T.inv() - x*T.inv().diff(x))
-    f = T*f
+    A_F = T*A_F
 
     # Apply substitutions
 
     A = A.subs(fn_subs)
-    f = f.subs(fn_subs)
+    A_F = A_F.subs(fn_subs)
 
     subs += [
         (sp.Symbol('c_1')*alpha_omg*omega_c**2, om2),
@@ -151,32 +151,34 @@ def generate_E(A, f, T, transpose=False, subs=[]):
     ]
 
     A = A.subs(subs)
-    f = f.subs(subs)
+    A_F = A_F.subs(subs)
 
     # Convert to Fortran
 
-    if transpose:
-        code = printer.doprint(del_x*A.T, assign_to='A_t')
-    else:
-        code = printer.doprint(del_x*A, assign_to='A')
-
-    code += f"""
-if (PRESENT(f)) then
-{printer.doprint(del_x*f, assign_to='f')}
+    code = f"""
+if (trans_) then
+{printer.doprint(del_x*A.T, assign_to='A')}
+else
+{printer.doprint(del_x*A, assign_to='A')}
+endif
+if (PRESENT(F)) then
+{printer.doprint(del_x*A_F, assign_to='F')}
 endif"""
 
     return code
 
-def generate_IB(IB, g, T, transpose=False, subs=[]):
 
-    # Transform the inner boundary condition matrix
+def generate_IB(IB, IB_F, T, subs=[]):
+
+    # Transform the inner boundary condition matrix and inhomogeneous
+    # vector
 
     IB = IB*T.inv()
 
     # Apply substitutions
 
     IB = IB.subs(fn_subs)
-    g = g.subs(fn_subs)
+    IB_F = IB_F.subs(fn_subs)
 
     subs += [
         (V, 0),
@@ -186,70 +188,74 @@ def generate_IB(IB, g, T, transpose=False, subs=[]):
     ]
 
     IB = IB.subs(subs)
-    g = g.subs(subs)
+    IB_F = IB_F.subs(subs)
 
     # Convert to Fortran
 
-    if transpose:
-        code = printer.doprint(IB.T, assign_to='B_t')
-    else:
-        code = printer.doprint(IB, assign_to='B')
-
-    code += f"""
-if (PRESENT(f)) then
-{printer.doprint(g, assign_to='f')}
+    code = f"""
+{printer.doprint(IB, assign_to='B')}
+if (PRESENT(F)) then
+{printer.doprint(IB_F, assign_to='F')}
 endif"""
 
     return code
 
-def generate_OB(OB, g, T, transpose=False, subs=[]):
 
-    # Transform the outer boundary condition matrix
+def generate_OB(OB, OB_F, T, subs=[]):
+
+    # Transform the outer boundary condition matrix and inhomogeneous vector
 
     OB = OB*T.inv()
 
     # Apply substitutions
 
     OB = OB.subs(fn_subs)
-    g = g.subs(fn_subs)
+    OB_F = OB_F.subs(fn_subs)
 
     OB = OB.subs(subs)
-    g = g.subs(subs)
+    OB_F = OB_F.subs(subs)
 
     # Convert to Fortran
 
-    if transpose:
-        code = printer.doprint(OB.T, assign_to='B_t')
-    else:
-        code = printer.doprint(OB, assign_to='B')
-
-    code += f"""
-if (PRESENT(f)) then
-{printer.doprint(g, assign_to='f')}
+    code = f"""
+{printer.doprint(OB, assign_to='B')}
+if (PRESENT(F)) then
+{printer.doprint(OB_F, assign_to='F')}
 endif"""
 
     return code
 
-def generate_C(C, T, transpose=False, subs=[]):
 
-    # Transform the match condition matrix
+def generate_C(C, C_F, T, subs=[]):
+
+    # Transform the match condition matrix and inhomogeneous vector
 
     C = C*T.inv()
 
     # Apply substitutions
 
     C = C.subs(fn_subs)
+    C_F = C_F.subs(fn_subs)
 
     C = C.subs(subs)
+    C_F = C_F.subs(fn_subs)
 
     # Convert to Fortran
 
-    if transpose:
-        return printer.doprint(C.T, assign_to='C_t')
-    else:
-        return printer.doprint(C, assign_to='C')
+    code = f"""
+if (trans_) then
+{printer.doprint(C.T, assign_to='C')}
+else
+{printer.doprint(C, assign_to='C')}
+endif
+if (PRESENT(F)) then
+{printer.doprint(C_F, assign_to='F')}
+endif"""
 
-def generate_R(T, transpose=False, subs=[]):
+    return code
+
+
+def generate_R(T, subs=[]):
 
     # Invert the transformation matrix
 
@@ -263,10 +269,11 @@ def generate_R(T, transpose=False, subs=[]):
 
     # Convert to Fortran
 
-    if transpose:
-        return printer.doprint(R.T, assign_to='R_t')
-    else:
-        return printer.doprint(R, assign_to='R')
+    code = f"""
+{printer.doprint(R, assign_to='R')}"""
+
+    return code
+
 
 def generate(expr, assign_to=None, subs=[]):
 

@@ -24,7 +24,6 @@ module nad_diff_m
    use forum_m, only: RD
 
    use context_m
-   use diff_m
    use diff_factory_m
    use eqns_m
    use ext_m
@@ -33,6 +32,7 @@ module nad_diff_m
    use osc_par_m
    use point_m
    use state_m
+   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -42,15 +42,15 @@ module nad_diff_m
 
    ! Derived-type definitions
 
-   type, extends (diff_ct) :: nad_diff_t
+   type, extends (sysblock_ct) :: nad_diff_t
       private
-      type(context_t), pointer    :: cx => null()
-      class(diff_ct), allocatable :: df
-      class(eqns_ct), allocatable :: eq
-      real(RD)                    :: dx
+      type(context_t), pointer        :: cx => null()
+      class(sysblock_ct), allocatable :: df
+      class(eqns_ct), allocatable     :: eq
+      real(RD)                        :: dx
    contains
       private
-      procedure, public :: eval_E_t
+      procedure, public :: eval
    end type nad_diff_t
 
    ! Interfaces
@@ -106,6 +106,7 @@ contains
       df%eq = nad_eqns_t(cx, pt_m, os_p)
 
       df%n_e = df%df%n_e
+      df%n_v = df%df%n_v
 
       ! Finish
 
@@ -136,7 +137,7 @@ contains
 
    !****
 
-   subroutine eval_E_t(this, st, E_t, scl, F)
+   subroutine eval(this, st, E, scl, F, trans)
 
       use magnus_gl2_diff_m
       use magnus_gl4_diff_m
@@ -144,9 +145,10 @@ contains
 
       class(nad_diff_t), intent(in)                  :: this
       class(state_ct), intent(in)                    :: st
-      complex(RD), contiguous, intent(out)           :: E_t(:,:)
+      complex(RD), contiguous, intent(out)           :: E(:,:)
       type(ext_ct), intent(out)                      :: scl
       complex(RD), contiguous, intent(out), optional :: F(:)
+      logical, intent(in), optional                  :: trans
 
       logical, parameter :: MAGNUS_EIGVAL_MASK(3) = [.FALSE.,.FALSE.,.TRUE.]
 
@@ -154,16 +156,9 @@ contains
       complex(RD) :: A(this%n_e,this%n_e)
       complex(RD) :: lambda(3)
 
-      @:CHECK_BOUNDS(SIZE(E_t, 1), 2*this%n_e)
-      @:CHECK_BOUNDS(SIZE(E_t, 2), this%n_e)
-
-      if (PRESENT(F)) then
-         @:CHECK_BOUNDS(SIZE(F), this%n_e)
-      end if
-
       ! Evaluate the transposed difference equations
 
-      call this%df%eval_E_t(st, E_t, scl, F)
+      call this%df%eval(st, E, scl, F, trans)
 
       ! Apply regularization corrections
 
@@ -197,6 +192,6 @@ contains
 
       return
 
-   end subroutine eval_E_t
+   end subroutine eval
 
 end module nad_diff_m

@@ -23,13 +23,13 @@ module magnus_gl6_diff_m
 
    use forum_m, only: RD
 
-   use diff_m
    use eqns_m
    use ext_m
    use linalg_m
    use math_m
    use point_m
    use state_m
+   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -47,14 +47,14 @@ module magnus_gl6_diff_m
 
       ! Derived-type definitions
 
-      type, extends(diff_${S}$) :: magnus_gl6_diff_${S}$
+      type, extends(sysblock_${S}$) :: magnus_gl6_diff_${S}$
          private
-         class(eqns_${S}$), allocatable      :: eq(:)
-         real(RD)                            :: dx
-         procedure(eval_E_t_${S}$_), pointer :: eval_E_t_
+         class(eqns_${S}$), allocatable  :: eq(:)
+         real(RD)                        :: dx
+         procedure(eval_${S}$_), pointer :: eval_
       contains
          private
-         procedure, public :: eval_E_t => eval_E_t_${S}$_
+         procedure, public :: eval => eval_${S}$_
       end type magnus_gl6_diff_${S}$
 
       ! Interfaces
@@ -106,16 +106,17 @@ contains
          call eqns_factory(pt, df%eq)
 
          df%n_e = df%eq(1)%n_e
+         df%n_v = 2*df%n_e
 
          select case(df%n_e)
          case(2)
-            df%eval_E_t_ => eval_E_t_2_${S}$_
+            df%eval_ => eval_2_${S}$_
          case(4)
-            df%eval_E_t_ => eval_E_t_4_${S}$_
+            df%eval_ => eval_4_${S}$_
          case(6)
-            df%eval_E_t_ => eval_E_t_6_${S}$_
+            df%eval_ => eval_6_${S}$_
          case default
-            df%eval_E_t_ => eval_E_t_gen_${S}$_
+            df%eval_ => eval_gen_${S}$_
          end select
 
          ! Finish
@@ -126,23 +127,24 @@ contains
 
       !****
 
-      subroutine eval_E_t_${S}$_(this, st, E_t, scl, F)
+      subroutine eval_${S}$_(this, st, E, scl, F, trans)
 
          class(magnus_gl6_diff_${S}$), intent(in) :: this
          class(state_${S}$), intent(in)           :: st
-         ${T}$, contiguous, intent(out)           :: E_t(:,:)
+         ${T}$, contiguous, intent(out)           :: E(:,:)
          type(ext_${S}$), intent(out)             :: scl
          ${T}$, contiguous, intent(out), optional :: F(:)
+         logical, intent(in), optional            :: trans
 
-         ! Evaluate the transposed difference equations
+         ! Evaluate the difference equations
 
-         call this%eval_E_t_(st, E_t, scl, F)
+         call this%eval_(st, E, scl, F, trans)
 
          ! Finish
 
          return
 
-      end subroutine eval_E_t_${S}$_
+      end subroutine eval_${S}$_
 
       !****
 
@@ -152,14 +154,16 @@ contains
          ['6', 6], &
          ['gen', 'this%n_e']]
 
-         subroutine eval_E_t_${I}$_${S}$_(this, st, E_t, scl, F)
+         subroutine eval_${I}$_${S}$_(this, st, E, scl, F, trans)
 
             class(magnus_gl6_diff_${S}$), intent(in) :: this
             class(state_${S}$), intent(in)           :: st
-            ${T}$, contiguous, intent(out)           :: E_t(:,:)
+            ${T}$, contiguous, intent(out)           :: E(:,:)
             type(ext_${S}$), intent(out)             :: scl
             ${T}$, contiguous, intent(out), optional :: F(:)
+            logical, intent(in), optional            :: trans
 
+            logical     :: trans_
             ${T}$       :: A_1(${N_E}$,${N_E}$)
             ${T}$       :: A_2(${N_E}$,${N_E}$)
             ${T}$       :: A_3(${N_E}$,${N_E}$)
@@ -168,7 +172,7 @@ contains
             ${T}$       :: alpha_3(this%n_e,this%n_e)
             ${T}$       :: C_1(this%n_e,this%n_e)
             ${T}$       :: C_2(this%n_e,this%n_e)
-            ${T}$       :: Omega_t(${N_E}$,${N_E}$)
+            ${T}$       :: Omega(${N_E}$,${N_E}$)
             complex(RD) :: lambda(${N_E}$)
             complex(RD) :: V_l(${N_E}$,${N_E}$)
             complex(RD) :: V_r(${N_E}$,${N_E}$)
@@ -176,43 +180,58 @@ contains
             complex(RD) :: E_l(${N_E}$,${N_E}$)
             complex(RD) :: E_r(${N_E}$,${N_E}$)
 
-            @:CHECK_BOUNDS(SIZE(E_t, 1), 2*${N_E}$)
-            @:CHECK_BOUNDS(SIZE(E_t, 2), ${N_E}$)
+            if (PRESENT(trans)) then
+               trans_ = trans
+            else
+               trans_ = .FALSE.
+            end if
+
+            if (trans_) then
+               @:CHECK_BOUNDS(SIZE(E, 1), this%n_v)
+               @:CHECK_BOUNDS(SIZE(E, 2), this%n_e)
+            else
+               @:CHECK_BOUNDS(SIZE(E, 1), this%n_e)
+               @:CHECK_BOUNDS(SIZE(E, 2), this%n_v)
+            end if
 
             if (PRESENT(F)) then
                @:CHECK_BOUNDS(SIZE(F), this%n_e)
             end if
 
-            if (PRESENT(f)) then
-               @:ABORT('not yet implemented')
-            end if
-
             ! Evaluate the transposed Magnus matrix (Blanes et
             ! al. 2009, eqns. 251 and 257)
 
-            call this%eq(1)%eval_A_t(st, this%dx, A_1)
-            call this%eq(2)%eval_A_t(st, this%dx, A_2)
-            call this%eq(3)%eval_A_t(st, this%dx, A_3)
+            if (PRESENT(F)) then
 
-            alpha_1 = A_2
-            alpha_2 = sqrt(15._RD)/3._RD*(A_3 - A_1)
-            alpha_3 = 10._RD/3._RD*(A_3 - 2._RD*A_2 + A_1)
+               @:ABORT('not yet implemented')
 
-            C_1 = commutator(alpha_2, alpha_1)
-            C_2 = -commutator(2._RD*alpha_3+C_1, alpha_1)/60._RD
+            else
 
-            Omega_t = alpha_1 + alpha_3/12._RD + &
-               commutator(alpha_2+C_2, -20._RD*alpha_1-alpha_3+C_1)/240._RD
+               call this%eq(1)%eval_A(st, this%dx, A_1, trans=.TRUE.)
+               call this%eq(2)%eval_A(st, this%dx, A_2, trans=.TRUE.)
+               call this%eq(3)%eval_A(st, this%dx, A_3, trans=.TRUE.)
+
+               alpha_1 = A_2
+               alpha_2 = sqrt(15._RD)/3._RD*(A_3 - A_1)
+               alpha_3 = 10._RD/3._RD*(A_3 - 2._RD*A_2 + A_1)
+
+               C_1 = commutator(alpha_2, alpha_1)
+               C_2 = -commutator(2._RD*alpha_3+C_1, alpha_1)/60._RD
+
+               Omega = alpha_1 + alpha_3/12._RD + &
+                  commutator(alpha_2+C_2, -20._RD*alpha_1-alpha_3+C_1)/240._RD
+
+            end if
 
             ! Decompose it
 
             #:if I == 'gen'
-               call eigen_decompose(Omega_t, lambda, V_l, V_r)
+               call eigen_decompose(Omega, lambda, V_l, V_r)
             #:else
-               call eigen_decompose_${I}$(Omega_t, lambda, V_l, V_r)
+               call eigen_decompose_${I}$(Omega, lambda, V_l, V_r)
             #:endif
 
-            ! Evaluate the transposed difference equations
+            ! Evaluate the difference equations
 
             associate (n_e => ${N_E}$)
 
@@ -231,15 +250,31 @@ contains
 
                scl = exp(ext_${S}$(SUM(lambda, MASK=REAL(lambda) >= 0._RD)))
 
-               #:if T == 'real(RD)'
-                  E_t(:n_e,:) = REAL(E_l)
-                  E_t(n_e+1:,:) = REAL(E_r)
-               #:elif T == 'complex(RD)'
-                  E_t(:n_e,:) = E_l
-                  E_t(n_e+1:,:) = E_r
-               #:else
-                  #:stop f'invalid type {T}'
-               #:endif
+               if (trans_) then
+
+                  #:if T == 'real(RD)'
+                     E(:n_e,:) = REAL(E_l)
+                     E(n_e+1:,:) = REAL(E_r)
+                  #:elif T == 'complex(RD)'
+                     E(:n_e,:) = E_l
+                     E(n_e+1:,:) = E_r
+                  #:else
+                     #:stop f'invalid type {T}'
+                  #:endif
+
+               else
+
+                  #:if T == 'real(RD)'
+                     E(:,:n_e) = TRANSPOSE(REAL(E_l))
+                     E(:,n_e+1:) = TRANSPOSE(REAL(E_r))
+                  #:elif T == 'complex(RD)'
+                     E(:,:n_e) = TRANSPOSE(E_l)
+                     E(:,n_e+1:) = TRANSPOSE(E_r)
+                  #:else
+                     #:stop f'invalid type {T}'
+                  #:endif
+
+               endif
 
             end associate
 
@@ -247,7 +282,7 @@ contains
 
             return
 
-         end subroutine eval_E_t_${I}$_${S}$_
+         end subroutine eval_${I}$_${S}$_
 
       #:endfor
 

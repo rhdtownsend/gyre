@@ -26,14 +26,15 @@ module ${P}$_nad_obound_m
    use forum_m, only: RD
 
    use atmos_m
-   use bound_m
    use context_m
+   use ext_m
    use math_m
    use model_m
    use model_util_m
    use osc_par_m
    use point_m
    use state_m
+   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -43,39 +44,40 @@ module ${P}$_nad_obound_m
 
    ! Derived-type definitions
 
-   type, extends(bound_ct) :: ${P}$_nad_obound_t
+   type, extends(sysblock_ct) :: ${P}$_nad_obound_t
       private
-      type(context_t), pointer    :: cx => null()
-      real(RD)                    :: V_2
-      real(RD)                    :: V
-      real(RD)                    :: V_g
-      real(RD)                    :: As
-      real(RD)                    :: U
-      real(RD)                    :: c_1
-      real(RD)                    :: nabla_ad
-      real(RD)                    :: c_thn
-      real(RD)                    :: ups_T
-      real(RD)                    :: Omega_rot
-      character(:), allocatable   :: branch
-      procedure(eval_B_), pointer :: eval_B_
+      type(context_t), pointer  :: cx => null()
+      real(RD)                  :: V_2
+      real(RD)                  :: V
+      real(RD)                  :: V_g
+      real(RD)                  :: As
+      real(RD)                  :: U
+      real(RD)                  :: c_1
+      real(RD)                  :: nabla_ad
+      real(RD)                  :: c_thn
+      real(RD)                  :: ups_T
+      real(RD)                  :: Omega_rot
+      character(:), allocatable :: branch
+      procedure(eval_), pointer :: eval_
    contains
       private
-      procedure, public :: eval_B
+      procedure, public :: eval
    end type ${P}$_nad_obound_t
 
    ! Interfaces
 
    interface
-      subroutine eval_B_(this, st, B, f)
+      subroutine eval_(this, st, B, F, trans)
          use forum_m, only: RD
          use state_m
          import ${P}$_nad_obound_t
          implicit none (type, external)
          class(${P}$_nad_obound_t), intent(in) :: this
          class(state_ct), intent(in)           :: st
-         complex(RD), intent(out)              :: B(:,:)
-         complex(RD), intent(out), optional    :: f(:)
-      end subroutine eval_B_
+         complex(RD), contiguous, intent(out)              :: B(:,:)
+         complex(RD), contiguous, intent(out), optional    :: F(:)
+         logical, intent(in), optional         :: trans
+      end subroutine eval_
    end interface
 
    interface ${P}$_nad_obound_t
@@ -108,34 +110,34 @@ contains
 
       select case (os_p%outer_bound)
       case ('VACUUM')
-         bd%eval_B_ => eval_B_vacuum_
+         bd%eval_ => eval_vacuum_
       case ('ZERO_R')
-         bd%eval_B_ => eval_B_zero_r_
+         bd%eval_ => eval_zero_r_
       case ('ZERO_H')
-         bd%eval_B_ => eval_B_zero_h_
+         bd%eval_ => eval_zero_h_
       case ('DZIEM')
          if (ml%is_vacuum(pt)) then
-            bd%eval_B_ => eval_B_vacuum_
+            bd%eval_ => eval_vacuum_
          else
-            bd%eval_B_ => eval_B_dziem_
+            bd%eval_ => eval_dziem_
          end if
       case ('ISOTHERMAL')
          if (ml%is_vacuum(pt)) then
-            bd%eval_B_ => eval_B_vacuum_
+            bd%eval_ => eval_vacuum_
          else
-            bd%eval_B_ => eval_B_decomp_
+            bd%eval_ => eval_decomp_
          end if
       case ('UNNO')
          if (ml%is_vacuum(pt)) then
-            bd%eval_B_ => eval_B_vacuum_
+            bd%eval_ => eval_vacuum_
          else
-            bd%eval_B_ => eval_B_decomp_
+            bd%eval_ => eval_decomp_
          end if
       case ('JCD')
          if (ml%is_vacuum(pt)) then
-            bd%eval_B_ => eval_B_vacuum_
+            bd%eval_ => eval_vacuum_
          else
-            bd%eval_B_ => eval_B_jcd_
+            bd%eval_ => eval_jcd_
          end if
       case default
          @:ABORT('invalid outer_bound')
@@ -178,9 +180,8 @@ contains
 
       bd%branch = os_p%outer_bound_branch
 
-      bd%n_b = 3
-
-      bd%n_e = 6
+      bd%n_e = 3
+      bd%n_v = 6
 
       ! Finish
 
@@ -190,47 +191,65 @@ contains
 
    !****
 
-   subroutine eval_B(this, st, B, f)
+   subroutine eval(this, st, E, scl, F, trans)
 
-      class(${P}$_nad_obound_t), intent(in) :: this
-      class(state_ct), intent(in)           :: st
-      complex(RD), intent(out)              :: B(:,:)
-      complex(RD), intent(out), optional    :: f(:)
+      class(${P}$_nad_obound_t), intent(in)          :: this
+      class(state_ct), intent(in)                    :: st
+      complex(RD), contiguous, intent(out)           :: E(:,:)
+      type(ext_ct), intent(out)                      :: scl
+      complex(RD), contiguous, intent(out), optional :: F(:)
+      logical, intent(in), optional                  :: trans
 
       ! Evaluate the outer boundary condition matrix and inhomogeneous
       ! vector
 
-      call this%eval_B_(st, B, f)
+      call this%eval_(st, E, F, trans)
+
+      scl = ONE_ct
 
       ! Finish
 
       return
 
-   end subroutine eval_B
+   end subroutine eval
 
    !****
 
-   subroutine eval_B_vacuum_(this, st, B, f)
+   subroutine eval_vacuum_(this, st, B, F, trans)
 
-      class(${P}$_nad_obound_t), intent(in) :: this
-      class(state_ct), intent(in)           :: st
-      complex(RD), intent(out)              :: B(:,:)
-      complex(RD), intent(out), optional    :: f(:)
+      class(${P}$_nad_obound_t), intent(in)          :: this
+      class(state_ct), intent(in)                    :: st
+      complex(RD), contiguous, intent(out)           :: B(:,:)
+      complex(RD), contiguous, intent(out), optional :: F(:)
+      logical, intent(in), optional                  :: trans
 
+      logical     :: trans_
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: lambda
       complex(RD) :: l_e
       complex(RD) :: f_rht
 
-      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
-      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      if (PRESENT(f)) then
-         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
       end if
 
-      ! Evaluate the outer boundary condition matrix (vacuum)
+      if (trans_) then
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_v)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      else
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_v)
+      end if
+
+      if (PRESENT(F)) then
+         @:CHECK_BOUNDS(SIZE(F), this%n_e)
+      end if
+
+      ! Evaluate the outer boundary condition matrix and inhomogeneous
+      ! vector (vacuum)
 
       associate( &
          omega => st%omega, &
@@ -256,8 +275,6 @@ contains
          l_e = this%cx%l_e(Omega_rot, st)
 
          f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
-
-         ! Set up the matrix
 
          #:include 'OB_vacuum.inc'
 
@@ -267,32 +284,45 @@ contains
 
       return
 
-   end subroutine eval_B_vacuum_
+   end subroutine eval_vacuum_
 
    !****
 
-   subroutine eval_B_zero_r_(this, st, B, f)
+   subroutine eval_zero_r_(this, st, B, F, trans)
 
-      class(${P}$_nad_obound_t), intent(in) :: this
-      class(state_ct), intent(in)           :: st
-      complex(RD), intent(out)              :: B(:,:)
-      complex(RD), intent(out), optional    :: f(:)
+      class(${P}$_nad_obound_t), intent(in)          :: this
+      class(state_ct), intent(in)                    :: st
+      complex(RD), contiguous, intent(out)           :: B(:,:)
+      complex(RD), contiguous, intent(out), optional :: F(:)
+      logical, intent(in), optional                  :: trans
 
+      logical     :: trans_
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: lambda
       complex(RD) :: l_e
       complex(RD) :: f_rht
 
-      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
-      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      if (PRESENT(f)) then
-         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
       end if
 
-      ! Evaluate the outer boundary condition matrix (zero radial
-      ! displacement)
+      if (trans_) then
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_v)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      else
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_v)
+      end if
+
+      if (PRESENT(F)) then
+         @:CHECK_BOUNDS(SIZE(F), this%n_e)
+      end if
+
+      ! Evaluate the outer boundary condition matrix and inhomogeneous
+      ! vector (zero radial displacement)
 
       associate( &
          omega => st%omega, &
@@ -318,8 +348,6 @@ contains
          l_e = this%cx%l_e(Omega_rot, st)
 
          f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
-
-         ! Set up the matrix
 
          #:include 'OB_zero_r.inc'
 
@@ -329,32 +357,45 @@ contains
 
       return
 
-   end subroutine eval_B_zero_r_
+   end subroutine eval_zero_r_
 
    !****
 
-   subroutine eval_B_zero_h_(this, st, B, f)
+   subroutine eval_zero_h_(this, st, B, F, trans)
 
-      class(${P}$_nad_obound_t), intent(in) :: this
-      class(state_ct), intent(in)           :: st
-      complex(RD), intent(out)              :: B(:,:)
-      complex(RD), intent(out), optional    :: f(:)
+      class(${P}$_nad_obound_t), intent(in)          :: this
+      class(state_ct), intent(in)                    :: st
+      complex(RD), contiguous, intent(out)           :: B(:,:)
+      complex(RD), contiguous, intent(out), optional :: F(:)
+      logical, intent(in), optional                  :: trans
 
+      logical     :: trans_
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: l_e
       complex(RD) :: lambda
       complex(RD) :: f_rht
 
-      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
-      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      if (PRESENT(f)) then
-         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
       end if
 
-      ! Evaluate the outer boundary condition matrix (zero horizontal
-      ! displacement)
+      if (trans_) then
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_v)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      else
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_v)
+      end if
+
+      if (PRESENT(F)) then
+         @:CHECK_BOUNDS(SIZE(F), this%n_e)
+      end if
+
+      ! Evaluate the outer boundary condition matrix and inhomogeneous
+      ! vector (zero horizontal displacement)
 
       associate( &
          omega => st%omega, &
@@ -380,8 +421,6 @@ contains
          l_e = this%cx%l_e(Omega_rot, st)
 
          f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
-
-         ! Set up the matrix
 
          #:include 'OB_zero_h.inc'
 
@@ -391,32 +430,45 @@ contains
 
       return
 
-   end subroutine eval_B_zero_h_
+   end subroutine eval_zero_h_
 
    !****
 
-   subroutine eval_B_dziem_(this, st, B, f)
+   subroutine eval_dziem_(this, st, B, F, trans)
 
-      class(${P}$_nad_obound_t), intent(in) :: this
-      class(state_ct), intent(in)           :: st
-      complex(RD), intent(out)              :: B(:,:)
-      complex(RD), intent(out), optional    :: f(:)
+      class(${P}$_nad_obound_t), intent(in)          :: this
+      class(state_ct), intent(in)                    :: st
+      complex(RD), contiguous, intent(out)           :: B(:,:)
+      complex(RD), contiguous, intent(out), optional :: F(:)
+      logical, intent(in), optional                  :: trans
 
+      logical     :: trans_
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: lambda
       complex(RD) :: l_e
       complex(RD) :: f_rht
 
-      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
-      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      if (PRESENT(f)) then
-         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
       end if
 
-      ! Evaluate the outer boundary condition matrix ([Dzi1971]
-      ! formulation)
+      if (trans_) then
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_v)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      else
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_v)
+      end if
+
+      if (PRESENT(F)) then
+         @:CHECK_BOUNDS(SIZE(F), this%n_e)
+      end if
+
+      ! Evaluate the outer boundary condition matrix and inhomogeneous
+      ! vector ([Dzi1971] formulation)
 
       associate( &
          omega => st%omega, &
@@ -443,8 +495,6 @@ contains
 
          f_rht = 1._RD - 0.25_RD*alpha_rht*i_omega_c*c_thn
 
-         ! Set up the matrix
-
          #:include 'OB_dziem.inc'
 
       end associate
@@ -453,17 +503,19 @@ contains
 
       return
 
-   end subroutine eval_B_dziem_
+   end subroutine eval_dziem_
 
    !****
 
-   subroutine eval_B_decomp_(this, st, B, f)
+   subroutine eval_decomp_(this, st, B, F, trans)
 
-      class(${P}$_nad_obound_t), intent(in) :: this
-      class(state_ct), intent(in)           :: st
-      complex(RD), intent(out)              :: B(:,:)
-      complex(RD), intent(out), optional    :: f(:)
+      class(${P}$_nad_obound_t), intent(in)          :: this
+      class(state_ct), intent(in)                    :: st
+      complex(RD), contiguous, intent(out)           :: B(:,:)
+      complex(RD), contiguous, intent(out), optional :: F(:)
+      logical, intent(in), optional                  :: trans
 
+      logical     :: trans_
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: lambda
@@ -481,15 +533,26 @@ contains
       complex(RD) :: G_1
       complex(RD) :: G_2
 
-      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
-      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      if (PRESENT(f)) then
-         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
       end if
 
-      ! Evaluate the outer boundary condition matrix, based on a local
-      ! eigendecomposition
+      if (trans_) then
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_v)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      else
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_v)
+      end if
+
+      if (PRESENT(F)) then
+         @:CHECK_BOUNDS(SIZE(F), this%n_e)
+      end if
+
+      ! Evaluate the outer boundary condition matrix and inhomogeneous
+      ! vector, based on a local eigendecomposition
 
       associate( &
          omega => st%omega, &
@@ -570,17 +633,19 @@ contains
 
       end function H_
 
-   end subroutine eval_B_decomp_
+   end subroutine eval_decomp_
 
    !****
 
-   subroutine eval_B_jcd_(this, st, B, f)
+   subroutine eval_jcd_(this, st, B, F, trans)
 
-      class(${P}$_nad_obound_t), intent(in) :: this
-      class(state_ct), intent(in)           :: st
-      complex(RD), intent(out)              :: B(:,:)
-      complex(RD), intent(out), optional    :: f(:)
+      class(${P}$_nad_obound_t), intent(in)          :: this
+      class(state_ct), intent(in)                    :: st
+      complex(RD), contiguous, intent(out)           :: B(:,:)
+      complex(RD), contiguous, intent(out), optional :: F(:)
+      logical, intent(in), optional                  :: trans
 
+      logical     :: trans_
       complex(RD) :: omega_c
       complex(RD) :: i_omega_c
       complex(RD) :: lambda
@@ -590,15 +655,26 @@ contains
       complex(RD) :: b_11
       complex(RD) :: b_12
 
-      @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
-      @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
-
-      if (PRESENT(f)) then
-         @:CHECK_BOUNDS(SIZE(f), this%n_b)
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
       end if
 
-      ! Evaluate the outer boundary condition matrix ([Chr2008]
-      ! formulation)
+      if (trans_) then
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_v)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      else
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_v)
+      end if
+
+      if (PRESENT(F)) then
+         @:CHECK_BOUNDS(SIZE(F), this%n_e)
+      end if
+
+      ! Evaluate the outer boundary condition matrix and inhomogeneous
+      ! vector ([Chr2008] formulation)
 
       associate( &
          omega => st%omega, &
@@ -633,8 +709,6 @@ contains
          b_11 = V_g - 3._RD
          b_12 = lambda/(c_1*alpha_omg*omega_c**2) - V_g
 
-         ! Set up the matrix
-
          #:include 'OB_jcd.inc'
 
       end associate
@@ -643,6 +717,6 @@ contains
 
       return
 
-   end subroutine eval_B_jcd_
+   end subroutine eval_jcd_
 
 end module ${P}$_nad_obound_m

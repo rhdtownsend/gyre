@@ -23,12 +23,12 @@ module rad_factory_m
 
    use forum_m, only: RD
 
-   use bound_m
    use context_m
    use eqns_m
    use osc_par_m
    use point_m
    use trans_m
+   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -157,7 +157,7 @@ contains
 
       type(context_t), pointer, intent(in) :: cx
       type(osc_par_t), intent(in)          :: os_p
-      class(bound_rt), allocatable         :: bd
+      class(sysblock_rt), allocatable      :: bd
 
       ! Construct the rad_ibound type
 
@@ -194,7 +194,7 @@ contains
 
       type(context_t), pointer, intent(in) :: cx
       type(osc_par_t), intent(in)          :: os_p
-      class(bound_rt), allocatable         :: bd
+      class(sysblock_rt), allocatable      :: bd
 
       ! Construct the rad_obound type
 

@@ -1,3 +1,4 @@
+
 B(1, 1) = 1 + (-alpha_omg*c_1*omega_c**2 - 4 + lambda/(alpha_omg*c_1* &
       omega_c**2))/V
 B(2, 1) = U*alpha_gbc*alpha_grv
@@ -17,8 +18,8 @@ B(3, 5) = 4*f_rht
 B(1, 6) = 0
 B(2, 6) = 0
 B(3, 6) = -1
-if (PRESENT(f)) then
-f(1) = -c_1*y_T_1*(-l_e - 1 + lambda/(alpha_omg*c_1*omega_c**2))/V
-f(2) = 0
-f(3) = 0
+if (PRESENT(F)) then
+F(1) = -c_1*y_T_1*(-l_e - 1 + lambda/(alpha_omg*c_1*omega_c**2))/V
+F(2) = 0
+F(3) = 0
 endif

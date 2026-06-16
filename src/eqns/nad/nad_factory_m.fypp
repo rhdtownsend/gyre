@@ -23,12 +23,12 @@ module nad_factory_m
 
    use forum_m, only: RD
 
-   use bound_m
    use context_m
    use eqns_m
    use osc_par_m
    use point_m
    use trans_m
+   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -168,7 +168,7 @@ contains
 
       type(context_t), pointer, intent(in) :: cx
       type(osc_par_t), intent(in)          :: os_p
-      class(bound_ct), allocatable         :: bd
+      class(sysblock_ct), allocatable      :: bd
 
       ! Construct the nad_ibound type
 
@@ -210,7 +210,7 @@ contains
 
       type(context_t), pointer, intent(in) :: cx
       type(osc_par_t), intent(in)          :: os_p
-      class(bound_ct), allocatable         :: bd
+      class(sysblock_ct), allocatable      :: bd
 
       ! Construct the nad_obound type
 

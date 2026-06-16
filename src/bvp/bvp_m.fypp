@@ -23,13 +23,13 @@ module bvp_m
 
    use forum_m, only: RD
 
-   use bound_m
-   use diff_element_m
    use ext_m
    use num_par_m
    use state_m
    use status_m
    use sysmtx_m
+   use sysblock_m
+   use sysblock_elem_m
 
    use ISO_FORTRAN_ENV
 
@@ -43,13 +43,13 @@ module bvp_m
 
       type :: bvp_${S}$
          private
-         class(diff_element_${S}$), allocatable :: de(:)
-         class(bound_${S}$), allocatable        :: bd_i
-         class(bound_${S}$), allocatable        :: bd_o
-         integer, public                        :: n
-         integer, public                        :: n_e
-         integer, public                        :: n_i
-         integer, public                        :: n_o
+         class(sysblock_${S}$), allocatable      :: sb_i
+         class(sysblock_${S}$), allocatable      :: sb_o
+         class(sysblock_elem_${S}$), allocatable :: se(:)
+         integer, public                         :: n
+         integer, public                         :: n_e
+         integer, public                         :: n_i
+         integer, public                         :: n_o
       contains
          private
          procedure, public :: eval_det => eval_det_${S}$_
@@ -77,45 +77,45 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function bvp_${S}$_(bd_i, bd_o, de, nm_p) result(bp)
+      function bvp_${S}$_(sb_i, sb_o, se, nm_p) result(bp)
 
-         class(bound_${S}$), intent(in)        :: bd_i
-         class(bound_${S}$), intent(in)        :: bd_o
-         class(diff_element_${S}$), intent(in) :: de(:)
-         type(num_par_t), intent(in)           :: nm_p
-         type(bvp_${S}$)                       :: bp
+         class(sysblock_${S}$), intent(in)      :: sb_i
+         class(sysblock_${S}$), intent(in)      :: sb_o
+         class(sysblock_elem_${S}$), intent(in) :: se(:)
+         type(num_par_t), intent(in)            :: nm_p
+         type(bvp_${S}$)                        :: bp
 
          integer :: n
          integer :: n_e
          integer :: n_i
          integer :: n_o
 
-         ! Perform basic validations
+         ! Perform basic dimension, validations
 
-         n = SIZE(de) + 1
-
-         @:CHECK_BOUNDS(bd_i%n_e, bd_o%n_e)
-
-         n_e = bd_i%n_e
-
-         n_i = bd_i%n_b
-         n_o = bd_o%n_b
-
-         @:CHECK_BOUNDS(n_i+n_o, n_e)
+         n = SIZE(se) + 1
 
          block
-            integer :: i_de
-            do i_de = 1, SIZE(de)
-               @:ASSERT_DEBUG(de(i_de)%df%n_e == n_e, 'dimension mismatch')
+            integer :: i
+            n_e = se(1)%sb%n_e
+            do i = 2, SIZE(se)
+               @:ASSERT_DEBUG(se(i)%sb%n_e == n_e, 'dimension mismatch')
             end do
          end block
 
+         @:CHECK_BOUNDS(sb_i%n_v, n_e)
+         @:CHECK_BOUNDS(sb_o%n_v, n_e)
+
+         n_i = sb_i%n_e
+         n_o = sb_o%n_e
+
+         @:CHECK_BOUNDS(n_i+n_o, n_e)
+
          ! Construct the bvp type
 
-         allocate(bp%de, SOURCE=de)
+         allocate(bp%se, SOURCE=se)
 
-         bp%bd_i = bd_i
-         bp%bd_o = bd_o
+         bp%sb_i = sb_i
+         bp%sb_o = sb_o
 
          bp%n = n
          bp%n_e = n_e
@@ -144,7 +144,7 @@ contains
 
          ! Evaluate the determinant of the sysmtx
 
-         call sm%eval_det(st, this%bd_i, this%bd_o, this%de, det)
+         call sm%eval_det(st, this%sb_i, this%sb_o, this%se, det)
 
          ! Finish
 
@@ -173,7 +173,7 @@ contains
 
          ! Evaluate the solution vector y of the homogeneous system
 
-         call sm%solve_hom(st, this%bd_i, this%bd_o, this%de, u)
+         call sm%solve_hom(st, this%sb_i, this%sb_o, this%se, u)
 
          y = RESHAPE(u, SHAPE(y))
 
@@ -204,7 +204,7 @@ contains
 
          ! Evaluate the solution vector y of the inhomogeneous system
 
-         call sm%solve_inhom(st, this%bd_i, this%bd_o, this%de, u)
+         call sm%solve_inhom(st, this%sb_i, this%sb_o, this%se, u)
 
          y = RESHAPE(u, SHAPE(y))
 

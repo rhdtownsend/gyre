@@ -1,3 +1,4 @@
+
 B(1, 1) = 0
 B(2, 1) = 0
 B(1, 2) = 1
@@ -6,7 +7,7 @@ B(1, 3) = alpha_grv - 1
 B(2, 3) = 0
 B(1, 4) = 0
 B(2, 4) = 1
-if (PRESENT(f)) then
-f(1) = -c_1*y_T_1
-f(2) = 0
+if (PRESENT(F)) then
+F(1) = -c_1*y_T_1
+F(2) = 0
 endif

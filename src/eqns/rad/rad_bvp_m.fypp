@@ -23,10 +23,8 @@ module rad_bvp_m
 
    use forum_m, only: RD
 
-   use bound_m
    use bvp_m
    use context_m
-   use diff_element_m
    use diff_factory_m
    use eqns_m
    use grid_m
@@ -39,6 +37,8 @@ module rad_bvp_m
    use point_m
    use qad_eval_m
    use state_m
+   use sysblock_m
+   use sysblock_elem_m
    use sysmtx_m
    use trans_m
    use wave_m
@@ -94,10 +94,10 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(rad_bvp_t)                      :: bp
 
-      class(bound_rt), allocatable       :: bd_i
-      class(bound_rt), allocatable       :: bd_o
-      integer                            :: j
-      type(diff_element_rt), allocatable :: de(:)
+      class(sysblock_rt), allocatable     :: sb_i
+      class(sysblock_rt), allocatable     :: sb_o
+      integer                             :: j
+      type(sysblock_elem_rt), allocatable :: se(:)
 
       ! Construct the rad_bvp_t
 
@@ -105,23 +105,23 @@ contains
          @:WARN('alpha_grv is ignored in 2nd-order radial equations')
       endif
 
-      ! Initialize the boundary conditions
+      ! Initialize the boundary condition blocks
 
-      bd_i = rad_ibound_t(cx, os_p)
-      bd_o = rad_obound_t(cx, os_p)
+      sb_i = rad_ibound_t(cx, os_p)
+      sb_o = rad_obound_t(cx, os_p)
 
-      ! Initialize the difference equations
+      ! Initialize the difference equation blocks
 
-      allocate(de(gr%n-1))
+      allocate(se(gr%n-1))
 
       !$OMP PARALLEL DO
       do j = 1, gr%n-1
-         allocate(de(j)%df, SOURCE=diff_rt(eqns_factory_, gr%pt(j), gr%pt(j+1), nm_p))
+         allocate(se(j)%sb, SOURCE=diff_rt(eqns_factory_, gr%pt(j), gr%pt(j+1), nm_p))
       end do
 
       ! Initialize the bvp_t
 
-      bp%bvp_rt = bvp_rt(bd_i, bd_o, de, nm_p)
+      bp%bvp_rt = bvp_rt(sb_i, sb_o, se, nm_p)
 
       ! Other initializations
 

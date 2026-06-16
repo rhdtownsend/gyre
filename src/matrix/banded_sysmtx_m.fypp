@@ -24,12 +24,12 @@ module banded_sysmtx_m
    use forum_m, only: RD, hdf5io_t
 
    use blas_lapack_m
-   use bound_m
-   use diff_element_m
    use ext_m
    use linalg_m
    use math_m
    use state_m
+   use sysblock_elem_m
+   use sysblock_m
    use sysmtx_m
 
    use ISO_FORTRAN_ENV
@@ -201,26 +201,26 @@ contains
 
       !****
 
-      subroutine build_and_factor_${S}$_(this, st, bd_i, bd_o, de, set_F)
+      subroutine build_and_factor_${S}$_(this, st, sb_i, sb_o, se, set_F)
 
          class(banded_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(bound_${S}$), intent(in)            :: bd_i
-         class(bound_${S}$), intent(in)            :: bd_o
-         class(diff_element_${S}$), intent(in)     :: de(:)
+         class(sysblock_${S}$), intent(in)         :: sb_i
+         class(sysblock_${S}$), intent(in)         :: sb_o
+         class(sysblock_elem_${S}$), intent(in)    :: se(:)
          logical, intent(in), optional             :: set_F
 
-         logical :: set_F_
-         ${T}$   :: B_i(this%n_i,this%n_e)
-         ${T}$   :: g_i(this%n_i)
-         ${T}$   :: B_o(this%n_o,this%n_e)
-         ${T}$   :: g_o(this%n_o)
-         ${T}$   :: E_t(2*this%n_e,this%n_e)
-         ${T}$   :: f(this%n_e)
-         integer :: i
-         ${T}$   :: scl
-         integer :: k
-         integer :: info
+         logical         :: set_F_
+         ${T}$           :: B_i(this%n_i,this%n_e)
+         ${T}$           :: B_o(this%n_o,this%n_e)
+         type(ext_${S}$) :: scl_i
+         type(ext_${S}$) :: scl_o
+         ${T}$           :: E_t(2*this%n_e,this%n_e)
+         ${T}$           :: F(this%n_e)
+         integer         :: i
+         ${T}$           :: scl
+         integer         :: k
+         integer         :: info
 
          if (PRESENT(set_F)) then
             set_F_ = set_F
@@ -235,9 +235,9 @@ contains
             ! Build the boundary blocks, and row-scale to unity
 
             if (set_F_) then
-               call bd_i%eval_B(st, B_i, g_i)
+               call sb_i%eval(st, B_i, scl_i, F=F(:n_i))
             else
-               call bd_i%eval_B(st, B_i)
+               call sb_i%eval(st, B_i, scl_i)
             end if
 
             do i = 1, n_i
@@ -245,14 +245,14 @@ contains
                this%scl_i(i) = scl
                call this%set_row_(i, 1, B_i(i,:)/scl)
                if (set_F_) then
-                  this%F(i) = g_i(i)/scl
+                  this%F(i) = F(i)/scl
                end if
             end do
 
             if (set_F_) then
-               call bd_o%eval_B(st, B_o, g_o)
+               call sb_o%eval(st, B_o, scl_o, F=F(n_i+1:))
             else
-               call bd_o%eval_B(st, B_o)
+               call sb_o%eval(st, B_o, scl_o)
             end if
 
             do i = 1, n_o
@@ -260,7 +260,7 @@ contains
                this%scl_o(i) = scl
                call this%set_row_(n_e*n+n_i+i, n_e*n+1, B_o(i,:)/scl)
                if (set_F_) then
-                  this%F(n_e*n+n_i+1) = g_o(i)/scl
+                  this%F(n_e*n+n_i+1) = F(n_i+i)/scl
                end if
             end do
 
@@ -271,9 +271,9 @@ contains
             !$OMP DO PRIVATE(E_t, F, i, scl)
             do k = 1, n
                if (set_F_) then
-                  call de(k)%df%eval_E_t(st, E_t, this%scl(k), f)
+                  call se(k)%sb%eval(st, E_t, this%scl(k), F=F, trans=.TRUE.)
                else
-                  call de(k)%df%eval_E_t(st, E_t, this%scl(k))
+                  call se(k)%sb%eval(st, E_t, this%scl(k), trans=.TRUE.)
                end if
                do i = 1, n_e
                   scl = MAXVAL(abs(E_t(:,i)))
@@ -304,20 +304,20 @@ contains
 
       !****
 
-      subroutine eval_det_${S}$_(this, st, bd_i, bd_o, de, det)
+      subroutine eval_det_${S}$_(this, st, sb_i, sb_o, se, det)
 
          class(banded_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(bound_${S}$), intent(in)            :: bd_i
-         class(bound_${S}$), intent(in)            :: bd_o
-         class(diff_element_${S}$), intent(in)     :: de(:)
+         class(sysblock_${S}$), intent(in)         :: sb_i
+         class(sysblock_${S}$), intent(in)         :: sb_o
+         class(sysblock_elem_${S}$), intent(in)    :: se(:)
          type(ext_${S}$), intent(out)              :: det
 
          integer :: j
 
          ! Build and factorize the sysmtx_t
 
-         call this%build_and_factor_(st, bd_i, bd_o, de)
+         call this%build_and_factor_(st, sb_i, sb_o, se)
 
          ! Evaluate the determinant
 
@@ -336,13 +336,13 @@ contains
 
       !****
 
-      subroutine solve_hom_${S}$_(this, st, bd_i, bd_o, de, u)
+      subroutine solve_hom_${S}$_(this, st, sb_i, sb_o, se, u)
 
          class(banded_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(bound_${S}$), intent(in)            :: bd_i
-         class(bound_${S}$), intent(in)            :: bd_o
-         class(diff_element_${S}$), intent(in)     :: de(:)
+         class(sysblock_${S}$), intent(in)         :: sb_i
+         class(sysblock_${S}$), intent(in)         :: sb_o
+         class(sysblock_elem_${S}$), intent(in)    :: se(:)
          ${T}$, intent(out)                        :: u(:)
 
          integer              :: i_s
@@ -359,7 +359,7 @@ contains
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(st, bd_i, bd_o, de)
+         call this%build_and_factor_(st, sb_i, sb_o, se)
 
          ! Evaluate the solution vector u of the homogeneous linear system
          ! S u = 0. It is assumed that the nullity nul(S) >= 1
@@ -420,13 +420,13 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, st, bd_i, bd_o, de, u)
+      subroutine solve_inhom_${S}$_(this, st, sb_i, sb_o, se, u)
 
          class(banded_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(bound_${S}$), intent(in)            :: bd_i
-         class(bound_${S}$), intent(in)            :: bd_o
-         class(diff_element_${S}$), intent(in)     :: de(:)
+         class(sysblock_${S}$), intent(in)         :: sb_i
+         class(sysblock_${S}$), intent(in)         :: sb_o
+         class(sysblock_elem_${S}$), intent(in)    :: se(:)
          ${T}$, intent(out)                        :: u(:)
 
          ${T}$   :: B(this%n_e*(this%n+1),1)
@@ -436,7 +436,7 @@ contains
 
          ! Build and factorize the sysmtx_t
 
-         call this%build_and_factor_(st, bd_i, bd_o, de, set_F=.TRUE.)
+         call this%build_and_factor_(st, sb_i, sb_o, se, set_F=.TRUE.)
 
          ! Evaluate the solution vector u of the inhomogeneous linear
          ! system S u = F
