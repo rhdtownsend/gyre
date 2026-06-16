@@ -26,6 +26,7 @@ module ${P}$_nad_obound_m
    use forum_m, only: RD
 
    use atmos_m
+   use bound_m
    use context_m
    use ext_m
    use math_m
@@ -34,7 +35,6 @@ module ${P}$_nad_obound_m
    use osc_par_m
    use point_m
    use state_m
-   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -44,7 +44,7 @@ module ${P}$_nad_obound_m
 
    ! Derived-type definitions
 
-   type, extends(sysblock_ct) :: ${P}$_nad_obound_t
+   type, extends(bound_ct) :: ${P}$_nad_obound_t
       private
       type(context_t), pointer  :: cx => null()
       real(RD)                  :: V_2

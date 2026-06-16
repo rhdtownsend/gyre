@@ -19,6 +19,10 @@
 
 module diff_m
 
+   ! Uses
+
+   use sysblock_m
+
    ! No implicit typing
 
    implicit none (type, external)
@@ -27,30 +31,8 @@ module diff_m
 
       ! Derived-type definitions
 
-      type, abstract :: diff_${S}$
-         integer :: n_e
-      contains
-         procedure(eval_E_t_${S}$_), deferred :: eval_E_t
+      type, abstract, extends(sysblock_${S}$) :: diff_${S}$
       end type diff_${S}$
-
-      ! Interfaces
-
-      abstract interface
-
-         subroutine eval_E_t_${S}$_(this, st, E_t, scl, F)
-            use forum_m, only: RD
-            use ext_m
-            use state_m
-            import diff_${S}$
-            implicit none (type, external)
-            class(diff_${S}$), intent(in)            :: this
-            class(state_${S}$), intent(in)           :: st
-            ${T}$, contiguous, intent(out)           :: E_t(:,:)
-            type(ext_${S}$), intent(out)             :: scl
-            ${T}$, contiguous, intent(out), optional :: F(:)
-         end subroutine eval_E_t_${S}$_
-
-      end interface
 
       ! Access specifiers
 

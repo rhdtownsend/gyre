@@ -23,19 +23,11 @@ module diff_factory_m
 
    use forum_m, only: RD
 
-   use colloc_gl2_diff_m
-   use colloc_gl4_diff_m
-   use colloc_gl6_diff_m
    use diff_m
    use eqns_m
-   use magnus_gl2_diff_m
-   use magnus_gl4_diff_m
-   use magnus_gl6_diff_m
    use match_diff_m
-   use mirk_diff_m
    use num_par_m
    use point_m
-   use trapz_diff_m
 
    use ISO_FORTRAN_ENV
 
@@ -66,6 +58,15 @@ contains
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
       function diff_${S}$_(eqns_factory, pt_a, pt_b, nm_p) result(df)
+
+         use colloc_gl2_diff_m
+         use colloc_gl4_diff_m
+         use colloc_gl6_diff_m
+         use magnus_gl2_diff_m
+         use magnus_gl4_diff_m
+         use magnus_gl6_diff_m
+         use mirk_diff_m
+         use trapz_diff_m
 
          interface
             subroutine eqns_factory(pt, eq)

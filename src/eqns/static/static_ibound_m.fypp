@@ -23,6 +23,7 @@ module static_ibound_m
 
    use forum_m, only: RD
 
+   use bound_m
    use context_m
    use ext_m
    use model_m
@@ -30,7 +31,6 @@ module static_ibound_m
    use osc_par_m
    use point_m
    use state_m
-   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -40,7 +40,7 @@ module static_ibound_m
 
    ! Derived-type definitions
 
-   type, extends(sysblock_rt) :: static_ibound_t
+   type, extends(bound_rt) :: static_ibound_t
       private
       type(context_t), pointer  :: cx => null()
       procedure(eval_), pointer :: eval_

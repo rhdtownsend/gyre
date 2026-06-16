@@ -23,6 +23,7 @@ module static_obound_m
 
    use forum_m, only: RD
 
+   use bound_m
    use context_m
    use ext_m
    use model_m
@@ -40,7 +41,7 @@ module static_obound_m
 
    ! Derived-type definitions
 
-   type, extends(sysblock_rt) :: static_obound_t
+   type, extends(bound_rt) :: static_obound_t
       private
       type(context_t), pointer    :: cx => null()
       real(RD)                    :: U

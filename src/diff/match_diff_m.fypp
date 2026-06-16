@@ -23,12 +23,12 @@ module match_diff_m
 
    use forum_m, only: RD
 
+   use diff_m
    use eqns_m
    use ext_m
    use math_m
    use point_m
    use state_m
-   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -40,7 +40,7 @@ module match_diff_m
 
       ! Derived-type definitions
 
-      type, extends(sysblock_${S}$) :: match_diff_${S}$
+      type, extends(diff_${S}$) :: match_diff_${S}$
          private
          class(eqns_${S}$), allocatable :: eq(:)
          real(RD)                       :: dx

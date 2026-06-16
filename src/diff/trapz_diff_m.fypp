@@ -23,6 +23,7 @@ module trapz_diff_m
 
    use forum_m, only: RD
 
+   use diff_m
    use eqns_m
    use ext_m
    use point_m
@@ -39,7 +40,7 @@ module trapz_diff_m
 
       ! Derived-type definitions
 
-      type, extends(sysblock_${S}$) :: trapz_diff_${S}$
+      type, extends(diff_${S}$) :: trapz_diff_${S}$
          private
          class(eqns_${S}$), allocatable :: eq(:)
          real(RD), allocatable          :: w(:)
