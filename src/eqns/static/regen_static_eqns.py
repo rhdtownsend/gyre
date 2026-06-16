@@ -50,7 +50,7 @@ IB_regular = sp.Matrix([
     [l_e, -1]
 ])
 
-IB_F_regular = sp.zeros(2, 1)
+IB_F_regular = sp.zeros(1, 1)
 
 # Outer boundary condition matrices and inhomogeneous vectors
 
