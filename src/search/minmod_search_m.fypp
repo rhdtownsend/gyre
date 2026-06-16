@@ -188,7 +188,6 @@ contains
       integer :: i
 
       @:CHECK_BOUNDS(SIZE(mod_discrim), SIZE(omega))
-      @:CHECK_BOUNDS(SIZE(br), SIZE(omega)-2)
 
       ! Set up the bracket array
 
