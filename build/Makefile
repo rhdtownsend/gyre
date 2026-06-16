@@ -124,10 +124,13 @@ static_SRCS = static_bvp_m.fypp \
    static_obound_m.fypp \
    static_eqns_m.fypp \
 
+sysblock_SRCS = sysblock_m.fypp sysblock_elem_m.fypp \
+   banded_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp
+
 sysmtx_SRCS = sysmtx_m.fypp sysmtx_factory_m.fypp \
    banded_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp
 
-diff_SRCS = diff_m.fypp diff_factory_m.fypp \
+diff_SRCS = diff_factory_m.fypp \
    colloc_gl2_diff_m.fypp colloc_gl4_diff_m.fypp colloc_gl6_diff_m.fypp \
    magnus_gl2_diff_m.fypp magnus_gl4_diff_m.fypp magnus_gl6_diff_m.fypp \
    mirk_diff_m.fypp trapz_diff_m.fypp match_diff_m.fypp \
@@ -135,18 +138,20 @@ diff_SRCS = diff_m.fypp diff_factory_m.fypp \
 search_SRCS = search_m.fypp bracket_search_m.fypp minmod_search_m.fypp \
    prox_search_m.fypp contour_search_m.fypp file_search_m.fypp
 
+bvp_SRCS = bvp_m.fypp
+
 libgyre_SRCS = \
    $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS) $(static_SRCS) 			\
-   $(sysmtx_SRCS) $(diff_SRCS) $(search_SRCS)						\
+   $(sysblock_SRCS) $(sysmtx_SRCS) $(diff_SRCS) $(search_SRCS) $(bvp_SRCS)		\
    adhoc_angular_m.fypp amdl_file_m.fypp						\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp anapoly_5_model_m.fypp			\
    anapoly_5_1_model_m.fypp angular_m.fypp angular_factory_m.fypp atmos_m.fypp		\
    b3_file_m.fypp blas_lapack_m.fypp							\
-   bound_m.fypp bvp_m.fypp cheb_fit_m.fypp						\
+   cheb_fit_m.fypp									\
    constants_m.fypp context_m.fypp							\
    contour_map_m.fypp contour_path_m.fypp						\
    cubic_interp_m.fypp deriv_m.fypp detail_m.fypp 					\
-   diff_element_m.fypp discrim_m.fypp eqns_m.fypp evol_model_m.fypp			\
+   discrim_m.fypp eqns_m.fypp evol_model_m.fypp						\
    ext_complex_m.fypp ext_m.fypp ext_real_m.fypp famdl_file_m.fypp			\
    fgong_file_m.fypp freq_context_m.fypp freq_m.fypp gyre_m.fypp			\
    grid_m.fypp grid_par_m.fypp grid_refine_m.fypp					\
