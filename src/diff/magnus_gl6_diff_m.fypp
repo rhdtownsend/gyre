@@ -106,6 +106,8 @@ contains
          call eqns_factory(pt, df%eq)
 
          df%n_e = df%eq(1)%n_e
+         @:ASSERT_DEBUG(ALL(df%eq%n_e == df%n_e))
+
          df%n_v = 2*df%n_e
 
          select case(df%n_e)
