@@ -87,62 +87,70 @@ test_ext_USES = $(libgyre_SRCS)
 test_ext_LIBS = libgyre
 
 ad_SRCS = ad_bvp_m.fypp ad_factory_m.fypp \
-   gyre_ad_ibound_m.fypp dziem_ad_ibound_m.fypp jcd_ad_ibound_m.fypp \
-   rjcd_ad_ibound_m.fypp mix_ad_ibound_m.fypp lagp_ad_ibound_m.fypp \
-   gyre_ad_obound_m.fypp dziem_ad_obound_m.fypp jcd_ad_obound_m.fypp \
-   rjcd_ad_obound_m.fypp mix_ad_obound_m.fypp lagp_ad_obound_m.fypp \
-   gyre_ad_eqns_m.fypp dziem_ad_eqns_m.fypp jcd_ad_eqns_m.fypp \
-   rjcd_ad_eqns_m.fypp mix_ad_eqns_m.fypp lagp_ad_eqns_m.fypp \
+   gyre_ad_diff_eqns_m.fypp dziem_ad_diff_eqns_m.fypp jcd_ad_diff_eqns_m.fypp \
+   rjcd_ad_diff_eqns_m.fypp mix_ad_diff_eqns_m.fypp lagp_ad_diff_eqns_m.fypp \
+   gyre_ad_match_conds_m.fypp dziem_ad_match_conds_m.fypp jcd_ad_match_conds_m.fypp \
+   rjcd_ad_match_conds_m.fypp mix_ad_match_conds_m.fypp lagp_ad_match_conds_m.fypp \
    gyre_ad_trans_m.fypp dziem_ad_trans_m.fypp jcd_ad_trans_m.fypp \
-   rjcd_ad_trans_m.fypp mix_ad_trans_m.fypp lagp_ad_trans_m.fypp
+   rjcd_ad_trans_m.fypp mix_ad_trans_m.fypp lagp_ad_trans_m.fypp \
+   gyre_ad_ibound_conds_m.fypp dziem_ad_ibound_conds_m.fypp jcd_ad_ibound_conds_m.fypp \
+   rjcd_ad_ibound_conds_m.fypp mix_ad_ibound_conds_m.fypp lagp_ad_ibound_conds_m.fypp \
+   gyre_ad_obound_conds_m.fypp dziem_ad_obound_conds_m.fypp jcd_ad_obound_conds_m.fypp \
+   rjcd_ad_obound_conds_m.fypp mix_ad_obound_conds_m.fypp lagp_ad_obound_conds_m.fypp \
 
 rad_SRCS = rad_bvp_m.fypp rad_factory_m.fypp \
-   gyre_rad_ibound_m.fypp dziem_rad_ibound_m.fypp jcd_rad_ibound_m.fypp \
-   mix_rad_ibound_m.fypp lagp_rad_ibound_m.fypp \
-   gyre_rad_obound_m.fypp dziem_rad_obound_m.fypp jcd_rad_obound_m.fypp \
-   mix_rad_obound_m.fypp lagp_rad_obound_m.fypp \
-   gyre_rad_eqns_m.fypp dziem_rad_eqns_m.fypp jcd_rad_eqns_m.fypp \
-   mix_rad_eqns_m.fypp lagp_rad_eqns_m.fypp \
+   gyre_rad_diff_eqns_m.fypp dziem_rad_diff_eqns_m.fypp jcd_rad_diff_eqns_m.fypp \
+   mix_rad_diff_eqns_m.fypp lagp_rad_diff_eqns_m.fypp \
+   gyre_rad_match_conds_m.fypp dziem_rad_match_conds_m.fypp jcd_rad_match_conds_m.fypp \
+   mix_rad_match_conds_m.fypp lagp_rad_match_conds_m.fypp \
    gyre_rad_trans_m.fypp dziem_rad_trans_m.fypp jcd_rad_trans_m.fypp \
-   mix_rad_trans_m.fypp lagp_rad_trans_m.fypp
+   mix_rad_trans_m.fypp lagp_rad_trans_m.fypp \
+   gyre_rad_ibound_conds_m.fypp dziem_rad_ibound_conds_m.fypp jcd_rad_ibound_conds_m.fypp \
+   mix_rad_ibound_conds_m.fypp lagp_rad_ibound_conds_m.fypp \
+   gyre_rad_obound_conds_m.fypp dziem_rad_obound_conds_m.fypp jcd_rad_obound_conds_m.fypp \
+   mix_rad_obound_conds_m.fypp lagp_rad_obound_conds_m.fypp
 
-nad_SRCS = nad_bvp_m.fypp nad_factory_m.fypp nad_diff_m.fypp \
-   gyre_nad_ibound_m.fypp dziem_nad_ibound_m.fypp jcd_nad_ibound_m.fypp \
-   rjcd_nad_ibound_m.fypp mix_nad_ibound_m.fypp lagp_nad_ibound_m.fypp \
-   gyre_nad_obound_m.fypp dziem_nad_obound_m.fypp jcd_nad_obound_m.fypp \
-   rjcd_nad_obound_m.fypp mix_nad_obound_m.fypp lagp_nad_obound_m.fypp \
-   gyre_nad_eqns_m.fypp dziem_nad_eqns_m.fypp jcd_nad_eqns_m.fypp \
-   rjcd_nad_eqns_m.fypp mix_nad_eqns_m.fypp lagp_nad_eqns_m.fypp \
+nad_SRCS = nad_bvp_m.fypp nad_factory_m.fypp nad_diff_block_m.fypp \
+   gyre_nad_diff_eqns_m.fypp dziem_nad_diff_eqns_m.fypp jcd_nad_diff_eqns_m.fypp \
+   rjcd_nad_diff_eqns_m.fypp mix_nad_diff_eqns_m.fypp lagp_nad_diff_eqns_m.fypp \
+   gyre_nad_match_conds_m.fypp dziem_nad_match_conds_m.fypp jcd_nad_match_conds_m.fypp \
+   rjcd_nad_match_conds_m.fypp mix_nad_match_conds_m.fypp lagp_nad_match_conds_m.fypp \
    gyre_nad_trans_m.fypp dziem_nad_trans_m.fypp jcd_nad_trans_m.fypp \
-   rjcd_nad_trans_m.fypp mix_nad_trans_m.fypp lagp_nad_trans_m.fypp
+   rjcd_nad_trans_m.fypp mix_nad_trans_m.fypp lagp_nad_trans_m.fypp \
+   gyre_nad_ibound_conds_m.fypp dziem_nad_ibound_conds_m.fypp jcd_nad_ibound_conds_m.fypp \
+   rjcd_nad_ibound_conds_m.fypp mix_nad_ibound_conds_m.fypp lagp_nad_ibound_conds_m.fypp \
+   gyre_nad_obound_conds_m.fypp dziem_nad_obound_conds_m.fypp jcd_nad_obound_conds_m.fypp \
+   rjcd_nad_obound_conds_m.fypp mix_nad_obound_conds_m.fypp lagp_nad_obound_conds_m.fypp
 
-tnad_SRCS = tnad_bvp_m.fypp tnad_factory_m.fypp tnad_diff_m.fypp \
-   gyre_tnad_eqns_m.fypp
+tnad_SRCS = tnad_bvp_m.fypp tnad_factory_m.fypp tnad_diff_block_m.fypp \
+   gyre_tnad_diff_eqns_m.fypp \
+   gyre_tnad_match_conds_m.fypp
 
 static_SRCS = static_bvp_m.fypp \
-   static_ibound_m.fypp \
-   static_obound_m.fypp \
-   static_eqns_m.fypp \
-
-sysblock_SRCS = sysblock_m.fypp sysblock_elem_m.fypp \
-   banded_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp
+   static_diff_eqns_m.fypp \
+   static_match_conds_m.fypp \
+   static_ibound_conds_m.fypp \
+   static_obound_conds_m.fypp
 
 sysmtx_SRCS = sysmtx_m.fypp sysmtx_factory_m.fypp \
    banded_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp
 
-diff_SRCS = diff_m.fypp diff_factory_m.fypp \
-   colloc_gl2_diff_m.fypp colloc_gl4_diff_m.fypp colloc_gl6_diff_m.fypp \
-   magnus_gl2_diff_m.fypp magnus_gl4_diff_m.fypp magnus_gl6_diff_m.fypp \
-   mirk_diff_m.fypp trapz_diff_m.fypp match_diff_m.fypp \
+block_SRCS = bound_block_m.fypp inter_block_m.fypp inter_element_m.fypp \
+   diff_block_m.fypp diff_block_factory_m.fypp match_block_m.fypp \
+   colloc_gl2_block_m.fypp colloc_gl4_block_m.fypp colloc_gl6_block_m.fypp \
+   magnus_gl2_block_m.fypp magnus_gl4_block_m.fypp magnus_gl6_block_m.fypp \
+   mirk_block_m.fypp trapz_block_m.fypp
 
 search_SRCS = search_m.fypp bracket_search_m.fypp minmod_search_m.fypp \
    prox_search_m.fypp contour_search_m.fypp file_search_m.fypp
 
-bvp_SRCS = bvp_m.fypp bound_m.fypp
+bvp_SRCS = bvp_m.fypp
+
+eqns_SRCS = diff_eqns_m.fypp bound_conds_m.fypp match_conds_m.fypp
 
 libgyre_SRCS = \
    $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(tnad_SRCS) $(static_SRCS) 			\
-   $(sysblock_SRCS) $(sysmtx_SRCS) $(diff_SRCS) $(search_SRCS) $(bvp_SRCS)		\
+   $(block_SRCS) $(sysmtx_SRCS) $(eqns_SRCS) $(search_SRCS) $(bvp_SRCS)	        	\
    adhoc_angular_m.fypp amdl_file_m.fypp						\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp anapoly_5_model_m.fypp			\
    anapoly_5_1_model_m.fypp angular_m.fypp angular_factory_m.fypp atmos_m.fypp		\
@@ -151,7 +159,7 @@ libgyre_SRCS = \
    constants_m.fypp context_m.fypp							\
    contour_map_m.fypp contour_path_m.fypp						\
    cubic_interp_m.fypp deriv_m.fypp detail_m.fypp 					\
-   discrim_m.fypp eqns_m.fypp evol_model_m.fypp						\
+   discrim_m.fypp evol_model_m.fypp						\
    ext_complex_m.fypp ext_m.fypp ext_real_m.fypp famdl_file_m.fypp			\
    fgong_file_m.fypp freq_context_m.fypp freq_m.fypp gyre_m.fypp			\
    grid_m.fypp grid_par_m.fypp grid_refine_m.fypp					\
@@ -219,11 +227,15 @@ linter :
 
 # Targets for source checking
 
-check_src:
+check_src :
 	@for src in $(ALL_SRCS); do \
              find $(SRC_DIRS) -path '*/forum/*' -prune -or -name $$src -print | grep -q  . || echo $$src MISSING; \
          done
 
+build_src : $(subst .fypp,.f90,$(ALL_SRCS))
+
 check_src : SRC_DIRS ?= ../src
 
-.PHONY: all linter check_src
+build_src : SRC_DIRS := $(addprefix ../,$(SRC_DIRS))
+
+.PHONY: all linter check_src build_src

@@ -78,7 +78,7 @@ export SRC_DIR := $(CURDIR)/src
 export SRC_DIRS := \
    $(shell find $(SRC_DIR)/eqns -type d -print) \
    $(shell find $(SRC_DIR)/frontend -type d -print) \
-   $(addprefix $(SRC_DIR)/, angular bvp common context diff eqns ext \
+   $(addprefix $(SRC_DIR)/,angular block bvp common context ext \
       grid include interp lib math matrix mode model output par poly search tar tide)
 
 ifeq ($(CRMATH),yes)
@@ -102,7 +102,7 @@ clean : clean-forum
 test build_ref build_ref_arch :
 	@$(MAKE) --no-print-directory -C test $@
 
-check_src :
+check_src build_src :
 	@$(MAKE) -C build $@
 
 ifneq ($(EXTERNAL_FORUM),yes)
