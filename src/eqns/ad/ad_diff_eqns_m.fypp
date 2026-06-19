@@ -1,0 +1,232 @@
+! Module  : ad_diff_eqns_m
+! Purpose : adiabatic differential equations
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_ad_diff_eqns_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use context_m
+   use diff_eqns_m
+   use model_m
+   use model_util_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(diff_eqns_rt) :: ${P}$_ad_diff_eqns_t
+      private
+      type(context_t), pointer :: cx => null()
+      real(RD)                 :: V_2
+      real(RD)                 :: dV_2
+      real(RD)                 :: V_g
+      real(RD)                 :: As
+      real(RD)                 :: As_iso
+      real(RD)                 :: U
+      real(RD)                 :: c_1
+      real(RD)                 :: Omega_rot
+      real(RD)                 :: x
+      real(RD)                 :: lambda
+      real(RD)                 :: l_e
+      real(RD)                 :: l_i
+   contains
+      private
+      procedure, public :: eval
+   end type ${P}$_ad_diff_eqns_t
+
+   ! Interfaces
+
+   interface ${P}$_ad_diff_eqns_t
+      module procedure ${P}$_ad_diff_eqns_t_0_
+      module procedure ${P}$_ad_diff_eqns_t_1_
+   end interface ${P}$_ad_diff_eqns_t
+
+   ! Access specifiers
+
+   public :: ${P}$_ad_diff_eqns_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function ${P}$_ad_diff_eqns_t_0_(cx, pt) result(de)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt
+      type(${P}$_ad_diff_eqns_t)           :: de
+
+      class(model_t), pointer :: ml
+
+      ! Construct the ad_diff_eqns type
+
+      de%cx => cx
+
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_V_2,I_AS,I_U,I_C_1,I_GAMMA_1,I_OMEGA_ROT])
+
+      @:ASSERT(.NOT. ml%is_vacuum(pt), 'vacuum point')
+
+      de%V_2 = ml%coeff(I_V_2, pt)
+      de%dV_2 = ml%dcoeff(I_V_2, pt)
+      de%V_g = de%V_2*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+      de%As = ml%coeff(I_AS, pt)
+      de%As_iso = de%As*MERGE(MERGE(cx%alpha_pi, cx%alpha_gam, pt%x<cx%x_atm), 1._RD, de%As > 0._RD)
+      de%U = ml%coeff(I_U, pt)
+      de%c_1 = ml%coeff(I_C_1, pt)
+
+      de%Omega_rot = cx%Omega_rot(pt)
+
+      if (cx%angular_cache) then
+         de%lambda = cx%lambda(de%Omega_rot, state_rt(0._RD))
+         de%l_e = cx%l_e(de%Omega_rot, state_rt(0._RD))
+         de%l_i = cx%l_e(cx%Omega_rot_i, state_rt(0._RD))
+      end if
+
+      ! Other initializations
+
+      de%x = pt%x
+
+      de%n_e = 4
+
+      ! Finish
+
+      return
+
+   end function ${P}$_ad_diff_eqns_t_0_
+
+   !****
+
+   function ${P}$_ad_diff_eqns_t_1_(cx, pt) result(de)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt(:)
+      type(${P}$_ad_diff_eqns_t)           :: de(SIZE(pt))
+
+      integer :: j
+
+      ! Construct the array of ad_diff_eqns types
+
+      do j = 1, SIZE(pt)
+         de(j) = ${P}$_ad_diff_eqns_t(cx, pt(j))
+      end do
+
+      ! Finish
+
+      return
+
+   end function ${P}$_ad_diff_eqns_t_1_
+
+   !****
+
+   subroutine eval(this, st, del, A, r, trans)
+
+      class(${P}$_ad_diff_eqns_t), intent(in) :: this
+      class(state_rt), intent(in)             :: st
+      real(RD), intent(in)                    :: del
+      real(RD), intent(out)                   :: A(:,:)
+      real(RD), intent(out), optional         :: r(:)
+      logical, intent(in), optional           :: trans
+
+      logical  :: trans_
+      real(RD) :: omega_c
+      real(RD) :: lambda
+      real(RD) :: l_e
+      real(RD) :: l_i
+      real(RD) :: om2
+      real(RD) :: eta
+      real(RD) :: del_x
+
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
+      end if
+
+      @:CHECK_BOUNDS(SIZE(A, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(A, 2), this%n_e)
+
+      if (PRESENT(r)) then
+         @:CHECK_BOUNDS(SIZE(r), this%n_e)
+      end if
+
+      ! Evaluate the Jacobian matrix and inhomogeneous vector
+
+      associate ( &
+         omega => st%omega, &
+         y_T_1 => st%y_T_1, &
+         V_2 => this%V_2, &
+         dV_2 => this%dV_2, &
+         V_g => this%V_g, &
+         As => this%As, &
+         As_iso => this%As_iso, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         Omega_rot => this%Omega_rot, &
+         x => this%x, &
+         Omega_rot_i => this%cx%Omega_rot_i, &
+         alpha_grv => this%cx%alpha_grv, &
+         alpha_omg => this%cx%alpha_omg, &
+         alpha_gam => this%cx%alpha_gam, &
+         alpha_pi => this%cx%alpha_pi, &
+         m => this%cx%m, &
+         angular_cache => this%cx%angular_cache)
+
+         omega_c = omega - m*Omega_rot
+
+         if (angular_cache) then
+            lambda = this%lambda
+            l_e = this%l_e
+            l_i = this%l_i
+         else
+            lambda = this%cx%lambda(Omega_rot, st)
+            l_e = this%cx%l_e(Omega_rot, st)
+            l_i = this%cx%l_e(Omega_rot_i, st)
+         end if
+
+         om2 = c_1*alpha_omg*omega_c**2
+         eta = lambda/om2
+
+         del_x = del/x
+
+         #:include 'A.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval
+
+end module ${P}$_ad_diff_eqns_m

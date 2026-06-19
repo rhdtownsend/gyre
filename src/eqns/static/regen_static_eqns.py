@@ -30,9 +30,27 @@ A = sp.Matrix([
     [lamda - V_g*U(x) - As*U(x), -U(x) - l_e + 2]
 ])
 
-A_F = sp.Matrix([
+r = sp.Matrix([
     0,
     (-V_g*U(x)-As*U(x))*y_T_1*c_1(x)
+])
+
+# Inner boundary condition matrices and inhomogeneous vectors
+
+IB_regular = sp.Matrix([
+    [l_e, -1]
+])
+
+Is_regular = sp.zeros(1, 1)
+
+# Outer boundary condition matrices and inhomogeneous vectors
+
+OB_vacuum = sp.Matrix([
+    [l_e + 1 - U(x), 1]
+])
+
+Os_vacuum = sp.Matrix([
+    -U(x)*y_T_1
 ])
 
 # Match condition matrix and inhomogeneous vector
@@ -42,25 +60,7 @@ C = sp.Matrix([
     [-U(x), 1]
 ])
 
-C_F = sp.zeros(2, 1)
-
-# Inner boundary condition matrices and inhomogeneous vectors
-
-IB_regular = sp.Matrix([
-    [l_e, -1]
-])
-
-IB_F_regular = sp.zeros(1, 1)
-
-# Outer boundary condition matrices and inhomogeneous vectors
-
-OB_vacuum = sp.Matrix([
-    [l_e + 1 - U(x), 1]
-])
-
-OB_F_vacuum = sp.Matrix([
-    -U(x)*y_T_1
-])
+t = sp.zeros(2, 1)
 
 # Main program
 
@@ -73,13 +73,13 @@ if __name__ == '__main__':
     # Regenerate equation include files
 
     with open(f'A.inc', 'w') as file:
-        file.write(generate_A(A, A_F, T)+'\n')
+        file.write(generate_A(A, r, T)+'\n')
 
     with open(f'C.inc', 'w') as file:
-        file.write(generate_C(C, C_F, T)+'\n')
+        file.write(generate_C(C, t, T)+'\n')
 
     with open(f'IB_regular.inc', 'w') as file:
-        file.write(generate_IB(IB_regular, IB_F_regular, T)+'\n')
+        file.write(generate_IB(IB_regular, Is_regular, T)+'\n')
 
     with open(f'OB_vacuum.inc', 'w') as file:
-        file.write(generate_OB(OB_vacuum, OB_F_vacuum, T)+'\n')
+        file.write(generate_OB(OB_vacuum, Os_vacuum, T)+'\n')

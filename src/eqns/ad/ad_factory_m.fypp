@@ -24,11 +24,8 @@ module ad_factory_m
    use forum_m, only: RD
 
    use context_m
-   use eqns_m
    use osc_par_m
    use point_m
-   use sysblock_m
-   use trans_m
 
    use ISO_FORTRAN_ENV
 
@@ -38,10 +35,15 @@ module ad_factory_m
 
    ! Interfaces
 
-   interface ad_eqns_t
-      module procedure ad_eqns_t_0_
-      module procedure ad_eqns_t_1_
-   end interface ad_eqns_t
+   interface ad_diff_eqns_t
+      module procedure ad_diff_eqns_t_0_
+      module procedure ad_diff_eqns_t_1_
+   end interface ad_diff_eqns_t
+
+   interface ad_match_conds_t
+      module procedure ad_match_conds_t_0_
+      module procedure ad_match_conds_t_1_
+   end interface ad_match_conds_t
 
    interface ad_trans_t
       module procedure ad_trans_t_0_
@@ -50,13 +52,16 @@ module ad_factory_m
 
    ! Access specifiers
 
-   public :: ad_eqns_t
+   public :: ad_diff_eqns_t
+   public :: ad_match_conds_t
    public :: ad_trans_t
-   public :: ad_ibound_t
-   public :: ad_obound_t
+   public :: ad_ibound_conds_t
+   public :: ad_obound_conds_t
    #:if defined('GFORTRAN_PR125610')
-   public :: ad_eqns_t_0_
-   public :: ad_eqns_t_1_
+   public :: ad_diff_eqns_t_0_
+   public :: ad_diff_eqns_t_1_
+   public :: ad_match_conds_t_0_
+   public :: ad_match_conds_t_1_
    public :: ad_trans_t_0_
    public :: ad_trans_t_1_
    #:endif
@@ -69,37 +74,39 @@ contains
 
    #:for R in (0, 1)
 
-      function ad_eqns_t_${R}$_(cx, pt, os_p) result(eq)
+      function ad_diff_eqns_t_${R}$_(cx, pt, os_p) result(de)
 
-         use gyre_ad_eqns_m
-         use dziem_ad_eqns_m
-         use jcd_ad_eqns_m
-         use rjcd_ad_eqns_m
-         use mix_ad_eqns_m
-         use lagp_ad_eqns_m
+         use diff_eqns_m
+
+         use gyre_ad_diff_eqns_m
+         use dziem_ad_diff_eqns_m
+         use jcd_ad_diff_eqns_m
+         use rjcd_ad_diff_eqns_m
+         use mix_ad_diff_eqns_m
+         use lagp_ad_diff_eqns_m
 
          type(context_t), pointer, intent(in) :: cx
          type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
          type(osc_par_t), intent(in)          :: os_p
-         class(eqns_rt), allocatable          :: eq${ARRAY_SPEC(R)}$
+         class(diff_eqns_rt), allocatable     :: de${ARRAY_SPEC(R)}$
 
-         ! Construct the ad_eqns type
+         ! Construct the ad_diff_eqns type
 
          select case(os_p%variables_set)
          case('GYRE')
-            eq = gyre_ad_eqns_t(cx, pt)
+            de = gyre_ad_diff_eqns_t(cx, pt)
          case('DZIEM')
-            eq = dziem_ad_eqns_t(cx, pt)
+            de = dziem_ad_diff_eqns_t(cx, pt)
          case('JCD')
             if (cx%l == 0) then
-               eq = rjcd_ad_eqns_t(cx, pt)
+               de = rjcd_ad_diff_eqns_t(cx, pt)
             else
-               eq = jcd_ad_eqns_t(cx, pt)
+               de = jcd_ad_diff_eqns_t(cx, pt)
             end if
          case('MIX')
-            eq = mix_ad_eqns_t(cx, pt)
+            de = mix_ad_diff_eqns_t(cx, pt)
          case('LAGP')
-            eq = lagp_ad_eqns_t(cx, pt)
+            de = lagp_ad_diff_eqns_t(cx, pt)
          case default
             @:ABORT('invalid variables_set')
          end select
@@ -108,11 +115,58 @@ contains
 
          return
 
-      end function ad_eqns_t_${R}$_
+      end function ad_diff_eqns_t_${R}$_
+
+      !****
+
+      function ad_match_conds_t_${R}$_(cx, pt, os_p) result(mc)
+
+         use match_conds_m
+
+         use gyre_ad_match_conds_m
+         use dziem_ad_match_conds_m
+         use jcd_ad_match_conds_m
+         use rjcd_ad_match_conds_m
+         use mix_ad_match_conds_m
+         use lagp_ad_match_conds_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         class(match_conds_rt), allocatable   :: mc${ARRAY_SPEC(R)}$
+
+         ! Construct the ad_match_conds
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            mc = gyre_ad_match_conds_t(cx, pt)
+         case('DZIEM')
+            mc = dziem_ad_match_conds_t(cx, pt)
+         case('JCD')
+            if (cx%l == 0) then
+               mc = rjcd_ad_match_conds_t(cx, pt)
+            else
+               mc = jcd_ad_match_conds_t(cx, pt)
+            end if
+         case('MIX')
+            mc = mix_ad_match_conds_t(cx, pt)
+         case('LAGP')
+            mc = lagp_ad_match_conds_t(cx, pt)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function ad_match_conds_t_${R}$_
 
       !****
 
       function ad_trans_t_${R}$_(cx, pt, os_p) result(tr)
+
+         use trans_m
 
          use gyre_ad_trans_m
          use dziem_ad_trans_m
@@ -157,36 +211,38 @@ contains
 
    !****
 
-   function ad_ibound_t(cx, os_p) result(bd)
+   function ad_ibound_conds_t(cx, os_p) result(bc)
 
-      use gyre_ad_ibound_m
-      use dziem_ad_ibound_m
-      use jcd_ad_ibound_m
-      use rjcd_ad_ibound_m
-      use mix_ad_ibound_m
-      use lagp_ad_ibound_m
+      use bound_conds_m
+
+      use gyre_ad_ibound_conds_m
+      use dziem_ad_ibound_conds_m
+      use jcd_ad_ibound_conds_m
+      use rjcd_ad_ibound_conds_m
+      use mix_ad_ibound_conds_m
+      use lagp_ad_ibound_conds_m
 
       type(context_t), pointer, intent(in) :: cx
       type(osc_par_t), intent(in)          :: os_p
-      class(sysblock_rt), allocatable      :: bd
+      class(bound_conds_rt), allocatable   :: bc
 
-      ! Construct the ad_ibound type
+      ! Construct the ad_ibound_conds type
 
       select case(os_p%variables_set)
       case('GYRE')
-         bd = gyre_ad_ibound_t(cx, os_p)
+         bc = gyre_ad_ibound_conds_t(cx, os_p)
       case('DZIEM')
-         bd = dziem_ad_ibound_t(cx, os_p)
+         bc = dziem_ad_ibound_conds_t(cx, os_p)
       case('JCD')
          if (cx%l == 0) then
-            bd = rjcd_ad_ibound_t(cx, os_p)
+            bc = rjcd_ad_ibound_conds_t(cx, os_p)
          else
-            bd = jcd_ad_ibound_t(cx, os_p)
+            bc = jcd_ad_ibound_conds_t(cx, os_p)
          end if
       case('MIX')
-         bd = mix_ad_ibound_t(cx, os_p)
+         bc = mix_ad_ibound_conds_t(cx, os_p)
       case('LAGP')
-         bd = lagp_ad_ibound_t(cx, os_p)
+         bc = lagp_ad_ibound_conds_t(cx, os_p)
       case default
          @:ABORT('invalid variables_set')
       end select
@@ -195,40 +251,42 @@ contains
 
       return
 
-   end function ad_ibound_t
+   end function ad_ibound_conds_t
 
    !****
 
-   function ad_obound_t(cx, os_p) result(bd)
+   function ad_obound_conds_t(cx, os_p) result(bc)
 
-      use gyre_ad_obound_m
-      use dziem_ad_obound_m
-      use jcd_ad_obound_m
-      use rjcd_ad_obound_m
-      use mix_ad_obound_m
-      use lagp_ad_obound_m
+      use bound_conds_m
+
+      use gyre_ad_obound_conds_m
+      use dziem_ad_obound_conds_m
+      use jcd_ad_obound_conds_m
+      use rjcd_ad_obound_conds_m
+      use mix_ad_obound_conds_m
+      use lagp_ad_obound_conds_m
 
       type(context_t), pointer, intent(in) :: cx
       type(osc_par_t), intent(in)          :: os_p
-      class(sysblock_rt), allocatable      :: bd
+      class(bound_conds_rt), allocatable   :: bc
 
-      ! Construct the ad_obound type
+      ! Construct the ad_obound_conds type
 
       select case(os_p%variables_set)
       case('GYRE')
-         bd = gyre_ad_obound_t(cx, os_p)
+         bc = gyre_ad_obound_conds_t(cx, os_p)
       case('DZIEM')
-         bd = dziem_ad_obound_t(cx, os_p)
+         bc = dziem_ad_obound_conds_t(cx, os_p)
       case('JCD')
          if (cx%l == 0) then
-            bd = rjcd_ad_obound_t(cx, os_p)
+            bc = rjcd_ad_obound_conds_t(cx, os_p)
          else
-            bd = jcd_ad_obound_t(cx, os_p)
+            bc = jcd_ad_obound_conds_t(cx, os_p)
          end if
       case('MIX')
-         bd = mix_ad_obound_t(cx, os_p)
+         bc = mix_ad_obound_conds_t(cx, os_p)
       case('LAGP')
-         bd = lagp_ad_obound_t(cx, os_p)
+         bc = lagp_ad_obound_conds_t(cx, os_p)
       case default
          @:ABORT('invalid variables_set')
       end select
@@ -237,6 +295,6 @@ contains
 
       return
 
-   end function ad_obound_t
+   end function ad_obound_conds_t
 
 end module ad_factory_m

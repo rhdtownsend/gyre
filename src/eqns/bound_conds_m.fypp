@@ -1,0 +1,66 @@
+! Module  : bound_conds_m
+! Purpose : boundary conditions evaluation
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module bound_conds_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, abstract :: bound_conds_${S}$
+         integer :: n_e
+         integer :: n_b
+      contains
+         procedure(eval_${S}$_), deferred :: eval
+      end type bound_conds_${S}$
+
+      ! Interfaces
+
+      abstract interface
+
+         subroutine eval_${S}$_(this, st, B, s, trans)
+            use forum_m, only: RD
+            use ext_m
+            use state_m
+            import bound_conds_${S}$
+            implicit none (type, external)
+            class(bound_conds_${S}$), intent(in)     :: this
+            class(state_${S}$), intent(in)           :: st
+            ${T}$, contiguous, intent(out)           :: B(:,:)
+            ${T}$, contiguous, intent(out), optional :: s(:)
+            logical, intent(in), optional            :: trans
+         end subroutine eval_${S}$_
+
+      end interface
+
+      ! Access specifiers
+
+      public :: bound_conds_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+end module bound_conds_m

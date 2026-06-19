@@ -10,7 +10,7 @@ C(2, 1) = 0
 C(1, 2) = 0
 C(2, 2) = U/V_2
 endif
-if (PRESENT(F)) then
-F(1) = 0
-F(2) = 0
+if (PRESENT(t)) then
+t(1) = 0
+t(2) = 0
 endif

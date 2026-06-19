@@ -1,0 +1,172 @@
+! Module  : match_block_m
+! Purpose : matching conditions block
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module match_block_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use match_conds_m
+   use ext_m
+   use inter_block_m
+   use math_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, extends(inter_block_${S}$) :: match_block_${S}$
+         private
+         class(match_conds_${S}$), allocatable :: mc(:)
+      contains
+         private
+         procedure, public :: eval => eval_${S}$_
+      end type match_block_${S}$
+
+      ! Interfaces
+
+      interface match_block_${S}$
+         module procedure match_block_${S}$_
+      end interface match_block_${S}$
+
+      ! Access specifiers
+
+      public :: match_block_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function match_block_${S}$_(mc) result(mb)
+
+         class(match_conds_${S}$), intent(in) :: mc(:)
+         type(match_block_${S}$)              :: mb
+
+         @:CHECK_BOUNDS(SIZE(mc), 2)
+
+         ! Construct the match_block type
+
+         #:if defined('GFORTRAN_PR110877')
+         allocate(mb%mc, SOURCE=mc)
+         #:else
+         mb%mc = mc
+         #:endif
+
+         mb%n_e = mb%mc(1)%n_e
+         @:ASSERT_DEBUG(ALL(mb%mc%n_e == mb%n_e))
+
+         ! Finish
+
+         return
+
+      end function match_block_${S}$_
+
+      !****
+
+      subroutine eval_${S}$_(this, st, E, scl, F, trans)
+
+         class(match_block_${S}$), intent(in)     :: this
+         class(state_${S}$), intent(in)           :: st
+         ${T}$, contiguous, intent(out)           :: E(:,:)
+         type(ext_${S}$), intent(out)             :: scl
+         ${T}$, contiguous, intent(out), optional :: F(:)
+         logical, intent(in), optional            :: trans
+
+         logical :: trans_
+         ${T}$   :: C_1(this%n_e,this%n_e)
+         ${T}$   :: C_2(this%n_e,this%n_e)
+         ${T}$   :: t_1(this%n_e)
+         ${T}$   :: t_2(this%n_e)
+
+         if (PRESENT(trans)) then
+            trans_ = trans
+         else
+            trans_ = .FALSE.
+         end if
+
+         if (trans_) then
+            @:CHECK_BOUNDS(SIZE(E, 1), 2*this%n_e)
+            @:CHECK_BOUNDS(SIZE(E, 2), this%n_e)
+         else
+            @:CHECK_BOUNDS(SIZE(E, 1), this%n_e)
+            @:CHECK_BOUNDS(SIZE(E, 2), 2*this%n_e)
+         end if
+
+         if (PRESENT(F)) then
+            @:CHECK_BOUNDS(SIZE(F), this%n_e)
+         end if
+
+         ! Evaluate the block
+
+         associate (n_e => this%n_e)
+
+            if (PRESENT(F)) then
+
+               call this%mc(1)%eval(st, C_1, t=t_1, trans=trans)
+               call this%mc(2)%eval(st, C_2, t=t_2, trans=trans)
+
+            else
+
+               call this%mc(1)%eval(st, C_1, trans=trans)
+               call this%mc(2)%eval(st, C_2, trans=trans)
+
+            end if
+
+            if (trans) then
+
+               E(:n_e,:) = C_1
+               E(n_e+1:,:) = -C_2
+
+            else
+
+               E(:,:n_e) = C_1
+               E(:,n_e+1:) = -C_2
+
+            end if
+
+            if (PRESENT(F)) then
+               F = t_1 - t_2
+            end if
+
+            scl = ONE_${S}$
+
+         end associate
+
+         ! Finish
+
+      end subroutine eval_${S}$_
+
+   #:endfor
+
+end module match_block_m

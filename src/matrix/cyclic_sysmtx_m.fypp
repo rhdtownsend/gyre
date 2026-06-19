@@ -23,12 +23,13 @@ module cyclic_sysmtx_m
 
    use forum_m, only: RD, hdf5io_t
 
+   use bound_block_m
    use ext_m
+   !use inter_block_m
+   use inter_element_m
    use linalg_m
    use math_m
    use state_m
-   use sysblock_m
-   use sysblock_elem_m
    use sysmtx_m
 
    use ISO_FORTRAN_ENV
@@ -65,19 +66,19 @@ module cyclic_sysmtx_m
       ! Interfaces
 
       abstract interface
-         subroutine build_and_factor_${S}$_(this, st, sb_i, sb_o, se, set_blk, set_F, set_D)
+         subroutine build_and_factor_${S}$_(this, st, bb_i, bb_o, ie, set_blk, set_F, set_D)
             use forum_m, only: RD
             use ext_m
             use state_m
-            use sysblock_m
-            use sysblock_elem_m
+            use bound_block_m
+            use inter_element_m
             import cyclic_sysmtx_${S}$
             implicit none (type, external)
             class(cyclic_sysmtx_${S}$), intent(inout) :: this
             class(state_${S}$), intent(in)            :: st
-            class(sysblock_${S}$), intent(in)         :: sb_i
-            class(sysblock_${S}$), intent(in)         :: sb_o
-            class(sysblock_elem_${S}$), intent(in)    :: se(:)
+            class(bound_block_${S}$), intent(in)      :: bb_i
+            class(bound_block_${S}$), intent(in)      :: bb_o
+            class(inter_element_${S}$), intent(in)    :: ie(:)
             logical, intent(in), optional             :: set_blk
             logical, intent(in), optional             :: set_F
             logical, intent(in), optional             :: set_D
@@ -156,13 +157,13 @@ contains
          ['6_3', 6, 3, 3], &
          ['gen', 'this%n_e', 'this%n_i', 'this%n_o']]
 
-         subroutine build_and_factor_${I}$_${S}$_(this, st, sb_i, sb_o, se, set_blk, set_F, set_D)
+         subroutine build_and_factor_${I}$_${S}$_(this, st, bb_i, bb_o, ie, set_blk, set_F, set_D)
 
             class(cyclic_sysmtx_${S}$), intent(inout) :: this
             class(state_${S}$), intent(in)            :: st
-            class(sysblock_${S}$), intent(in)         :: sb_i
-            class(sysblock_${S}$), intent(in)         :: sb_o
-            class(sysblock_elem_${S}$), intent(in)    :: se(:)
+            class(bound_block_${S}$), intent(in)      :: bb_i
+            class(bound_block_${S}$), intent(in)      :: bb_o
+            class(inter_element_${S}$), intent(in)    :: ie(:)
             logical, intent(in), optional             :: set_blk
             logical, intent(in), optional             :: set_F
             logical, intent(in), optional             :: set_D
@@ -246,18 +247,18 @@ contains
                      if (l == 1) then
 
                         if (set_F_) then
-                           call se(k)%sb%eval(st, E_t, this%scl(k), F=F(:n_e), trans=.TRUE.)
+                           call ie(k)%ib%eval(st, E_t, this%scl(k), F=F(:n_e), trans=.TRUE.)
                         else
-                           call se(k)%sb%eval(st, E_t, this%scl(k), trans=.TRUE.)
+                           call ie(k)%ib%eval(st, E_t, this%scl(k), trans=.TRUE.)
                         end if
 
                         M_t(:n_e,:n_e) = E_t(:n_e,:)
                         M_t(n_e+1:2*n_e,:n_e) = E_t(n_e+1:,:)
 
                         if (set_F_) then
-                           call se(k+l)%sb%eval(st, E_t, this%scl(k+l), F=F(n_e+1:), trans=.TRUE.)
+                           call ie(k+l)%ib%eval(st, E_t, this%scl(k+l), F=F(n_e+1:), trans=.TRUE.)
                         else
-                           call se(k+l)%sb%eval(st, E_t, this%scl(k+l), trans=.TRUE.)
+                           call ie(k+l)%ib%eval(st, E_t, this%scl(k+l), trans=.TRUE.)
                         end if
 
                         M_t(n_e+1:2*n_e,n_e+1:) = E_t(:n_e,:)
@@ -403,9 +404,9 @@ contains
                   if (l == 1 .AND. MOD(n, 2) /= 0) then
 
                      if (set_F_) then
-                        call se(n)%sb%eval(st, E_t, this%scl(n), F=F(:n_e), trans=.TRUE.)
+                        call ie(n)%ib%eval(st, E_t, this%scl(n), F=F(:n_e), trans=.TRUE.)
                      else
-                        call se(n)%sb%eval(st, E_t, this%scl(n), trans=.TRUE.)
+                        call ie(n)%ib%eval(st, E_t, this%scl(n), trans=.TRUE.)
                      end if
 
                      this%G_t(:,:,n) = E_t(:n_e,:)
@@ -446,11 +447,11 @@ contains
 
                if (set_F_) then
                   F(:n_e) = this%F(:,1)
-                  call sb_i%eval(st, B_i, scl_i, F=F(n_e+1:n_e+n_i))
-                  call sb_o%eval(st, B_o, scl_o, F=F(n_e+n_i+1:))
+                  call bb_i%eval(st, B_i, scl_i, G=F(n_e+1:n_e+n_i))
+                  call bb_o%eval(st, B_o, scl_o, G=F(n_e+n_i+1:))
                else
-                  call sb_i%eval(st, B_i, scl_i)
-                  call sb_o%eval(st, B_o, scl_o)
+                  call bb_i%eval(st, B_i, scl_i)
+                  call bb_o%eval(st, B_o, scl_o)
                end if
 
                R_t(:n_e,n_e+1:n_e+n_i) = TRANSPOSE(B_i)
@@ -664,20 +665,20 @@ contains
 
       !****
 
-      subroutine eval_det_${S}$_(this, st, sb_i, sb_o, se, det)
+      subroutine eval_det_${S}$_(this, st, bb_i, bb_o, ie, det)
 
          class(cyclic_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(sysblock_${S}$), intent(in)         :: sb_i
-         class(sysblock_${S}$), intent(in)         :: sb_o
-         class(sysblock_elem_${S}$), intent(in)    :: se(:)
+         class(bound_block_${S}$), intent(in)      :: bb_i
+         class(bound_block_${S}$), intent(in)      :: bb_o
+         class(inter_element_${S}$), intent(in)    :: ie(:)
          type(ext_${S}$), intent(out)              :: det
 
          ! Evaluate the determinant of the sysmtx
 
          ! Build and factorize the sysmtx
 
-         call this%build_and_factor_(st, sb_i, sb_o, se, set_D=.TRUE.)
+         call this%build_and_factor_(st, bb_i, bb_o, ie, set_D=.TRUE.)
 
          ! Evaluate the determinant as the product of the diagonal
          ! elements
@@ -692,13 +693,13 @@ contains
 
       !****
 
-      subroutine solve_hom_${S}$_(this, st, sb_i, sb_o, se, u)
+      subroutine solve_hom_${S}$_(this, st, bb_i, bb_o, ie, u)
 
          class(cyclic_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(sysblock_${S}$), intent(in)         :: sb_i
-         class(sysblock_${S}$), intent(in)         :: sb_o
-         class(sysblock_elem_${S}$), intent(in)    :: se(:)
+         class(bound_block_${S}$), intent(in)      :: bb_i
+         class(bound_block_${S}$), intent(in)      :: bb_o
+         class(inter_element_${S}$), intent(in)    :: ie(:)
          ${T}$, intent(out)                        :: u(:)
 
          real(RD) :: R_s
@@ -717,7 +718,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(st, sb_i, sb_o, se, set_blk=.TRUE.)
+            call this%build_and_factor_(st, bb_i, bb_o, ie, set_blk=.TRUE.)
 
             ! Find the (most) singular element on the diagonal of the
             ! boundary matrix
@@ -762,13 +763,13 @@ contains
 
       !****
 
-      subroutine solve_inhom_${S}$_(this, st, sb_i, sb_o, se, u)
+      subroutine solve_inhom_${S}$_(this, st, bb_i, bb_o, ie, u)
 
          class(cyclic_sysmtx_${S}$), intent(inout) :: this
          class(state_${S}$), intent(in)            :: st
-         class(sysblock_${S}$), intent(in)         :: sb_i
-         class(sysblock_${S}$), intent(in)         :: sb_o
-         class(sysblock_elem_${S}$), intent(in)    :: se(:)
+         class(bound_block_${S}$), intent(in)      :: bb_i
+         class(bound_block_${S}$), intent(in)      :: bb_o
+         class(inter_element_${S}$), intent(in)    :: ie(:)
          ${T}$, intent(out)                        :: u(:)
 
          integer :: i
@@ -785,7 +786,7 @@ contains
 
             ! Build and factorize the sysmtx
 
-            call this%build_and_factor_(st, sb_i, sb_o, se, set_blk=.TRUE., set_F=.TRUE.)
+            call this%build_and_factor_(st, bb_i, bb_o, ie, set_blk=.TRUE., set_F=.TRUE.)
 
             ! Use backsubstitution to solve for u_bound
 

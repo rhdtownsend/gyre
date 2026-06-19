@@ -1,5 +1,5 @@
 ! Module  : sysmtx_m
-! Purpose : system matrix
+! Purpose : system of linear equations representing a discretized BVP
 !
 ! Copyright 2013-2026 Rich Townsend & The GYRE Team
 !
@@ -43,51 +43,54 @@ module sysmtx_m
 
       abstract interface
 
-         subroutine eval_det_${S}$_(this, st, sb_i, sb_o, se, det)
+         subroutine eval_det_${S}$_(this, st, bb_i, bb_o, ie, det)
             use forum_m, only: RD
+            use bound_block_m
             use ext_m
+            use inter_block_m
+            use inter_element_m
             use state_m
-            use sysblock_m
-            use sysblock_elem_m
             import sysmtx_${S}$
             implicit none (type, external)
             class(sysmtx_${S}$), intent(inout)     :: this
             class(state_${S}$), intent(in)         :: st
-            class(sysblock_${S}$), intent(in)      :: sb_i
-            class(sysblock_${S}$), intent(in)      :: sb_o
-            class(sysblock_elem_${S}$), intent(in) :: se(:)
+            class(bound_block_${S}$), intent(in)   :: bb_i
+            class(bound_block_${S}$), intent(in)   :: bb_o
+            class(inter_element_${S}$), intent(in) :: ie(:)
             type(ext_${S}$), intent(out)           :: det
          end subroutine eval_det_${S}$_
 
-         subroutine solve_hom_${S}$_(this, st, sb_i, sb_o, se, u)
+         subroutine solve_hom_${S}$_(this, st, bb_i, bb_o, ie, u)
             use forum_m, only: RD
+            use bound_block_m
             use ext_m
-            use sysblock_m
-            use sysblock_elem_m
+            use inter_block_m
+            use inter_element_m
             use state_m
             import sysmtx_${S}$
             implicit none (type, external)
             class(sysmtx_${S}$), intent(inout)     :: this
             class(state_${S}$), intent(in)         :: st
-            class(sysblock_${S}$), intent(in)      :: sb_i
-            class(sysblock_${S}$), intent(in)      :: sb_o
-            class(sysblock_elem_${S}$), intent(in) :: se(:)
+            class(bound_block_${S}$), intent(in)   :: bb_i
+            class(bound_block_${S}$), intent(in)   :: bb_o
+            class(inter_element_${S}$), intent(in) :: ie(:)
             ${T}$, intent(out)                     :: u(:)
          end subroutine solve_hom_${S}$_
 
-         subroutine solve_inhom_${S}$_(this, st, sb_i, sb_o, se, u)
+         subroutine solve_inhom_${S}$_(this, st, bb_i, bb_o, ie, u)
             use forum_m, only: RD
+            use bound_block_m
             use ext_m
+            use inter_block_m
+            use inter_element_m
             use state_m
-            use sysblock_m
-            use sysblock_elem_m
             import sysmtx_${S}$
             implicit none (type, external)
             class(sysmtx_${S}$), intent(inout)     :: this
             class(state_${S}$), intent(in)         :: st
-            class(sysblock_${S}$), intent(in)      :: sb_i
-            class(sysblock_${S}$), intent(in)      :: sb_o
-            class(sysblock_elem_${S}$), intent(in) :: se(:)
+            class(bound_block_${S}$), intent(in)   :: bb_i
+            class(bound_block_${S}$), intent(in)   :: bb_o
+            class(inter_element_${S}$), intent(in) :: ie(:)
             ${T}$, intent(out)                     :: u(:)
          end subroutine solve_inhom_${S}$_
 

@@ -1,0 +1,349 @@
+! Module  : colloc_gl2_block_m
+! Purpose : differential equations block (2nd-order Gauss-Legendre collocation)
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module colloc_gl2_block_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use diff_block_m
+   use diff_eqns_m
+   use ext_m
+   use math_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Parameter definitions
+
+   real(RD), parameter :: C_1 = 0.5_RD
+
+   real(RD), parameter :: HALF_B_1 = 0.5_RD
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, extends(diff_block_${S}$) :: colloc_gl2_block_${S}$
+         private
+         class(diff_eqns_${S}$), allocatable   :: de(:)
+         real(RD)                              :: dx
+         procedure(eval_hom_${S}$_), pointer   :: eval_hom_
+         procedure(eval_inhom_${S}$_), pointer :: eval_inhom_
+      contains
+         private
+         procedure, public :: eval => eval_${S}$_
+      end type colloc_gl2_block_${S}$
+
+      ! Interfaces
+
+      interface
+
+         subroutine eval_hom_${S}$_(this, st, E, scl, trans)
+            use forum_m, only: RD
+            use ext_m
+            use state_m
+            import colloc_gl2_block_${S}$
+            class(colloc_gl2_block_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in)            :: st
+            ${T}$, contiguous, intent(out)            :: E(:,:)
+            type(ext_${S}$), intent(out)              :: scl
+            logical, intent(in), optional             :: trans
+         end subroutine eval_hom_${S}$_
+
+         subroutine eval_inhom_${S}$_(this, st, E, scl, F, trans)
+            use forum_m, only: RD
+            use ext_m
+            use state_m
+            import colloc_gl2_block_${S}$
+            class(colloc_gl2_block_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in)            :: st
+            ${T}$, contiguous, intent(out)            :: E(:,:)
+            type(ext_${S}$), intent(out)              :: scl
+            ${T}$, contiguous, intent(out)            :: F(:)
+            logical, intent(in), optional             :: trans
+         end subroutine eval_inhom_${S}$_
+
+      end interface
+
+      interface colloc_gl2_block_${S}$
+         module procedure colloc_gl2_block_${S}$_
+      end interface colloc_gl2_block_${S}$
+
+      ! Access specifiers
+
+      public :: colloc_gl2_block_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function colloc_gl2_block_${S}$_(diff_eqns_factory, pt_a, pt_b) result(db)
+
+         interface
+            subroutine diff_eqns_factory(pt, de)
+               use diff_eqns_m
+               use point_m
+               implicit none (type, external)
+               type(point_t), intent(in)                        :: pt(:)
+               class(diff_eqns_${S}$), allocatable, intent(out) :: de(:)
+            end subroutine diff_eqns_factory
+         end interface
+         type(point_t), intent(in)    :: pt_a
+         type(point_t), intent(in)    :: pt_b
+         type(colloc_gl2_block_${S}$) :: db
+
+         type(point_t) :: pt(1)
+
+         @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
+
+         ! Construct the colloc_gl2_block type
+
+         pt%s = pt_a%s
+
+         db%dx = pt_b%x - pt_a%x
+         pt%x = pt_a%x + [C_1]*db%dx
+
+         call diff_eqns_factory(pt, db%de)
+
+         db%n_e = db%de(1)%n_e
+         @:ASSERT_DEBUG(ALL(db%de%n_e == db%n_e))
+
+         select case(db%n_e)
+         case(2)
+            db%eval_hom_ => eval_hom_2_${S}$_
+            db%eval_inhom_ => eval_inhom_2_${S}$_
+         case(4)
+            db%eval_hom_ => eval_hom_4_${S}$_
+            db%eval_inhom_ => eval_inhom_4_${S}$_
+         case(6)
+            db%eval_hom_ => eval_hom_6_${S}$_
+            db%eval_inhom_ => eval_inhom_6_${S}$_
+         case default
+            db%eval_hom_ => eval_hom_gen_${S}$_
+            db%eval_inhom_ => eval_inhom_gen_${S}$_
+         end select
+
+         ! Finish
+
+         return
+
+      end function colloc_gl2_block_${S}$_
+
+      !****
+
+      subroutine eval_${S}$_(this, st, E, scl, F, trans)
+
+         class(colloc_gl2_block_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)            :: st
+         ${T}$, contiguous, intent(out)            :: E(:,:)
+         type(ext_${S}$), intent(out)              :: scl
+         ${T}$, contiguous, intent(out), optional  :: F(:)
+         logical, intent(in), optional             :: trans
+
+         ! Evaluate the block
+
+         if (PRESENT(F)) then
+            call this%eval_inhom_(st, E, scl, F, trans)
+         else
+            call this%eval_hom_(st, E, scl, trans)
+         end if
+
+         ! Finish
+
+         return
+
+      end subroutine eval_${S}$_
+
+      !****
+
+      #:for I, N_E in [ &
+         ['2', 2], &
+         ['4', 4], &
+         ['6', 6], &
+         ['gen', 'this%n_e']]
+
+         subroutine eval_hom_${I}$_${S}$_(this, st, E, scl, trans)
+
+            class(colloc_gl2_block_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in)            :: st
+            ${T}$, contiguous, intent(out)            :: E(:,:)
+            type(ext_${S}$), intent(out)              :: scl
+            logical, intent(in), optional             :: trans
+
+            logical :: trans_
+            ${T}$   :: A_1(this%n_e,this%n_e)
+            integer :: i
+
+            if (PRESENT(trans)) then
+               trans_ = trans
+            else
+               trans_ = .FALSE.
+            end if
+
+            if (trans_) then
+               @:CHECK_BOUNDS(SIZE(E, 1), 2*this%n_e)
+               @:CHECK_BOUNDS(SIZE(E, 2), this%n_e)
+            else
+               @:CHECK_BOUNDS(SIZE(E, 1), this%n_e)
+               @:CHECK_BOUNDS(SIZE(E, 2), 2*this%n_e)
+            end if
+
+            ! Evaluate the block
+
+            ! Algorithm note: this is equivalent to the modified
+            ! midpoint method
+
+            associate (n_e => ${N_E}$)
+
+               call this%de(1)%eval(st, HALF_B_1*this%dx, A_1, trans=trans_)
+
+               if (trans_) then
+
+                  do concurrent (i = 1:n_e)
+
+                     E(:n_e,i) = A_1(:,i)
+                     E(n_e+1:,i) = A_1(:,i)
+
+                     E(i,i) = E(i,i) + 1._RD
+                     E(n_e+i,i) = E(n_e+i,i) - 1._RD
+
+                  end do
+
+               else
+
+                  do concurrent (i = 1:n_e)
+
+                     E(i,:n_e) = A_1(i,:)
+                     E(i,n_e+1:) = A_1(i,:)
+
+                     E(i,i) = E(i,i) + 1._RD
+                     E(i,n_e+i) = E(i,n_e+i) - 1._RD
+
+                  end do
+
+               end if
+
+            end associate
+
+            scl = ONE_${S}$
+
+            ! Finish
+
+            return
+
+         end subroutine eval_hom_${I}$_${S}$_
+
+         !****
+
+         subroutine eval_inhom_${I}$_${S}$_(this, st, E, scl, F, trans)
+
+            class(colloc_gl2_block_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in)           :: st
+            ${T}$, contiguous, intent(out)           :: E(:,:)
+            type(ext_${S}$), intent(out)             :: scl
+            ${T}$, contiguous, intent(out)           :: F(:)
+            logical, intent(in), optional            :: trans
+
+            logical :: trans_
+            ${T}$   :: A_1(this%n_e,this%n_e)
+            integer :: i
+
+            if (PRESENT(trans)) then
+               trans_ = trans
+            else
+               trans_ = .FALSE.
+            end if
+
+            if (trans_) then
+               @:CHECK_BOUNDS(SIZE(E, 1), 2*this%n_e)
+               @:CHECK_BOUNDS(SIZE(E, 2), this%n_e)
+            else
+               @:CHECK_BOUNDS(SIZE(E, 1), this%n_e)
+               @:CHECK_BOUNDS(SIZE(E, 2), 2*this%n_e)
+            end if
+
+            @:CHECK_BOUNDS(SIZE(F), this%n_e)
+
+            ! Evaluate the difference equations and inhomogeneous
+            ! vector
+
+            ! Algorithm note: this is Gauss-Legendre collocation with
+            ! 1 intermediate stage and an inhomogeneous term,
+            ! equivalent to the modified midpoint method,
+
+            associate (n_e => ${N_E}$)
+
+               call this%de(1)%eval(st, HALF_B_1*this%dx, A_1, F, trans=trans_)
+
+               if (trans_) then
+
+                  do concurrent (i = 1:n_e)
+
+                     E(:n_e,i) = A_1(:,i)
+                     E(n_e+1:,i) = A_1(:,i)
+
+                     E(i,i) = E(i,i) + 1._RD
+                     E(n_e+i,i) = E(n_e+i,i) - 1._RD
+
+                  end do
+
+               else
+
+                  do concurrent (i = 1:n_e)
+
+                     E(i,:n_e) = A_1(i,:)
+                     E(i,n_e+1:) = A_1(i,:)
+
+                     E(i,i) = E(i,i) + 1._RD
+                     E(i,n_e+i) = E(i,n_e+i) - 1._RD
+
+                  end do
+
+               end if
+
+               F = -2._RD*F
+
+            end associate
+
+            scl = ONE_${S}$
+
+            ! Finish
+
+            return
+
+         end subroutine eval_inhom_${I}$_${S}$_
+
+      #:endfor
+
+   #:endfor
+
+end module colloc_gl2_block_m

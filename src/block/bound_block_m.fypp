@@ -1,0 +1,132 @@
+! Module  : bound_block_m
+! Purpose : boundary conditions block
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module bound_block_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_conds_m
+   use ext_m
+   use math_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type :: bound_block_${S}$
+         private
+         class(bound_conds_${S}$), allocatable :: bc
+         integer, public                       :: n_e
+         integer, public                       :: n_b
+      contains
+         procedure :: eval => eval_${S}$_
+      end type bound_block_${S}$
+
+      ! Interfaces
+
+      interface bound_block_${S}$
+         module procedure bound_block_${S}$_
+      end interface bound_block_${S}$
+
+      ! Access specifiers
+
+      public :: bound_block_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function bound_block_${S}$_(bc) result(bb)
+
+         class(bound_conds_${S}$), intent(in) :: bc
+         type(bound_block_${S}$)              :: bb
+
+         ! Construct the bound_block type
+
+         bb%bc = bc
+
+         bb%n_e = bb%bc%n_e
+         bb%n_b = bb%bc%n_b
+
+         ! Finish
+
+         return
+
+      end function bound_block_${S}$_
+
+      !****
+
+      subroutine eval_${S}$_(this, st, B, scl, G, trans)
+
+         class(bound_block_${S}$), intent(in)     :: this
+         class(state_${S}$), intent(in)           :: st
+         ${T}$, contiguous, intent(out)           :: B(:,:)
+         type(ext_${S}$), intent(out)             :: scl
+         ${T}$, contiguous, intent(out), optional :: G(:)
+         logical, intent(in), optional            :: trans
+
+         logical :: trans_
+
+         if (PRESENT(trans)) then
+            trans_ = trans
+         else
+            trans_ = .FALSE.
+         end if
+
+         if (trans_) then
+            @:CHECK_BOUNDS(SIZE(B, 1), this%n_e)
+            @:CHECK_BOUNDS(SIZE(B, 2), this%n_b)
+         else
+            @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+            @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+         end if
+
+         if (PRESENT(G)) then
+            @:CHECK_BOUNDS(SIZE(G), this%n_b)
+         end if
+
+         ! Evaluate the block
+
+         call this%bc%eval(st, B, s=G, trans=trans)
+
+         scl = ONE_${S}$
+
+         ! Finish
+
+      end subroutine eval_${S}$_
+
+   #:endfor
+
+end module bound_block_m

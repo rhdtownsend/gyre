@@ -98,12 +98,12 @@ A(4, 6) = 0
 A(5, 6) = -V*del_x*nabla/(c_rad*f_rht)
 A(6, 6) = del_x*(-l_i - 1)
 endif
-if (PRESENT(F)) then
-F(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
-F(2) = -del_x*l_e*lambda*y_T_1/(alpha_omg*omega_c**2)
-F(3) = 0
-F(4) = 0
-F(5) = c_1*del_x*y_T_1*(V*eta*(-nabla + nabla_ad)/f_rht + V*l_e*nabla_ad &
+if (PRESENT(r)) then
+r(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
+r(2) = -del_x*l_e*lambda*y_T_1/(alpha_omg*omega_c**2)
+r(3) = 0
+r(4) = 0
+r(5) = c_1*del_x*y_T_1*(V*eta*(-nabla + nabla_ad)/f_rht + V*l_e*nabla_ad &
       /f_rht)
-F(6) = del_x*f_conv*lambda*y_T_1/(alpha_omg*omega_c**2)
+r(6) = del_x*f_conv*lambda*y_T_1/(alpha_omg*omega_c**2)
 endif

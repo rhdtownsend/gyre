@@ -1,0 +1,66 @@
+! Module  : inter_block_m
+! Purpose : intermediate matrix block evaluator
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module inter_block_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, abstract :: inter_block_${S}$
+         integer :: n_e
+      contains
+         procedure(eval_${S}$_), deferred :: eval
+      end type inter_block_${S}$
+
+      ! Interfaces
+
+      abstract interface
+
+         subroutine eval_${S}$_(this, st, E, scl, F, trans)
+            use forum_m, only: RD
+            use ext_m
+            use state_m
+            import inter_block_${S}$
+            implicit none (type, external)
+            class(inter_block_${S}$), intent(in)     :: this
+            class(state_${S}$), intent(in)           :: st
+            ${T}$, contiguous, intent(out)           :: E(:,:)
+            type(ext_${S}$), intent(out)             :: scl
+            ${T}$, contiguous, intent(out), optional :: F(:)
+            logical, intent(in), optional            :: trans
+         end subroutine eval_${S}$_
+
+      end interface
+
+      ! Access specifiers
+
+      public :: inter_block_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+end module inter_block_m

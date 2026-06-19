@@ -38,10 +38,10 @@ A(2, 4) = -V_2*alpha_grv*del_x
 A(3, 4) = alpha_grv*del_x
 A(4, 4) = alpha_grv*del_x*(-U - l_i + 2)
 endif
-if (PRESENT(F)) then
-F(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
-F(2) = del_x*(-V_2*c_1*l_e*y_T_1 - V_2*lambda*y_T_1/(alpha_omg*omega_c** &
+if (PRESENT(r)) then
+r(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
+r(2) = del_x*(-V_2*c_1*l_e*y_T_1 - V_2*lambda*y_T_1/(alpha_omg*omega_c** &
       2))
-F(3) = 0
-F(4) = 0
+r(3) = 0
+r(4) = 0
 endif

@@ -1,0 +1,196 @@
+! Module  : ad_match_conds_m
+! Purpose : adiabatic matching conditions
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_ad_match_conds_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use context_m
+   use match_conds_m
+   use math_m
+   use model_m
+   use model_util_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(match_conds_rt) :: ${P}$_ad_match_conds_t
+      private
+      type(context_t), pointer :: cx => null()
+      real(RD)                 :: V_2
+      real(RD)                 :: dV_2
+      real(RD)                 :: U
+      real(RD)                 :: c_1
+      real(RD)                 :: Omega_rot
+      real(RD)                 :: lambda
+   contains
+      private
+      procedure, public :: eval
+   end type ${P}$_ad_match_conds_t
+
+   ! Interfaces
+
+   interface ${P}$_ad_match_conds_t
+      module procedure ${P}$_ad_match_conds_t_0_
+      module procedure ${P}$_ad_match_conds_t_1_
+   end interface ${P}$_ad_match_conds_t
+
+   ! Access specifiers
+
+   public :: ${P}$_ad_match_conds_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function ${P}$_ad_match_conds_t_0_(cx, pt) result(mc)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt
+      type(${P}$_ad_match_conds_t)         :: mc
+
+      class(model_t), pointer :: ml
+
+      ! Construct the ad_match_conds type
+
+      mc%cx => cx
+
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
+
+      @:ASSERT(.NOT. ml%is_vacuum(pt), 'vacuum point')
+
+      mc%V_2 = ml%coeff(I_V_2, pt)
+      mc%dV_2 = ml%dcoeff(I_V_2, pt)
+      mc%U = ml%coeff(I_U, pt)
+      mc%c_1 = ml%coeff(I_C_1, pt)
+
+      mc%Omega_rot = cx%Omega_rot(pt)
+
+      if (cx%angular_cache) then
+         mc%lambda = cx%lambda(mc%Omega_rot, state_rt(0._RD))
+      end if
+
+      ! Other initializations
+
+      mc%n_e = 4
+
+      ! Finish
+
+      return
+
+   end function ${P}$_ad_match_conds_t_0_
+
+   !****
+
+   function ${P}$_ad_match_conds_t_1_(cx, pt) result(mc)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt(:)
+      type(${P}$_ad_match_conds_t)         :: mc(SIZE(pt))
+
+      integer :: j
+
+      ! Construct the array of ad_match_conds types
+
+      do j = 1, SIZE(pt)
+         mc(j) = ${P}$_ad_match_conds_t(cx, pt(j))
+      end do
+
+      ! Finish
+
+      return
+
+   end function ${P}$_ad_match_conds_t_1_
+
+   !****
+
+   subroutine eval(this, st, C, t, trans)
+
+      class(${P}$_ad_match_conds_t), intent(in) :: this
+      class(state_rt), intent(in)              :: st
+      real(RD), intent(out)                    :: C(:,:)
+      real(RD), intent(out), optional          :: t(:)
+      logical, intent(in), optional            :: trans
+
+      logical  :: trans_
+      real(RD) :: omega_c
+      real(RD) :: lambda
+
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
+      end if
+
+      @:CHECK_BOUNDS(SIZE(C, 1), this%n_e)
+      @:CHECK_BOUNDS(SIZE(C, 2), this%n_e)
+
+      if (PRESENT(t)) then
+         @:CHECK_BOUNDS(SIZE(t), this%n_e)
+      end if
+
+      ! Evaluate the match matrix and inhomogeneous vector
+
+      associate ( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         dV_2 => this%dV_2, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         Omega_rot => this%Omega_rot, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m, &
+         angular_cache => this%cx%angular_cache)
+
+         omega_c = omega - m*Omega_rot
+
+         if (angular_cache) then
+            lambda = this%lambda
+         else
+            lambda = this%cx%lambda(Omega_rot, st)
+         end if
+
+         #:include 'C.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval
+
+end module ${P}$_ad_match_conds_m

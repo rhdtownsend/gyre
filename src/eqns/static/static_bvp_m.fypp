@@ -25,8 +25,6 @@ module static_bvp_m
 
    use bvp_m
    use context_m
-   use diff_factory_m
-   use eqns_m
    use grid_m
    use model_m
    use mode_par_m
@@ -36,8 +34,6 @@ module static_bvp_m
    use point_m
    use resp_m
    use state_m
-   use sysblock_m
-   use sysblock_elem_m
    use sysmtx_m
    use wave_m
 
@@ -81,9 +77,16 @@ contains
 
    function static_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
 
-      use static_eqns_m
-      use static_ibound_m
-      use static_obound_m
+      use bound_block_m
+      use diff_block_factory_m
+      use inter_block_m
+      use inter_element_m
+      use match_block_m
+      use match_conds_m
+      use static_diff_eqns_m
+      use static_match_conds_m
+      use static_ibound_conds_m
+      use static_obound_conds_m
 
       type(context_t), pointer, intent(in) :: cx
       type(grid_t), intent(in)             :: gr
@@ -92,30 +95,48 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(static_bvp_t)                   :: bp
 
-      class(sysblock_rt), allocatable     :: sb_i
-      class(sysblock_rt), allocatable     :: sb_o
+      class(bound_block_rt), allocatable  :: bb_i
+      class(bound_block_rt), allocatable  :: bb_o
       integer                             :: j
-      type(sysblock_elem_rt), allocatable :: se(:)
+      type(inter_element_rt), allocatable :: ie(:)
+      class(match_conds_rt), allocatable  :: mc(:)
 
       ! Construct the static_bvp type
 
       ! Initialize the boundary condition blocks
 
-      sb_i = static_ibound_t(cx, os_p)
-      sb_o = static_obound_t(cx, os_p)
+      bb_i = bound_block_rt(static_ibound_conds_t(cx, os_p))
+      bb_o = bound_block_rt(static_obound_conds_t(cx, os_p))
 
-      ! Initialize the difference equation blocks
+      ! Initialize the intermediate blocks
 
-      allocate(se(gr%n-1))
+      allocate(ie(gr%n-1))
 
       !$OMP PARALLEL DO
       do j = 1, gr%n-1
-         allocate(se(j)%sb, SOURCE=diff_rt(eqns_factory_, gr%pt(j), gr%pt(j+1), nm_p))
+
+         associate( &
+            pt_a => gr%pt(j), &
+            pt_b => gr%pt(j+1))
+
+            if (pt_a%s == pt_b%s) then
+               allocate(ie(j)%ib, SOURCE=diff_block_rt(diff_eqns_factory_, pt_a, pt_b, nm_p))
+            else
+               #:if defined('GFORTRAN_PR125610')
+               mc = static_match_conds_t_1_(cx, [pt_a,pt_b])
+               #:else
+               mc = static_match_conds_t(cx, [pt_a,pt_b])
+               #:endif
+               allocate(ie(j)%ib, SOURCE=match_block_rt(mc))
+            end if
+
+         end associate
+
       end do
 
       ! Initialize the bvp_t
 
-      bp%bvp_rt = bvp_rt(sb_i, sb_o, se, nm_p)
+      bp%bvp_rt = bvp_rt(bb_i, bb_o, ie, nm_p)
 
       ! Other initializations
 
@@ -132,24 +153,26 @@ contains
 
    contains
 
-      subroutine eqns_factory_(pt, eq)
+      subroutine diff_eqns_factory_(pt, de)
 
-         type(point_t), intent(in)                :: pt(:)
-         class(eqns_rt), allocatable, intent(out) :: eq(:)
+         use diff_eqns_m
 
-         ! Initialize the equations
+         type(point_t), intent(in)                     :: pt(:)
+         class(diff_eqns_rt), allocatable, intent(out) :: de(:)
+
+         ! Initialize the differential equations
 
          #:if defined('GFORTRAN_PR125610')
-         eq = static_eqns_t_1_(cx, pt, os_p)
+         de = static_diff_eqns_t_1_(cx, pt)
          #:else
-         eq = static_eqns_t(cx, pt, os_p)
+         de = static_diff_eqns_t(cx, pt)
          #:endif
 
          ! Finish
 
          return
 
-      end subroutine eqns_factory_
+      end subroutine diff_eqns_factory_
 
    end function static_bvp_t_
 

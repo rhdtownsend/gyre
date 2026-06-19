@@ -1,0 +1,235 @@
+! Module  : trapz_block_m
+! Purpose : differential equations block (quasi-trapezoidal)
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module trapz_block_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use diff_block_m
+   use diff_eqns_m
+   use ext_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for S in DTYPE_SUFFIXES
+
+      ! Derived-type definitions
+
+      type, extends(diff_block_${S}$) :: trapz_block_${S}$
+         private
+         class(diff_eqns_${S}$), allocatable :: de(:)
+         real(RD), allocatable               :: w(:)
+         real(RD)                            :: dx
+         real(RD)                            :: x_m
+         logical                             :: origin
+      contains
+         private
+         procedure, public :: eval => eval_${S}$_
+      end type trapz_block_${S}$
+
+      ! Interfaces
+
+      interface trapz_block_${S}$
+         module procedure trapz_block_${S}$_
+      end interface trapz_block_${S}$
+
+      ! Access specifiers
+
+      public :: trapz_block_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function trapz_block_${S}$_(diff_eqns_factory, pt_a, pt_b, w) result(db)
+
+         interface
+            subroutine diff_eqns_factory(pt, de)
+               use diff_eqns_m
+               use point_m
+               implicit none (type, external)
+               type(point_t), intent(in)                        :: pt(:)
+               class(diff_eqns_${S}$), allocatable, intent(out) :: de(:)
+            end subroutine diff_eqns_factory
+         end interface
+         type(point_t), intent(in)      :: pt_a
+         type(point_t), intent(in)      :: pt_b
+         real(RD), intent(in), optional :: w(:)
+         type(trapz_block_${S}$)        :: db
+
+         type(point_t) :: pt(2)
+
+         @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
+
+         ! Construct the trapz_block type
+
+         db%dx = pt_b%x - pt_a%x
+         db%x_m = 0.5_RD*(pt_a%x + pt_b%x)
+
+         pt = [pt_a,pt_b]
+
+         call diff_eqns_factory(pt, db%de)
+
+         db%origin = pt_a%x == 0._RD
+
+         db%n_e = db%de(1)%n_e
+         @:ASSERT_DEBUG(ALL(db%de%n_e == db%n_e))
+
+         if (PRESENT(w)) then
+            @:CHECK_BOUNDS(SIZE(w), db%n_e)
+            db%w = w
+         else
+            allocate(db%w(db%n_e))
+            db%w = 0.5_RD
+         end if
+
+         ! Finish
+
+         return
+
+      end function trapz_block_${S}$_
+
+      !****
+
+      subroutine eval_${S}$_(this, st, E, scl, F, trans)
+
+         class(trapz_block_${S}$), intent(in)     :: this
+         class(state_${S}$), intent(in)           :: st
+         ${T}$, contiguous, intent(out)           :: E(:,:)
+         type(ext_${S}$), intent(out)             :: scl
+         ${T}$, contiguous, intent(out), optional :: F(:)
+         logical, intent(in), optional            :: trans
+
+         logical :: trans_
+         ${T}$   :: A_1(this%n_e,this%n_e)
+         ${T}$   :: A_2(this%n_e,this%n_e)
+         ${T}$   :: r_1(this%n_e)
+         ${T}$   :: r_2(this%n_e)
+         integer :: i
+
+         if (PRESENT(trans)) then
+            trans_ = trans
+         else
+            trans_ = .FALSE.
+         end if
+
+         if (trans_) then
+            @:CHECK_BOUNDS(SIZE(E, 1), 2*this%n_e)
+            @:CHECK_BOUNDS(SIZE(E, 2), this%n_e)
+         else
+            @:CHECK_BOUNDS(SIZE(E, 1), this%n_e)
+            @:CHECK_BOUNDS(SIZE(E, 2), 2*this%n_e)
+         end if
+
+         if (PRESENT(F)) then
+            @:CHECK_BOUNDS(SIZE(F), this%n_e)
+         end if
+
+         ! Evaluate the difference equations
+
+         associate (n_e => this%n_e)
+
+            if (this%origin) then
+
+               ! If we're at the origin, fudge things to avoid
+               ! evaluating A and F there
+
+               E = 0._RD
+
+               if (PRESENT(F)) then
+                  F = 0._RD
+               end if
+
+            else
+
+               if (PRESENT(F)) then
+                  call this%de(1)%eval(st, this%dx, A_1, r_1, trans=trans_)
+                  call this%de(2)%eval(st, this%dx, A_2, r_2, trans=trans_)
+               else
+                  call this%de(1)%eval(st, this%dx, A_1, trans=trans_)
+                  call this%de(2)%eval(st, this%dx, A_2, trans=trans_)
+               end if
+
+               if (trans_) then
+
+                  do concurrent(i = 1:n_e)
+                     E(:n_e,i) = (1._RD - this%w(i))*A_1(:,i)
+                     E(n_e+1:,i) = this%w(i)*A_2(:,i)
+                  end do
+
+               else
+
+                  do concurrent(i = 1:n_e)
+                     E(i,:n_e) = (1._RD - this%w(i))*A_1(i,:)
+                     E(i,n_e+1:) = this%w(i)*A_2(i,:)
+                  end do
+
+               end if
+
+               if (PRESENT(F)) then
+
+                  do concurrent(i = 1:n_e)
+                     F(i) = - (1._RD - this%w(i))*r_1(i) - this%w(i)*r_2(i)
+                  end do
+
+               end if
+
+            end if
+
+            if (trans_) then
+
+               do concurrent(i = 1:n_e)
+                  E(i,i) = E(i,i) + 1._RD
+                  E(n_e+i,i) = E(n_e+i,i) - 1._RD
+               end do
+
+            else
+
+               do concurrent(i = 1:n_e)
+                  E(i,i) = E(i,i) + 1._RD
+                  E(i,n_e+i) = E(i,n_e+i) - 1._RD
+               end do
+
+            end if
+
+            scl = ONE_${S}$
+
+         end associate
+
+         ! Finish
+
+      end subroutine eval_${S}$_
+
+   #:endfor
+
+end module trapz_block_m

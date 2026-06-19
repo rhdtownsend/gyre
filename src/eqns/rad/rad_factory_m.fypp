@@ -24,11 +24,8 @@ module rad_factory_m
    use forum_m, only: RD
 
    use context_m
-   use eqns_m
    use osc_par_m
    use point_m
-   use trans_m
-   use sysblock_m
 
    use ISO_FORTRAN_ENV
 
@@ -38,10 +35,15 @@ module rad_factory_m
 
    ! Interfaces
 
-   interface rad_eqns_t
-      module procedure rad_eqns_t_0_
-      module procedure rad_eqns_t_1_
-   end interface rad_eqns_t
+   interface rad_diff_eqns_t
+      module procedure rad_diff_eqns_t_0_
+      module procedure rad_diff_eqns_t_1_
+   end interface rad_diff_eqns_t
+
+   interface rad_match_conds_t
+      module procedure rad_match_conds_t_0_
+      module procedure rad_match_conds_t_1_
+   end interface rad_match_conds_t
 
    interface rad_trans_t
       module procedure rad_trans_t_0_
@@ -50,13 +52,16 @@ module rad_factory_m
 
    ! Access specifiers
 
-   public :: rad_eqns_t
+   public :: rad_diff_eqns_t
+   public :: rad_match_conds_t
    public :: rad_trans_t
-   public :: rad_ibound_t
-   public :: rad_obound_t
+   public :: rad_ibound_conds_t
+   public :: rad_obound_conds_t
    #:if defined('GFORTRAN_PR125610')
-   public :: rad_eqns_t_0_
-   public :: rad_eqns_t_1_
+   public :: rad_diff_eqns_t_0_
+   public :: rad_diff_eqns_t_1_
+   public :: rad_match_conds_t_0_
+   public :: rad_match_conds_t_1_
    public :: rad_trans_t_0_
    public :: rad_trans_t_1_
    #:endif
@@ -69,32 +74,34 @@ contains
 
    #:for R in (0, 1)
 
-      function rad_eqns_t_${R}$_(cx, pt, os_p) result(eq)
+      function rad_diff_eqns_t_${R}$_(cx, pt, os_p) result(de)
 
-         use gyre_rad_eqns_m
-         use dziem_rad_eqns_m
-         use jcd_rad_eqns_m
-         use mix_rad_eqns_m
-         use lagp_rad_eqns_m
+         use diff_eqns_m
+
+         use gyre_rad_diff_eqns_m
+         use dziem_rad_diff_eqns_m
+         use jcd_rad_diff_eqns_m
+         use mix_rad_diff_eqns_m
+         use lagp_rad_diff_eqns_m
 
          type(context_t), pointer, intent(in) :: cx
          type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
          type(osc_par_t), intent(in)          :: os_p
-         class(eqns_rt), allocatable          :: eq${ARRAY_SPEC(R)}$
+         class(diff_eqns_rt), allocatable     :: de${ARRAY_SPEC(R)}$
 
-         ! Construct the rad_eqns type
+         ! Construct the rad_diff_eqns type
 
          select case(os_p%variables_set)
          case('GYRE')
-            eq = gyre_rad_eqns_t(cx, pt)
+            de = gyre_rad_diff_eqns_t(cx, pt)
          case('DZIEM')
-            eq = dziem_rad_eqns_t(cx, pt)
+            de = dziem_rad_diff_eqns_t(cx, pt)
          case('JCD')
-            eq = jcd_rad_eqns_t(cx, pt)
+            de = jcd_rad_diff_eqns_t(cx, pt)
          case('MIX')
-            eq = mix_rad_eqns_t(cx, pt)
+            de = mix_rad_diff_eqns_t(cx, pt)
          case('LAGP')
-            eq = lagp_rad_eqns_t(cx, pt)
+            de = lagp_rad_diff_eqns_t(cx, pt)
          case default
             @:ABORT('invalid variables_set')
          end select
@@ -103,11 +110,53 @@ contains
 
          return
 
-      end function rad_eqns_t_${R}$_
+      end function rad_diff_eqns_t_${R}$_
+
+      !****
+
+      function rad_match_conds_t_${R}$_(cx, pt, os_p) result(mc)
+
+         use match_conds_m
+
+         use gyre_rad_match_conds_m
+         use dziem_rad_match_conds_m
+         use jcd_rad_match_conds_m
+         use mix_rad_match_conds_m
+         use lagp_rad_match_conds_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         class(match_conds_rt), allocatable   :: mc${ARRAY_SPEC(R)}$
+
+         ! Construct the rad_match_conds
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            mc = gyre_rad_match_conds_t(cx, pt)
+         case('DZIEM')
+            mc = dziem_rad_match_conds_t(cx, pt)
+         case('JCD')
+            mc = jcd_rad_match_conds_t(cx, pt)
+         case('MIX')
+            mc = mix_rad_match_conds_t(cx, pt)
+         case('LAGP')
+            mc = lagp_rad_match_conds_t(cx, pt)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function rad_match_conds_t_${R}$_
 
       !****
 
       function rad_trans_t_${R}$_(cx, pt, os_p) result(tr)
+
+         use trans_m
 
          use gyre_rad_trans_m
          use dziem_rad_trans_m
@@ -147,31 +196,33 @@ contains
 
    !****
 
-   function rad_ibound_t(cx, os_p) result(bd)
+   function rad_ibound_conds_t(cx, os_p) result(bc)
 
-      use gyre_rad_ibound_m
-      use dziem_rad_ibound_m
-      use jcd_rad_ibound_m
-      use mix_rad_ibound_m
-      use lagp_rad_ibound_m
+      use bound_conds_m
+
+      use gyre_rad_ibound_conds_m
+      use dziem_rad_ibound_conds_m
+      use jcd_rad_ibound_conds_m
+      use mix_rad_ibound_conds_m
+      use lagp_rad_ibound_conds_m
 
       type(context_t), pointer, intent(in) :: cx
       type(osc_par_t), intent(in)          :: os_p
-      class(sysblock_rt), allocatable      :: bd
+      class(bound_conds_rt), allocatable   :: bc
 
-      ! Construct the rad_ibound type
+      ! Construct the rad_ibound_conds type
 
       select case(os_p%variables_set)
       case('GYRE')
-         bd = gyre_rad_ibound_t(cx, os_p)
+         bc = gyre_rad_ibound_conds_t(cx, os_p)
       case('DZIEM')
-         bd = dziem_rad_ibound_t(cx, os_p)
+         bc = dziem_rad_ibound_conds_t(cx, os_p)
       case('JCD')
-         bd = jcd_rad_ibound_t(cx, os_p)
+         bc = jcd_rad_ibound_conds_t(cx, os_p)
       case('MIX')
-         bd = mix_rad_ibound_t(cx, os_p)
+         bc = mix_rad_ibound_conds_t(cx, os_p)
       case('LAGP')
-         bd = lagp_rad_ibound_t(cx, os_p)
+         bc = lagp_rad_ibound_conds_t(cx, os_p)
       case default
          @:ABORT('invalid variables_set')
       end select
@@ -180,35 +231,37 @@ contains
 
       return
 
-   end function rad_ibound_t
+   end function rad_ibound_conds_t
 
    !****
 
-   function rad_obound_t(cx, os_p) result(bd)
+   function rad_obound_conds_t(cx, os_p) result(bc)
 
-      use gyre_rad_obound_m
-      use dziem_rad_obound_m
-      use jcd_rad_obound_m
-      use mix_rad_obound_m
-      use lagp_rad_obound_m
+      use bound_conds_m
+
+      use gyre_rad_obound_conds_m
+      use dziem_rad_obound_conds_m
+      use jcd_rad_obound_conds_m
+      use mix_rad_obound_conds_m
+      use lagp_rad_obound_conds_m
 
       type(context_t), pointer, intent(in) :: cx
       type(osc_par_t), intent(in)          :: os_p
-      class(sysblock_rt), allocatable      :: bd
+      class(bound_conds_rt), allocatable   :: bc
 
-      ! Construct the rad_obound type
+      ! Construct the rad_obound_conds type
 
       select case(os_p%variables_set)
       case('GYRE')
-         bd = gyre_rad_obound_t(cx, os_p)
+         bc = gyre_rad_obound_conds_t(cx, os_p)
       case('DZIEM')
-         bd = dziem_rad_obound_t(cx, os_p)
+         bc = dziem_rad_obound_conds_t(cx, os_p)
       case('JCD')
-         bd = jcd_rad_obound_t(cx, os_p)
+         bc = jcd_rad_obound_conds_t(cx, os_p)
       case('MIX')
-         bd = mix_rad_obound_t(cx, os_p)
+         bc = mix_rad_obound_conds_t(cx, os_p)
       case('LAGP')
-         bd = lagp_rad_obound_t(cx, os_p)
+         bc = lagp_rad_obound_conds_t(cx, os_p)
       case default
          @:ABORT('invalid variables_set')
       end select
@@ -217,6 +270,6 @@ contains
 
       return
 
-   end function rad_obound_t
+   end function rad_obound_conds_t
 
 end module rad_factory_m

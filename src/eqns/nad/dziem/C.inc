@@ -74,11 +74,11 @@ C(4, 6) = 0
 C(5, 6) = 0
 C(6, 6) = 1
 endif
-if (PRESENT(F)) then
-F(1) = 0
-F(2) = 0
-F(3) = 0
-F(4) = 0
-F(5) = 0
-F(6) = 0
+if (PRESENT(t)) then
+t(1) = 0
+t(2) = 0
+t(3) = 0
+t(4) = 0
+t(5) = 0
+t(6) = 0
 endif

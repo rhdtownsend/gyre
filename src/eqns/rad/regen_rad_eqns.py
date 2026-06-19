@@ -23,25 +23,25 @@ from symbols import *
 
 # Routines to generate inhomogeneous terms
 
-def generate_tidal_A_F(A):
+def generate_tidal_r(A):
 
-    A_F = sp.zeros(2, 1)
+    r = sp.zeros(2, 1)
 
-    return A_F
-
-
-def generate_tidal_B_F(B):
-
-    B_F = sp.zeros(1, 1)
-
-    return B_F
+    return r
 
 
-def generate_tidal_C_F(C):
+def generate_tidal_s(B):
 
-    C_F = sp.zeros(2, 1)
+    s = sp.zeros(1, 1)
 
-    return C_F
+    return s
+
+
+def generate_tidal_t(C):
+
+    t = sp.zeros(2, 1)
+
+    return t
 
 
 # Declare equation matrices
@@ -53,7 +53,53 @@ A = sp.Matrix([
     [c_1(x)*alpha_omg*omega_c**2 + U(x) - As, As - U(x) + 3]
 ])
 
-A_F = generate_tidal_A_F(A)
+r = generate_tidal_r(A)
+
+# Inner boundary condition matrices and inhomogeneous vectors
+
+IB_regular = sp.Matrix([
+    [c_1(x)*alpha_omg*omega_c**2, 0]
+])
+
+Is_regular = generate_tidal_s(IB_regular)
+
+IB_zero_r = sp.Matrix([
+    [1, 0]
+])
+
+Is_zero_r = generate_tidal_s(IB_zero_r)
+
+# Outer boundary condition matrices
+
+OB_vacuum = sp.Matrix([
+    [1, -1]
+])
+
+Os_vacuum = generate_tidal_s(OB_vacuum)
+
+OB_zero_r = sp.Matrix([
+    [1, 0]
+])
+
+Os_zero_r = generate_tidal_s(OB_zero_r)
+
+OB_dziem = sp.Matrix([
+    [1 - (4 + c_1(x)*alpha_omg*omega_c**2)/V, -1]
+])
+
+Os_dziem = generate_tidal_s(OB_dziem)
+
+OB_decomp = sp.Matrix([
+    [-(chi - a_11), a_12]
+])
+
+Os_decomp = generate_tidal_s(OB_decomp)
+
+OB_jcd = sp.Matrix([
+    [chi - b_11, -b_12]
+])
+
+Os_jcd = generate_tidal_s(OB_jcd)
 
 # Match condition matrix and inhomogeneous vector
 
@@ -62,53 +108,7 @@ C = sp.Matrix([
     [-U(x), U(x)]
 ])
 
-C_F = generate_tidal_C_F(C)
-
-# Inner boundary condition matrices and inhomogeneous vectors
-
-IB_regular = sp.Matrix([
-    [c_1(x)*alpha_omg*omega_c**2, 0]
-])
-
-IB_F_regular = generate_tidal_B_F(IB_regular)
-
-IB_zero_r = sp.Matrix([
-    [1, 0]
-])
-
-IB_F_zero_r = generate_tidal_B_F(IB_zero_r)
-
-# Outer boundary condition matrices
-
-OB_vacuum = sp.Matrix([
-    [1, -1]
-])
-
-OB_F_vacuum = generate_tidal_B_F(OB_vacuum)
-
-OB_zero_r = sp.Matrix([
-    [1, 0]
-])
-
-OB_F_zero_r = generate_tidal_B_F(OB_zero_r)
-
-OB_dziem = sp.Matrix([
-    [1 - (4 + c_1(x)*alpha_omg*omega_c**2)/V, -1]
-])
-
-OB_F_dziem = generate_tidal_B_F(OB_dziem)
-
-OB_decomp = sp.Matrix([
-    [-(chi - a_11), a_12]
-])
-
-OB_F_decomp = generate_tidal_B_F(OB_decomp)
-
-OB_jcd = sp.Matrix([
-    [chi - b_11, -b_12]
-])
-
-OB_F_jcd = generate_tidal_B_F(OB_jcd)
+t = generate_tidal_t(C)
 
 # Main program
 
@@ -137,31 +137,31 @@ if __name__ == '__main__':
     for vars, T in zip(('gyre', 'dziem', 'jcd', 'mix', 'lagp'), (T_gyre, T_dziem, T_jcd, T_mix, T_lagp)):
 
         with open(f'{vars}/A.inc', 'w') as file:
-            file.write(generate_A(A, A_F, T)+'\n')
-
-        with open(f'{vars}/C.inc', 'w') as file:
-            file.write(generate_C(C, C_F, T)+'\n')
+            file.write(generate_A(A, r, T)+'\n')
 
         with open(f'{vars}/IB_regular.inc', 'w') as file:
-            file.write(generate_IB(IB_regular, IB_F_regular, T)+'\n')
+            file.write(generate_IB(IB_regular, Is_regular, T)+'\n')
 
         with open(f'{vars}/IB_zero_r.inc', 'w') as file:
-            file.write(generate_IB(IB_zero_r, IB_F_zero_r, T)+'\n')
+            file.write(generate_IB(IB_zero_r, Is_zero_r, T)+'\n')
 
         with open(f'{vars}/OB_vacuum.inc', 'w') as file:
-            file.write(generate_OB(OB_vacuum, OB_F_vacuum, T)+'\n')
+            file.write(generate_OB(OB_vacuum, Os_vacuum, T)+'\n')
 
         with open(f'{vars}/OB_zero_r.inc', 'w') as file:
-            file.write(generate_OB(OB_zero_r, OB_F_zero_r, T)+'\n')
+            file.write(generate_OB(OB_zero_r, Os_zero_r, T)+'\n')
 
         with open(f'{vars}/OB_dziem.inc', 'w') as file:
-            file.write(generate_OB(OB_dziem, OB_F_dziem, T)+'\n')
+            file.write(generate_OB(OB_dziem, Os_dziem, T)+'\n')
 
         with open(f'{vars}/OB_decomp.inc', 'w') as file:
-            file.write(generate_OB(OB_decomp, OB_F_decomp, T)+'\n')
+            file.write(generate_OB(OB_decomp, Os_decomp, T)+'\n')
 
         with open(f'{vars}/OB_jcd.inc', 'w') as file:
-            file.write(generate_OB(OB_jcd, OB_F_jcd, T)+'\n')
+            file.write(generate_OB(OB_jcd, Os_jcd, T)+'\n')
+
+        with open(f'{vars}/C.inc', 'w') as file:
+            file.write(generate_C(C, t, T)+'\n')
 
         with open(f'{vars}/R.inc', 'w') as file:
             file.write(generate_R(T)+'\n')

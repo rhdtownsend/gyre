@@ -1,0 +1,190 @@
+! Module  : static_obound_conds_m
+! Purpose : static-tide adiabatic boundary conditions
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module static_obound_conds_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bound_conds_m
+   use context_m
+   use model_m
+   use model_util_m
+   use osc_par_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(bound_conds_rt) :: static_obound_conds_t
+      private
+      type(context_t), pointer  :: cx => null()
+      real(RD)                  :: U
+      procedure(eval_), pointer :: eval_
+   contains
+      private
+      procedure, public :: eval
+   end type static_obound_conds_t
+
+   ! Interfaces
+
+   interface
+      subroutine eval_(this, st, B, s, trans)
+         use forum_m, only: RD
+         use state_m
+         import static_obound_conds_t
+         implicit none (type, external)
+         class(static_obound_conds_t), intent(in)    :: this
+         class(state_rt), intent(in)                 :: st
+         real(RD), contiguous, intent(out)           :: B(:,:)
+         real(RD), contiguous, intent(out), optional :: s(:)
+         logical, intent(in), optional               :: trans
+      end subroutine eval_
+   end interface
+
+   interface static_obound_conds_t
+      module procedure static_obound_conds_t_
+   end interface static_obound_conds_t
+
+   ! Access specifiers
+
+   public :: static_obound_conds_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function static_obound_conds_t_(cx, os_p) result(bc)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      type(static_obound_conds_t)          :: bc
+
+      class(model_t), pointer :: ml
+      type(point_t)           :: pt
+
+      ! Construct the static_obound_conds type
+
+      ml => cx%model()
+      pt = cx%point_o()
+
+      select case (os_p%outer_bound)
+      case ('VACUUM')
+         bc%eval_ => eval_vacuum_
+      case default
+         @:ABORT('invalid outer_bound')
+      end select
+
+      bc%cx => cx
+
+      ! Store structure coefficients
+
+      call check_model(ml, [I_U])
+
+      bc%U = ml%coeff(I_U, pt)
+
+      ! Other initializations
+
+      bc%n_e = 2
+      bc%n_b = 1
+
+      ! Finish
+
+      return
+
+   end function static_obound_conds_t_
+
+   !****
+
+   subroutine eval(this, st, B, s, trans)
+
+      class(static_obound_conds_t), intent(in)    :: this
+      class(state_rt), intent(in)                 :: st
+      real(RD), contiguous, intent(out)           :: B(:,:)
+      real(RD), contiguous, intent(out), optional :: s(:)
+      logical, intent(in), optional               :: trans
+
+      ! Evaluate the outer boundary conditions
+
+      call this%eval_(st, B, s, trans)
+
+      ! Finish
+
+      return
+
+   end subroutine eval
+
+   !****
+
+   subroutine eval_vacuum_(this, st, B, s, trans)
+
+      class(static_obound_conds_t), intent(in)    :: this
+      class(state_rt), intent(in)                 :: st
+      real(RD), contiguous, intent(out)           :: B(:,:)
+      real(RD), contiguous, intent(out), optional :: s(:)
+      logical, intent(in), optional               :: trans
+
+      logical :: trans_
+
+      if (PRESENT(trans)) then
+         trans_ = trans
+      else
+         trans_ = .FALSE.
+      end if
+
+      if (trans_) then
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_e)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_b)
+      else
+         @:CHECK_BOUNDS(SIZE(B, 1), this%n_b)
+         @:CHECK_BOUNDS(SIZE(B, 2), this%n_e)
+      end if
+
+      if (PRESENT(s)) then
+         @:CHECK_BOUNDS(SIZE(s), this%n_b)
+      end if
+
+      ! Evaluate the outer boundary condition matrix and inhomogeneous
+      ! vector (vacuum)
+
+      associate ( &
+         y_T_1 => st%y_T_1, &
+         U => this%U, &
+         l_e => this%cx%l)
+
+         #:include 'OB_vacuum.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval_vacuum_
+
+end module static_obound_conds_m

@@ -1,0 +1,223 @@
+! Module  : mirk_block_m
+! Purpose : difference equations (mono-implicit Runge-Kutta)
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module mirk_block_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use diff_block_m
+   use diff_eqns_m
+   use ext_m
+   use point_m
+   use state_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Parameter definitions
+
+   real(RD), parameter :: C_I(3) = [0._RD,0.5_RD,1._RD]
+
+   #:for S in DTYPE_SUFFIXES
+
+      ! Derived-type definitions
+
+      type, extends(diff_block_${S}$) :: mirk_block_${S}$
+         private
+         class(diff_eqns_${S}$), allocatable :: de(:)
+         real(RD)                            :: dx
+         logical                             :: origin
+      contains
+         private
+         procedure, public :: eval => eval_${S}$_
+      end type mirk_block_${S}$
+
+      ! Interfaces
+
+      interface mirk_block_${S}$
+         module procedure mirk_block_${S}$_
+      end interface mirk_block_${S}$
+
+      ! Access specifiers
+
+      public :: mirk_block_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function mirk_block_${S}$_(diff_eqns_factory, pt_a, pt_b) result(db)
+
+         interface
+            subroutine diff_eqns_factory(pt, de)
+               use diff_eqns_m
+               use point_m
+               implicit none (type, external)
+               type(point_t), intent(in)                        :: pt(:)
+               class(diff_eqns_${S}$), allocatable, intent(out) :: de(:)
+            end subroutine diff_eqns_factory
+         end interface
+         type(point_t), intent(in) :: pt_a
+         type(point_t), intent(in) :: pt_b
+         type(mirk_block_${S}$)    :: db
+
+         type(point_t), allocatable :: pt(:)
+
+         @:ASSERT_DEBUG(pt_a%s == pt_b%s, 'segment mismatch')
+
+         ! Construct the mirk_block type
+
+         db%dx = pt_b%x - pt_a%x
+
+         allocate(pt(SIZE(C_I)))
+
+         pt%s = pt_a%s
+         pt%x = pt_a%x + C_I*db%dx
+
+         call diff_eqns_factory(pt, db%de)
+
+         db%origin = pt_a%x == 0._RD
+
+         db%n_e = db%de(1)%n_e
+         @:ASSERT_DEBUG(ALL(db%de%n_e == db%n_e))
+
+         ! Finish
+
+         return
+
+      end function mirk_block_${S}$_
+
+      !****
+
+      subroutine eval_${S}$_(this, st, E, scl, F, trans)
+
+         class(mirk_block_${S}$), intent(in)      :: this
+         class(state_${S}$), intent(in)           :: st
+         ${T}$, contiguous, intent(out)           :: E(:,:)
+         type(ext_${S}$), intent(out)             :: scl
+         ${T}$, contiguous, intent(out), optional :: F(:)
+         logical, intent(in), optional            :: trans
+
+         logical :: trans_
+         ${T}$   :: A_1(this%n_e,this%n_e)
+         ${T}$   :: A_2(this%n_e,this%n_e)
+         ${T}$   :: A_3(this%n_e,this%n_e)
+         integer :: i
+
+         if (PRESENT(trans)) then
+            trans_ = trans
+         else
+            trans_ = .FALSE.
+         end if
+
+         if (trans_) then
+            @:CHECK_BOUNDS(SIZE(E, 1), 2*this%n_e)
+            @:CHECK_BOUNDS(SIZE(E, 2), this%n_e)
+         else
+            @:CHECK_BOUNDS(SIZE(E, 1), this%n_e)
+            @:CHECK_BOUNDS(SIZE(E, 2), 2*this%n_e)
+         end if
+
+         if (PRESENT(F)) then
+            @:CHECK_BOUNDS(SIZE(F), this%n_e)
+         end if
+
+         ! Evaluate the block
+
+         associate (n_e => this%n_e)
+
+            if (this%origin) then
+
+               ! If we're at the origin, fudge things to avoid
+               ! evaluating A and f there
+
+               E = 0._RD
+
+               if (PRESENT(F)) then
+                  F = 0._RD
+               end if
+
+            else
+
+               if (PRESENT(F)) then
+
+                  @:ABORT('not yet implemented')
+
+               else
+
+                  call this%de(1)%eval(st, this%dx/6._RD, A_1, trans=trans_)
+                  call this%de(2)%eval(st, this%dx/3._RD, A_2, trans=trans_)
+                  call this%de(3)%eval(st, this%dx/6._RD, A_3, trans=trans_)
+
+                  if (trans_) then
+
+                     E(:n_e,:) = A_1 + A_2 + (3._RD/2._RD)*MATMUL(A_1, A_2)
+                     E(n_e+1:,:) =  A_3 + A_2 - (3._RD/2._RD)*MATMUL(A_3, A_2)
+
+                  else
+
+                     E(:,:n_e) = A_1 + A_2 + (3._RD/2._RD)*MATMUL(A_2, A_1)
+                     E(:,n_e+1:) =  A_3 + A_2 - (3._RD/2._RD)*MATMUL(A_2, A_3)
+
+                  end if
+
+               end if
+
+               scl = ONE_${S}$
+
+            endif
+
+            if (trans_) then
+
+               do concurrent(i = 1:n_e)
+                  E(i,i) = E(i,i) + 1._RD
+                  E(n_e+i,i) = E(n_e+i,i) - 1._RD
+               end do
+
+            else
+
+               do concurrent(i = 1:n_e)
+                  E(i,i) = E(i,i) + 1._RD
+                  E(i,n_e+i) = E(i,n_e+i) - 1._RD
+               end do
+
+            end if
+
+            scl = ONE_${S}$
+
+         end associate
+
+         ! Finish
+
+      end subroutine eval_${S}$_
+
+   #:endfor
+
+end module mirk_block_m

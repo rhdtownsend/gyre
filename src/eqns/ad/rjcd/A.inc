@@ -40,9 +40,9 @@ A(2, 4) = 0
 A(3, 4) = alpha_grv*del_x
 A(4, 4) = del_x*(-alpha_grv*(U - 1) + alpha_grv*(-U - l_i + 2))
 endif
-if (PRESENT(F)) then
-F(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
-F(2) = -del_x*l_e*y_T_1/(alpha_omg*omega_c**2)
-F(3) = 0
-F(4) = 0
+if (PRESENT(r)) then
+r(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
+r(2) = -del_x*l_e*y_T_1/(alpha_omg*omega_c**2)
+r(3) = 0
+r(4) = 0
 endif

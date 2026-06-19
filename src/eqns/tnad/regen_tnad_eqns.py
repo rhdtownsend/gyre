@@ -21,7 +21,7 @@ import sympy.printing.fortran as spf
 
 from symbols import *
 from regen_nad_eqns import A as A_nad
-from regen_nad_eqns import A_F as A_F_nad
+from regen_nad_eqns import r as r_nad
 
 # Declare equation matrices
 
@@ -69,7 +69,7 @@ Q = sp.Inverse(sp.eye(6) + H)
 
 A = A_nad + (G*sp.eye(6) - A_nad) @ H @ Q
 
-A_F = A_F_nad # Needs to be fixed
+r = r_nad # Needs to be fixed
 
 # Match condition matrix
 
@@ -82,7 +82,7 @@ C = sp.Matrix([
     [0, 0, 0, 0, 0, 1]
 ])
 
-C_F = sp.zeros(6, 1)
+t = sp.zeros(6, 1)
 
 # Main program
 
@@ -97,10 +97,10 @@ if __name__ == '__main__':
     for vars, T in zip(('gyre', ), (T_gyre, )):
 
         with open(f'{vars}/A.inc', 'w') as f:
-            f.write(generate_A(A, A_F, T)+'\n')
+            f.write(generate_A(A, r, T)+'\n')
 
         with open(f'{vars}/C.inc', 'w') as f:
-            f.write(generate_C(C, C_F, T)+'\n')
+            f.write(generate_C(C, t, T)+'\n')
 
         with open(f'{vars}/Q.inc', 'w') as f:
             f.write(generate(Q, 'Q')+'\n')

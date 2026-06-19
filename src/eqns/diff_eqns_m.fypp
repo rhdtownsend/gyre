@@ -1,0 +1,65 @@
+! Module  : diff_eqns_m
+! Purpose : differential equations evaluation
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module diff_eqns_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, abstract :: diff_eqns_${S}$
+         integer :: n_e
+      contains
+         procedure(eval_${S}$_), deferred :: eval
+      end type diff_eqns_${S}$
+
+      ! Interfaces
+
+      abstract interface
+
+         subroutine eval_${S}$_(this, st, del, A, r, trans)
+            use forum_m, only: RD
+            use state_m
+            import diff_eqns_${S}$
+            implicit none (type, external)
+            class(diff_eqns_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in)     :: st
+            real(RD), intent(in)               :: del
+            ${T}$, intent(out)                 :: A(:,:)
+            ${T}$, intent(out), optional       :: r(:)
+            logical, intent(in), optional      :: trans
+         end subroutine eval_${S}$_
+
+      end interface
+
+      ! Access specifiers
+
+      public :: diff_eqns_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+end module diff_eqns_m

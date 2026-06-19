@@ -34,9 +34,9 @@ C(2, 4) = 0
 C(3, 4) = 0
 C(4, 4) = -1
 endif
-if (PRESENT(F)) then
-F(1) = 0
-F(2) = 0
-F(3) = 0
-F(4) = 0
+if (PRESENT(t)) then
+t(1) = 0
+t(2) = 0
+t(3) = 0
+t(4) = 0
 endif
