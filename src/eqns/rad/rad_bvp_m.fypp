@@ -127,7 +127,7 @@ contains
             if (pt_a%s == pt_b%s) then
                allocate(ie(j)%ib, SOURCE=diff_block_rt(diff_eqns_factory_, pt_a, pt_b, nm_p))
             else
-               #:if defined('GFORTRAN_PR125610')
+               #:if defined('GFORTRAN_PR110877')
                mc = rad_match_conds_t_1_(cx, [pt_a,pt_b], os_p)
                #:else
                mc = rad_match_conds_t(cx, [pt_a,pt_b], os_p)
