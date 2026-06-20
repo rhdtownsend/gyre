@@ -49,6 +49,7 @@ module magnus_gl2_block_m
          private
          class(diff_eqns_${S}$), allocatable :: de(:)
          real(RD)                            :: dx
+         logical                             :: regularize
          procedure(eval_${S}$_), pointer     :: eval_
       contains
          private
@@ -75,7 +76,7 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function magnus_gl2_block_${S}$_(diff_eqns_factory, pt_a, pt_b) result(db)
+      function magnus_gl2_block_${S}$_(diff_eqns_factory, pt_a, pt_b, regularize) result(db)
 
          interface
             subroutine diff_eqns_factory(pt, de)
@@ -86,9 +87,10 @@ contains
                class(diff_eqns_${S}$), allocatable, intent(out) :: de(:)
             end subroutine diff_eqns_factory
          end interface
-         type(point_t), intent(in)    :: pt_a
-         type(point_t), intent(in)    :: pt_b
-         type(magnus_gl2_block_${S}$) :: db
+         type(point_t), intent(in)     :: pt_a
+         type(point_t), intent(in)     :: pt_b
+         logical, intent(in), optional :: regularize
+         type(magnus_gl2_block_${S}$)  :: db
 
          type(point_t) :: pt(1)
 
@@ -105,6 +107,12 @@ contains
 
          db%n_e = db%de(1)%n_e
          @:ASSERT_DEBUG(ALL(db%de%n_e == db%n_e))
+
+         if (PRESENT(regularize)) then
+            db%regularize = regularize
+         else
+            db%regularize = .TRUE.
+         end if
 
          select case(db%n_e)
          case(2)
@@ -196,7 +204,25 @@ contains
                call this%de(1)%eval(st, this%dx, Omega, trans=.TRUE.)
             end if
 
-            ! Decompose it
+            ! If necessary, store the regularization factor in scl. The
+            ! choice of factor is heuristic, and designed to work for the
+            ! the nonadiabatic equations
+
+            #:if T == 'real(RD)'
+               scl = ONE_RT
+            #:else
+               #:if N_E == 6
+                  if (this%regularize) then
+                     scl = exp(ext_${S}$(-sqrt(Omega(5,6)*Omega(6,5))))
+                  else
+                     scl = ONE_${S}$
+                  end if
+               #:else
+                  scl = ONE_CT
+               #:endif
+            #:endif
+
+            ! Decompose the Magnus matrix
 
             #:if I == 'gen'
                call eigen_decompose(Omega, lambda, V_l, V_r)
@@ -221,7 +247,7 @@ contains
                E_l = MATMUL(E_l, V_l)
                E_r = MATMUL(E_r, V_l)
 
-               scl = exp(ext_${S}$(SUM(lambda, MASK=REAL(lambda) >= 0._RD)))
+               scl = scl*exp(ext_${S}$(SUM(lambda, MASK=REAL(lambda) >= 0._RD)))
 
                if (trans_) then
 
