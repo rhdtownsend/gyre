@@ -41,14 +41,13 @@ module ${P}$_rad_match_conds_m
    ! Derived-type definitions
 
    type, extends(match_conds_rt) :: ${P}$_rad_match_conds_t
-      private
+      !private
       type(context_t), pointer :: cx => null()
       real(RD)                 :: V_2
       real(RD)                 :: dV_2
       real(RD)                 :: V_g
       real(RD)                 :: U
       real(RD)                 :: c_1
-      real(RD)                 :: x
    contains
       private
       procedure, public :: eval

@@ -68,20 +68,26 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function match_block_${S}$_(mc) result(mb)
+      function match_block_${S}$_(match_conds_factory, pt_a, pt_b) result(mb)
 
-         class(match_conds_${S}$), intent(in) :: mc(:)
-         type(match_block_${S}$)              :: mb
+         use gyre_rad_match_conds_m
 
-         @:CHECK_BOUNDS(SIZE(mc), 2)
+         interface
+            subroutine match_conds_factory(pt, mc)
+               use match_conds_m
+               use point_m
+               implicit none (type, external)
+               type(point_t), intent(in)                          :: pt(:)
+               class(match_conds_${S}$), allocatable, intent(out) :: mc(:)
+            end subroutine match_conds_factory
+         end interface
+         type(point_t), intent(in) :: pt_a
+         type(point_t), intent(in) :: pt_b
+         type(match_block_${S}$)   :: mb
 
          ! Construct the match_block type
 
-         #:if defined('GFORTRAN_PR110877')
-         allocate(mb%mc, SOURCE=mc)
-         #:else
-         mb%mc = mc
-         #:endif
+         call match_conds_factory([pt_a,pt_b], mb%mc)
 
          mb%n_e = mb%mc(1)%n_e
          @:ASSERT_DEBUG(ALL(mb%mc%n_e == mb%n_e))

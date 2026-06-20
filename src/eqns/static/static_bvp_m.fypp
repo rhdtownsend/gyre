@@ -77,14 +77,7 @@ contains
 
    function static_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
 
-      use bound_block_m
-      use diff_block_factory_m
-      use inter_block_m
-      use inter_element_m
-      use match_block_m
-      use match_conds_m
-      use static_diff_eqns_m
-      use static_match_conds_m
+      use bound_conds_m
       use static_ibound_conds_m
       use static_obound_conds_m
 
@@ -95,48 +88,21 @@ contains
       type(osc_par_t), intent(in)          :: os_p
       type(static_bvp_t)                   :: bp
 
-      class(bound_block_rt), allocatable  :: bb_i
-      class(bound_block_rt), allocatable  :: bb_o
-      integer                             :: j
-      type(inter_element_rt), allocatable :: ie(:)
-      class(match_conds_rt), allocatable  :: mc(:)
+      class(bound_conds_rt), allocatable :: bc_i
+      class(bound_conds_rt), allocatable :: bc_o
 
-      ! Construct the static_bvp type
+      ! Construct the ad_bvp type
 
-      ! Initialize the boundary condition blocks
+      if (os_p%alpha_grv /= 1._RD) then
+         @:WARN('alpha_grv is ignored in 2nd-order radial equations')
+      endif
 
-      bb_i = bound_block_rt(static_ibound_conds_t(cx, os_p))
-      bb_o = bound_block_rt(static_obound_conds_t(cx, os_p))
+      ! Initialize the base type
 
-      ! Initialize the intermediate blocks
+      bc_i = static_ibound_conds_t(cx, os_p)
+      bc_o = static_obound_conds_t(cx, os_p)
 
-      allocate(ie(gr%n-1))
-
-      !$OMP PARALLEL DO
-      do j = 1, gr%n-1
-
-         associate( &
-            pt_a => gr%pt(j), &
-            pt_b => gr%pt(j+1))
-
-            if (pt_a%s == pt_b%s) then
-               allocate(ie(j)%ib, SOURCE=diff_block_rt(diff_eqns_factory_, pt_a, pt_b, nm_p))
-            else
-               #:if defined('GFORTRAN_PR110877')
-               mc = static_match_conds_t_1_(cx, [pt_a,pt_b])
-               #:else
-               mc = static_match_conds_t(cx, [pt_a,pt_b])
-               #:endif
-               allocate(ie(j)%ib, SOURCE=match_block_rt(mc))
-            end if
-
-         end associate
-
-      end do
-
-      ! Initialize the bvp_t
-
-      bp%bvp_rt = bvp_rt(bb_i, bb_o, ie, nm_p)
+      bp%bvp_rt = bvp_rt(gr, bc_i, bc_o, diff_eqns_factory_, match_conds_factory_, nm_p)
 
       ! Other initializations
 
@@ -156,6 +122,7 @@ contains
       subroutine diff_eqns_factory_(pt, de)
 
          use diff_eqns_m
+         use static_diff_eqns_m
 
          type(point_t), intent(in)                     :: pt(:)
          class(diff_eqns_rt), allocatable, intent(out) :: de(:)
@@ -173,6 +140,30 @@ contains
          return
 
       end subroutine diff_eqns_factory_
+
+      !****
+
+      subroutine match_conds_factory_(pt, mc)
+
+         use match_conds_m
+         use static_match_conds_m
+
+         type(point_t), intent(in)                       :: pt(:)
+         class(match_conds_rt), allocatable, intent(out) :: mc(:)
+
+         ! Initialize the match conditions
+
+         #:if defined('GFORTRAN_PR125610')
+         mc = static_match_conds_t_1_(cx, pt)
+         #:else
+         mc = static_match_conds_t(cx, pt)
+         #:endif
+
+         ! Finish
+
+         return
+
+      end subroutine match_conds_factory_
 
    end function static_bvp_t_
 

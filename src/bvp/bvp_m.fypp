@@ -24,9 +24,13 @@ module bvp_m
    use forum_m, only: RD
 
    use bound_block_m
+   use bound_conds_m
+   use diff_block_factory_m
    use ext_m
+   use grid_m
    use inter_element_m
    use inter_block_m
+   use match_block_m
    use num_par_m
    use state_m
    use status_m
@@ -78,46 +82,73 @@ contains
 
    #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
 
-      function bvp_${S}$_(bb_i, bb_o, ie, nm_p) result(bp)
+      function bvp_${S}$_(gr, bc_i, bc_o, diff_eqns_factory, match_conds_factory, nm_p) result(bp)
 
-         class(bound_block_${S}$), intent(in)   :: bb_i
-         class(bound_block_${S}$), intent(in)   :: bb_o
-         class(inter_element_${S}$), intent(in) :: ie(:)
-         type(num_par_t), intent(in)            :: nm_p
-         type(bvp_${S}$)                        :: bp
+         type(grid_t), intent(in)             :: gr
+         class(bound_conds_${S}$), intent(in) :: bc_i
+         class(bound_conds_${S}$), intent(in) :: bc_o
+         interface
+            subroutine diff_eqns_factory(pt, de)
+               use diff_eqns_m
+               use point_m
+               type(point_t), intent(in)                        :: pt(:)
+               class(diff_eqns_${S}$), allocatable, intent(out) :: de(:)
+            end subroutine diff_eqns_factory
+            subroutine match_conds_factory(pt, mc)
+               use match_conds_m
+               use point_m
+               type(point_t), intent(in)                          :: pt(:)
+               class(match_conds_${S}$), allocatable, intent(out) :: mc(:)
+            end subroutine match_conds_factory
+         end interface
+         type(num_par_t), intent(in) :: nm_p
+         type(bvp_${S}$)             :: bp
 
          integer :: n
          integer :: n_e
          integer :: n_i
          integer :: n_o
+         integer :: j
 
-         ! Perform basic dimension, validations
+         ! Perform basic dimension validations
 
-         n = SIZE(ie) + 1
+         n = gr%n
 
-         n_e = ie(1)%ib%n_e
+         n_e = bc_i%n_e
+         @:CHECK_BOUNDS(bc_o%n_e, n_e)
 
-         block
-            integer :: j
-            do j = 1, SIZE(ie)
-               @:ASSERT_DEBUG(ie(j)%ib%n_e == n_e, 'dimension mismatch')
-            end do
-         end block
-
-         @:CHECK_BOUNDS(bb_i%n_e, n_e)
-         @:CHECK_BOUNDS(bb_o%n_e, n_e)
-
-         n_i = bb_i%n_b
-         n_o = bb_o%n_b
+         n_i = bc_i%n_b
+         n_o = bc_o%n_b
 
          @:CHECK_BOUNDS(n_i+n_o, n_e)
 
-         ! Construct the bvp type
+         ! Set up blocks
 
-         allocate(bp%ie, SOURCE=ie)
+         bp%bb_i = bound_block_${S}$(bc_i)
+         bp%bb_o = bound_block_${S}$(bc_o)
 
-         bp%bb_i = bb_i
-         bp%bb_o = bb_o
+         allocate(bp%ie(n-1))
+
+         !$OMP PARALLEL DO
+         do j = 1, n-1
+
+            associate( &
+               pt_a => gr%pt(j), &
+               pt_b => gr%pt(j+1))
+
+               if (pt_a%s == pt_b%s) then
+                  allocate(bp%ie(j)%ib, SOURCE=diff_block_${S}$(diff_eqns_factory, pt_a, pt_b, nm_p))
+               else
+                  allocate(bp%ie(j)%ib, SOURCE=match_block_${S}$(match_conds_factory, pt_a, pt_b))
+               end if
+
+               @:CHECK_BOUNDS(bp%ie(j)%ib%n_e, n_e)
+
+            end associate
+
+         end do
+
+         ! Other initializations
 
          bp%n = n
          bp%n_e = n_e

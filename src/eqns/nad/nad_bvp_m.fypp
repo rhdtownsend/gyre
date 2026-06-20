@@ -25,6 +25,8 @@ module nad_bvp_m
 
    use bvp_m
    use context_m
+   use diff_eqns_m
+   use ext_m
    use grid_m
    use mode_m
    use mode_par_m
@@ -84,13 +86,8 @@ contains
 
    function nad_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
 
-      use bound_block_m
-      use inter_block_m
-      use inter_element_m
-      use match_block_m
-      use match_conds_m
+      use bound_conds_m
       use nad_factory_m
-      use nad_diff_block_m
 
       class(context_t), pointer, intent(in) :: cx
       type(grid_t), intent(in)              :: gr
@@ -99,48 +96,18 @@ contains
       type(osc_par_t), intent(in)           :: os_p
       type(nad_bvp_t)                       :: bp
 
-      class(bound_block_ct), allocatable  :: bb_i
-      class(bound_block_ct), allocatable  :: bb_o
-      integer                             :: j
-      type(inter_element_ct), allocatable :: ie(:)
-      class(match_conds_ct), allocatable  :: mc(:)
+      class(bound_conds_ct), allocatable :: bc_i
+      class(bound_conds_ct), allocatable :: bc_o
+      type(point_t), allocatable         :: pt_m(:)
 
       ! Construct the nad_bvp type
 
-      ! Initialize the boundary condition blocks
+      ! Initialize the base type
 
-      bb_i = bound_block_ct(nad_ibound_conds_t(cx, os_p))
-      bb_o = bound_block_ct(nad_obound_conds_t(cx, os_p))
+      bc_i = nad_ibound_conds_t(cx, os_p)
+      bc_o = nad_obound_conds_t(cx, os_p)
 
-      ! Initialize the intermediate blocks
-
-      allocate(ie(gr%n-1))
-
-      !$OMP PARALLEL DO
-      do j = 1, gr%n-1
-
-         associate( &
-            pt_a => gr%pt(j), &
-            pt_b => gr%pt(j+1))
-
-            if (pt_a%s == pt_b%s) then
-               allocate(ie(j)%ib, SOURCE=nad_diff_block_t(diff_eqns_factory_, cx, pt_a, pt_b, nm_p, os_p))
-            else
-               #:if defined('GFORTRAN_PR110877')
-               mc = nad_match_conds_t_1_(cx, [pt_a,pt_b], os_p)
-               #:else
-               mc = nad_match_conds_t(cx, [pt_a,pt_b], os_p)
-               #:endif
-               allocate(ie(j)%ib, SOURCE=match_block_ct(mc))
-            end if
-
-         end associate
-
-      end do
-
-      ! Initialize the bvp_ct
-
-      bp%bvp_ct = bvp_ct(bb_i, bb_o, ie, nm_p)
+      bp%bvp_ct = bvp_ct(gr, bc_i, bc_o, diff_eqns_factory_, match_conds_factory_, nm_p)
 
       ! Other initializations
 
@@ -165,8 +132,6 @@ contains
 
       subroutine diff_eqns_factory_(pt, de)
 
-         use diff_eqns_m
-
          type(point_t), intent(in)                     :: pt(:)
          class(diff_eqns_ct), allocatable, intent(out) :: de(:)
 
@@ -183,6 +148,29 @@ contains
          return
 
       end subroutine diff_eqns_factory_
+
+      !****
+
+      subroutine match_conds_factory_(pt, mc)
+
+         use match_conds_m
+
+         type(point_t), intent(in)                       :: pt(:)
+         class(match_conds_ct), allocatable, intent(out) :: mc(:)
+
+         ! Initialize the match conditions
+
+         #:if defined('GFORTRAN_PR125610')
+         mc = nad_match_conds_t_1_(cx, pt, os_p)
+         #:else
+         mc = nad_match_conds_t(cx, pt, os_p)
+         #:endif
+
+         ! Finish
+
+         return
+
+      end subroutine match_conds_factory_
 
    end function nad_bvp_t_
 
