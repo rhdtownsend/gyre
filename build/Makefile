@@ -110,7 +110,7 @@ rad_SRCS = rad_bvp_m.fypp rad_factory_m.fypp \
    gyre_rad_obound_conds_m.fypp dziem_rad_obound_conds_m.fypp jcd_rad_obound_conds_m.fypp \
    mix_rad_obound_conds_m.fypp lagp_rad_obound_conds_m.fypp
 
-nad_SRCS = nad_bvp_m.fypp nad_factory_m.fypp nad_diff_block_m.fypp \
+nad_SRCS = nad_bvp_m.fypp nad_factory_m.fypp \
    gyre_nad_diff_eqns_m.fypp dziem_nad_diff_eqns_m.fypp jcd_nad_diff_eqns_m.fypp \
    rjcd_nad_diff_eqns_m.fypp mix_nad_diff_eqns_m.fypp lagp_nad_diff_eqns_m.fypp \
    gyre_nad_match_conds_m.fypp dziem_nad_match_conds_m.fypp jcd_nad_match_conds_m.fypp \
@@ -122,7 +122,7 @@ nad_SRCS = nad_bvp_m.fypp nad_factory_m.fypp nad_diff_block_m.fypp \
    gyre_nad_obound_conds_m.fypp dziem_nad_obound_conds_m.fypp jcd_nad_obound_conds_m.fypp \
    rjcd_nad_obound_conds_m.fypp mix_nad_obound_conds_m.fypp lagp_nad_obound_conds_m.fypp
 
-tnad_SRCS = tnad_bvp_m.fypp tnad_factory_m.fypp tnad_diff_block_m.fypp \
+tnad_SRCS = tnad_bvp_m.fypp tnad_factory_m.fypp \
    gyre_tnad_diff_eqns_m.fypp \
    gyre_tnad_match_conds_m.fypp
 
