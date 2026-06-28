@@ -58,15 +58,15 @@ The dimensionless oscillation equations are
    \upsT \, y_{5}, \\
    %
    x \deriv{y_{3}}{x} &=
-   \alphagrv \left( 3 - U - \ell \right) y_{3} +
-   \alphagrv y_{4} \\
+   \left( 3 - U - \ell \right) y_{3} +
+   y_{4} \\
    %
    x \deriv{y_{4}}{x} &=
-   \alphagrv \As U y_{1} +
-   \alphagrv \frac{V}{\Gammi} U y_{2} +
-   \alphagrv \lambda y_{3} -
-   \alphagrv (U + \ell - 2) y_{4}
-   - \alphagrv \upsT \, U y_{5}, \\
+   \As U y_{1} +
+   \frac{V}{\Gammi} U y_{2} +
+   \lambda y_{3} -
+   (U + \ell - 2) y_{4}
+   - \upsT \, U y_{5}, \\
    %
    x \deriv{y_{5}}{x} &=
    \frac{V}{\frht} \left[ \nabad (U - c_{1}\omega^{2}) - 4 (\nabad - \nabla) + \ckapad V \nabla + \cdif \right] y_{1} + \mbox{} \\
@@ -139,7 +139,7 @@ regularity-enforcing conditions at the inner boundary:
 
    \begin{aligned}
    c_{1} \omega^{2} y_{1} - \ell y_{2} - \alphagrv \ell y_{3} &= 0, \\
-   \alphagrv \ell y_{3} - (2\alphagrv - 1) y_{4} &= 0, \\
+   \ell y_{3} - y_{4} &= 0, \\
    y_{5} &= 0.
    \end{aligned}
 
@@ -179,7 +179,7 @@ outer boundary conditions
 
    \begin{aligned}
    y_{1} - y_{2} &= 0 \\
-   \alphagrv \alphagbc U y_{1} + (\alphagrv \ell + 1) y_{3} + \alphagrv y_{4} &= 0 \\
+   \alphagbc U y_{1} + (\ell + 1) y_{3} + y_{4} &= 0 \\
    (2 - 4\nabad V) y_{1} + 4 \nabad V y_{2} + 4 \frht y_{5} - y_{6} &= 0
    \end{aligned}
 
@@ -191,9 +191,9 @@ above is replaced by the :ads_citet:`dziembowski:1971` outer boundary condition,
 
 .. math::
 
-   \left\{ 1 + V^{-1} \left[ \frac{\lambda}{c_{1} \omega^{2}} - 4 - c_{1} \omega^{2} \right] \right\} y_{1} -
+   \left\{ 1 + \frac{1}{V} \left[ \frac{\lambda}{c_{1} \omega^{2}} - 4 - c_{1} \omega^{2} \right] \right\} y_{1} -
    y_{2} +
-   V^{-1} \left[ \frac{\lambda}{c_{1} \omega^{2}} - \ell - 1 \right] y_{3}
+   \frac{\alphagrv}{V} \left[ \frac{\lambda}{c_{1} \omega^{2}} - \ell - 1 \right] y_{3}
    = 0.
 
 When :nml:option:`outer_bound` = :nml:value:`'UNNO'` or :nml:value:`'JCD'`, the
@@ -299,9 +299,9 @@ the corresponding namelist options.
      - Description
    * - :math:`\alphagrv`
      - :nml:option:`alpha_grv`
-     - Scaling factor for gravitational potential perturbations. Set to 1
-       for normal behavior, and to 0 for the :ads_citet:`cowling:1941`
-       approximation
+     - Scaling factor for gravitational potential perturbations in the
+       linearized momentum equation. Set to 1 for normal behavior, and
+       to 0 for the :ads_citet:`cowling:1941` approximation
    * - :math:`\alphagbc`
      - :nml:option:`alpha_gbc`
      - Scaling factor for the :math:`y_1` term in the outer

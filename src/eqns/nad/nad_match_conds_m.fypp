@@ -178,6 +178,7 @@ contains
          nabla_ad => this%nabla_ad, &
          Omega_rot => this%Omega_rot, &
          alpha_omg => this%cx%alpha_omg, &
+         alpha_grv => this%cx%alpha_grv, &
          m => this%cx%m, &
          angular_cache => this%cx%angular_cache)
 

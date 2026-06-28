@@ -26,6 +26,7 @@ module resp_m
    use context_m
    use freq_context_m
    use grid_m
+   use math_m
    use model_m
    use orbit_par_m
    use state_m
@@ -45,9 +46,11 @@ module resp_m
       type(orbit_par_t), public :: or_p
       real(RD)                  :: y_T_1
       integer, public           :: k
+      complex(RD), allocatable  :: y_h(:)
    contains
       private
       procedure, public :: y_T
+      procedure, public :: xi_h
       procedure, public :: Phi_T
       procedure, public :: dPhi_T
       procedure, public :: Omega_orb
@@ -81,12 +84,13 @@ module resp_m
 
 contains
 
-   function resp_t_(wv, or_p, k) result(rs)
+   function resp_t_(wv, or_p, k, y_h) result(rs)
 
-      type(wave_t), intent(in)      :: wv
-      type(orbit_par_t), intent(in) :: or_p
-      integer, intent(in)           :: k
-      type(resp_t)                  :: rs
+      type(wave_t), intent(in)          :: wv
+      type(orbit_par_t), intent(in)     :: or_p
+      integer, intent(in)               :: k
+      type(resp_t)                      :: rs
+      complex(RD), intent(in), optional :: y_h(:)
 
       type(state_ct) :: st
 
@@ -101,6 +105,10 @@ contains
       rs%y_T_1 = st%y_T_1
 
       rs%k = k
+
+      if (PRESENT(y_h)) then
+         rs%y_h = y_h
+      end if
 
       ! Finish
 
@@ -144,6 +152,55 @@ contains
 
    !****
 
+   function xi_h(this, j)
+
+      class(resp_t), intent(in) :: this
+      integer, intent(in)       :: j
+      complex(RD)               :: xi_h
+
+      real(RD) :: x
+
+      ! Evaluate the horizontal displacement perturbation, in units of
+      ! R_star
+
+      if (ALLOCATED(this%y_h)) then
+
+         associate ( &
+            y_h => this%y_h(j), &
+            l_i => this%l_i)
+
+            x = this%x(j)
+
+            if (l_i /= 1._RD) then
+
+               if (x /= 0._RD) then
+                  xi_h = y_h*pow(x, l_i-1._RD)
+               else
+                  xi_h = 0._RD
+               end if
+
+            else
+
+               xi_h = y_h
+
+            endif
+
+         end associate
+
+      else
+
+         xi_h = this%wave_t%xi_h(j)
+
+      end if
+
+      ! Finish
+
+      return
+
+   end function xi_h
+
+   !****
+
    function Phi_T(this, j)
 
       class(resp_t), intent(in) :: this
@@ -176,7 +233,7 @@ contains
       real(RD)                  :: dPhi_T
 
       ! Evaluate the tidal potential gradient (gravity), in units of G
-     ! M_star / R_star**2
+      ! M_star / R_star**2
 
       associate ( &
          y_T_1 => this%y_T_1, &

@@ -91,11 +91,7 @@ contains
       class(bound_conds_rt), allocatable :: bc_i
       class(bound_conds_rt), allocatable :: bc_o
 
-      ! Construct the ad_bvp type
-
-      if (os_p%alpha_grv /= 1._RD) then
-         @:WARN('alpha_grv is ignored in 2nd-order radial equations')
-      endif
+      ! Construct the static_bvp type
 
       ! Initialize the base type
 
@@ -183,8 +179,11 @@ contains
       type(state_ct)          :: st_c
       class(model_t), pointer :: ml
       integer                 :: j
+      real(RD)                :: U
       real(RD)                :: c_1
+      complex(RD)             :: lambda
       complex(RD)             :: y_c(6,bp%n)
+      complex(RD)             :: y_h(bp%n)
       type(wave_t)            :: wv
 
       ! Calculate the inhomogeneous solution vector
@@ -193,25 +192,36 @@ contains
 
       ! Convert to canonical form
 
-      st_c = state_ct(CMPLX(st%omega, KIND=RD), st%omega)
+      st_c = state_ct(CMPLX(st%omega, KIND=RD), st%omega, y_T_1=st%y_T_1)
 
       ml => bp%cx%model()
 
-      !$OMP PARALLEL DO PRIVATE (c_1)
+      !$OMP PARALLEL DO PRIVATE (U, c_1, lambda)
       do j = 1, bp%n
 
          associate( &
             y_T_1 => st%y_T_1, &
-            pt => bp%gr%pt(j))
+            pt => bp%gr%pt(j), &
+            alpha_grv => bp%cx%alpha_grv, &
+            l_e => bp%cx%l)
 
+            U = ml%coeff(I_U, pt)
             c_1 = ml%coeff(I_C_1, pt)
 
-            y_c(1,j) = -(y(1,j) + c_1*y_T_1)
+            lambda = l_e*(l_e+1._RD)
+
+            y_c(1,j) = -(alpha_grv*y(1,j) + c_1*y_T_1)
             y_c(2,j) = y_c(1,j)
             y_c(3,j) = y(1,j)
             y_c(4,j) = y(2,j)
             y_c(5,j) = 0._RD
             y_c(6,j) = 0._RD
+
+            ! Evaluate y_h from the continuity equation because the
+            ! the horizontal momentum equation can't be used when
+            ! sigma=0
+
+            y_h(j) = -(alpha_grv*((4._RD - U)*y_c(3,j) + y_c(4,j)) + (4._RD - U + l_e)*c_1*y_T_1)/lambda
 
          end associate
 
@@ -219,9 +229,9 @@ contains
 
       ! Construct the wave_t
 
-      wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, 0._RD, 1, static=.TRUE.)
+      wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, 0._RD, 1)
 
-      rs = resp_t(wv, or_p, k)
+      rs = resp_t(wv, or_p, k, y_h=y_h)
 
       ! Finish
 

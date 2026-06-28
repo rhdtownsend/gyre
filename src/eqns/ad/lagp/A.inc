@@ -12,31 +12,31 @@ A(3, 2) = -V_2*alpha_grv*del_x*eta
 A(4, 2) = -V_2*alpha_grv*del_x
 A(1, 3) = 0
 A(2, 3) = 0
-A(3, 3) = alpha_grv*del_x*(-U - l_i + 3)
-A(4, 3) = alpha_grv*del_x
-A(1, 4) = del_x*(As*U*alpha_grv + U*V_g*alpha_grv)
-A(2, 4) = U*V_g*alpha_grv*del_x/V_2
-A(3, 4) = alpha_grv*del_x*lambda
-A(4, 4) = alpha_grv*del_x*(-U - l_i + 2)
+A(3, 3) = del_x*(-U - l_i + 3)
+A(4, 3) = del_x
+A(1, 4) = del_x*(As*U + U*V_g)
+A(2, 4) = U*V_g*del_x/V_2
+A(3, 4) = del_x*lambda
+A(4, 4) = del_x*(-U - l_i + 2)
 else
 A(1, 1) = del_x*(-V_g*alpha_gam + V_g + eta - l_i - 1)
 A(2, 1) = del_x*(-V_2*(-V_g*alpha_gam + V_g + eta - l_i - 1) + V_2*(As - &
       As_iso - U - l_i + om2 + 3))
 A(3, 1) = 0
-A(4, 1) = del_x*(As*U*alpha_grv + U*V_g*alpha_grv)
+A(4, 1) = del_x*(As*U + U*V_g)
 A(1, 2) = del_x*(-V_g*alpha_gam + eta)/V_2
 A(2, 2) = del_x*(V_2*(dV_2/V_2 + (As - U - l_i + 3)/V_2) + V_g*alpha_gam &
       - eta)
 A(3, 2) = 0
-A(4, 2) = U*V_g*alpha_grv*del_x/V_2
+A(4, 2) = U*V_g*del_x/V_2
 A(1, 3) = alpha_grv*del_x*eta
 A(2, 3) = -V_2*alpha_grv*del_x*eta
-A(3, 3) = alpha_grv*del_x*(-U - l_i + 3)
-A(4, 3) = alpha_grv*del_x*lambda
+A(3, 3) = del_x*(-U - l_i + 3)
+A(4, 3) = del_x*lambda
 A(1, 4) = 0
 A(2, 4) = -V_2*alpha_grv*del_x
-A(3, 4) = alpha_grv*del_x
-A(4, 4) = alpha_grv*del_x*(-U - l_i + 2)
+A(3, 4) = del_x
+A(4, 4) = del_x*(-U - l_i + 2)
 endif
 if (PRESENT(r)) then
 r(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)

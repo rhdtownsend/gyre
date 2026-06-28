@@ -70,15 +70,15 @@ A = sp.Matrix([
      0],
     [0,
      0,
-     alpha_grv*(3 - U(x) - l_i),
-     alpha_grv,
+     3 - U(x) - l_i,
+     1,
      0,
      0],
-    [alpha_grv*U(x)*As,
-     alpha_grv*U(x)*V_g,
-     alpha_grv*lamda,
-     alpha_grv*(-U(x) - l_i + 2),
-     -alpha_grv*U(x)*ups_T,
+    [U(x)*As,
+     U(x)*V_g,
+     lamda,
+     -U(x) - l_i + 2,
+     -U(x)*ups_T,
      0],
     [V*(nabla_ad*(U(x) - c_1(x)*alpha_omg*omega_c**2) - 4*(nabla_ad - nabla) + c_kap_ad*V*nabla + c_dif)/f_rht,
      V*(lamda/(c_1(x)*alpha_omg*omega_c**2)*(nabla_ad - nabla) - c_kap_ad*V*nabla - c_dif)/f_rht,
@@ -145,7 +145,7 @@ A_trb = (A + G*H) @ Q
 
 IB_regular = sp.Matrix([
     [c_1(x)*alpha_omg*omega_c**2, -l_i, -alpha_grv*l_i, 0, 0, 0],
-    [0, 0, alpha_grv*l_i, 1-2*alpha_grv, 0, 0],
+    [0, 0, l_i, -1, 0, 0],
     [0, 0, 0, 0, 1, 0]
 ])
 
@@ -171,7 +171,7 @@ Is_zero_h = generate_tidal_s(IB_zero_h)
 
 OB_vacuum = sp.Matrix([
     [1, -1, 0, 0, 0, 0],
-    [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
+    [alpha_gbc*U(x), 0, l_e + 1, 1, 0, 0],
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
@@ -179,7 +179,7 @@ Os_vacuum = generate_tidal_s(OB_vacuum)
 
 OB_zero_r = sp.Matrix([
     [1, 0, 0, 0, 0, 0],
-    [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
+    [alpha_gbc*U(x), 0, l_e + 1, 1, 0, 0],
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
@@ -187,7 +187,7 @@ Os_zero_r = generate_tidal_s(OB_zero_r)
 
 OB_zero_h = sp.Matrix([
     [0, 1, alpha_grv, 0, 0, 0],
-    [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
+    [alpha_gbc*U(x), 0, l_e + 1, 1, 0, 0],
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
@@ -200,7 +200,7 @@ OB_dziem = sp.Matrix([
      0,
      0,
      0],
-    [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
+    [alpha_gbc*U(x), 0, l_e + 1, 1, 0, 0],
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
@@ -208,7 +208,7 @@ Os_dziem = generate_tidal_s(OB_dziem)
 
 OB_decomp = sp.Matrix([
     [-(chi-a_11), a_12, -alpha_grv*G_1, alpha_grv*G_2, 0, 0],
-    [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
+    [alpha_gbc*U(x), 0, l_e + 1, 1, 0, 0],
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
@@ -221,7 +221,7 @@ OB_jcd = sp.Matrix([
      0,
      0,
      0],
-    [alpha_grv*alpha_gbc*U(x), 0, alpha_grv*l_e + 1, alpha_grv, 0, 0],
+    [alpha_gbc*U(x), 0, l_e + 1, 1, 0, 0],
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
@@ -259,7 +259,7 @@ if __name__ == '__main__':
 
     T_jcd = sp.Matrix([
         [1, 0, 0, 0, 0, 0],
-        [0, lamda/(c_1(x)*alpha_omg*omega_c**2), lamda/(c_1(x)*alpha_omg*omega_c**2), 0, 0, 0],
+        [0, lamda/(c_1(x)*alpha_omg*omega_c**2), alpha_grv*lamda/(c_1(x)*alpha_omg*omega_c**2), 0, 0, 0],
         [0, 0, -1, 0, 0, 0],
         [0, 0, U(x)-1, -1, 0, 0],
         [0, 0, 0, 0, 1, 0],
@@ -268,7 +268,7 @@ if __name__ == '__main__':
 
     T_rjcd = sp.Matrix([
         [1, 0, 0, 0, 0, 0],
-        [0, 1/(c_1(x)*alpha_omg*omega_c**2), 1/(c_1(x)*alpha_omg*omega_c**2), 0, 0, 0],
+        [0, 1/(c_1(x)*alpha_omg*omega_c**2), alpha_grv/(c_1(x)*alpha_omg*omega_c**2), 0, 0, 0],
         [0, 0, -1, 0, 0, 0],
         [0, 0, U(x)-1, -1, 0, 0],
         [0, 0, 0, 0, 1, 0],
