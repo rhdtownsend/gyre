@@ -8,7 +8,7 @@ export MAKEFLAGS += --no-print-directory
 
 # Variables
 
-SUBDIRS=spb solar
+SUBDIRS=spb spb-static solar
 
 # Rules
 
