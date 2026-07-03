@@ -117,8 +117,6 @@ contains
 
       call check_model(ml, [I_V_2,I_C_1])
 
-      ! Inner boundary
-
       bc%V_2 = ml%coeff(I_V_2, pt)
       bc%c_1 = ml%coeff(I_C_1, pt)
 
