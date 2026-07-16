@@ -27,6 +27,7 @@ module ${P}$_ad_ibound_conds_m
 
    use bound_conds_m
    use context_m
+   use force_m
    use model_m
    use model_util_m
    use osc_par_m
@@ -43,10 +44,11 @@ module ${P}$_ad_ibound_conds_m
 
    type, extends(bound_conds_rt) :: ${P}$_ad_ibound_conds_t
       private
-      type(context_t), pointer  :: cx => null()
-      real(RD)                  :: V_2
-      real(RD)                  :: c_1
-      procedure(eval_), pointer :: eval_
+      type(context_t), pointer     :: cx => null()
+      class(force_rt), allocatable :: fr
+      real(RD)                     :: V_2
+      real(RD)                     :: c_1
+      procedure(eval_), pointer    :: eval_
    contains
       private
       procedure, public :: eval
@@ -82,11 +84,12 @@ module ${P}$_ad_ibound_conds_m
 
 contains
 
-   function ${P}$_ad_ibound_conds_t_(cx, os_p) result(bc)
+   function ${P}$_ad_ibound_conds_t_(cx, os_p, fr_factory) result(bc)
 
-      type(context_t), pointer, intent(in) :: cx
-      type(osc_par_t), intent(in)          :: os_p
-      type(${P}$_ad_ibound_conds_t)        :: bc
+      type(context_t), pointer, intent(in)  :: cx
+      type(osc_par_t), intent(in)           :: os_p
+      procedure(force_rt_factory), optional :: fr_factory
+      type(${P}$_ad_ibound_conds_t)         :: bc
 
       class(model_t), pointer :: ml
       type(point_t)           :: pt
@@ -120,6 +123,10 @@ contains
       bc%c_1 = ml%coeff(I_C_1, pt)
 
       ! Other initializations
+
+      if (PRESENT(fr_factory)) then
+         call fr_factory(pt, bc%fr)
+      end if
 
       bc%n_b = 2
       bc%n_e = 4
@@ -164,6 +171,8 @@ contains
       real(RD) :: omega_c
       real(RD) :: lambda
       real(RD) :: l_i
+      real(RD) :: z
+      real(RD) :: dz
 
       if (PRESENT(trans)) then
          trans_ = trans
@@ -187,7 +196,6 @@ contains
       ! inhomogeneous vector (regularity-enforcing)
 
       associate( &
-         y_T_1 => st%y_T_1, &
          omega => st%omega, &
          V_2 => this%V_2, &
          c_1 => this%c_1, &
@@ -200,6 +208,13 @@ contains
 
          lambda = this%cx%lambda(Omega_rot, st)
          l_i = this%cx%l_e(Omega_rot, st)
+
+         if (ALLOCATED(this%fr)) then
+            call this%fr%eval(st, z, dz)
+         else
+            z = 0._RD
+            dz = 0._RD
+         end if
 
          #:include 'IB_regular.inc'
 
@@ -270,6 +285,8 @@ contains
       logical  :: trans_
       real(RD) :: omega_c
       real(RD) :: lambda
+      real(RD) :: z
+      real(RD) :: dz
 
       if (PRESENT(trans)) then
          trans_ = trans
@@ -294,7 +311,6 @@ contains
 
       associate( &
          omega => st%omega, &
-         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          c_1 => this%c_1, &
          Omega_rot => this%cx%Omega_rot_i, &
@@ -305,6 +321,13 @@ contains
          omega_c = omega - m*Omega_rot
 
          lambda = this%cx%lambda(Omega_rot, st)
+
+         if (ALLOCATED(this%fr)) then
+            call this%fr%eval(st, z, dz)
+         else
+            z = 0._RD
+            dz = 0._RD
+         end if
 
          ! Set up the matrix
 

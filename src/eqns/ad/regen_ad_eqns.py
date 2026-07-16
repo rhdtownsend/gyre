@@ -25,7 +25,7 @@ from symbols import *
 
 def generate_tidal_r(A):
 
-    r = (A[:,2] + l_e*A[:,3])*y_T_1*c_1(x)
+    r = (A[:,2]*z + A[:,3]*dz)
     r[2] = 0
     r[3] = 0
 
@@ -36,7 +36,7 @@ def generate_tidal_r(A):
 
 def generate_tidal_s(B):
 
-    s = -(B[:,2] + l_e*B[:,3])*y_T_1*c_1(x)
+    s = -(B[:,2]*z + B[:,3]*dz)
     s[1] = 0
 
     s = s.subs(alpha_grv, 1)
@@ -45,6 +45,8 @@ def generate_tidal_s(B):
 
 
 def generate_tidal_t(C):
+
+    # This likely needs to be fixed
 
     t = sp.zeros(4, 1)
 

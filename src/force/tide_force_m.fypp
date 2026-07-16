@@ -1,0 +1,126 @@
+! Module  : tide_force_m
+! Purpose : force evaluation (tide)
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module tide_force_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use context_m
+   use force_m
+   use model_m
+   use model_util_m
+   use point_m
+   use state_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      type, extends(force_${S}$) :: tide_force_${S}$
+         private
+         type(context_t), pointer :: cx => null()
+         real(RD)                 :: c_1
+      contains
+         private
+         procedure, public :: eval => eval_${S}$_
+      end type tide_force_${S}$
+
+      ! Interfaces
+
+      interface tide_force_${S}$
+         module procedure tide_force_${S}$_
+      end interface tide_force_${S}$
+
+      ! Access specifiers
+
+      public :: tide_force_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function tide_force_${S}$_(cx, pt) result(fr)
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt
+         type(tide_force_${S}$)               :: fr
+
+         class(model_t), pointer :: ml
+         real(RD)                :: c_1
+
+         ! Construct the tide_force type
+
+         fr%cx => cx
+
+         ! Store structure coefficients
+
+         ml => cx%model()
+
+         call check_model(ml, [I_C_1])
+
+         fr%c_1 = ml%coeff(I_C_1, pt)
+
+         ! Finish
+
+         return
+
+      end function tide_force_${S}$_
+
+      !****
+
+      subroutine eval_${S}$_(this, st, z, dz)
+
+         class(tide_force_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)      :: st
+         ${T}$, intent(out)                  :: z
+         ${T}$, intent(out)                  :: dz
+
+         ! Evaluate the dimensionless potential and potential gradient
+
+         associate( &
+            z_scl => st%z_scl, &
+            c_1 => this%c_1, &
+            l => this%cx%l)
+
+            z = c_1*z_scl
+            dz = l*c_1*z_scl
+
+         end associate
+
+         ! Finish
+
+         return
+
+      end subroutine eval_${S}$_
+
+   #:endfor
+
+end module tide_force_m

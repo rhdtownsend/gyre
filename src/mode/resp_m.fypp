@@ -44,7 +44,7 @@ module resp_m
    type, extends(wave_t) :: resp_t
       private
       type(orbit_par_t), public :: or_p
-      real(RD)                  :: y_T_1
+      complex(RD)               :: z_scl
       integer, public           :: k
       complex(RD), allocatable  :: y_h(:)
    contains
@@ -102,7 +102,7 @@ contains
 
       st = rs%state()
 
-      rs%y_T_1 = st%y_T_1
+      rs%z_scl = st%z_scl
 
       rs%k = k
 
@@ -134,13 +134,13 @@ contains
       gr = this%grid()
 
       associate ( &
-         y_T_1 => this%y_T_1, &
+         z_scl => this%z_scl, &
          ml => cx%model(), &
          pt => gr%pt(j))
 
          c_1 = ml%coeff(I_C_1, pt)
 
-         y_T = y_T_1*c_1
+         y_T = z_scl*c_1
 
       end associate
 
@@ -210,11 +210,11 @@ contains
       ! Evaluate the tidal potential, in units of G M_star / R_star
 
       associate ( &
-         y_T_1 => this%y_T_1, &
+         z_scl => this%z_scl, &
          x => this%x(j), &
          l => this%l)
 
-         Phi_T = y_T_1*x**l
+         Phi_T = z_scl*x**l
 
       end associate
 
@@ -236,11 +236,11 @@ contains
       ! M_star / R_star**2
 
       associate ( &
-         y_T_1 => this%y_T_1, &
+         z_scl => this%z_scl, &
          x => this%x(j), &
          l => this%l)
 
-         dPhi_T = l*y_T_1*x**(l-1)
+         dPhi_T = l*z_scl*x**(l-1)
 
       end associate
 

@@ -1,0 +1,176 @@
+! Module  : seg_interp_m
+! Purpose : segmented piecewise interpolators
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module seg_interp_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use cubic_interp_m
+   use grid_m
+   use interp_m
+   use linear_interp_m
+   use point_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type :: seg_interp_${S}$
+         class(interp_${S}$), allocatable :: in(:)
+      contains
+         private
+         procedure, public  :: f => f_${S}$_
+         procedure, public  :: df_dx => df_dx_${S}$_
+      end type seg_interp_${S}$
+
+      ! Interfaces
+
+      interface seg_interp_${S}$
+         module procedure seg_interp_${S}$_
+      end interface seg_interp_${S}$
+
+      ! Access specifiers
+
+      public :: seg_interp_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function seg_interp_${S}$_(gr, f, df_dx, interp_type) result(si)
+
+         type(grid_t), intent(in) :: gr
+         ${T}$, intent(in)        :: f(:)
+         ${T}$, intent(in)        :: df_dx(:)
+         character(*), intent(in) :: interp_type
+         type(seg_interp_${S}$)   :: si
+
+         integer :: s_i
+         integer :: s_o
+         integer :: s
+         integer :: j_i
+         integer :: j_o
+
+         @:CHECK_BOUNDS(SIZE(f), gr%n)
+         @:CHECK_BOUNDS(SIZE(df_dx), gr%n)
+
+         ! Construct the seg_interp type
+
+         s_i = gr%s_i()
+         s_o = gr%s_o()
+
+         select case(interp_type)
+         case('LINEAR')
+            allocate(linear_interp_${S}$ :: si%in(s_i:s_o))
+         case('CUBIC')
+            allocate(cubic_interp_${S}$ :: si%in(s_i:s_o))
+         case default
+            @:ABORT('invalid interp_type')
+         end select
+
+         seg_loop : do s = s_i, s_o
+
+            j_i = gr%j_s_i(s)
+            j_o = gr%j_s_o(s)
+
+            associate( &
+               x => gr%pt(j_i:j_o)%x, &
+               f => f(j_i:j_o), &
+               df_dx => df_dx(j_i:j_o))
+
+               select type(in => si%in)
+               type is(linear_interp_${S}$)
+                  in(s) = linear_interp_${S}$(x, f)
+               type is(cubic_interp_${S}$)
+                  in(s) = cubic_interp_${S}$(x, f, df_dx)
+               class default
+                  @:ABORT('invalid type')
+               end select
+
+            end associate
+
+         end do seg_loop
+
+         ! Finish
+
+         return
+
+      end function seg_interp_${S}$_
+
+      !****
+
+      function f_${S}$_(this, pt) result(f)
+
+         class(seg_interp_${S}$), intent(in) :: this
+         type(point_t), intent(in)           :: pt
+         ${T}$                               :: f
+
+         @:ASSERT_DEBUG(pt%s >= LBOUND(this%in, DIM=1) .AND. pt%s <= UBOUND(this%in, DIM=1), 'invalid segment')
+
+         ! Evalute the function
+
+         associate (s => pt%s, x => pt%x)
+            call this%in(s)%eval_f(x, f)
+         end associate
+
+         ! Finish
+
+         return
+
+      end function f_${S}$_
+
+      !****
+
+      function df_dx_${S}$_(this, pt) result(df_dx)
+
+         class(seg_interp_${S}$), intent(in) :: this
+         type(point_t), intent(in)           :: pt
+         ${T}$                               :: df_dx
+
+         @:ASSERT_DEBUG(pt%s >= LBOUND(this%in, DIM=1) .AND. pt%s <= UBOUND(this%in, DIM=1), 'invalid segment')
+
+         ! Evalute the derivative
+
+         associate (s => pt%s, x => pt%x)
+            call this%in(s)%eval_df_dx(x, df_dx)
+         end associate
+
+         ! Finish
+
+         return
+
+      end function df_dx_${S}$_
+
+   #:endfor
+
+end module seg_interp_m

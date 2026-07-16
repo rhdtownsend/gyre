@@ -1,0 +1,471 @@
+! Module  : dynamic_bvp_m
+! Purpose : dynamic-tide boundary value problem solver
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module dynamic_bvp_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use bvp_m
+   use context_m
+   use deriv_m
+   use diff_eqns_m
+   use grid_m
+   use mode_m
+   use mode_par_m
+   use model_m
+   use num_par_m
+   use orbit_par_m
+   use osc_par_m
+   use point_m
+   use resp_m
+   use seg_interp_m
+   use state_m
+   use static_bvp_m
+   use sysmtx_m
+   use sysmtx_factory_m
+   use trans_m
+   use wave_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(bvp_ct) :: dynamic_bvp_t
+      private
+      type(context_t), pointer      :: cx => null()
+      class(trans_ct), allocatable  :: tr(:)
+      real(RD), allocatable         :: V_g(:)
+      real(RD), allocatable         :: c_1(:)
+      real(RD), allocatable         :: ups_T(:)
+      real(RD), allocatable         :: Omega_rot(:)
+      type(grid_t)                  :: gr
+      type(mode_par_t)              :: md_p
+      type(num_par_t)               :: nm_p
+      type(osc_par_t)               :: os_p
+  end type dynamic_bvp_t
+
+   ! Interfaces
+
+   interface dynamic_bvp_t
+      module procedure dynamic_bvp_t_
+   end interface dynamic_bvp_t
+
+   interface mode_t
+      module procedure mode_t_
+   end interface mode_t
+
+   interface resp_t
+      module procedure resp_t_
+   end interface resp_t
+
+   ! Access specifiers
+
+   public :: dynamic_bvp_t
+   public :: mode_t
+   public :: resp_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function dynamic_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
+
+      use bound_conds_m
+      use model_util_m
+      use dynamic_factory_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(grid_t), intent(in)             :: gr
+      type(mode_par_t), intent(in)         :: md_p
+      type(num_par_t), intent(in)          :: nm_p
+      type(osc_par_t), intent(in)          :: os_p
+      type(dynamic_bvp_t)                  :: bp
+
+      type(seg_interp_rt)                :: si_y_r
+      type(seg_interp_rt)                :: si_y_h
+      class(bound_conds_ct), allocatable :: bc_i
+      class(bound_conds_ct), allocatable :: bc_o
+      class(model_t), pointer            :: ml
+      integer                            :: j
+
+      ! Construct the dynamic_bvp type
+
+      ! Set up interpolants for the equilibrium-tide displacement
+      ! perturbation
+
+      call construct_eqm_interps_(cx, gr, md_p, nm_p, os_p, si_y_r, si_y_h)
+
+      ! Initialize the base type
+
+      bc_i = dynamic_ibound_conds_t(cx, os_p, si_y_r, si_y_h)
+      bc_o = dynamic_obound_conds_t(cx, os_p, si_y_r, si_y_h)
+
+      bp%bvp_ct = bvp_ct(gr, bc_i, bc_o, diff_eqns_factory_, match_conds_factory_, nm_p)
+
+      ! Store coefficients needed to evaluate y_trb
+
+      if (os_p%alpha_trb > 0._RD) then
+
+         ml => cx%model()
+
+         call check_model(ml, [I_V_2,I_C_1,I_GAMMA_1,I_UPS_T])
+
+         allocate(bp%V_g(gr%n))
+         allocate(bp%c_1(gr%n))
+         allocate(bp%ups_T(gr%n))
+         allocate(bp%Omega_rot(gr%n))
+
+         !$OMP PARALLEL DO
+         do j = 1, gr%n
+
+            associate(pt => gr%pt(j))
+
+               bp%V_g(j) = ml%coeff(I_V_2, pt)*pt%x**2/ml%coeff(I_GAMMA_1, pt)
+               bp%c_1(j) = ml%coeff(I_C_1, pt)
+               bp%ups_T(j) = ml%coeff(I_UPS_T, pt)
+
+               bp%Omega_rot(j) = ml%coeff(I_OMEGA_ROT, pt)
+
+            end associate
+
+         end do
+
+      end if
+
+      ! Other initializations
+
+      bp%cx => cx
+      bp%gr = gr
+
+      #:if defined('GFORTRAN_PR125610')
+      bp%tr = dynamic_trans_t_1_(cx, gr%pt, os_p)
+      #:else
+      bp%tr = dynamic_trans_t(cx, gr%pt, os_p)
+      #:endif
+
+      bp%md_p = md_p
+      bp%nm_p = nm_p
+      bp%os_p = os_p
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine diff_eqns_factory_(pt, de)
+
+         type(point_t), intent(in)                     :: pt(:)
+         class(diff_eqns_ct), allocatable, intent(out) :: de(:)
+
+         ! Initialize the differential equations
+
+         #:if defined('GFORTRAN_PR125610')
+         de = dynamic_diff_eqns_t_1_(cx, pt, os_p, si_y_r, si_y_h)
+         #:else
+         de = dynamic_diff_eqns_t(cx, pt, os_p, si_y_r, si_y_h)
+         #:endif
+
+         ! Finish
+
+         return
+
+      end subroutine diff_eqns_factory_
+
+      !****
+
+      subroutine match_conds_factory_(pt, mc)
+
+         use match_conds_m
+
+         type(point_t), intent(in)                       :: pt(:)
+         class(match_conds_ct), allocatable, intent(out) :: mc(:)
+
+         ! Initialize the match conditions
+
+         #:if defined('GFORTRAN_PR125610')
+         mc = dynamic_match_conds_t_1_(cx, pt, os_p, si_y_r, si_y_h)
+         #:else
+         mc = dynamic_match_conds_t(cx, pt, os_p, si_y_r, si_y_h)
+         #:endif
+
+         ! Finish
+
+         return
+
+      end subroutine match_conds_factory_
+
+   end function dynamic_bvp_t_
+
+   !****
+
+   subroutine construct_eqm_interps_(cx, gr, md_p, nm_p, os_p, si_y_r, si_y_h)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(grid_t), intent(in)             :: gr
+      type(mode_par_t), intent(in)         :: md_p
+      type(num_par_t), intent(in)          :: nm_p
+      type(osc_par_t), intent(in)          :: os_p
+      type(seg_interp_rt), intent(out)     :: si_y_r
+      type(seg_interp_rt), intent(out)     :: si_y_h
+
+      type(static_bvp_t)            :: bp
+      class(sysmtx_rt), allocatable :: sm
+      type(state_rt)                :: st
+      real(RD)                      :: y_stat(2,gr%n)
+      class(model_t), pointer       :: ml
+      integer                       :: j
+      real(RD)                      :: U
+      real(RD)                      :: c_1
+      real(RD)                      :: lambda
+      real(RD)                      :: l_e
+      real(RD)                      :: y_T
+      real(RD)                      :: y_r(gr%n)
+      real(RD)                      :: y_h(gr%n)
+      real(RD)                      :: dy_r(gr%n)
+      real(RD)                      :: dy_h(gr%n)
+
+      ! Construct interpolants for the equilibrium-tide displacement
+      ! perturbations, assuming a tidal strength y_T(1) = 1
+
+      ! Solve for the static tide
+
+      bp = static_bvp_t(cx, gr, md_p, nm_p, os_p)
+
+      #:if defined('GFORTRAN_PR110877')
+         allocate(sm, SOURCE=sysmtx_rt(bp, nm_p%nad_matrix_solver))
+      #:else
+         sm = sysmtx_rt(bp_stat, nm_p%nad_matrix_solver)
+      #:endif
+
+      st = state_rt(0._RD, y_T_1=1._RD)
+
+      call bp%solve_inhom(sm, st, y_stat)
+
+      ml => cx%model()
+
+      ! Evaluate the displacement perturbations
+
+      do j = 1, gr%n
+
+         associate( &
+            x => gr%pt(j)%x, &
+            y_3 => y_stat(1,j), &
+            y_4 => y_stat(2,j), &
+            pt => gr%pt(j), &
+            alpha_grv => cx%alpha_grv)
+
+            ! Evaluate the radial and horizontal displacement perturbations
+
+            U = ml%coeff(I_U, pt)
+            c_1 = ml%coeff(I_C_1, pt)
+
+            lambda = cx%lambda(0._RD, state_rt(0._RD))
+            l_e = cx%l_e(0._RD, state_rt(0._RD))
+
+            y_T = c_1
+
+            y_r(j) = -(alpha_grv*y_3 + y_T)
+            y_h(j) = -(alpha_grv*((4._RD - U)*y_3 + y_4) + (4._RD - U + l_e)*y_T)/lambda
+
+         end associate
+
+      end do
+
+      dy_r = deriv(gr%pt%x, y_r, 'MONO')
+      dy_h = deriv(gr%pt%x, y_h, 'MONO')
+
+      ! Initialize the interpolants
+
+      si_y_r = seg_interp_rt(gr, y_r, dy_r, 'CUBIC')
+      si_y_h = seg_interp_rt(gr, y_h, dy_h, 'CUBIC')
+
+      ! Finish
+
+      return
+
+   end subroutine construct_eqm_interps_
+
+   !****
+
+   function mode_t_(bp, sm, st, id, chi, n_iter) result(md)
+
+      class(dynamic_bvp_t), intent(in)    :: bp
+      class(sysmtx_ct), intent(inout) :: sm
+      type(state_ct), intent(in)      :: st
+      integer, intent(in)             :: id
+      real(RD), intent(in)            :: chi
+      integer, intent(in)             :: n_iter
+      type(mode_t)                    :: md
+
+      complex(RD)  :: y(6,bp%n)
+      integer      :: j
+      complex(RD)  :: Q(6,6)
+      type(wave_t) :: wv
+
+      ! Calculate the homogeneous solution vector
+
+      call bp%solve_hom(sm, st, y)
+
+      !$OMP PARALLEL DO
+      do j = 1, bp%n
+         call bp%tr(j)%transform(st, y(:,j))
+      end do
+
+      ! Subtract off the turbulent pressure
+
+      if (bp%cx%alpha_trb > 0._RD) then
+
+         !$OMP PARALLEL DO PRIVATE(Q)
+         do j = 1, bp%n
+            call eval_Q_(bp, st, j, Q)
+            y(:,j) = MATMUL(Q, y(:,j))
+         end do
+
+      end if
+
+      ! Construct the mode_t
+
+      wv = wave_t(st, y, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, chi, n_iter)
+
+      md = mode_t(wv)
+
+      ! Finish
+
+      return
+
+   end function mode_t_
+
+   !****
+
+   function resp_t_(bp, sm, st, id, or_p, k) result(rs)
+
+      class(dynamic_bvp_t), intent(in) :: bp
+      class(sysmtx_ct), intent(inout)  :: sm
+      class(state_ct), intent(in)      :: st
+      integer, intent(in)              :: id
+      type(orbit_par_t), intent(in)    :: or_p
+      integer, intent(in)              :: k
+      type(resp_t)                     :: rs
+
+      complex(RD)  :: y(6,bp%n)
+      integer      :: j
+      complex(RD)  :: Q(6,6)
+      type(wave_t) :: wv
+
+      ! Calculate the inhomogeneous solution vector
+
+      call bp%solve_inhom(sm, st, y)
+
+      !$OMP PARALLEL DO
+      do j = 1, bp%n
+         call bp%tr(j)%transform(st, y(:,j))
+      end do
+
+      ! Subtract off the turbulent pressure
+
+      if (bp%cx%alpha_trb > 0._RD) then
+
+         !$OMP PARALLEL DO PRIVATE(Q)
+         do j = 1, bp%n
+            call eval_Q_(bp, st, j, Q)
+            y(:,j) = MATMUL(Q, y(:,j))
+         end do
+
+      end if
+
+      ! Construct the resp_t
+
+      wv = wave_t(st, y, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, 0._RD, 1)
+
+      rs = resp_t(wv, or_p, k)
+
+      ! Finish
+
+      return
+
+   end function resp_t_
+
+   !****
+
+   subroutine eval_Q_(bp, st, j, Q)
+
+      class(dynamic_bvp_t), intent(in) :: bp
+      type(state_ct), intent(in)   :: st
+      integer, intent(in)          :: j
+      complex(RD), intent(out)     :: Q(:,:)
+
+      complex(RD) :: omega_c
+      complex(RD) :: i_omega_c
+      complex(RD) :: lambda
+      complex(RD) :: l_i
+      complex(RD) :: om2
+      complex(RD) :: eta
+      complex(RD) :: F_trb
+
+      @:CHECK_BOUNDS(SIZE(Q, 1), bp%n_e)
+      @:CHECK_BOUNDS(SIZE(Q, 1), bp%n_e)
+
+      ! Evaluate the Q matrix
+
+      associate( &
+         omega => st%omega, &
+         V_g => bp%V_g(j), &
+         c_1 => bp%c_1(j), &
+         ups_T => bp%ups_T(j), &
+         Omega_rot => bp%Omega_rot(j), &
+         Omega_rot_i => bp%cx%Omega_rot_i, &
+         alpha_grv => bp%cx%alpha_grv, &
+         alpha_omg => bp%cx%alpha_omg, &
+         alpha_gam => bp%cx%alpha_gam, &
+         m => bp%cx%m)
+
+         omega_c = omega - m*Omega_rot
+
+         i_omega_c = (0._RD,1._RD)*sqrt(CMPLX(alpha_omg, KIND=RD))*omega_c
+
+         lambda = bp%cx%lambda(Omega_rot, st)
+         l_i = bp%cx%l_e(Omega_rot_i, st)
+
+         om2 = c_1*alpha_omg*omega_c**2
+         eta = lambda/om2
+
+         F_trb = i_omega_c*bp%cx%c_trb(st, bp%gr%pt(j))
+
+         ! Set upt the Q matrix
+
+         #:include 'Q.inc'
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine eval_Q_
+
+end module dynamic_bvp_m

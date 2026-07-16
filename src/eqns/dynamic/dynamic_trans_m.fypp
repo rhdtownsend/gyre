@@ -1,0 +1,193 @@
+! Module  : dynamic_trans_m
+! Purpose : dynamic-tide variables transformations
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+#:set P = os.path.basename(_FILE_).split('_')[0]
+
+module ${P}$_dynamic_trans_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use context_m
+   use model_m
+   use model_util_m
+   use point_m
+   use state_m
+   use trans_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(trans_ct) :: ${P}$_dynamic_trans_t
+      private
+      type(context_t), pointer :: cx => null()
+      real(RD)                 :: V_2
+      real(RD)                 :: dV_2
+      real(RD)                 :: U
+      real(RD)                 :: dU
+      real(RD)                 :: c_1
+      real(RD)                 :: dc_1
+      real(RD)                 :: Omega_rot
+      real(RD)                 :: x
+      complex(RD)              :: lambda
+      complex(RD)              :: l_i
+   contains
+      private
+      procedure, public :: transform
+   end type ${P}$_dynamic_trans_t
+
+   ! Interfaces
+
+   interface ${P}$_dynamic_trans_t
+      module procedure ${P}$_dynamic_trans_t_0_
+      module procedure ${P}$_dynamic_trans_t_1_
+   end interface ${P}$_dynamic_trans_t
+
+   ! Access specifiers
+
+   public :: ${P}$_dynamic_trans_t
+
+   ! Default access
+
+   private
+
+contains
+
+   function ${P}$_dynamic_trans_t_0_(cx, pt) result(tr)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt
+      type(${P}$_dynamic_trans_t)          :: tr
+
+      class(model_t), pointer :: ml
+
+      ! Construct the ${P}$_dynamic_trans type
+
+      tr%cx => cx
+
+      ! Store structure coefficients
+
+      ml => cx%model()
+
+      call check_model(ml, [I_V_2,I_U,I_C_1,I_OMEGA_ROT])
+
+      if (ml%is_vacuum(pt)) then
+         tr%V_2 = HUGE(0._RD)
+      else
+         tr%V_2 = ml%coeff(I_V_2, pt)
+      endif
+
+      tr%U = ml%coeff(I_U, pt)
+      tr%c_1 = ml%coeff(I_C_1, pt)
+
+      tr%Omega_rot = cx%Omega_rot(pt)
+
+      if (cx%angular_cache) then
+         tr%lambda = cx%lambda(tr%Omega_rot, state_ct(0._RD))
+      end if
+
+      ! Other initializations
+
+      tr%n_e = 6
+
+      ! Finish
+
+      return
+
+   end function ${P}$_dynamic_trans_t_0_
+
+   !****
+
+   function ${P}$_dynamic_trans_t_1_(cx, pt) result(tr)
+
+      type(context_t), pointer, intent(in) :: cx
+      type(point_t), intent(in)            :: pt(:)
+      type(${P}$_dynamic_trans_t)              :: tr(SIZE(pt))
+
+      integer :: j
+
+      ! Construct the array of ${P}$_dynamic_trans types
+
+      do j = 1, SIZE(pt)
+         tr(j) = ${P}$_dynamic_trans_t(cx, pt(j))
+      end do
+
+      ! Finish
+
+      return
+
+   end function ${P}$_dynamic_trans_t_1_
+
+   !****
+
+   subroutine transform(this, st, y)
+
+      class(${P}$_dynamic_trans_t), intent(in) :: this
+      class(state_ct), intent(in)              :: st
+      complex(RD), intent(inout)               :: y(:)
+
+      complex(RD) :: omega_c
+      complex(RD) :: lambda
+      complex(RD) :: R(this%n_e,this%n_e)
+
+      @:CHECK_BOUNDS(SIZE(y), this%n_e)
+
+      ! Transform the variables to canonical form
+
+      associate( &
+         omega => st%omega, &
+         V_2 => this%V_2, &
+         U => this%U, &
+         c_1 => this%c_1, &
+         Omega_rot => this%Omega_rot, &
+         alpha_omg => this%cx%alpha_omg, &
+         m => this%cx%m, &
+         angular_cache => this%cx%angular_cache)
+
+         omega_c = omega - m*Omega_rot
+
+         if (angular_cache) then
+            lambda = this%lambda
+         else
+            lambda = this%cx%lambda(Omega_rot, st)
+         end if
+
+         ! Set up the transformation matrix
+
+         #:include 'R.inc'
+
+         ! Apply it
+
+         y = MATMUL(R, y)
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end subroutine transform
+
+end module ${P}$_dynamic_trans_m

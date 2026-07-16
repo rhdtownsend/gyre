@@ -84,7 +84,8 @@ alpha_hfl = sp.Symbol('alpha_hfl')
 alpha_egv = sp.Symbol('alpha_egv')
 alpha_thm = sp.Symbol('alpha_thm')
 
-y_T_1 = sp.Symbol('y_T_1')
+z = sp.Symbol('z')
+dz = sp.Symbol('dz')
 
 chi = sp.Symbol('chi')
 a_11 = sp.Symbol('a_11')

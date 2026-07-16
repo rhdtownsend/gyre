@@ -41,6 +41,7 @@ module tide_par_m
       integer       :: k_min = -10
       integer       :: k_max = 10
       character(64) :: tag = ''
+      logical       :: de_split = .FALSE.
    end type tide_par_t
 
    ! Access specifiers
@@ -71,10 +72,11 @@ contains
       integer                  :: m_max
       integer                  :: k_min
       integer                  :: k_max
+      logical                  :: de_split
       character(LEN(td_p%tag)) :: tag
 
       namelist /tide/ y_T_thresh_abs, y_T_thresh_rel, omega_c_thresh, alpha_frq, &
-         l_min, l_max, m_min, m_max, k_min, k_max, tag
+         l_min, l_max, m_min, m_max, k_min, k_max, de_split, tag
 
       ! Count the number of tide namelists
 
@@ -113,6 +115,8 @@ contains
          k_min = td_p(i)%k_min
          k_max = td_p(i)%k_max
 
+         de_split = td_p(i)%de_split
+
          tag = td_p(i)%tag
 
          ! Read the namelist
@@ -132,6 +136,8 @@ contains
          td_p(i)%m_max = m_max
          td_p(i)%k_min = k_min
          td_p(i)%k_max = k_max
+
+         td_p(i)%de_split = de_split
 
          td_p(i)%tag = tag
 

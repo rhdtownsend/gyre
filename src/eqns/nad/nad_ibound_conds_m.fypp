@@ -27,6 +27,7 @@ module ${P}$_nad_ibound_conds_m
 
    use bound_conds_m
    use context_m
+   use force_m
    use math_m
    use model_m
    use model_util_m
@@ -44,10 +45,11 @@ module ${P}$_nad_ibound_conds_m
 
    type, extends(bound_conds_ct) :: ${P}$_nad_ibound_conds_t
       private
-      type(context_t), pointer  :: cx => null()
-      real(RD)                  :: V_2
-      real(RD)                  :: c_1
-      procedure(eval_), pointer :: eval_
+      type(context_t), pointer     :: cx => null()
+      class(force_ct), allocatable :: fr
+      real(RD)                     :: V_2
+      real(RD)                     :: c_1
+      procedure(eval_), pointer    :: eval_
    contains
       private
       procedure, public :: eval
@@ -61,7 +63,7 @@ module ${P}$_nad_ibound_conds_m
          use state_m
          import ${P}$_nad_ibound_conds_t
          implicit none (type, external)
-         class(${P}$_nad_ibound_conds_t), intent(in)          :: this
+         class(${P}$_nad_ibound_conds_t), intent(in)    :: this
          class(state_ct), intent(in)                    :: st
          complex(RD), contiguous, intent(out)           :: B(:,:)
          complex(RD), contiguous, intent(out), optional :: F(:)
@@ -83,11 +85,12 @@ module ${P}$_nad_ibound_conds_m
 
 contains
 
-   function ${P}$_nad_ibound_conds_t_(cx, os_p) result(bc)
+   function ${P}$_nad_ibound_conds_t_(cx, os_p, fr_factory) result(bc)
 
-      type(context_t), pointer, intent(in) :: cx
-      type(osc_par_t), intent(in)          :: os_p
-      type(${P}$_nad_ibound_conds_t)       :: bc
+      type(context_t), pointer, intent(in)  :: cx
+      type(osc_par_t), intent(in)           :: os_p
+      procedure(force_ct_factory), optional :: fr_factory
+      type(${P}$_nad_ibound_conds_t)        :: bc
 
       class(model_t), pointer :: ml
       type(point_t)           :: pt
@@ -121,6 +124,10 @@ contains
       bc%c_1 = ml%coeff(I_C_1, pt)
 
       ! Other initializations
+
+      if (PRESENT(fr_factory)) then
+         call fr_factory(pt, bc%fr)
+      end if
 
       bc%n_e = 6
       bc%n_b = 3
@@ -165,6 +172,8 @@ contains
       complex(RD) :: omega_c
       complex(RD) :: lambda
       complex(RD) :: l_i
+      complex(RD) :: z
+      complex(RD) :: dz
 
       if (PRESENT(trans)) then
          trans_ = trans
@@ -189,7 +198,6 @@ contains
 
       associate( &
          omega => st%omega, &
-         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          c_1 => this%c_1, &
          Omega_rot => this%cx%Omega_rot_i, &
@@ -201,6 +209,13 @@ contains
 
          lambda = this%cx%lambda(Omega_rot, st)
          l_i = this%cx%l_e(Omega_rot, st)
+
+         if (ALLOCATED(this%fr)) then
+            call this%fr%eval(st, z, dz)
+         else
+            z = 0._RD
+            dz = 0._RD
+         end if
 
          #:include 'IB_regular.inc'
 
@@ -245,13 +260,7 @@ contains
       ! Evaluate the inner boundary condition matrix and inhomogeneous
       ! vector (zero radial displacement/gravity)
 
-      associate( &
-         y_T_1 => st%y_T_1, &
-         alpha_grv => this%cx%alpha_grv)
-
-         #:include 'IB_zero_r.inc'
-
-      end associate
+      #:include 'IB_zero_r.inc'
 
       ! Finish
 
@@ -272,6 +281,8 @@ contains
       logical     :: trans_
       complex(RD) :: omega_c
       complex(RD) :: lambda
+      complex(RD) :: z
+      complex(RD) :: dz
 
       if (PRESENT(trans)) then
          trans_ = trans
@@ -296,7 +307,6 @@ contains
 
       associate( &
          omega => st%omega, &
-         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          c_1 => this%c_1, &
          Omega_rot => this%cx%Omega_rot_i, &
@@ -308,7 +318,12 @@ contains
 
          lambda = this%cx%lambda(Omega_rot, st)
 
-         ! Set up the matrix
+         if (ALLOCATED(this%fr)) then
+            call this%fr%eval(st, z, dz)
+         else
+            z = 0._RD
+            dz = 0._RD
+         end if
 
          #:include 'IB_zero_h.inc'
 

@@ -26,6 +26,7 @@ module nad_bvp_m
    use bvp_m
    use context_m
    use diff_eqns_m
+   use force_m
    use grid_m
    use mode_m
    use mode_par_m
@@ -88,18 +89,19 @@ module nad_bvp_m
 
 contains
 
-   function nad_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
+   function nad_bvp_t_(cx, gr, md_p, nm_p, os_p, fr_factory) result(bp)
 
       use bound_conds_m
       use model_util_m
       use nad_factory_m
 
-      type(context_t), pointer, intent(in) :: cx
-      type(grid_t), intent(in)             :: gr
-      type(mode_par_t), intent(in)         :: md_p
-      type(num_par_t), intent(in)          :: nm_p
-      type(osc_par_t), intent(in)          :: os_p
-      type(nad_bvp_t)                      :: bp
+      type(context_t), pointer, intent(in)  :: cx
+      type(grid_t), intent(in)              :: gr
+      type(mode_par_t), intent(in)          :: md_p
+      type(num_par_t), intent(in)           :: nm_p
+      type(osc_par_t), intent(in)           :: os_p
+      procedure(force_ct_factory), optional :: fr_factory
+      type(nad_bvp_t)                       :: bp
 
       class(bound_conds_ct), allocatable :: bc_i
       class(bound_conds_ct), allocatable :: bc_o
@@ -110,8 +112,8 @@ contains
 
       ! Initialize the base type
 
-      bc_i = nad_ibound_conds_t(cx, os_p)
-      bc_o = nad_obound_conds_t(cx, os_p)
+      bc_i = nad_ibound_conds_t(cx, os_p, fr_factory)
+      bc_o = nad_obound_conds_t(cx, os_p, fr_factory)
 
       bp%bvp_ct = bvp_ct(gr, bc_i, bc_o, diff_eqns_factory_, match_conds_factory_, nm_p)
 
@@ -174,9 +176,9 @@ contains
          ! Initialize the differential equations
 
          #:if defined('GFORTRAN_PR125610')
-         de = nad_diff_eqns_t_1_(cx, pt, os_p)
+         de = nad_diff_eqns_t_1_(cx, pt, os_p, fr_factory)
          #:else
-         de = nad_diff_eqns_t(cx, pt, os_p)
+         de = nad_diff_eqns_t(cx, pt, os_p, fr_factory)
          #:endif
 
          ! Finish
@@ -197,9 +199,9 @@ contains
          ! Initialize the match conditions
 
          #:if defined('GFORTRAN_PR125610')
-         mc = nad_match_conds_t_1_(cx, pt, os_p)
+         mc = nad_match_conds_t_1_(cx, pt, os_p, fr_factory)
          #:else
-         mc = nad_match_conds_t(cx, pt, os_p)
+         mc = nad_match_conds_t(cx, pt, os_p, fr_factory)
          #:endif
 
          ! Finish

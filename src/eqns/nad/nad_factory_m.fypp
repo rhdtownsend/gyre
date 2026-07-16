@@ -24,6 +24,7 @@ module nad_factory_m
    use forum_m, only: RD
 
    use context_m
+   use force_m
    use osc_par_m
    use point_m
 
@@ -74,7 +75,7 @@ contains
 
    #:for R in (0, 1)
 
-      function nad_diff_eqns_t_${R}$_(cx, pt, os_p) result(de)
+      function nad_diff_eqns_t_${R}$_(cx, pt, os_p, fr_factory) result(de)
 
          use diff_eqns_m
 
@@ -85,28 +86,29 @@ contains
          use mix_nad_diff_eqns_m
          use lagp_nad_diff_eqns_m
 
-         type(context_t), pointer, intent(in) :: cx
-         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
-         type(osc_par_t), intent(in)          :: os_p
-         class(diff_eqns_ct), allocatable     :: de${ARRAY_SPEC(R)}$
+         type(context_t), pointer, intent(in)  :: cx
+         type(point_t), intent(in)             :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)           :: os_p
+         procedure(force_ct_factory), optional :: fr_factory
+         class(diff_eqns_ct), allocatable      :: de${ARRAY_SPEC(R)}$
 
          ! Construct the nad_diff_eqns type
 
          select case(os_p%variables_set)
          case('GYRE')
-            de = gyre_nad_diff_eqns_t(cx, pt, os_p)
+            de = gyre_nad_diff_eqns_t(cx, pt, os_p, fr_factory)
          case('DZIEM')
-            de = dziem_nad_diff_eqns_t(cx, pt, os_p)
+            de = dziem_nad_diff_eqns_t(cx, pt, os_p, fr_factory)
          case('JCD')
             if (cx%l == 0) then
-               de = rjcd_nad_diff_eqns_t(cx, pt, os_p)
+               de = rjcd_nad_diff_eqns_t(cx, pt, os_p, fr_factory)
             else
-               de = jcd_nad_diff_eqns_t(cx, pt, os_p)
+               de = jcd_nad_diff_eqns_t(cx, pt, os_p, fr_factory)
             end if
          case('MIX')
-            de = mix_nad_diff_eqns_t(cx, pt, os_p)
+            de = mix_nad_diff_eqns_t(cx, pt, os_p, fr_factory)
          case('LAGP')
-            de = lagp_nad_diff_eqns_t(cx, pt, os_p)
+            de = lagp_nad_diff_eqns_t(cx, pt, os_p, fr_factory)
          case default
             @:ABORT('invalid variables_set')
          end select
@@ -119,7 +121,7 @@ contains
 
       !****
 
-      function nad_match_conds_t_${R}$_(cx, pt, os_p) result(mc)
+      function nad_match_conds_t_${R}$_(cx, pt, os_p, fr_factory) result(mc)
 
          use match_conds_m
 
@@ -130,10 +132,11 @@ contains
          use mix_nad_match_conds_m
          use lagp_nad_match_conds_m
 
-         type(context_t), pointer, intent(in) :: cx
-         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
-         type(osc_par_t), intent(in)          :: os_p
-         class(match_conds_ct), allocatable   :: mc${ARRAY_SPEC(R)}$
+         type(context_t), pointer, intent(in)  :: cx
+         type(point_t), intent(in)             :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)           :: os_p
+         procedure(force_ct_factory), optional :: fr_factory
+         class(match_conds_ct), allocatable    :: mc${ARRAY_SPEC(R)}$
 
          ! Construct the nad_match_conds
 
@@ -211,7 +214,7 @@ contains
 
    !****
 
-   function nad_ibound_conds_t(cx, os_p) result(bc)
+   function nad_ibound_conds_t(cx, os_p, fr_factory) result(bc)
 
       use bound_conds_m
 
@@ -222,27 +225,28 @@ contains
       use mix_nad_ibound_conds_m
       use lagp_nad_ibound_conds_m
 
-      type(context_t), pointer, intent(in) :: cx
-      type(osc_par_t), intent(in)          :: os_p
-      class(bound_conds_ct), allocatable   :: bc
+      type(context_t), pointer, intent(in)  :: cx
+      type(osc_par_t), intent(in)           :: os_p
+      procedure(force_ct_factory), optional :: fr_factory
+      class(bound_conds_ct), allocatable    :: bc
 
       ! Construct the nad_ibound_conds type
 
       select case(os_p%variables_set)
       case('GYRE')
-         bc = gyre_nad_ibound_conds_t(cx, os_p)
+         bc = gyre_nad_ibound_conds_t(cx, os_p, fr_factory)
       case('DZIEM')
-         bc = dziem_nad_ibound_conds_t(cx, os_p)
+         bc = dziem_nad_ibound_conds_t(cx, os_p, fr_factory)
       case('JCD')
          if (cx%l == 0) then
-            bc = rjcd_nad_ibound_conds_t(cx, os_p)
+            bc = rjcd_nad_ibound_conds_t(cx, os_p, fr_factory)
          else
-            bc = jcd_nad_ibound_conds_t(cx, os_p)
+            bc = jcd_nad_ibound_conds_t(cx, os_p, fr_factory)
          end if
       case('MIX')
-         bc = mix_nad_ibound_conds_t(cx, os_p)
+         bc = mix_nad_ibound_conds_t(cx, os_p, fr_factory)
       case('LAGP')
-         bc = lagp_nad_ibound_conds_t(cx, os_p)
+         bc = lagp_nad_ibound_conds_t(cx, os_p, fr_factory)
       case default
          @:ABORT('invalid variables_set')
       end select
@@ -255,7 +259,7 @@ contains
 
    !****
 
-   function nad_obound_conds_t(cx, os_p) result(bc)
+   function nad_obound_conds_t(cx, os_p, fr_factory) result(bc)
 
       use bound_conds_m
 
@@ -266,27 +270,28 @@ contains
       use mix_nad_obound_conds_m
       use lagp_nad_obound_conds_m
 
-      type(context_t), pointer, intent(in) :: cx
-      type(osc_par_t), intent(in)          :: os_p
-      class(bound_conds_ct), allocatable   :: bc
+      type(context_t), pointer, intent(in)  :: cx
+      type(osc_par_t), intent(in)           :: os_p
+      procedure(force_ct_factory), optional :: fr_factory
+      class(bound_conds_ct), allocatable    :: bc
 
       ! Construct the nad_obound_conds type
 
       select case(os_p%variables_set)
       case('GYRE')
-         bc = gyre_nad_obound_conds_t(cx, os_p)
+         bc = gyre_nad_obound_conds_t(cx, os_p, fr_factory)
       case('DZIEM')
-         bc = dziem_nad_obound_conds_t(cx, os_p)
+         bc = dziem_nad_obound_conds_t(cx, os_p, fr_factory)
       case('JCD')
          if (cx%l == 0) then
-            bc = rjcd_nad_obound_conds_t(cx, os_p)
+            bc = rjcd_nad_obound_conds_t(cx, os_p, fr_factory)
          else
-            bc = jcd_nad_obound_conds_t(cx, os_p)
+            bc = jcd_nad_obound_conds_t(cx, os_p, fr_factory)
          end if
       case('MIX')
-         bc = mix_nad_obound_conds_t(cx, os_p)
+         bc = mix_nad_obound_conds_t(cx, os_p, fr_factory)
       case('LAGP')
-         bc = lagp_nad_obound_conds_t(cx, os_p)
+         bc = lagp_nad_obound_conds_t(cx, os_p, fr_factory)
       case default
          @:ABORT('invalid variables_set')
       end select

@@ -25,6 +25,7 @@ module ad_bvp_m
 
    use bvp_m
    use context_m
+   use force_m
    use grid_m
    use mode_m
    use mode_par_m
@@ -78,17 +79,18 @@ module ad_bvp_m
 
 contains
 
-   function ad_bvp_t_(cx, gr, md_p, nm_p, os_p) result(bp)
+   function ad_bvp_t_(cx, gr, md_p, nm_p, os_p, fr_factory) result(bp)
 
       use ad_factory_m
       use bound_conds_m
 
-      type(context_t), pointer, intent(in) :: cx
-      type(grid_t), intent(in)             :: gr
-      type(mode_par_t), intent(in)         :: md_p
-      type(num_par_t), intent(in)          :: nm_p
-      type(osc_par_t), intent(in)          :: os_p
-      type(ad_bvp_t)                       :: bp
+      type(context_t), pointer, intent(in)  :: cx
+      type(grid_t), intent(in)              :: gr
+      type(mode_par_t), intent(in)          :: md_p
+      type(num_par_t), intent(in)           :: nm_p
+      type(osc_par_t), intent(in)           :: os_p
+      procedure(force_rt_factory), optional :: fr_factory
+      type(ad_bvp_t)                        :: bp
 
       class(bound_conds_rt), allocatable :: bc_i
       class(bound_conds_rt), allocatable :: bc_o
@@ -97,8 +99,8 @@ contains
 
       ! Initialize the base type
 
-      bc_i = ad_ibound_conds_t(cx, os_p)
-      bc_o = ad_obound_conds_t(cx, os_p)
+      bc_i = ad_ibound_conds_t(cx, os_p, fr_factory)
+      bc_o = ad_obound_conds_t(cx, os_p, fr_factory)
 
       bp%bvp_rt = bvp_rt(gr, bc_i, bc_o, diff_eqns_factory_, match_conds_factory_, nm_p)
 
@@ -137,9 +139,9 @@ contains
          ! Initialize the differential equations
 
          #:if defined('GFORTRAN_PR125610')
-         de = ad_diff_eqns_t_1_(cx, pt, os_p)
+         de = ad_diff_eqns_t_1_(cx, pt, os_p, fr_factory)
          #:else
-         de = ad_diff_eqns_t(cx, pt, os_p)
+         de = ad_diff_eqns_t(cx, pt, os_p, fr_factory)
          #:endif
 
          ! Finish
@@ -160,9 +162,9 @@ contains
          ! Initialize the match conditions
 
          #:if defined('GFORTRAN_PR125610')
-         mc = ad_match_conds_t_1_(cx, pt, os_p)
+         mc = ad_match_conds_t_1_(cx, pt, os_p, fr_factory)
          #:else
-         mc = ad_match_conds_t(cx, pt, os_p)
+         mc = ad_match_conds_t(cx, pt, os_p, fr_factory)
          #:endif
 
          ! Finish

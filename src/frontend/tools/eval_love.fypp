@@ -162,7 +162,7 @@ program eval_love
 
    ! Solve for the tidal response
 
-   bp = static_bvp_t(cx, gr, md_p, nm_p, os_p)
+   bp = static_bvp_t(cx, gr, md_p, nm_p, os_p, tide_fr_factory)
 
    #:if defined('GFORTRAN_PR110877')
       allocate(sm, SOURCE=sysmtx_rt(bp, 'BANDED'))
@@ -172,7 +172,7 @@ program eval_love
 
    A = 1._RD
 
-   st = state_rt(0._RD, y_T_1=A)
+   st = state_rt(0._RD, z_scl=1._RD)
 
    rs = resp_t(bp, sm, st, 0, or_p, 0)
 
@@ -247,5 +247,25 @@ contains
       @:STOP()
 
    end subroutine print_summary
+
+   !****
+
+   subroutine tide_fr_factory(pt, fr)
+
+      use force_m
+      use tide_force_m
+
+      type(point_t), intent(in)                 :: pt
+      class(force_rt), allocatable, intent(out) :: fr
+
+      ! Construct the force type (tide)
+
+      fr = tide_force_rt(cx, pt)
+
+      ! Finish
+
+      return
+
+   end subroutine tide_fr_factory
 
 end program eval_love

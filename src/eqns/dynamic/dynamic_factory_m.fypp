@@ -1,0 +1,309 @@
+! Module  : dynamic_factory_m
+! Purpose : factory methods for nonadiabatic routines
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module dynamic_factory_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use context_m
+   use osc_par_m
+   use point_m
+   use seg_interp_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Interfaces
+
+   interface dynamic_diff_eqns_t
+      module procedure dynamic_diff_eqns_t_0_
+      module procedure dynamic_diff_eqns_t_1_
+   end interface dynamic_diff_eqns_t
+
+   interface dynamic_match_conds_t
+      module procedure dynamic_match_conds_t_0_
+      module procedure dynamic_match_conds_t_1_
+   end interface dynamic_match_conds_t
+
+   interface dynamic_trans_t
+      module procedure dynamic_trans_t_0_
+      module procedure dynamic_trans_t_1_
+   end interface dynamic_trans_t
+
+   ! Access specifiers
+
+   public :: dynamic_diff_eqns_t
+   public :: dynamic_match_conds_t
+   public :: dynamic_trans_t
+   public :: dynamic_ibound_conds_t
+   public :: dynamic_obound_conds_t
+   #:if defined('GFORTRAN_PR125610')
+   public :: dynamic_diff_eqns_t_0_
+   public :: dynamic_diff_eqns_t_1_
+   public :: dynamic_match_conds_t_0_
+   public :: dynamic_match_conds_t_1_
+   public :: dynamic_trans_t_0_
+   public :: dynamic_trans_t_1_
+   #:endif
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for R in (0, 1)
+
+      function dynamic_diff_eqns_t_${R}$_(cx, pt, os_p, si_y_r, si_y_h) result(de)
+
+         use diff_eqns_m
+
+         use gyre_dynamic_diff_eqns_m
+         use dziem_dynamic_diff_eqns_m
+         use jcd_dynamic_diff_eqns_m
+         use rjcd_dynamic_diff_eqns_m
+         use mix_dynamic_diff_eqns_m
+         use lagp_dynamic_diff_eqns_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         type(seg_interp_rt), intent(in)      :: si_y_r
+         type(seg_interp_rt), intent(in)      :: si_y_h
+         class(diff_eqns_ct), allocatable     :: de${ARRAY_SPEC(R)}$
+
+         ! Construct the dynamic_diff_eqns type
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            de = gyre_dynamic_diff_eqns_t(cx, pt, os_p, si_y_r, si_y_h)
+         case('DZIEM')
+            de = dziem_dynamic_diff_eqns_t(cx, pt, os_p, si_y_r, si_y_h)
+         case('JCD')
+            if (cx%l == 0) then
+               de = rjcd_dynamic_diff_eqns_t(cx, pt, os_p, si_y_r, si_y_h)
+            else
+               de = jcd_dynamic_diff_eqns_t(cx, pt, os_p, si_y_r, si_y_h)
+            end if
+         case('MIX')
+            de = mix_dynamic_diff_eqns_t(cx, pt, os_p, si_y_r, si_y_h)
+         case('LAGP')
+            de = lagp_dynamic_diff_eqns_t(cx, pt, os_p, si_y_r, si_y_h)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function dynamic_diff_eqns_t_${R}$_
+
+      !****
+
+      function dynamic_match_conds_t_${R}$_(cx, pt, os_p, si_y_r, si_y_h) result(mc)
+
+         use match_conds_m
+
+         use gyre_dynamic_match_conds_m
+         use dziem_dynamic_match_conds_m
+         use jcd_dynamic_match_conds_m
+         use rjcd_dynamic_match_conds_m
+         use mix_dynamic_match_conds_m
+         use lagp_dynamic_match_conds_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         type(seg_interp_rt), intent(in)      :: si_y_r
+         type(seg_interp_rt), intent(in)      :: si_y_h
+         class(match_conds_ct), allocatable   :: mc${ARRAY_SPEC(R)}$
+
+         ! Construct the dynamic_match_conds
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            mc = gyre_dynamic_match_conds_t(cx, pt, si_y_r, si_y_h)
+         case('DZIEM')
+            mc = dziem_dynamic_match_conds_t(cx, pt, si_y_r, si_y_h)
+         case('JCD')
+            if (cx%l == 0) then
+               mc = rjcd_dynamic_match_conds_t(cx, pt, si_y_r, si_y_h)
+            else
+               mc = jcd_dynamic_match_conds_t(cx, pt, si_y_r, si_y_h)
+            end if
+         case('MIX')
+            mc = mix_dynamic_match_conds_t(cx, pt, si_y_r, si_y_h)
+         case('LAGP')
+            mc = lagp_dynamic_match_conds_t(cx, pt, si_y_r, si_y_h)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function dynamic_match_conds_t_${R}$_
+
+      !****
+
+      function dynamic_trans_t_${R}$_(cx, pt, os_p) result(tr)
+
+         use trans_m
+
+         use gyre_dynamic_trans_m
+         use dziem_dynamic_trans_m
+         use jcd_dynamic_trans_m
+         use rjcd_dynamic_trans_m
+         use mix_dynamic_trans_m
+         use lagp_dynamic_trans_m
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt${ARRAY_SPEC(R)}$
+         type(osc_par_t), intent(in)          :: os_p
+         class(trans_ct), allocatable         :: tr${ARRAY_SPEC(R)}$
+
+         ! Construct the dynamic_trans type
+
+         select case(os_p%variables_set)
+         case('GYRE')
+            tr = gyre_dynamic_trans_t(cx, pt)
+         case('DZIEM')
+            tr = dziem_dynamic_trans_t(cx, pt)
+         case('JCD')
+            if (cx%l == 0) then
+               tr = rjcd_dynamic_trans_t(cx, pt)
+            else
+               tr = jcd_dynamic_trans_t(cx, pt)
+            end if
+         case('MIX')
+            tr = mix_dynamic_trans_t(cx, pt)
+         case('LAGP')
+            tr = lagp_dynamic_trans_t(cx, pt)
+         case default
+            @:ABORT('invalid variables_set')
+         end select
+
+         ! Finish
+
+         return
+
+      end function dynamic_trans_t_${R}$_
+
+   #:endfor
+
+   !****
+
+   function dynamic_ibound_conds_t(cx, os_p, si_y_r, si_y_h) result(bc)
+
+      use bound_conds_m
+
+      use gyre_dynamic_ibound_conds_m
+      use dziem_dynamic_ibound_conds_m
+      use jcd_dynamic_ibound_conds_m
+      use rjcd_dynamic_ibound_conds_m
+      use mix_dynamic_ibound_conds_m
+      use lagp_dynamic_ibound_conds_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      type(seg_interp_rt), intent(in)      :: si_y_r
+      type(seg_interp_rt), intent(in)      :: si_y_h
+      class(bound_conds_ct), allocatable   :: bc
+
+      ! Construct the dynamic_ibound_conds type
+
+      select case(os_p%variables_set)
+      case('GYRE')
+         bc = gyre_dynamic_ibound_conds_t(cx, os_p, si_y_r, si_y_h)
+      case('DZIEM')
+         bc = dziem_dynamic_ibound_conds_t(cx, os_p, si_y_r, si_y_h)
+      case('JCD')
+         if (cx%l == 0) then
+            bc = rjcd_dynamic_ibound_conds_t(cx, os_p, si_y_r, si_y_h)
+         else
+            bc = jcd_dynamic_ibound_conds_t(cx, os_p, si_y_r, si_y_h)
+         end if
+      case('MIX')
+         bc = mix_dynamic_ibound_conds_t(cx, os_p, si_y_r, si_y_h)
+      case('LAGP')
+         bc = lagp_dynamic_ibound_conds_t(cx, os_p, si_y_r, si_y_h)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
+
+      ! Finish
+
+      return
+
+   end function dynamic_ibound_conds_t
+
+   !****
+
+   function dynamic_obound_conds_t(cx, os_p, si_y_r, si_y_h) result(bc)
+
+      use bound_conds_m
+
+      use gyre_dynamic_obound_conds_m
+      use dziem_dynamic_obound_conds_m
+      use jcd_dynamic_obound_conds_m
+      use rjcd_dynamic_obound_conds_m
+      use mix_dynamic_obound_conds_m
+      use lagp_dynamic_obound_conds_m
+
+      type(context_t), pointer, intent(in) :: cx
+      type(osc_par_t), intent(in)          :: os_p
+      type(seg_interp_rt), intent(in)      :: si_y_r
+      type(seg_interp_rt), intent(in)      :: si_y_h
+      class(bound_conds_ct), allocatable   :: bc
+
+      ! Construct the dynamic_obound_conds type
+
+      select case(os_p%variables_set)
+      case('GYRE')
+         bc = gyre_dynamic_obound_conds_t(cx, os_p, si_y_r, si_y_h)
+      case('DZIEM')
+         bc = dziem_dynamic_obound_conds_t(cx, os_p, si_y_r, si_y_h)
+      case('JCD')
+         if (cx%l == 0) then
+            bc = rjcd_dynamic_obound_conds_t(cx, os_p, si_y_r, si_y_h)
+         else
+            bc = jcd_dynamic_obound_conds_t(cx, os_p, si_y_r, si_y_h)
+         end if
+      case('MIX')
+         bc = mix_dynamic_obound_conds_t(cx, os_p, si_y_r, si_y_h)
+      case('LAGP')
+         bc = lagp_dynamic_obound_conds_t(cx, os_p, si_y_r, si_y_h)
+      case default
+         @:ABORT('invalid variables_set')
+      end select
+
+      ! Finish
+
+      return
+
+   end function dynamic_obound_conds_t
+
+end module dynamic_factory_m

@@ -24,6 +24,7 @@ module static_match_conds_m
    use forum_m, only: RD
 
    use context_m
+   use force_m
    use match_conds_m
    use model_m
    use model_util_m
@@ -40,8 +41,9 @@ module static_match_conds_m
 
    type, extends(match_conds_rt) :: static_match_conds_t
       private
-      type(context_t), pointer :: cx => null()
-      real(RD)                 :: U
+      type(context_t), pointer     :: cx => null()
+      class(force_rt), allocatable :: fr
+      real(RD)                     :: U
    contains
       private
       procedure, public :: eval
@@ -66,11 +68,12 @@ module static_match_conds_m
 
 contains
 
-   function static_match_conds_t_0_(cx, pt) result(mc)
+   function static_match_conds_t_0_(cx, pt, fr_factory) result(mc)
 
-      type(context_t), pointer, intent(in) :: cx
-      type(point_t), intent(in)            :: pt
-      type(static_match_conds_t)           :: mc
+      type(context_t), pointer, intent(in)  :: cx
+      type(point_t), intent(in)             :: pt
+      procedure(force_rt_factory), optional :: fr_factory
+      type(static_match_conds_t)            :: mc
 
       class(model_t), pointer :: ml
 
@@ -90,6 +93,10 @@ contains
 
       ! Other initializations
 
+      if (PRESENT(fr_factory)) then
+         call fr_factory(pt, mc%fr)
+      end if
+
       mc%n_e = 2
 
       ! Finish
@@ -100,18 +107,19 @@ contains
 
    !****
 
-   function static_match_conds_t_1_(cx, pt) result(mc)
+   function static_match_conds_t_1_(cx, pt, fr_factory) result(mc)
 
-      type(context_t), pointer, intent(in) :: cx
-      type(point_t), intent(in)            :: pt(:)
-      type(static_match_conds_t)           :: mc(SIZE(pt))
+      type(context_t), pointer, intent(in)  :: cx
+      type(point_t), intent(in)             :: pt(:)
+      procedure(force_rt_factory), optional :: fr_factory
+      type(static_match_conds_t)            :: mc(SIZE(pt))
 
       integer :: j
 
       ! Construct the array of static_match_conds types
 
       do j = 1, SIZE(pt)
-         mc(j) = static_match_conds_t(cx, pt(j))
+         mc(j) = static_match_conds_t(cx, pt(j), fr_factory)
       end do
 
       ! Finish

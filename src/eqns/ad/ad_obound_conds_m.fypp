@@ -28,6 +28,7 @@ module ${P}$_ad_obound_conds_m
    use atmos_m
    use bound_conds_m
    use context_m
+   use force_m
    use model_m
    use model_util_m
    use osc_par_m
@@ -44,15 +45,16 @@ module ${P}$_ad_obound_conds_m
 
    type, extends(bound_conds_rt) :: ${P}$_ad_obound_conds_t
       private
-      type(context_t), pointer  :: cx => null()
-      real(RD)                  :: V_2
-      real(RD)                  :: V
-      real(RD)                  :: V_g
-      real(RD)                  :: As
-      real(RD)                  :: U
-      real(RD)                  :: c_1
-      real(RD)                  :: Omega_rot
-      procedure(eval_), pointer :: eval_
+      type(context_t), pointer     :: cx => null()
+      class(force_rt), allocatable :: fr
+      real(RD)                     :: V_2
+      real(RD)                     :: V
+      real(RD)                     :: V_g
+      real(RD)                     :: As
+      real(RD)                     :: U
+      real(RD)                     :: c_1
+      real(RD)                     :: Omega_rot
+      procedure(eval_), pointer    :: eval_
    contains
       private
       procedure, public :: eval
@@ -88,11 +90,12 @@ module ${P}$_ad_obound_conds_m
 
 contains
 
-   function ${P}$_ad_obound_conds_t_(cx, os_p) result(bc)
+   function ${P}$_ad_obound_conds_t_(cx, os_p, fr_factory) result(bc)
 
-      type(context_t), pointer, intent(in) :: cx
-      type(osc_par_t), intent(in)          :: os_p
-      type(${P}$_ad_obound_conds_t)        :: bc
+      type(context_t), pointer, intent(in)  :: cx
+      type(osc_par_t), intent(in)           :: os_p
+      procedure(force_rt_factory), optional :: fr_factory
+      type(${P}$_ad_obound_conds_t)         :: bc
 
       class(model_t), pointer :: ml
       type(point_t)           :: pt
@@ -172,6 +175,10 @@ contains
       end select
 
       ! Other initializations
+
+      if (PRESENT(fr_factory)) then
+         call fr_factory(pt, bc%fr)
+      end if
 
       bc%n_e = 4
       bc%n_b = 2
@@ -331,6 +338,8 @@ contains
       real(RD) :: omega_c
       real(RD) :: lambda
       real(RD) :: l_e
+      real(RD) :: z
+      real(RD) :: dz
 
       if (PRESENT(trans)) then
          trans_ = trans
@@ -355,7 +364,6 @@ contains
 
       associate( &
          omega => st%omega, &
-         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          U => this%U, &
          c_1 => this%c_1, &
@@ -369,6 +377,13 @@ contains
 
          lambda = this%cx%lambda(Omega_rot, st)
          l_e = this%cx%l_e(Omega_rot, st)
+
+         if (ALLOCATED(this%fr)) then
+            call this%fr%eval(st, z, dz)
+         else
+            z = 0._RD
+            dz = 0._RD
+         end if
 
          #:include 'OB_zero_h.inc'
 
@@ -394,6 +409,8 @@ contains
       real(RD) :: omega_c
       real(RD) :: lambda
       real(RD) :: l_e
+      real(RD) :: z
+      real(RD) :: dz
 
       if (PRESENT(trans)) then
          trans_ = trans
@@ -418,7 +435,6 @@ contains
 
       associate( &
          omega => st%omega, &
-         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          V => this%V, &
          U => this%U, &
@@ -433,6 +449,13 @@ contains
 
          lambda = this%cx%lambda(Omega_rot, st)
          l_e = this%cx%l_e(Omega_rot, st)
+
+         if (ALLOCATED(this%fr)) then
+            call this%fr%eval(st, z, dz)
+         else
+            z = 0._RD
+            dz = 0._RD
+         end if
 
          #:include 'OB_dziem.inc'
 
@@ -469,6 +492,8 @@ contains
       real(RD) :: chi
       real(RD) :: G_1
       real(RD) :: G_2
+      real(RD) :: z
+      real(RD) :: dz
 
       if (PRESENT(trans)) then
          trans_ = trans
@@ -493,7 +518,6 @@ contains
 
       associate( &
          omega => st%omega, &
-         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          V_g => this%V_g, &
          As => this%As, &
@@ -532,6 +556,13 @@ contains
          G_2 = (H_(-l_e, chi) - H_(l_e+1._RD, chi))/(2._RD*l_e + 1._RD)
 
          ! Set up the matrix
+
+         if (ALLOCATED(this%fr)) then
+            call this%fr%eval(st, z, dz)
+         else
+            z = 0._RD
+            dz = 0._RD
+         end if
 
          #:include 'OB_decomp.inc'
 
@@ -580,6 +611,8 @@ contains
       real(RD) :: chi
       real(RD) :: b_11
       real(RD) :: b_12
+      real(RD) :: z
+      real(RD) :: dz
 
       if (PRESENT(trans)) then
          trans_ = trans
@@ -604,7 +637,6 @@ contains
 
       associate( &
          omega => st%omega, &
-         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          V_g => this%V_g, &
          As => this%As, &
@@ -625,6 +657,13 @@ contains
 
          b_11 = V_g - 3._RD
          b_12 = lambda/(c_1*alpha_omg*omega_c**2) - V_g
+
+         if (ALLOCATED(this%fr)) then
+            call this%fr%eval(st, z, dz)
+         else
+            z = 0._RD
+            dz = 0._RD
+         end if
 
          #:include 'OB_jcd.inc'
 
@@ -711,6 +750,8 @@ contains
       real(RD) :: omega_c
       real(RD) :: l_e
       real(RD) :: lambda
+      real(RD) :: z
+      real(RD) :: dz
 
       if (PRESENT(trans)) then
          trans_ = trans
@@ -735,7 +776,6 @@ contains
 
       associate( &
          omega => st%omega, &
-         y_T_1 => st%y_T_1, &
          V_2 => this%V_2, &
          V_g => this%V_g, &
          U => this%U, &
@@ -749,6 +789,13 @@ contains
 
          l_e = this%cx%l_e(Omega_rot, st)
          lambda = this%cx%lambda(Omega_rot, st)
+
+         if (ALLOCATED(this%fr)) then
+            call this%fr%eval(st, z, dz)
+         else
+            z = 0._RD
+            dz = 0._RD
+         end if
 
          #:include 'OB_gamma2.inc'
 

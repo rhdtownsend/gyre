@@ -19,6 +19,6 @@ B(1, 4) = 0
 B(2, 4) = -1
 endif
 if (PRESENT(s)) then
-s(1) = -lambda*y_T_1/(alpha_omg*omega_c**2)
+s(1) = -lambda*z/(alpha_omg*c_1*omega_c**2)
 s(2) = 0
 endif

@@ -19,6 +19,6 @@ B(1, 4) = 0
 B(2, 4) = -1
 endif
 if (PRESENT(s)) then
-s(1) = -c_1*y_T_1
+s(1) = -z
 s(2) = 0
 endif

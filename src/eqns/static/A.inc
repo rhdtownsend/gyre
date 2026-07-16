@@ -12,5 +12,5 @@ A(2, 2) = del_x*(-U - l_e + 2)
 endif
 if (PRESENT(r)) then
 r(1) = 0
-r(2) = c_1*del_x*y_T_1*(-As*U - U*V_g)
+r(2) = U*del_x*z*(-As - V_g)
 endif

@@ -32,7 +32,7 @@ A = sp.Matrix([
 
 r = sp.Matrix([
     0,
-    (-V_g*U(x)-As*U(x))*y_T_1*c_1(x)
+    (-V_g-As)*U(x)*z
 ])
 
 # Inner boundary condition matrices and inhomogeneous vectors
@@ -50,7 +50,7 @@ OB_vacuum = sp.Matrix([
 ])
 
 Os_vacuum = sp.Matrix([
-    -U(x)*y_T_1
+    -U(x)*z
 ])
 
 # Match condition matrix and inhomogeneous vector

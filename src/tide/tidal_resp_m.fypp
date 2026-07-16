@@ -43,6 +43,7 @@ module tidal_resp_m
    use point_m
    use resp_m
    use rot_par_m
+   use seg_interp_m
    use state_m
    use static_bvp_m
    use sysmtx_m
@@ -108,13 +109,16 @@ contains
       integer                              :: l
       integer                              :: m
       integer                              :: k
-      type(nad_bvp_t)                      :: bp_dyn
-      type(static_bvp_t)                   :: bp_stat
-      class(sysmtx_ct), allocatable        :: sm_dyn
-      class(sysmtx_rt), allocatable        :: sm_stat
-      type(state_ct)                       :: st_dyn
-      type(state_rt)                       :: st_stat
+      type(static_bvp_t)                   :: bp_static
+      class(sysmtx_rt), allocatable        :: sm_static
+      type(nad_bvp_t)                      :: bp_nad
+      class(sysmtx_ct), allocatable        :: sm_nad
+      type(state_rt)                       :: st_static
+      type(state_ct)                       :: st_nad
+      type(resp_t)                         :: rs_static
       type(resp_t)                         :: rs
+      type(seg_interp_rt)                  :: si_y_r_eqm
+      type(seg_interp_rt)                  :: si_y_h_eqm
 
       ! Check that the SPH lambda method is being used
 
@@ -140,21 +144,42 @@ contains
       l_loop : do l = td_p%l_min, td_p%l_max
          m_loop : do m = MAX(-l, td_p%m_min), MIN(l, td_p%m_max)
 
-            ! Create the bvp_t's
+            ! Create the the static_bvp type
 
-            bp_dyn = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
-            bp_stat = static_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
+            bp_static = static_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p)
 
             #:if defined('GFORTRAN_PR110877')
-               allocate(sm_dyn, SOURCE=sysmtx_ct(bp_dyn, nm_p%nad_matrix_solver))
-               allocate(sm_stat, SOURCE=sysmtx_rt(bp_stat, nm_p%nad_matrix_solver))
+               allocate(sm_static, SOURCE=sysmtx_rt(bp_static, nm_p%nad_matrix_solver))
             #:else
-               sm_dyn = sysmtx_ct(bp_dyn, nm_p%nad_matrix_solver)
-               sm_stat = sysmtx_rt(bp_stat, nm_p%nad_matrix_solver)
+               sm_static = sysmtx_rt(bp_static, nm_p%nad_matrix_solver)
             #:endif
 
-            !$OMP PARALLEL DO ORDERED FIRSTPRIVATE(sm_dyn, sm_stat) &
-            !$OMP PRIVATE(st_dyn, st_stat, rs) SCHEDULE(STATIC, 1)
+            ! Create the nad_bvp type
+
+            if (td_p%de_split) then
+
+               st_static = state_rt(0._RD, z_scl=1._RD)
+
+               rs_static = resp_t(bp_static, sm_static, st_static, id_m, or_p, k)
+
+               call construct_eqm_interps_(rs_static, si_y_r_eqm, si_y_h_eqm)
+
+               bp_nad = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p, dyn_tide_fr_factory_)
+
+            else
+
+               bp_nad = nad_bvp_t(cx(l,m), gr, md_p(l,m), nm_p, os_p, tide_fr_factory_)
+
+            end if
+
+            #:if defined('GFORTRAN_PR110877')
+               allocate(sm_nad, SOURCE=sysmtx_ct(bp_nad, nm_p%nad_matrix_solver))
+            #:else
+               sm_nad = sysmtx_ct(bp_nad, nm_p%nad_matrix_solver)
+            #:endif
+
+            !$OMP PARALLEL DO ORDERED FIRSTPRIVATE(sm_static, sm_nad) &
+            !$OMP PRIVATE(st_static, st_nad, rs) SCHEDULE(STATIC, 1)
             k_loop : do k = td_p%k_min, td_p%k_max
 
                !$OMP ATOMIC
@@ -168,15 +193,15 @@ contains
                   select case(tide_type(l,m,k))
                   case (DYNAMIC_TIDE, MIXED_TIDE)
 
-                     st_dyn = state_ct(CMPLX(omega(k), KIND=RD), omega(k), y_T_1=y_T(l,m,k))
+                     st_nad = state_ct(CMPLX(omega(k), KIND=RD), omega(k), z_scl=y_T(l,m,k))
 
-                     rs = resp_t(bp_dyn, sm_dyn, st_dyn, id_m, or_p, k)
+                     rs = resp_t(bp_nad, sm_nad, st_nad, id_m, or_p, k)
 
                   case (STATIC_TIDE)
 
-                     st_stat = state_rt(omega(k), y_T_1=y_T(l,m,k))
+                     st_static = state_rt(omega(k), z_scl=y_T(l,m,k))
 
-                     rs = resp_t(bp_stat, sm_stat, st_stat, id_m, or_p, k)
+                     rs = resp_t(bp_static, sm_static, st_static, id_m, or_p, k)
 
                   case default
 
@@ -196,8 +221,8 @@ contains
 
             ! Clean up
 
-            deallocate(sm_dyn)
-            deallocate(sm_stat)
+            deallocate(sm_nad)
+            deallocate(sm_static)
 
          end do m_loop
       end do l_loop
@@ -212,6 +237,54 @@ contains
       ! Finish
 
       return
+
+   contains
+
+      !****
+
+      subroutine tide_fr_factory_(pt, fr)
+
+         use force_m
+         use tide_force_m
+
+         type(point_t), intent(in)                 :: pt
+         class(force_ct), allocatable, intent(out) :: fr
+
+         ! Construct the force type (tide)
+
+         fr = tide_force_ct(cx(l,m), pt)
+
+         ! Finish
+
+         return
+
+      end subroutine tide_fr_factory_
+
+      !****
+
+      subroutine dyn_tide_fr_factory_(pt, fr)
+
+         use force_m
+         use dyn_tide_force_m
+
+         type(point_t), intent(in)                 :: pt
+         class(force_ct), allocatable, intent(out) :: fr
+
+         complex(RD) :: y_r_eqm
+         complex(RD) :: y_h_eqm
+
+         ! Construct the force type (dynamical tide)
+
+         y_r_eqm = si_y_r_eqm%f(pt)
+         y_h_eqm = si_y_h_eqm%f(pt)
+
+         fr = dyn_tide_force_ct(cx(l,m), pt, y_r_eqm, y_h_eqm)
+
+         ! Finish
+
+         return
+
+      end subroutine dyn_tide_fr_factory_
 
    end subroutine eval_resp
 
@@ -385,5 +458,89 @@ contains
       return
 
    end function classify_tide_
+
+   !****
+
+   subroutine construct_eqm_interps_(rs_static, si_y_r_eqm, si_y_h_eqm)
+
+      use deriv_m
+
+      type(resp_t), intent(in)         :: rs_static
+      type(seg_interp_rt), intent(out) :: si_y_r_eqm
+      type(seg_interp_rt), intent(out) :: si_y_h_eqm
+
+      type(state_rt)          :: st
+      type(resp_t)            :: rs
+      class(model_t), pointer :: ml
+      type(grid_t)            :: gr
+      type(context_t)         :: cx
+      integer                 :: j
+      real(RD)                :: U
+      real(RD)                :: c_1
+      integer                 :: l
+      real(RD)                :: y_3
+      real(RD)                :: y_4
+      real(RD)                :: y_T
+      real(RD), allocatable   :: y_r(:)
+      real(RD), allocatable   :: y_h(:)
+      real(RD), allocatable   :: dy_r(:)
+      real(RD), allocatable   :: dy_h(:)
+
+      ! Construct interpolants for the static-equilibrium-tide
+      ! displacement perturbations, assuming a tidal strength y_T(1) =
+      ! 1
+
+      ml => rs_static%model()
+
+      gr = rs_static%grid()
+      cx = rs_static%context()
+
+      ! Evaluate the displacement perturbations
+
+      allocate(y_r(gr%n))
+      allocate(y_h(gr%n))
+
+      allocate(dy_r(gr%n))
+      allocate(dy_h(gr%n))
+
+      do j = 1, gr%n
+
+         associate( &
+            x => gr%pt(j)%x, &
+            pt => gr%pt(j), &
+            alpha_grv => cx%alpha_grv)
+
+            ! Evaluate the radial and horizontal displacement perturbations
+
+            U = ml%coeff(I_U, pt)
+            c_1 = ml%coeff(I_C_1, pt)
+
+            l = rs_static%l
+
+            y_T = c_1
+
+            y_3 = rs_static%y_i(3,j)
+            y_4 = rs_static%y_i(4,j)
+
+            y_r(j) = -(alpha_grv*y_3 + y_T)
+            y_h(j) = -(alpha_grv*((4._RD - U)*y_3 + y_4) + (4._RD - U + l)*y_T)/(l*(l+1._RD))
+
+         end associate
+
+      end do
+
+      dy_r = deriv(gr%pt%x, y_r, 'MONO')
+      dy_h = deriv(gr%pt%x, y_h, 'MONO')
+
+      ! Initialize the interpolants
+
+      si_y_r_eqm = seg_interp_rt(gr, y_r, dy_r, 'CUBIC')
+      si_y_h_eqm = seg_interp_rt(gr, y_h, dy_h, 'CUBIC')
+
+      ! Finish
+
+      return
+
+   end subroutine construct_eqm_interps_
 
 end module tidal_resp_m

@@ -37,8 +37,8 @@ A(3, 4) = del_x
 A(4, 4) = del_x*(-U - l_i + 2)
 endif
 if (PRESENT(r)) then
-r(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
-r(2) = -c_1*del_x*l_e*y_T_1
+r(1) = del_x*eta*z
+r(2) = -del_x*dz
 r(3) = 0
 r(4) = 0
 endif

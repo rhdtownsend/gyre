@@ -1,0 +1,147 @@
+! Module  : dyn_tide_force_m
+! Purpose : force evaluation (dynamical tide)
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module dyn_tide_force_m
+
+   ! Uses
+
+   use forum_m, only: RD
+
+   use context_m
+   use force_m
+   use model_m
+   use model_util_m
+   use point_m
+   use state_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, extends(force_${S}$) :: dyn_tide_force_${S}$
+         private
+         type(context_t), pointer :: cx => null()
+         ${T}$                    :: y_r_eqm
+         ${T}$                    :: y_h_eqm
+         real(RD)                 :: c_1
+         real(RD)                 :: Omega_rot
+      contains
+         private
+         procedure, public :: eval => eval_${S}$_
+      end type dyn_tide_force_${S}$
+
+      ! Interfaces
+
+      interface dyn_tide_force_${S}$
+         module procedure dyn_tide_force_${S}$_
+      end interface dyn_tide_force_${S}$
+
+      ! Access specifiers
+
+      public :: dyn_tide_force_${S}$
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+contains
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      function dyn_tide_force_${S}$_(cx, pt, y_r_eqm, y_h_eqm) result(fr)
+
+         type(context_t), pointer, intent(in) :: cx
+         type(point_t), intent(in)            :: pt
+         ${T}$, intent(in)                    :: y_r_eqm
+         ${T}$, intent(in)                    :: y_h_eqm
+         type(dyn_tide_force_${S}$)           :: fr
+
+         class(model_t), pointer :: ml
+
+         ! Construct the dyn_tide_force type
+
+         fr%cx => cx
+
+         ! Store structure coefficients
+
+         fr%y_r_eqm = y_r_eqm
+         fr%y_h_eqm = y_h_eqm
+
+         ml => cx%model()
+
+         call check_model(ml, [I_C_1])
+
+         fr%c_1 = ml%coeff(I_C_1, pt)
+         fr%Omega_rot = cx%Omega_rot(pt)
+
+         ! Finish
+
+         return
+
+      end function dyn_tide_force_${S}$_
+
+      !****
+
+      subroutine eval_${S}$_(this, st, z, dz)
+
+         class(dyn_tide_force_${S}$), intent(in) :: this
+         class(state_${S}$), intent(in)          :: st
+         ${T}$, intent(out)                      :: z
+         ${T}$, intent(out)                      :: dz
+
+         ${T}$ :: omega_c
+         ${T}$ :: om2
+
+         ! Evaluate the dimensionless external potential and potential
+         ! gradient
+
+         associate ( &
+            omega => st%omega, &
+            z_scl => st%z_scl, &
+            y_r_eqm => this%y_r_eqm, &
+            y_h_eqm => this%y_h_eqm, &
+            c_1 => this%c_1, &
+            Omega_rot => this%Omega_rot, &
+            alpha_omg => this%cx%alpha_omg, &
+            m => this%cx%m)
+
+            omega_c = omega - m*Omega_rot
+
+            om2 = c_1*alpha_omg*omega_c**2
+
+            z = -om2*y_h_eqm*z_scl
+            dz = -om2*y_r_eqm*z_scl
+
+         end associate
+
+         ! Finish
+
+         return
+
+      end subroutine eval_${S}$_
+
+   #:endfor
+
+end module dyn_tide_force_m

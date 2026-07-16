@@ -25,6 +25,7 @@ module static_ibound_conds_m
 
    use bound_conds_m
    use context_m
+   use force_m
    use model_m
    use model_util_m
    use osc_par_m
@@ -41,8 +42,9 @@ module static_ibound_conds_m
 
    type, extends(bound_conds_rt) :: static_ibound_conds_t
       private
-      type(context_t), pointer  :: cx => null()
-      procedure(eval_), pointer :: eval_
+      type(context_t), pointer     :: cx => null()
+      class(force_rt), allocatable :: fr
+      procedure(eval_), pointer    :: eval_
    contains
       private
       procedure, public :: eval
@@ -78,11 +80,12 @@ module static_ibound_conds_m
 
 contains
 
-   function static_ibound_conds_t_(cx, os_p) result(bc)
+   function static_ibound_conds_t_(cx, os_p, fr_factory) result(bc)
 
-      type(context_t), pointer, intent(in) :: cx
-      type(osc_par_t), intent(in)          :: os_p
-      type(static_ibound_conds_t)          :: bc
+      type(context_t), pointer, intent(in)  :: cx
+      type(osc_par_t), intent(in)           :: os_p
+      procedure(force_rt_factory), optional :: fr_factory
+      type(static_ibound_conds_t)           :: bc
 
       class(model_t), pointer :: ml
       type(point_t)           :: pt
@@ -103,6 +106,10 @@ contains
       bc%cx => cx
 
       ! Other initializations
+
+      if (PRESENT(fr_factory)) then
+         call fr_factory(pt, bc%fr)
+      end if
 
       bc%n_e = 2
       bc%n_b = 1

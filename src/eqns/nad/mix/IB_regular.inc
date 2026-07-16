@@ -39,7 +39,7 @@ B(2, 6) = 0
 B(3, 6) = 0
 endif
 if (PRESENT(s)) then
-s(1) = c_1*l_i*y_T_1
+s(1) = l_i*z
 s(2) = 0
 s(3) = 0
 endif

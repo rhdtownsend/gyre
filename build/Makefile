@@ -128,6 +128,8 @@ static_SRCS = static_bvp_m.fypp \
    static_ibound_conds_m.fypp \
    static_obound_conds_m.fypp
 
+force_SRCS = force_m.fypp tide_force_m.fypp dyn_tide_force_m.fypp
+
 sysmtx_SRCS = sysmtx_m.fypp sysmtx_factory_m.fypp \
    banded_sysmtx_m.fypp cyclic_sysmtx_m.fypp rowpp_sysmtx_m.fypp
 
@@ -145,7 +147,7 @@ bvp_SRCS = bvp_m.fypp
 eqns_SRCS = diff_eqns_m.fypp bound_conds_m.fypp match_conds_m.fypp
 
 libgyre_SRCS = \
-   $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(static_SRCS) 					\
+   $(ad_SRCS) $(rad_SRCS) $(nad_SRCS) $(static_SRCS) $(force_SRCS)			\
    $(block_SRCS) $(sysmtx_SRCS) $(eqns_SRCS) $(search_SRCS) $(bvp_SRCS)	        	\
    adhoc_angular_m.fypp amdl_file_m.fypp						\
    anapoly_0_model_m.fypp anapoly_1_model_m.fypp anapoly_5_model_m.fypp			\
@@ -154,7 +156,7 @@ libgyre_SRCS = \
    cheb_fit_m.fypp									\
    constants_m.fypp context_m.fypp							\
    contour_map_m.fypp contour_path_m.fypp						\
-   cubic_interp_m.fypp deriv_m.fypp detail_m.fypp 					\
+   cubic_interp_m.fypp seg_interp_m.fypp deriv_m.fypp detail_m.fypp 			\
    discrim_m.fypp evol_model_m.fypp							\
    ext_complex_m.fypp ext_m.fypp ext_real_m.fypp famdl_file_m.fypp			\
    fgong_file_m.fypp freq_context_m.fypp freq_m.fypp gyre_m.fypp			\

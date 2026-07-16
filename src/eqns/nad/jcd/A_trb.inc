@@ -183,11 +183,10 @@ A(5, 6) = -V*del_x*nabla/(c_rad*f_rht)
 A(6, 6) = del_x*(-l_i - 1)
 endif
 if (PRESENT(r)) then
-r(1) = del_x*lambda*y_T_1/(alpha_omg*omega_c**2)
-r(2) = -del_x*l_e*lambda*y_T_1/(alpha_omg*omega_c**2)
+r(1) = del_x*eta*z
+r(2) = -del_x*dz*eta
 r(3) = 0
 r(4) = 0
-r(5) = c_1*del_x*y_T_1*(V*eta*(-nabla + nabla_ad)/f_rht + V*l_e*nabla_ad &
-      /f_rht)
-r(6) = del_x*f_conv*lambda*y_T_1/(alpha_omg*omega_c**2)
+r(5) = del_x*(V*dz*nabla_ad/f_rht + V*eta*z*(-nabla + nabla_ad)/f_rht)
+r(6) = del_x*eta*f_conv*z
 endif

@@ -23,9 +23,9 @@ from symbols import *
 
 # Routines to generate inhomogeneous terms
 
-def generate_tidal_r(A):
+def generate_r(A):
 
-    r = (A[:,2] + l_e*A[:,3])*y_T_1*c_1(x)
+    r = (A[:,2]*z + A[:,3]*dz)
     r[2] = 0
     r[3] = 0
 
@@ -34,9 +34,9 @@ def generate_tidal_r(A):
     return r
 
 
-def generate_tidal_s(B):
+def generate_s(B):
 
-    s = -(B[:,2] + l_e*B[:,3])*y_T_1*c_1(x)
+    s = -(B[:,2]*z + B[:,3]*dz)
     s[1] = 0
 
     s = s.subs(alpha_grv, 1)
@@ -44,7 +44,9 @@ def generate_tidal_s(B):
     return s
 
 
-def generate_tidal_t(t):
+def generate_t(C):
+
+    # This likely needs to be fixed
 
     t = sp.zeros(6, 1)
 
@@ -94,7 +96,7 @@ A = sp.Matrix([
      -1 - l_i]
 ])
 
-r = generate_tidal_r(A)
+r = generate_r(A)
 
 # Differential Jacobian matrix with turbulent drag term. This is
 # formed from the non-adiabatic matrix with a turbulent correction to
@@ -149,7 +151,7 @@ IB_regular = sp.Matrix([
     [0, 0, 0, 0, 1, 0]
 ])
 
-Is_regular = generate_tidal_s(IB_regular)
+Is_regular = generate_s(IB_regular)
 
 IB_zero_r = sp.Matrix([
     [1, 0, 0, 0, 0, 0],
@@ -157,7 +159,7 @@ IB_zero_r = sp.Matrix([
     [0, 0, 0, 0, 1, 0]
 ])
 
-Is_zero_r = generate_tidal_s(IB_zero_r)
+Is_zero_r = generate_s(IB_zero_r)
 
 IB_zero_h = sp.Matrix([
     [0, 1, alpha_grv, 0, 0, 0],
@@ -165,7 +167,7 @@ IB_zero_h = sp.Matrix([
     [0, 0, 0, 0, 1, 0]
 ])
 
-Is_zero_h = generate_tidal_s(IB_zero_h)
+Is_zero_h = generate_s(IB_zero_h)
 
 # Outer boundary condition matrices and inhomogeneous vectors
 
@@ -175,7 +177,7 @@ OB_vacuum = sp.Matrix([
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-Os_vacuum = generate_tidal_s(OB_vacuum)
+Os_vacuum = generate_s(OB_vacuum)
 
 OB_zero_r = sp.Matrix([
     [1, 0, 0, 0, 0, 0],
@@ -183,7 +185,7 @@ OB_zero_r = sp.Matrix([
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-Os_zero_r = generate_tidal_s(OB_zero_r)
+Os_zero_r = generate_s(OB_zero_r)
 
 OB_zero_h = sp.Matrix([
     [0, 1, alpha_grv, 0, 0, 0],
@@ -191,7 +193,7 @@ OB_zero_h = sp.Matrix([
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-Os_zero_h = generate_tidal_s(OB_zero_h)
+Os_zero_h = generate_s(OB_zero_h)
 
 OB_dziem = sp.Matrix([
     [1 + (lamda/(c_1(x)*alpha_omg*omega_c**2) - 4 - c_1(x)*alpha_omg*omega_c**2)/V,
@@ -204,7 +206,7 @@ OB_dziem = sp.Matrix([
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-Os_dziem = generate_tidal_s(OB_dziem)
+Os_dziem = generate_s(OB_dziem)
 
 OB_decomp = sp.Matrix([
     [-(chi-a_11), a_12, -alpha_grv*G_1, alpha_grv*G_2, 0, 0],
@@ -212,7 +214,7 @@ OB_decomp = sp.Matrix([
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-Os_decomp = generate_tidal_s(OB_decomp)
+Os_decomp = generate_s(OB_decomp)
 
 OB_jcd = sp.Matrix([
     [chi-b_11,
@@ -225,7 +227,7 @@ OB_jcd = sp.Matrix([
     [2 - 4*nabla_ad*V, 4*nabla_ad*V, 0, 0, 4*f_rht, -1]
 ])
 
-Os_jcd = generate_tidal_s(OB_jcd)
+Os_jcd = generate_s(OB_jcd)
 
 # Match condition matrix and inhomogeneous vector
 
@@ -238,7 +240,7 @@ C = sp.Matrix([
     [0, 0, 0, 0, 0, 1]
 ])
 
-t = generate_tidal_t(C)
+t = generate_t(C)
 
 # Main program
 

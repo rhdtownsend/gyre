@@ -25,6 +25,7 @@ module static_diff_eqns_m
 
    use context_m
    use diff_eqns_m
+   use force_m
    use model_m
    use model_util_m
    use point_m
@@ -40,14 +41,13 @@ module static_diff_eqns_m
 
    type, extends(diff_eqns_rt) :: static_diff_eqns_t
       private
-      type(context_t), pointer :: cx => null()
-      real(RD)                 :: V_g
-      real(RD)                 :: As
-      real(RD)                 :: U
-      real(RD)                 :: c_1
-      real(RD)                 :: x
-      real(RD)                 :: lambda
-      real(RD)                 :: l_e
+      type(context_t), pointer     :: cx => null()
+      class(force_rt), allocatable :: fr
+      real(RD)                     :: V_g
+      real(RD)                     :: As
+      real(RD)                     :: U
+      real(RD)                     :: c_1
+      real(RD)                     :: x
    contains
       private
       procedure, public :: eval
@@ -72,11 +72,12 @@ module static_diff_eqns_m
 
 contains
 
-   function static_diff_eqns_t_0_(cx, pt) result(de)
+   function static_diff_eqns_t_0_(cx, pt, fr_factory) result(de)
 
-      type(context_t), pointer, intent(in) :: cx
-      type(point_t), intent(in)            :: pt
-      type(static_diff_eqns_t)             :: de
+      type(context_t), pointer, intent(in)  :: cx
+      type(point_t), intent(in)             :: pt
+      procedure(force_rt_factory), optional :: fr_factory
+      type(static_diff_eqns_t)              :: de
 
       class(model_t), pointer :: ml
 
@@ -104,6 +105,10 @@ contains
 
       ! Other initializations
 
+      if (PRESENT(fr_factory)) then
+         call fr_factory(pt, de%fr)
+      end if
+
       de%x = pt%x
 
       de%n_e = 2
@@ -116,18 +121,19 @@ contains
 
    !****
 
-   function static_diff_eqns_t_1_(cx, pt) result(de)
+   function static_diff_eqns_t_1_(cx, pt, fr_factory) result(de)
 
-      type(context_t), pointer, intent(in) :: cx
-      type(point_t), intent(in)            :: pt(:)
-      type(static_diff_eqns_t)             :: de(SIZE(pt))
+      type(context_t), pointer, intent(in)  :: cx
+      type(point_t), intent(in)             :: pt(:)
+      procedure(force_rt_factory), optional :: fr_factory
+      type(static_diff_eqns_t)              :: de(SIZE(pt))
 
       integer :: j
 
       ! Construct the array of static_diff_eqns types
 
       do j = 1, SIZE(pt)
-         de(j) = static_diff_eqns_t(cx, pt(j))
+         de(j) = static_diff_eqns_t(cx, pt(j), fr_factory)
       end do
 
       ! Finish
@@ -149,7 +155,8 @@ contains
 
       logical  :: trans_
       real(RD) :: lambda
-      real(RD) :: l_e
+      real(RD) :: z
+      real(RD) :: dz
       real(RD) :: del_x
 
       if (PRESENT(trans)) then
@@ -168,7 +175,6 @@ contains
       ! Evaluate the Jacobian matrix and inhomogeneous vector
 
       associate ( &
-         y_T_1 => st%y_T_1, &
          V_g => this%V_g, &
          As => this%As, &
          U => this%U, &
@@ -185,6 +191,13 @@ contains
          end if
 
          del_x = del/x
+
+         if (ALLOCATED(this%fr)) then
+            call this%fr%eval(st, z, dz)
+         else
+            z = 0._RD
+            dz = 0._RD
+         end if
 
          #:include 'A.inc'
 

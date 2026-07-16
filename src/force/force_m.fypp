@@ -1,0 +1,72 @@
+! Module  : force_m
+! Purpose : force evaluation
+!
+! Copyright 2013-2026 Rich Townsend & The GYRE Team
+!
+! This file is part of GYRE. GYRE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version 3.
+!
+! GYRE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'gyre.inc'
+
+module force_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   #:for T, S in zip(DTYPE_BASE_TYPES, DTYPE_SUFFIXES)
+
+      ! Derived-type definitions
+
+      type, abstract :: force_${S}$
+      contains
+         procedure(eval_${S}$_), deferred :: eval
+      end type force_${S}$
+
+      ! Interfaces
+
+      abstract interface
+
+         subroutine eval_${S}$_(this, st, z, dz)
+            use forum_m, only: RD
+            use state_m
+            import force_${S}$
+            implicit none (type, external)
+            class(force_${S}$), intent(in) :: this
+            class(state_${S}$), intent(in) :: st
+            ${T}$, intent(out)             :: z
+            ${T}$, intent(out)             :: dz
+         end subroutine eval_${S}$_
+
+         subroutine force_${S}$_factory(pt, fr)
+            use context_m
+            use point_m
+            import force_${S}$
+            implicit none (type, external)
+            type(point_t), intent(in)                    :: pt
+            class(force_${S}$), allocatable, intent(out) :: fr
+         end subroutine force_${S}$_factory
+
+      end interface
+
+      ! Access specifiers
+
+      public :: force_${S}$
+      public :: force_${S}$_factory
+
+   #:endfor
+
+   ! Default access
+
+   private
+
+end module force_m

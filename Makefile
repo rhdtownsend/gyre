@@ -82,7 +82,7 @@ export SRC_DIR := $(CURDIR)/src
 export SRC_DIRS := \
    $(shell find $(SRC_DIR)/eqns -type d -print) \
    $(shell find $(SRC_DIR)/frontend -type d -print) \
-   $(addprefix $(SRC_DIR)/,angular block bvp common context ext \
+   $(addprefix $(SRC_DIR)/,angular block bvp common context ext force \
       grid include interp lib math matrix mode model output par poly search tar tide)
 
 ifeq ($(CRMATH),yes)
