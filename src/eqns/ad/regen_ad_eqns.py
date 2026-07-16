@@ -56,20 +56,20 @@ def generate_tidal_t(C):
 # Differential Jacobian matrix and inhomogeneous vector
 
 A = sp.Matrix([
-    [V_g - 1 - l_i,
-     lamda/(c_1(x)*alpha_omg*omega_c**2) - V_g*alpha_gam,
+    [V_g + beta_pi*(As - As_iso) - 1 - l_i,
+     lamda/(c_1(x)*alpha_omg*omega_c**2) - (V_g + beta_pi*(As - As_iso))*alpha_gam,
      alpha_grv*lamda/(c_1(x)*alpha_omg*omega_c**2),
      0],
     [c_1(x)*alpha_omg*omega_c**2 - As_iso,
-     As - U(x) + 3 - l_i,
+     As - beta_pi*(As - As_iso) - U(x) + 3 - l_i,
      0,
      -alpha_grv],
     [0,
      0,
      3 - U(x) - l_i,
      1],
-    [U(x)*As,
-     U(x)*V_g,
+    [U(x)*(As - beta_pi*(As - As_iso)),
+     U(x)*(V_g + beta_pi*(As - As_iso)),
      lamda,
      -U(x) - l_i + 2]
 ])
