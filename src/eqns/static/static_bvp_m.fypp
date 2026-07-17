@@ -207,7 +207,7 @@ contains
             pt => bp%gr%pt(j), &
             cx => bp%cx)
 
-            U = ml%coeff(I_U, pt)
+            !U = ml%coeff(I_U, pt)
             c_1 = ml%coeff(I_C_1, pt)
 
             if (PRESENT(fr_factory)) then
@@ -229,7 +229,7 @@ contains
             ! the horizontal momentum equation can't be used when
             ! sigma=0
 
-            y_h(j) = -(alpha_grv*((4._RD - U)*y_c(3,j) + y_c(4,j)) + (4._RD - U + l_e)*c_1*y_T_1)/lambda
+            !y_h(j) = -(alpha_grv*((4._RD - U)*y_c(3,j) + y_c(4,j)) + (4._RD - U + l_e)*c_1*y_T_1)/lambda
 
          end associate
 
@@ -239,7 +239,7 @@ contains
 
       wv = wave_t(st_c, y_c, bp%cx, bp%gr, bp%md_p, bp%nm_p, bp%os_p, id, 0._RD, 1)
 
-      rs = resp_t(wv, or_p, k, y_h=y_h)
+      rs = resp_t(wv, or_p, k)
 
       ! Finish
 

@@ -48,6 +48,8 @@ module static_diff_eqns_m
       real(RD)                     :: U
       real(RD)                     :: c_1
       real(RD)                     :: x
+      real(RD)                     :: lambda
+      real(RD)                     :: l_e
    contains
       private
       procedure, public :: eval
@@ -155,6 +157,7 @@ contains
 
       logical  :: trans_
       real(RD) :: lambda
+      real(RD) :: l_e
       real(RD) :: z
       real(RD) :: dz
       real(RD) :: del_x
