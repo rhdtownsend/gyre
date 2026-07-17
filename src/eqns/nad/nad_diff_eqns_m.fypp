@@ -288,6 +288,7 @@ contains
          alpha_egv => this%cx%alpha_egv, &
          alpha_trb => this%cx%alpha_trb, &
          alpha_con => this%cx%alpha_con, &
+         beta_pi => this%cx%beta_pi, &
          m => this%cx%m, &
          angular_cache => this%cx%angular_cache, &
          epsilon_cache => this%cx%epsilon_cache)
