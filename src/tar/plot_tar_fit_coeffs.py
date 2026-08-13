@@ -6,8 +6,8 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-import gyre_tar_fit
-import gyre_cheb_fit
+import tar_fit
+import cheb_fit
 
 # Arguments
 
@@ -31,7 +31,7 @@ ax.set_yscale('log')
 
 # Load the file
 
-tf = gyre_tar_fit.TarFit.load(infile)
+tf = tar_fit.TarFit.load(infile)
 
 # Plot coefficients
 
