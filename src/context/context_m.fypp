@@ -77,6 +77,7 @@ module context_m
       real(RD), public               :: alpha_egv
       real(RD), public               :: alpha_trb
       real(RD), public               :: alpha_con
+      real(RD), public               :: beta_pi 
       integer, public                :: conv_scheme
       integer                        :: deps_source
       logical                        :: complex_lambda
@@ -180,6 +181,7 @@ contains
       cx%alpha_egv = os_p%alpha_egv
       cx%alpha_trb = os_p%alpha_trb
       cx%alpha_con = os_p%alpha_con
+      cx%beta_pi = os_p%beta_pi
 
       select case (os_p%time_factor)
       case ('OSC')
