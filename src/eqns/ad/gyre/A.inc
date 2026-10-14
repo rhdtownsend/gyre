@@ -1,30 +1,30 @@
 
 if (trans_) then
-A(1, 1) = del_x*(V_g - l_i - 1)
-A(2, 1) = del_x*(-V_g*alpha_gam + eta)
+A(1, 1) = del_x*(V_g + beta_pi*(As - As_iso) - l_i - 1)
+A(2, 1) = del_x*(-alpha_gam*(V_g + beta_pi*(As - As_iso)) + eta)
 A(3, 1) = alpha_grv*del_x*eta
 A(4, 1) = 0
 A(1, 2) = del_x*(-As_iso + om2)
-A(2, 2) = del_x*(As - U - l_i + 3)
+A(2, 2) = del_x*(As - U - beta_pi*(As - As_iso) - l_i + 3)
 A(3, 2) = 0
 A(4, 2) = -alpha_grv*del_x
 A(1, 3) = 0
 A(2, 3) = 0
 A(3, 3) = del_x*(-U - l_i + 3)
 A(4, 3) = del_x
-A(1, 4) = As*U*del_x
-A(2, 4) = U*V_g*del_x
+A(1, 4) = U*del_x*(As - beta_pi*(As - As_iso))
+A(2, 4) = U*del_x*(V_g + beta_pi*(As - As_iso))
 A(3, 4) = del_x*lambda
 A(4, 4) = del_x*(-U - l_i + 2)
 else
-A(1, 1) = del_x*(V_g - l_i - 1)
+A(1, 1) = del_x*(V_g + beta_pi*(As - As_iso) - l_i - 1)
 A(2, 1) = del_x*(-As_iso + om2)
 A(3, 1) = 0
-A(4, 1) = As*U*del_x
-A(1, 2) = del_x*(-V_g*alpha_gam + eta)
-A(2, 2) = del_x*(As - U - l_i + 3)
+A(4, 1) = U*del_x*(As - beta_pi*(As - As_iso))
+A(1, 2) = del_x*(-alpha_gam*(V_g + beta_pi*(As - As_iso)) + eta)
+A(2, 2) = del_x*(As - U - beta_pi*(As - As_iso) - l_i + 3)
 A(3, 2) = 0
-A(4, 2) = U*V_g*del_x
+A(4, 2) = U*del_x*(V_g + beta_pi*(As - As_iso))
 A(1, 3) = alpha_grv*del_x*eta
 A(2, 3) = 0
 A(3, 3) = del_x*(-U - l_i + 3)

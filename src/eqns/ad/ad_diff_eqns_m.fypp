@@ -199,6 +199,7 @@ contains
          alpha_omg => this%cx%alpha_omg, &
          alpha_gam => this%cx%alpha_gam, &
          alpha_pi => this%cx%alpha_pi, &
+         beta_pi => this%cx%beta_pi, &
          m => this%cx%m, &
          angular_cache => this%cx%angular_cache)
 
