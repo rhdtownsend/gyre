@@ -113,17 +113,19 @@ program build_poly
 
    hi = hdf5io_t(file_name, CREATE_FILE)
 
+   call hi%write_attr('version', 100)
+
    call hi%write_attr('n', SIZE(z))
    call hi%write_attr('n_r', n_r)
    call hi%write_attr('n_poly', n_poly)
    if (n_r > 1) then
       call hi%write_attr('Delta_b', Delta_b)
    endif
-   call hi%write_attr('Gamma_1', Gamma_1)
 
    call hi%write_dset('z', z)
    call hi%write_dset('theta', theta)
    call hi%write_dset('dtheta', dtheta)
+   call hi%write_dset('Gamma_1', SPREAD(Gamma_1, DIM=1, NCOPIES=SIZE(z)))
 
    call hi%final()
 

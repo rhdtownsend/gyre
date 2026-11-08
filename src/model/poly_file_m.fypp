@@ -57,54 +57,21 @@ contains
       type(model_par_t), intent(in) :: ml_p
       type(poly_model_t)            :: ml
 
-      type(hdf5io_t)              :: hi
-      real(RD), allocatable       :: n_poly(:)
-      integer                     :: n_r
-      real(RD), allocatable       :: Delta_b(:)
-      real(RD)                    :: Gamma_1
-      real(RD), allocatable       :: z(:)
-      real(RD), allocatable       :: theta(:)
-      real(RD), allocatable       :: theta_pri(:)
-      real(RD)                    :: Omega_rot
+      real(RD), allocatable :: z(:)
+      real(RD), allocatable :: theta(:)
+      real(RD), allocatable :: theta_pri(:)
+      real(RD), allocatable :: Gamma_1(:)
+      real(RD), allocatable :: n_poly(:)
+      real(RD), allocatable :: Delta_b(:)
 
-      ! Read the POLY-format file
+      ! Read data from the POLY-format file
 
-      if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 100) 'Reading from POLY file', TRIM(ml_p%file)
-100      format(A,1X,A)
-      endif
-
-      hi = hdf5io_t(ml_p%file, OPEN_FILE_RO)
-
-      call hi%read_attr('n_r', n_r)
-
-      call hi%alloc_read_attr('n_poly', n_poly)
-      if (n_r > 1) then
-         call hi%alloc_read_attr('Delta_b', Delta_b)
-      else
-         allocate(Delta_b(0))
-      endif
-      call hi%read_attr('Gamma_1', Gamma_1)
-
-      call hi%alloc_read_dset('z', z)
-      call hi%alloc_read_dset('theta', theta)
-      call hi%alloc_read_dset('dtheta', theta_pri)
-
-      call hi%final()
-
-      if (check_log_level('INFO')) then
-         write(OUTPUT_UNIT, 110) 'Read', SIZE(z), 'points'
-110      format(3X,A,1X,I0,1X,A)
-      endif
-
-      ! Set up Omega_rot
-
-      Omega_rot = 0._RD
+      call read_poly_data_(ml_p%file, z, theta, theta_pri, Gamma_1, n_poly, Delta_b)
 
       ! Initialize the poly_model_t
 
-      ml = poly_model_t(z, theta, theta_pri, n_poly, Delta_b, Gamma_1, Omega_rot, &
-         ml_p%interp_type, ml_p%constrain_derivs)
+      ml = poly_model_t(z, theta, theta_pri, n_poly, Delta_b, Gamma_1, 0._RD, &
+         ml_p%interp_type, ml_p%deriv_type, ml_p%constrain_derivs)
 
       if (check_log_level('INFO')) then
          write(OUTPUT_UNIT, *)
@@ -115,5 +82,127 @@ contains
       return
 
    end function poly_model_t_file_
+
+   !****
+
+   subroutine read_poly_data_(file, z, theta, theta_pri, Gamma_1, n_poly, delta_b)
+
+      character(*), intent(in)           :: file
+      real(RD), allocatable, intent(out) :: z(:)
+      real(RD), allocatable, intent(out) :: theta(:)
+      real(RD), allocatable, intent(out) :: theta_pri(:)
+      real(RD), allocatable, intent(out) :: Gamma_1(:)
+      real(RD), allocatable, intent(out) :: n_poly(:)
+      real(RD), allocatable, intent(out) :: Delta_b(:)
+
+      type(hdf5io_t) :: hi
+      integer        :: version
+
+      ! Read data from the POLY-format file
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 100) 'Reading from POLY file'
+100      format(A)
+         write(OUTPUT_UNIT, 110) 'File name', TRIM(file)
+110      format(3X,A,1X,A)
+      endif
+
+      hi = hdf5io_t(file, OPEN_FILE_RO)
+
+      ! Read the header
+
+      if (hi%attr_exists('version')) then
+         call hi%read_attr('version', version)
+      else
+         version = 0
+      endif
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 120) 'File version', version/100._RD
+120      format(3X,A,1X,F4.2,1X,A)
+      endif
+
+      ! Read the data
+
+      select case (version)
+      case (0)
+         call read_poly_data_v0_00_()
+      case (100)
+         call read_poly_data_v1_00_()
+      case default
+         @:ABORT('Unrecognized POLY file version')
+      end select
+
+      call hi%final()
+
+      if (check_log_level('INFO')) then
+         write(OUTPUT_UNIT, 130) 'Read', SIZE(z), 'points'
+130      format(3X,A,1X,I0,1X,A)
+      endif
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine read_poly_data_v0_00_()
+
+         integer  :: n_r
+         real(RD) :: Gamma_1_
+
+         ! Read data from the version-0.00 file
+
+         call hi%read_attr('n_r', n_r)
+
+         call hi%alloc_read_attr('n_poly', n_poly)
+         if (n_r > 1) then
+            call hi%alloc_read_attr('Delta_b', Delta_b)
+         else
+            allocate(Delta_b(0))
+         endif
+
+         call hi%alloc_read_dset('z', z)
+         call hi%alloc_read_dset('theta', theta)
+         call hi%alloc_read_dset('dtheta', theta_pri)
+
+         call hi%read_attr('Gamma_1', Gamma_1_)
+         Gamma_1 = SPREAD(Gamma_1_, DIM=1, NCOPIES=SIZE(z))
+
+         ! Finish
+
+         return
+
+      end subroutine read_poly_data_v0_00_
+
+      !****
+
+      subroutine read_poly_data_v1_00_()
+
+         integer  :: n_r
+
+         ! Read data from the version-1.00 file
+
+         call hi%read_attr('n_r', n_r)
+
+         call hi%alloc_read_attr('n_poly', n_poly)
+         if (n_r > 1) then
+            call hi%alloc_read_attr('Delta_b', Delta_b)
+         else
+            allocate(Delta_b(0))
+         endif
+
+         call hi%alloc_read_dset('z', z)
+         call hi%alloc_read_dset('theta', theta)
+         call hi%alloc_read_dset('dtheta', theta_pri)
+         call hi%alloc_read_dset('Gamma_1', Gamma_1)
+
+         ! Finish
+
+         return
+
+      end subroutine read_poly_data_v1_00_
+
+   end subroutine read_poly_data_
 
 end module poly_file_m

@@ -25,6 +25,7 @@ module poly_model_m
 
    use constants_m
    use cubic_interp_m
+   use deriv_m
    use grid_m
    use interp_m
    use linear_interp_m
@@ -46,6 +47,7 @@ module poly_model_m
       type(grid_t)                  :: gr
       class(interp_rt), allocatable :: in_theta(:)
       class(interp_rt), allocatable :: in_theta_pri(:)
+      class(interp_rt), allocatable :: in_Gamma_1(:)
       real(RD), allocatable         :: n_poly(:)
       real(RD), allocatable         :: mu_i(:)
       real(RD), allocatable         :: v_i(:)
@@ -53,7 +55,6 @@ module poly_model_m
       real(RD), allocatable         :: B(:)
       real(RD)                      :: mu_s
       real(RD)                      :: z_s
-      real(RD)                      :: Gamma_1
       real(RD)                      :: Omega_rot
       logical                       :: constrain_derivs
       integer                       :: s_i
@@ -63,6 +64,8 @@ module poly_model_m
       procedure         :: theta_pri_
       procedure         :: dtheta_dx_
       procedure         :: dtheta_pri_dx_
+      procedure         :: Gamma_1_
+      procedure         :: dGamma_1_dx_
       procedure         :: mu_
       procedure         :: dmu_
       procedure, public :: coeff
@@ -70,12 +73,14 @@ module poly_model_m
       procedure         :: coeff_As_
       procedure         :: coeff_U_
       procedure         :: coeff_c_1_
+      procedure         :: coeff_Gamma_1_
       procedure, public :: coeff_U_D
       procedure, public :: dcoeff
       procedure         :: dcoeff_V_2_
       procedure         :: dcoeff_As_
       procedure         :: dcoeff_U_
       procedure         :: dcoeff_c_1_
+      procedure         :: dcoeff_Gamma_1_
       procedure, public :: is_defined
       procedure, public :: is_vacuum
       procedure, public :: Delta_p
@@ -99,16 +104,18 @@ module poly_model_m
 
 contains
 
-   function poly_model_t_(z, theta, theta_pri, n_poly, Delta_b, Gamma_1, Omega_rot, interp_type, constrain_derivs) result(ml)
+   function poly_model_t_(z, theta, theta_pri, n_poly, Delta_b, Gamma_1, Omega_rot, &
+      interp_type, deriv_type, constrain_derivs) result(ml)
 
       real(RD), intent(in)     :: z(:)
       real(RD), intent(in)     :: theta(:)
       real(RD), intent(in)     :: theta_pri(:)
       real(RD), intent(in)     :: n_poly(:)
       real(RD), intent(in)     :: Delta_b(:)
-      real(RD), intent(in)     :: Gamma_1
+      real(RD), intent(in)     :: Gamma_1(:)
       real(RD), intent(in)     :: Omega_rot
       character(*), intent(in) :: interp_type
+      character(*), intent(in) :: deriv_type
       logical, intent(in)      :: constrain_derivs
       type(poly_model_t)       :: ml
 
@@ -125,6 +132,7 @@ contains
 
       @:CHECK_BOUNDS(SIZE(theta), SIZE(z))
       @:CHECK_BOUNDS(SIZE(theta_pri), SIZE(z))
+      @:CHECK_BOUNDS(SIZE(Gamma_1), SIZE(z))
 
       @:CHECK_BOUNDS(SIZE(Delta_b), SIZE(n_poly)-1)
 
@@ -154,9 +162,11 @@ contains
       case('LINEAR')
          allocate(linear_interp_rt::ml%in_theta(ml%s_i:ml%s_o))
          allocate(linear_interp_rt::ml%in_theta_pri(ml%s_i:ml%s_o))
+         allocate(linear_interp_rt::ml%in_Gamma_1(ml%s_i:ml%s_o))
       case('CUBIC')
          allocate(cubic_interp_rt::ml%in_theta(ml%s_i:ml%s_o))
          allocate(cubic_interp_rt::ml%in_theta_pri(ml%s_i:ml%s_o))
+         allocate(cubic_interp_rt::ml%in_Gamma_1(ml%s_i:ml%s_o))
       case default
          @:ABORT('invalid interp_type')
       end select
@@ -235,13 +245,19 @@ contains
             in = cubic_interp_rt(x(j_i:j_o), theta_pri(j_i:j_o), dtheta_pri_dz(j_i:j_o)*ml%z_s)
          end select
 
+         select type(in => ml%in_Gamma_1(s))
+         type is (linear_interp_rt)
+            in = linear_interp_rt(x(j_i:j_o), Gamma_1(j_i:j_o))
+         type is (cubic_interp_rt)
+            in = cubic_interp_rt(x(j_i:j_o), Gamma_1(j_i:j_o), deriv(x(j_i:j_o), Gamma_1(j_i:j_o), deriv_type))
+         end select
+
       end do seg_spline_loop
 
       ! Other initializations
 
       ml%constrain_derivs = constrain_derivs
 
-      ml%Gamma_1 = Gamma_1
       ml%Omega_rot = Omega_rot
 
       ! Finish
@@ -321,6 +337,42 @@ contains
       return
 
    end function dtheta_pri_dx_
+
+   !****
+
+   function Gamma_1_(this, pt) result(Gamma_1)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: Gamma_1
+
+      ! Evaluate Gamma_1
+
+      call this%in_Gamma_1(pt%s)%eval_f(pt%x, Gamma_1)
+
+      ! Finish
+
+      return
+
+   end function Gamma_1_
+
+   !****
+
+   function dGamma_1_dx_(this, pt) result(dGamma_1_dx)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: dGamma_1_dx
+
+      ! Evaluate the derivative of Gamma_1
+
+      call this%in_Gamma_1(pt%s)%eval_df_dx(pt%x, dGamma_1_dx)
+
+      ! Finish
+
+      return
+
+   end function dGamma_1_dx_
 
    !****
 
@@ -422,7 +474,7 @@ contains
       case (I_C_1)
          coeff = this%coeff_c_1_(pt)
       case (I_GAMMA_1)
-         coeff = this%Gamma_1
+         coeff = this%coeff_Gamma_1_(pt)
       case (I_UPS_T)
          coeff = 1._RD
       case (I_NABLA_AD)
@@ -487,6 +539,7 @@ contains
       real(RD) :: z
       real(RD) :: theta
       real(RD) :: theta_pri
+      real(RD) :: Gamma_1
 
       ! Evaluate the As coefficient
 
@@ -494,10 +547,11 @@ contains
 
       theta = this%theta_(pt)
       theta_pri = this%theta_pri_(pt)
+      Gamma_1 = this%Gamma_1_(pt)
 
       if (theta /= 0._RD) then
          coeff = -(this%n_poly(pt%s) + 1._RD)*z*theta_pri/theta * &
-            (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/this%Gamma_1)
+            (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_1)
       else
          coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
       endif
@@ -573,6 +627,24 @@ contains
 
    !****
 
+   function coeff_Gamma_1_(this, pt) result(coeff)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: coeff
+
+      ! Evaluate the Gamma_1 coefficient
+
+      coeff = this%Gamma_1_(pt)
+
+      ! Finish
+
+      return
+
+   end function coeff_Gamma_1_
+
+   !****
+
    function coeff_U_D(this, pt) result(coeff)
 
       class(poly_model_t), intent(in) :: this
@@ -634,7 +706,8 @@ contains
 
       @:ASSERT_DEBUG(pt%s >= this%s_i .AND. pt%s <= this%s_o, 'Invalid segment')
 
-      ! Evaluate the i'th coefficient
+      ! Evaluate the logarithmic derivative of the i'th
+      ! coefficient
 
       select case (i)
       case (I_V_2)
@@ -646,7 +719,7 @@ contains
       case (I_C_1)
          dcoeff = this%dcoeff_c_1_(pt)
       case (I_GAMMA_1)
-         dcoeff = 0._RD
+         dcoeff = this%dcoeff_Gamma_1_(pt)
       case (I_UPS_T)
          dcoeff = 0._RD
       case (I_NABLA_AD)
@@ -681,10 +754,10 @@ contains
 
          z = pt%x*this%z_s
 
-         if (this%constrain_derivs) then
+         theta = this%theta_(pt)
+         theta_pri = this%theta_pri_(pt)
 
-            theta = this%theta_(pt)
-            theta_pri = this%theta_pri_(pt)
+         if (this%constrain_derivs) then
 
             if (this%n_poly(pt%s) /= 0._RD) then
                if (theta /= 0._RD) then
@@ -701,9 +774,6 @@ contains
             endif
 
          else
-
-            theta = this%theta_(pt)
-            theta_pri = this%theta_pri_(pt)
 
             dtheta_dx = this%dtheta_dx_(pt)
             dtheta_pri_dx = this%dtheta_pri_dx_(pt)
@@ -736,10 +806,63 @@ contains
       type(point_t), intent(in)       :: pt
       real(RD)                        :: dcoeff
 
+      real(RD) :: z
+      real(RD) :: theta
+      real(RD) :: theta_pri
+      real(RD) :: Gamma_1
+      real(RD) :: dGamma_1_dx
+      real(RD) :: dtheta_dx
+      real(RD) :: dtheta_pri_dx
+
       ! Evaluate the logarithmic derivative of the As coefficient
 
-      dcoeff = this%dcoeff_V_2_(pt)*pt%x**2 * &
-         (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/this%Gamma_1)
+      if (pt%x /= 0._RD) then
+
+         z = pt%x*this%z_s
+
+         theta = this%theta_(pt)
+         theta_pri = this%theta_pri_(pt)
+
+         Gamma_1 = this%Gamma_1_(pt)
+         dGamma_1_dx = this%dGamma_1_dx_(pt)
+
+         if (this%constrain_derivs) then
+
+            if (this%n_poly(pt%s) /= 0._RD) then
+               if (theta /= 0._RD) then
+                  dcoeff = -1._RD - z*theta_pri/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/theta_pri + &
+                     pt%x*dGamma_1_dx/(Gamma_1**2*(this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_1))
+               else
+                  dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
+               end if
+            else
+               if (theta /= 0._RD) then
+                  dcoeff = -1._RD - z*theta_pri/theta - this%B(pt%s)*z/theta_pri + &
+                     pt%x*dGamma_1_dx/(Gamma_1**2*(this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_1))
+               else
+                  dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
+               end if
+            endif
+
+         else
+
+            dtheta_dx = this%dtheta_dx_(pt)
+            dtheta_pri_dx = this%dtheta_pri_dx_(pt)
+
+            if (theta /= 0._RD) then
+               dcoeff = dtheta_pri_dx*pt%x/theta_pri - dtheta_dx*pt%x/theta + 1._RD + &
+                  pt%x*dGamma_1_dx/(Gamma_1**2*(this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_1))
+            else
+               dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
+            end if
+
+         end if
+
+      else
+
+         dcoeff = 2._RD
+
+      end if
 
       ! Finish
 
@@ -827,6 +950,24 @@ contains
       return
 
    end function dcoeff_c_1_
+
+   !****
+
+   function dcoeff_Gamma_1_(this, pt) result(dcoeff)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: dcoeff
+
+      ! Evaluate the logarithmic derivative of the Gamma_1 coefficient
+
+      dcoeff = pt%x*this%dGamma_1_dx_(pt)/this%Gamma_1_(pt)
+
+      ! Finish
+
+      return
+
+   end function dcoeff_Gamma_1_
 
    !****
 
