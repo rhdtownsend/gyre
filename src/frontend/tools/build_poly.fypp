@@ -42,6 +42,7 @@ program build_poly
    character(:), allocatable :: file_name
    real(RD), allocatable     :: n_poly(:)
    real(RD), allocatable     :: Gamma_1
+   real(RD), allocatable     :: Gamma_A
    real(RD), allocatable     :: z_b(:)
    real(RD), allocatable     :: Delta_b(:)
    real(RD), allocatable     :: theta_s
@@ -59,6 +60,7 @@ program build_poly
    ! Parse command-line arguments
 
    Gamma_1 = 5._RD/3._RD
+   Gamma_A = 5._RD/3._RD
    theta_s = 0._RD
    toler = 1E-10_RD
 
@@ -71,6 +73,8 @@ program build_poly
       usage='--n_poly=N_POLY[,N_POLY...]', description='polytropic indices')
    call arg_parser%define_option('Gamma_1', OPT_REQUIRED_ARG, 'G', &
       usage='--Gamma_1=GAMMA_1', description='adiabatic exponent')
+   call arg_parser%define_option('Gamma_A', OPT_REQUIRED_ARG, 'A', &
+      usage='--Gamma_A=GAMMA_A', description='adiabatic exponent for A* evaluation')
    call arg_parser%define_option('z_b', OPT_REQUIRED_ARG, 'z', &
       usage='--z_b=Z_B[,Z_B...]', description='polytropic coordinates of region boundaries')
    call arg_parser%define_option('Delta_b', OPT_REQUIRED_ARG, 'D', &
@@ -126,6 +130,7 @@ program build_poly
    call hi%write_dset('theta', theta)
    call hi%write_dset('dtheta', dtheta)
    call hi%write_dset('Gamma_1', SPREAD(Gamma_1, DIM=1, NCOPIES=SIZE(z)))
+   call hi%write_dset('Gamma_A', SPREAD(Gamma_A, DIM=1, NCOPIES=SIZE(z)))
 
    call hi%final()
 
@@ -163,6 +168,8 @@ contains
          call parse_values(value, n_poly)
       case('Gamma_1')
          call parse_value(value, Gamma_1)
+      case('Gamma_A')
+         call parse_value(value, Gamma_A)
       case('z_b')
          call parse_values(value, z_b)
       case('Delta_b')

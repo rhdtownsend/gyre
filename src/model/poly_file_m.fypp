@@ -61,16 +61,17 @@ contains
       real(RD), allocatable :: theta(:)
       real(RD), allocatable :: theta_pri(:)
       real(RD), allocatable :: Gamma_1(:)
+      real(RD), allocatable :: Gamma_A(:)
       real(RD), allocatable :: n_poly(:)
       real(RD), allocatable :: Delta_b(:)
 
       ! Read data from the POLY-format file
 
-      call read_poly_data_(ml_p%file, z, theta, theta_pri, Gamma_1, n_poly, Delta_b)
+      call read_poly_data_(ml_p%file, z, theta, theta_pri, Gamma_1, Gamma_A, n_poly, Delta_b)
 
       ! Initialize the poly_model_t
 
-      ml = poly_model_t(z, theta, theta_pri, n_poly, Delta_b, Gamma_1, 0._RD, &
+      ml = poly_model_t(z, theta, theta_pri, n_poly, Delta_b, Gamma_1, Gamma_A, 0._RD, &
          ml_p%interp_type, ml_p%deriv_type, ml_p%constrain_derivs)
 
       if (check_log_level('INFO')) then
@@ -85,13 +86,14 @@ contains
 
    !****
 
-   subroutine read_poly_data_(file, z, theta, theta_pri, Gamma_1, n_poly, delta_b)
+   subroutine read_poly_data_(file, z, theta, theta_pri, Gamma_1, Gamma_A, n_poly, delta_b)
 
       character(*), intent(in)           :: file
       real(RD), allocatable, intent(out) :: z(:)
       real(RD), allocatable, intent(out) :: theta(:)
       real(RD), allocatable, intent(out) :: theta_pri(:)
       real(RD), allocatable, intent(out) :: Gamma_1(:)
+      real(RD), allocatable, intent(out) :: Gamma_A(:)
       real(RD), allocatable, intent(out) :: n_poly(:)
       real(RD), allocatable, intent(out) :: Delta_b(:)
 
@@ -167,7 +169,9 @@ contains
          call hi%alloc_read_dset('dtheta', theta_pri)
 
          call hi%read_attr('Gamma_1', Gamma_1_)
+
          Gamma_1 = SPREAD(Gamma_1_, DIM=1, NCOPIES=SIZE(z))
+         Gamma_A = Gamma_1
 
          ! Finish
 
@@ -181,7 +185,7 @@ contains
 
          integer  :: n_r
 
-         ! Read data from the version-1.00 file
+         ! Read data from the version-1.10 file
 
          call hi%read_attr('n_r', n_r)
 
@@ -196,6 +200,7 @@ contains
          call hi%alloc_read_dset('theta', theta)
          call hi%alloc_read_dset('dtheta', theta_pri)
          call hi%alloc_read_dset('Gamma_1', Gamma_1)
+         call hi%alloc_read_dset('Gamma_A', Gamma_A)
 
          ! Finish
 

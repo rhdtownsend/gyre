@@ -35,6 +35,10 @@ Options
 
    Adiabatic index :math:`\Gamma_{1}`.
 
+.. option:: -A, --Gamma_A=GAMMA_A
+
+   Adiabatic index :math:`\Gamma_{A}` used when evaluating :math:`\As` structure coefficient
+
 .. option:: -z, --z_b=Z_B[,Z_B...]
 
    Polytropic coordinate of region boundaries.

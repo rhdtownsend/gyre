@@ -48,6 +48,7 @@ module poly_model_m
       class(interp_rt), allocatable :: in_theta(:)
       class(interp_rt), allocatable :: in_theta_pri(:)
       class(interp_rt), allocatable :: in_Gamma_1(:)
+      class(interp_rt), allocatable :: in_Gamma_A(:)
       real(RD), allocatable         :: n_poly(:)
       real(RD), allocatable         :: mu_i(:)
       real(RD), allocatable         :: v_i(:)
@@ -66,6 +67,8 @@ module poly_model_m
       procedure         :: dtheta_pri_dx_
       procedure         :: Gamma_1_
       procedure         :: dGamma_1_dx_
+      procedure         :: Gamma_A_
+      procedure         :: dGamma_A_dx_
       procedure         :: mu_
       procedure         :: dmu_
       procedure, public :: coeff
@@ -104,7 +107,7 @@ module poly_model_m
 
 contains
 
-   function poly_model_t_(z, theta, theta_pri, n_poly, Delta_b, Gamma_1, Omega_rot, &
+   function poly_model_t_(z, theta, theta_pri, n_poly, Delta_b, Gamma_1, Gamma_A, Omega_rot, &
       interp_type, deriv_type, constrain_derivs) result(ml)
 
       real(RD), intent(in)     :: z(:)
@@ -113,6 +116,7 @@ contains
       real(RD), intent(in)     :: n_poly(:)
       real(RD), intent(in)     :: Delta_b(:)
       real(RD), intent(in)     :: Gamma_1(:)
+      real(RD), intent(in)     :: Gamma_A(:)
       real(RD), intent(in)     :: Omega_rot
       character(*), intent(in) :: interp_type
       character(*), intent(in) :: deriv_type
@@ -163,10 +167,12 @@ contains
          allocate(linear_interp_rt::ml%in_theta(ml%s_i:ml%s_o))
          allocate(linear_interp_rt::ml%in_theta_pri(ml%s_i:ml%s_o))
          allocate(linear_interp_rt::ml%in_Gamma_1(ml%s_i:ml%s_o))
+         allocate(linear_interp_rt::ml%in_Gamma_A(ml%s_i:ml%s_o))
       case('CUBIC')
          allocate(cubic_interp_rt::ml%in_theta(ml%s_i:ml%s_o))
          allocate(cubic_interp_rt::ml%in_theta_pri(ml%s_i:ml%s_o))
          allocate(cubic_interp_rt::ml%in_Gamma_1(ml%s_i:ml%s_o))
+         allocate(cubic_interp_rt::ml%in_Gamma_A(ml%s_i:ml%s_o))
       case default
          @:ABORT('invalid interp_type')
       end select
@@ -250,6 +256,13 @@ contains
             in = linear_interp_rt(x(j_i:j_o), Gamma_1(j_i:j_o))
          type is (cubic_interp_rt)
             in = cubic_interp_rt(x(j_i:j_o), Gamma_1(j_i:j_o), deriv(x(j_i:j_o), Gamma_1(j_i:j_o), deriv_type))
+         end select
+
+         select type(in => ml%in_Gamma_A(s))
+         type is (linear_interp_rt)
+            in = linear_interp_rt(x(j_i:j_o), Gamma_A(j_i:j_o))
+         type is (cubic_interp_rt)
+            in = cubic_interp_rt(x(j_i:j_o), Gamma_A(j_i:j_o), deriv(x(j_i:j_o), Gamma_A(j_i:j_o), deriv_type))
          end select
 
       end do seg_spline_loop
@@ -373,6 +386,42 @@ contains
       return
 
    end function dGamma_1_dx_
+
+   !****
+
+   function Gamma_A_(this, pt) result(Gamma_A)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: Gamma_A
+
+      ! Evaluate Gamma_A
+
+      call this%in_Gamma_A(pt%s)%eval_f(pt%x, Gamma_A)
+
+      ! Finish
+
+      return
+
+   end function Gamma_A_
+
+   !****
+
+   function dGamma_A_dx_(this, pt) result(dGamma_A_dx)
+
+      class(poly_model_t), intent(in) :: this
+      type(point_t), intent(in)       :: pt
+      real(RD)                        :: dGamma_A_dx
+
+      ! Evaluate the derivative of Gamma_A
+
+      call this%in_Gamma_A(pt%s)%eval_df_dx(pt%x, dGamma_A_dx)
+
+      ! Finish
+
+      return
+
+   end function dGamma_A_dx_
 
    !****
 
@@ -539,7 +588,7 @@ contains
       real(RD) :: z
       real(RD) :: theta
       real(RD) :: theta_pri
-      real(RD) :: Gamma_1
+      real(RD) :: Gamma_A
 
       ! Evaluate the As coefficient
 
@@ -547,11 +596,11 @@ contains
 
       theta = this%theta_(pt)
       theta_pri = this%theta_pri_(pt)
-      Gamma_1 = this%Gamma_1_(pt)
+      Gamma_A = this%Gamma_A_(pt)
 
       if (theta /= 0._RD) then
          coeff = -(this%n_poly(pt%s) + 1._RD)*z*theta_pri/theta * &
-            (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_1)
+            (this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_A)
       else
          coeff = IEEE_VALUE(coeff, IEEE_POSITIVE_INF)
       endif
@@ -809,8 +858,8 @@ contains
       real(RD) :: z
       real(RD) :: theta
       real(RD) :: theta_pri
-      real(RD) :: Gamma_1
-      real(RD) :: dGamma_1_dx
+      real(RD) :: Gamma_A
+      real(RD) :: dGamma_A_dx
       real(RD) :: dtheta_dx
       real(RD) :: dtheta_pri_dx
 
@@ -823,22 +872,22 @@ contains
          theta = this%theta_(pt)
          theta_pri = this%theta_pri_(pt)
 
-         Gamma_1 = this%Gamma_1_(pt)
-         dGamma_1_dx = this%dGamma_1_dx_(pt)
+         Gamma_A = this%Gamma_A_(pt)
+         dGamma_A_dx = this%dGamma_A_dx_(pt)
 
          if (this%constrain_derivs) then
 
             if (this%n_poly(pt%s) /= 0._RD) then
                if (theta /= 0._RD) then
                   dcoeff = -1._RD - z*theta_pri/theta - this%B(pt%s)*z*pow(theta, this%n_poly(pt%s))/theta_pri + &
-                     pt%x*dGamma_1_dx/(Gamma_1**2*(this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_1))
+                     pt%x*dGamma_A_dx/(Gamma_A**2*(this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_A))
                else
                   dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
                end if
             else
                if (theta /= 0._RD) then
                   dcoeff = -1._RD - z*theta_pri/theta - this%B(pt%s)*z/theta_pri + &
-                     pt%x*dGamma_1_dx/(Gamma_1**2*(this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_1))
+                     pt%x*dGamma_A_dx/(Gamma_A**2*(this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_A))
                else
                   dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
                end if
@@ -851,7 +900,7 @@ contains
 
             if (theta /= 0._RD) then
                dcoeff = dtheta_pri_dx*pt%x/theta_pri - dtheta_dx*pt%x/theta + 1._RD + &
-                  pt%x*dGamma_1_dx/(Gamma_1**2*(this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_1))
+                  pt%x*dGamma_A_dx/(Gamma_A**2*(this%n_poly(pt%s)/(this%n_poly(pt%s) + 1._RD) - 1._RD/Gamma_A))
             else
                dcoeff = IEEE_VALUE(dcoeff, IEEE_POSITIVE_INF)
             end if
