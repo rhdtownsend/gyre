@@ -1,0 +1,46 @@
+# Build <repo>-dev.tar.gz (the repo plus its submodules, under one
+# <repo>-dev/ folder) on every push to the default branch, and upload it to
+# the R2 bucket "downloads" (https://downloads.richtownsend.dev/nightly/).
+# Replaces the nightly cron job on oryx. Needs the repository secrets
+# R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_ACCOUNT_ID.
+
+name: dev-tarball
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+concurrency: dev-tarball
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Make tarball
+        run: |
+          export P=${{ github.event.repository.name }}-dev
+          git archive --prefix="$P/" -o "$RUNNER_TEMP/$P.tar" HEAD
+          git submodule foreach --recursive --quiet \
+            'git archive --prefix="$P/$displaypath/" \
+               -o "$RUNNER_TEMP/sub-$(echo "$displaypath" | tr / _).tar" HEAD'
+          for t in "$RUNNER_TEMP"/sub-*.tar; do
+            [ -e "$t" ] && tar -Af "$RUNNER_TEMP/$P.tar" "$t"
+          done
+          gzip -9 "$RUNNER_TEMP/$P.tar"
+          tar -tzf "$RUNNER_TEMP/$P.tar.gz" | head
+
+      - name: Upload to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          P=${{ github.event.repository.name }}-dev
+          aws s3 cp "$RUNNER_TEMP/$P.tar.gz" "s3://downloads/nightly/$P.tar.gz" \
+            --endpoint-url "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com" \
+            --content-type application/gzip --cache-control "max-age=3600"
