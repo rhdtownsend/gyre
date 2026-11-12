@@ -76,7 +76,19 @@ clean :
 	@rm -rf $(BIN_FILES) $(LIB_FILES) $(PKG_FILES) \
                 $(INC_FILES) $(DEPEND_DIR) *.f90 *.mod *.smod *.o
 
-$(BIN_DIR)/% $(LIB_DIR)/% $(PKG_DIR)/% $(INC_DIR)/%: %
+$(BIN_DIR)/%: %
+	@echo CP $* $@
+	@cp $< $@
+
+$(LIB_DIR)/%: %
+	@echo CP $* $@
+	@cp $< $@
+
+$(PKG_DIR)/%: %
+	@echo CP $* $@
+	@cp $< $@
+
+$(INC_DIR)/%: %
 	@echo CP $* $@
 	@cp $< $@
 
